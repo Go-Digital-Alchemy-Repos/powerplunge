@@ -270,6 +270,12 @@ export async function registerRoutes(
         taxAmount = taxCalculation.tax_amount_exclusive;
         taxCalculationId = taxCalculation.id;
         console.log(`Tax calculated: $${(taxAmount / 100).toFixed(2)} for ${customerData.state}`);
+        console.log(`Tax calculation details:`, JSON.stringify({
+          id: taxCalculation.id,
+          amount_total: taxCalculation.amount_total,
+          tax_amount: taxCalculation.tax_amount_exclusive,
+          tax_breakdown: taxCalculation.tax_breakdown,
+        }, null, 2));
       } catch (taxError: any) {
         console.error("Tax calculation error:", taxError.message);
         // Continue without tax if calculation fails (e.g., Stripe Tax not enabled)
