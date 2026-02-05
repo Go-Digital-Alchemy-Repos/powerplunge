@@ -26,6 +26,7 @@ interface CheckoutFormProps {
   clientSecret: string;
   orderId: string;
   cartTotal: number;
+  totalWithTax: number;
   billingDetails: {
     name: string;
     email: string;
@@ -37,7 +38,7 @@ interface CheckoutFormProps {
   };
 }
 
-function CheckoutForm({ clientSecret, orderId, cartTotal, billingDetails }: CheckoutFormProps) {
+function CheckoutForm({ clientSecret, orderId, cartTotal, totalWithTax, billingDetails }: CheckoutFormProps) {
   const stripe = useStripe();
   const elements = useElements();
   const [, setLocation] = useLocation();
@@ -204,7 +205,7 @@ function CheckoutForm({ clientSecret, orderId, cartTotal, billingDetails }: Chec
         ) : (
           <>
             <CreditCard className="w-4 h-4 mr-2" />
-            Pay ${(cartTotal / 100).toLocaleString()}
+            Pay ${(totalWithTax / 100).toLocaleString()}
           </>
         )}
       </Button>
@@ -220,6 +221,7 @@ export default function Checkout() {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [stripePromise, setStripePromise] = useState<ReturnType<typeof loadStripe> | null>(null);
+  const [taxInfo, setTaxInfo] = useState<{ subtotal: number; taxAmount: number; total: number } | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -356,6 +358,11 @@ export default function Checkout() {
 
       setClientSecret(data.clientSecret);
       setOrderId(data.orderId);
+      setTaxInfo({
+        subtotal: data.subtotal,
+        taxAmount: data.taxAmount,
+        total: data.total,
+      });
       setStep("payment");
     } catch (error: any) {
       toast({
@@ -630,6 +637,7 @@ export default function Checkout() {
                         clientSecret={clientSecret}
                         orderId={orderId!}
                         cartTotal={cartTotal}
+                        totalWithTax={taxInfo?.total ?? cartTotal}
                         billingDetails={formData}
                       />
                     </Elements>
@@ -658,11 +666,23 @@ export default function Checkout() {
                     <p className="font-medium">${((item.price * item.quantity) / 100).toLocaleString()}</p>
                   </div>
                 ))}
-                <div className="flex justify-between pt-4">
-                  <p className="font-semibold">Total</p>
-                  <p className="font-display font-bold text-xl text-primary">
-                    ${(cartTotal / 100).toLocaleString()}
-                  </p>
+                <div className="space-y-2 pt-4 border-t border-border">
+                  <div className="flex justify-between">
+                    <p className="text-muted-foreground">Subtotal</p>
+                    <p>${((taxInfo?.subtotal ?? cartTotal) / 100).toLocaleString()}</p>
+                  </div>
+                  {taxInfo && taxInfo.taxAmount > 0 && (
+                    <div className="flex justify-between">
+                      <p className="text-muted-foreground">Sales Tax</p>
+                      <p>${(taxInfo.taxAmount / 100).toFixed(2)}</p>
+                    </div>
+                  )}
+                  <div className="flex justify-between pt-2">
+                    <p className="font-semibold">Total</p>
+                    <p className="font-display font-bold text-xl text-primary">
+                      ${((taxInfo?.total ?? cartTotal) / 100).toLocaleString()}
+                    </p>
+                  </div>
                 </div>
 
                 {/* Trust Badges */}

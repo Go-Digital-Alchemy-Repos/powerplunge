@@ -210,8 +210,8 @@ export async function registerRoutes(
         if (updated) existingCustomer = updated;
       }
 
-      // Calculate total
-      let totalAmount = 0;
+      // Calculate subtotal
+      let subtotalAmount = 0;
       const orderItems: Array<{
         productId: string;
         productName: string;
@@ -224,7 +224,7 @@ export async function registerRoutes(
         if (!product) {
           return res.status(400).json({ message: `Product ${item.productId} not found` });
         }
-        totalAmount += product.price * item.quantity;
+        subtotalAmount += product.price * item.quantity;
         orderItems.push({
           productId: product.id,
           productName: product.name,
@@ -233,11 +233,58 @@ export async function registerRoutes(
         });
       }
 
-      // Create pending order
+      // Create Stripe client for tax calculation
+      const Stripe = (await import("stripe")).default;
+      const stripe = new Stripe(stripeSecretKey);
+
+      // Calculate tax using Stripe Tax API
+      let taxAmount = 0;
+      let taxCalculationId: string | null = null;
+      
+      try {
+        // Build line items for tax calculation
+        // Note: amount is the total for the line, quantity defaults to 1 when using amount
+        const taxLineItems = orderItems.map((item) => ({
+          amount: item.unitPrice * item.quantity,
+          reference: item.productId,
+          tax_behavior: "exclusive" as const,
+          tax_code: "txcd_99999999", // General tangible goods
+        }));
+
+        // Calculate tax based on shipping address
+        const taxCalculation = await stripe.tax.calculations.create({
+          currency: "usd",
+          line_items: taxLineItems,
+          customer_details: {
+            address: {
+              line1: customerData.address || "",
+              city: customerData.city || "",
+              state: customerData.state || "",
+              postal_code: customerData.zipCode || "",
+              country: "US",
+            },
+            address_source: "shipping",
+          },
+        });
+
+        taxAmount = taxCalculation.tax_amount_exclusive;
+        taxCalculationId = taxCalculation.id;
+        console.log(`Tax calculated: $${(taxAmount / 100).toFixed(2)} for ${customerData.state}`);
+      } catch (taxError: any) {
+        console.error("Tax calculation error:", taxError.message);
+        // Continue without tax if calculation fails (e.g., Stripe Tax not enabled)
+      }
+
+      const totalAmount = subtotalAmount + taxAmount;
+
+      // Create pending order with tax information
       const order = await storage.createOrder({
         customerId: existingCustomer.id,
         status: "pending",
         totalAmount,
+        subtotalAmount,
+        taxAmount: taxAmount > 0 ? taxAmount : null,
+        stripeTaxCalculationId: taxCalculationId,
         affiliateCode: affiliate?.affiliateCode,
       });
 
@@ -247,10 +294,6 @@ export async function registerRoutes(
           ...item,
         });
       }
-
-      // Create PaymentIntent
-      const Stripe = (await import("stripe")).default;
-      const stripe = new Stripe(stripeSecretKey);
 
       const paymentIntent = await stripe.paymentIntents.create({
         amount: totalAmount,
@@ -262,6 +305,8 @@ export async function registerRoutes(
           affiliateId: affiliate?.id || "",
           affiliateSessionId: affiliateSessionId || "",
           attributionType: affiliateCode ? "coupon" : (affiliateSessionId ? "cookie" : "direct"),
+          taxAmount: taxAmount.toString(),
+          taxCalculationId: taxCalculationId || "",
         },
       });
 
@@ -273,6 +318,9 @@ export async function registerRoutes(
       res.json({
         clientSecret: paymentIntent.client_secret,
         orderId: order.id,
+        subtotal: subtotalAmount,
+        taxAmount,
+        total: totalAmount,
       });
     } catch (error: any) {
       console.error("Create payment intent error:", error);
@@ -340,6 +388,19 @@ export async function registerRoutes(
           status: "paid",
           stripePaymentIntentId: paymentIntentId,
         });
+
+        // Create Stripe Tax Transaction for compliance reporting
+        if (order.stripeTaxCalculationId) {
+          try {
+            await stripe.tax.transactions.createFromCalculation({
+              calculation: order.stripeTaxCalculationId,
+              reference: orderId,
+            });
+            console.log(`[TAX] Created tax transaction for order ${orderId}`);
+          } catch (taxError: any) {
+            console.error(`[TAX] Failed to create tax transaction for order ${orderId}:`, taxError.message);
+          }
+        }
 
         // Record affiliate commission using centralized service
         if (order.affiliateCode) {

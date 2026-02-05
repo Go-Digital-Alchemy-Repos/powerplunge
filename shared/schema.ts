@@ -107,7 +107,10 @@ export const orders = pgTable("orders", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   customerId: varchar("customer_id").notNull().references(() => customers.id),
   status: text("status").notNull().default("pending"), // pending, paid, shipped, delivered, cancelled
-  totalAmount: integer("total_amount").notNull(), // in cents
+  totalAmount: integer("total_amount").notNull(), // in cents (subtotal + tax)
+  subtotalAmount: integer("subtotal_amount"), // in cents (before tax)
+  taxAmount: integer("tax_amount"), // in cents (sales tax)
+  stripeTaxCalculationId: text("stripe_tax_calculation_id"), // Stripe Tax calculation ID for compliance
   stripePaymentIntentId: text("stripe_payment_intent_id"),
   stripeSessionId: text("stripe_session_id"),
   affiliateCode: text("affiliate_code"), // referral tracking
