@@ -1,0 +1,11 @@
+node_modules
+dist
+.DS_Store
+server/public
+vite.config.ts.*
+*.tar.gznode_modules/
+.cache/
+.upm/
+.local/
+attached_assets/
+*.zip
