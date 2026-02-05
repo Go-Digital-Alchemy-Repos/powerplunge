@@ -501,6 +501,7 @@ export async function registerRoutes(
             name: item.productName,
           },
           unit_amount: item.unitPrice,
+          tax_behavior: "exclusive" as const,
         },
         quantity: item.quantity,
       }));
@@ -514,6 +515,10 @@ export async function registerRoutes(
         success_url: `${baseUrl}/order-success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${baseUrl}?cancelled=true`,
         customer_email: customerData.email,
+        automatic_tax: { enabled: true },
+        shipping_address_collection: {
+          allowed_countries: ["US"],
+        },
         metadata: {
           customerId: existingCustomer.id,
           affiliateCode: affiliate?.affiliateCode || "",
