@@ -4,7 +4,7 @@ import { Link, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import AdminNav from "@/components/admin/AdminNav";
-import { FileText, ArrowLeft, Home, ShoppingBag, Plus, Globe, GlobeLock, MoreHorizontal, Pencil, Eye } from "lucide-react";
+import { FileText, ArrowLeft, Home, ShoppingBag, Plus, Globe, GlobeLock, MoreHorizontal, Pencil, Eye, ArrowRightLeft } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -93,6 +93,20 @@ export default function AdminCmsV2Pages() {
     },
     onError: (err: Error) => {
       toast({ title: "Action failed", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const migrateMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await apiRequest("POST", `/api/admin/cms-v2/pages/${id}/migrate-to-blocks`);
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/cms-v2/pages"] });
+      toast({ title: "Migration complete", description: data.message || "Legacy HTML converted to blocks." });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Migration failed", description: err.message, variant: "destructive" });
     },
   });
 
@@ -280,13 +294,29 @@ export default function AdminCmsV2Pages() {
                           <>
                             <DropdownMenuItem
                               className="cursor-pointer hover:bg-gray-800 focus:bg-gray-800"
-                              onClick={() => window.open(`/${page.slug}`, "_blank")}
+                              onClick={() => window.open(`/page/${page.slug}`, "_blank")}
                               data-testid={`action-preview-${page.id}`}
                             >
                               <Eye className="w-4 h-4 mr-2" />
                               View Live Page
                             </DropdownMenuItem>
                           </>
+                        )}
+                        {page.content && page.content.trim() && (
+                          !(page.contentJson?.blocks?.length > 0) ? (
+                            <>
+                              <DropdownMenuSeparator className="bg-gray-700" />
+                              <DropdownMenuItem
+                                className="cursor-pointer text-cyan-400 hover:bg-gray-800 focus:bg-gray-800 focus:text-cyan-400"
+                                onClick={() => migrateMutation.mutate(page.id)}
+                                disabled={migrateMutation.isPending}
+                                data-testid={`action-migrate-${page.id}`}
+                              >
+                                <ArrowRightLeft className="w-4 h-4 mr-2" />
+                                {migrateMutation.isPending ? "Migrating..." : "Migrate to Blocks"}
+                              </DropdownMenuItem>
+                            </>
+                          ) : null
                         )}
                         <DropdownMenuSeparator className="bg-gray-700" />
                         {page.status === "draft" ? (

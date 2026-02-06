@@ -86,6 +86,52 @@ router.post("/pages/:id/set-shop", async (req, res) => {
   res.json(page);
 });
 
+router.post("/pages/:id/migrate-to-blocks", async (req, res) => {
+  try {
+    const page = await cmsV2Service.getPageById(req.params.id);
+    if (!page) return res.status(404).json({ error: "Page not found" });
+
+    const hasBlocks = page.contentJson &&
+      typeof page.contentJson === "object" &&
+      Array.isArray((page.contentJson as any).blocks) &&
+      (page.contentJson as any).blocks.length > 0;
+
+    if (hasBlocks) {
+      return res.status(400).json({ error: "Page already has blocks. Migration would overwrite existing content." });
+    }
+
+    const legacyHtml = (page.content || "").trim();
+    if (!legacyHtml) {
+      return res.status(400).json({ error: "Page has no legacy HTML content to migrate." });
+    }
+
+    const blockId = crypto.randomUUID();
+    const contentJson = {
+      version: 1,
+      blocks: [
+        {
+          id: blockId,
+          type: "richText",
+          data: { content: legacyHtml },
+          settings: {},
+        },
+      ],
+    };
+
+    const updated = await cmsV2Service.updatePage(req.params.id, { contentJson });
+    if (!updated) return res.status(500).json({ error: "Failed to update page" });
+
+    res.json({
+      success: true,
+      message: "Legacy HTML migrated to a richText block. Original HTML preserved in content field.",
+      page: updated,
+    });
+  } catch (err: any) {
+    console.error("Migration error:", err);
+    res.status(500).json({ error: "Failed to migrate page" });
+  }
+});
+
 router.get("/sections", async (_req, res) => {
   const list = await sectionsService.list();
   res.json(list);
