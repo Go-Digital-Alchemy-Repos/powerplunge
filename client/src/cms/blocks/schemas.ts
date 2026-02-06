@@ -5,8 +5,15 @@ export const heroSchema = z.object({
   subheadline: z.string().default(""),
   ctaText: z.string().default(""),
   ctaHref: z.string().default("#"),
+  secondaryCtaText: z.string().default(""),
+  secondaryCtaHref: z.string().default(""),
   backgroundImage: z.string().default(""),
+  heroImage: z.string().default(""),
   align: z.enum(["left", "center"]).default("center"),
+  layout: z.enum(["stacked", "split-left", "split-right"]).default("stacked"),
+  fullWidth: z.boolean().default(true),
+  overlayOpacity: z.number().min(0).max(100).default(60),
+  minHeight: z.enum(["default", "tall", "full"]).default("default"),
   themeVariant: z.string().optional(),
 });
 export type HeroProps = z.infer<typeof heroSchema>;
