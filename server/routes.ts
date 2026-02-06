@@ -1371,6 +1371,7 @@ export async function registerRoutes(
       youtubeShopping: integrationSettings?.youtubeShoppingConfigured || false,
       snapchatShopping: integrationSettings?.snapchatShoppingConfigured || false,
       xShopping: integrationSettings?.xShoppingConfigured || false,
+      mailchimp: integrationSettings?.mailchimpConfigured || false,
     });
   });
 
@@ -2281,6 +2282,86 @@ export async function registerRoutes(
       res.json({ success: true, message: "X Shopping configuration removed" });
     } catch (error: any) {
       res.status(500).json({ message: error.message || "Failed to remove X Shopping settings" });
+    }
+  });
+
+  // ==================== MAILCHIMP INTEGRATION ====================
+
+  app.get("/api/admin/settings/mailchimp", requireFullAccess, async (req, res) => {
+    try {
+      const integrationSettings = await storage.getIntegrationSettings();
+      res.json({
+        configured: integrationSettings?.mailchimpConfigured || false,
+        serverPrefix: integrationSettings?.mailchimpServerPrefix || null,
+        audienceId: integrationSettings?.mailchimpAudienceId || null,
+        hasApiKey: !!integrationSettings?.mailchimpApiKeyEncrypted,
+        lastSyncAt: integrationSettings?.mailchimpLastSyncAt || null,
+        lastSyncStatus: integrationSettings?.mailchimpLastSyncStatus || "never",
+        updatedAt: integrationSettings?.updatedAt || null,
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch Mailchimp settings" });
+    }
+  });
+
+  app.patch("/api/admin/settings/mailchimp", requireFullAccess, async (req, res) => {
+    try {
+      const { encrypt } = await import("./src/utils/encryption");
+      const { mailchimpService } = await import("./src/integrations/mailchimp/MailchimpService");
+      const { apiKey, serverPrefix, audienceId } = req.body;
+
+      const existingSettings = await storage.getIntegrationSettings();
+      const isUpdate = existingSettings?.mailchimpConfigured;
+
+      if (!isUpdate && (!apiKey || !serverPrefix || !audienceId)) {
+        return res.status(400).json({ message: "API Key, Server Prefix, and Audience ID are required" });
+      }
+
+      const updateData: any = {
+        mailchimpConfigured: true,
+      };
+
+      if (apiKey) updateData.mailchimpApiKeyEncrypted = encrypt(apiKey);
+      if (serverPrefix) updateData.mailchimpServerPrefix = serverPrefix;
+      if (audienceId) updateData.mailchimpAudienceId = audienceId;
+
+      await storage.updateIntegrationSettings(updateData);
+      mailchimpService.clearCache();
+
+      console.log(`[Audit] Mailchimp settings updated by admin`);
+      res.json({ success: true, message: "Mailchimp configuration saved" });
+    } catch (error: any) {
+      console.error("Error saving Mailchimp settings:", error);
+      res.status(500).json({ message: error.message || "Failed to save Mailchimp settings" });
+    }
+  });
+
+  app.post("/api/admin/settings/mailchimp/verify", requireFullAccess, async (req, res) => {
+    try {
+      const { mailchimpService } = await import("./src/integrations/mailchimp/MailchimpService");
+      const result = await mailchimpService.verifyCredentials();
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message || "Verification failed" });
+    }
+  });
+
+  app.delete("/api/admin/settings/mailchimp", requireFullAccess, async (req, res) => {
+    try {
+      const { mailchimpService } = await import("./src/integrations/mailchimp/MailchimpService");
+      await storage.updateIntegrationSettings({
+        mailchimpConfigured: false,
+        mailchimpApiKeyEncrypted: null,
+        mailchimpServerPrefix: null,
+        mailchimpAudienceId: null,
+        mailchimpLastSyncAt: null,
+        mailchimpLastSyncStatus: "never",
+      });
+      mailchimpService.clearCache();
+      console.log(`[Audit] Mailchimp settings removed by admin`);
+      res.json({ success: true, message: "Mailchimp configuration removed" });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message || "Failed to remove Mailchimp settings" });
     }
   });
 

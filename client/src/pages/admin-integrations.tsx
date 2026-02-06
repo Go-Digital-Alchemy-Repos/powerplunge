@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -25,6 +25,17 @@ interface IntegrationStatus {
   youtubeShopping?: boolean;
   snapchatShopping?: boolean;
   xShopping?: boolean;
+  mailchimp?: boolean;
+}
+
+interface MailchimpSettings {
+  configured: boolean;
+  serverPrefix?: string;
+  audienceId?: string;
+  hasApiKey?: boolean;
+  lastSyncAt?: string;
+  lastSyncStatus?: string;
+  updatedAt?: string;
 }
 
 interface TikTokShopSettings {
@@ -139,6 +150,7 @@ export default function AdminIntegrations() {
   const [showYouTubeDialog, setShowYouTubeDialog] = useState(false);
   const [showSnapchatDialog, setShowSnapchatDialog] = useState(false);
   const [showXDialog, setShowXDialog] = useState(false);
+  const [showMailchimpDialog, setShowMailchimpDialog] = useState(false);
 
   const { data: integrations, refetch: refetchIntegrations } = useQuery<IntegrationStatus>({
     queryKey: ["/api/admin/integrations"],
@@ -453,6 +465,35 @@ export default function AdminIntegrations() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
+                <Mail className="w-5 h-5 text-primary" />
+                Mailchimp
+              </CardTitle>
+              <CardDescription>
+                Manage email marketing campaigns and audience lists with Mailchimp
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <StatusBadge configured={integrations?.mailchimp} />
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowMailchimpDialog(true)}
+                  data-testid="button-configure-mailchimp"
+                >
+                  Configure
+                </Button>
+              </div>
+              <div className="mt-4 text-xs text-muted-foreground">
+                <a href="https://mailchimp.com/developer/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1">
+                  Get your API key from Mailchimp Developer Portal <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
                 <ShoppingBag className="w-5 h-5 text-primary" />
                 X Shopping
               </CardTitle>
@@ -535,6 +576,11 @@ export default function AdminIntegrations() {
       <XShoppingConfigDialog
         open={showXDialog}
         onOpenChange={setShowXDialog}
+        onSuccess={() => refetchIntegrations()}
+      />
+      <MailchimpConfigDialog
+        open={showMailchimpDialog}
+        onOpenChange={setShowMailchimpDialog}
         onSuccess={() => refetchIntegrations()}
       />
     </div>
@@ -2949,6 +2995,210 @@ function XShoppingConfigDialog({ open, onOpenChange, onSuccess }: {
             </Button>
           )}
           <Button onClick={handleSave} disabled={saving} data-testid="button-save-x">
+            {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+            Save Configuration
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function MailchimpConfigDialog({ open, onOpenChange, onSuccess }: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSuccess: () => void;
+}) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [formData, setFormData] = useState({
+    apiKey: "",
+    serverPrefix: "",
+    audienceId: "",
+  });
+  const [saving, setSaving] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [removing, setRemoving] = useState(false);
+
+  const { data: mailchimpSettings, isLoading } = useQuery<MailchimpSettings>({
+    queryKey: ["/api/admin/settings/mailchimp"],
+    enabled: open,
+    queryFn: async () => {
+      const res = await fetch("/api/admin/settings/mailchimp");
+      if (!res.ok) throw new Error("Failed to fetch Mailchimp settings");
+      return res.json();
+    },
+  });
+
+  useEffect(() => {
+    if (mailchimpSettings) {
+      setFormData({
+        apiKey: "",
+        serverPrefix: mailchimpSettings.serverPrefix || "",
+        audienceId: mailchimpSettings.audienceId || "",
+      });
+    }
+  }, [mailchimpSettings]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/settings/mailchimp", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Failed to save configuration");
+      }
+
+      toast({ title: "Mailchimp configuration saved" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/settings/mailchimp"] });
+      onSuccess();
+      onOpenChange(false);
+    } catch (error: any) {
+      toast({ title: error.message, variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleVerify = async () => {
+    setVerifying(true);
+    try {
+      const res = await fetch("/api/admin/settings/mailchimp/verify", { method: "POST" });
+      const data = await res.json();
+      if (data.success) {
+        toast({ title: `Mailchimp connected: ${data.accountName}` });
+      } else {
+        toast({ title: data.error || "Verification failed", variant: "destructive" });
+      }
+    } catch (error: any) {
+      toast({ title: error.message, variant: "destructive" });
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const handleRemove = async () => {
+    setRemoving(true);
+    try {
+      const res = await fetch("/api/admin/settings/mailchimp", { method: "DELETE" });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Failed to remove configuration");
+      }
+
+      toast({ title: "Mailchimp configuration removed" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/settings/mailchimp"] });
+      onSuccess();
+      onOpenChange(false);
+    } catch (error: any) {
+      toast({ title: error.message, variant: "destructive" });
+    } finally {
+      setRemoving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Mail className="w-5 h-5" />
+            Mailchimp Configuration
+          </DialogTitle>
+          <DialogDescription>
+            Configure Mailchimp for email marketing and audience management. Your API key is encrypted and stored securely.
+          </DialogDescription>
+        </DialogHeader>
+
+        {isLoading ? (
+          <div className="py-8 text-center">
+            <Loader2 className="w-6 h-6 animate-spin mx-auto" />
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {mailchimpSettings?.configured && (
+              <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                <div className="flex items-center gap-2 text-green-500 text-sm font-medium">
+                  <CheckCircle2 className="w-4 h-4" />
+                  Mailchimp is configured
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="mailchimpApiKey">API Key</Label>
+              <Input
+                id="mailchimpApiKey"
+                type="password"
+                value={formData.apiKey}
+                onChange={(e) => setFormData({ ...formData, apiKey: e.target.value })}
+                placeholder={mailchimpSettings?.hasApiKey ? "••••••••••••••••" : "Enter your Mailchimp API key"}
+                data-testid="input-mailchimp-api-key"
+              />
+              {mailchimpSettings?.hasApiKey && (
+                <p className="text-xs text-muted-foreground">Leave blank to keep the existing key</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="mailchimpServerPrefix">Server Prefix</Label>
+              <Input
+                id="mailchimpServerPrefix"
+                value={formData.serverPrefix}
+                onChange={(e) => setFormData({ ...formData, serverPrefix: e.target.value })}
+                placeholder="e.g. us1"
+                data-testid="input-mailchimp-server-prefix"
+              />
+              <p className="text-xs text-muted-foreground">
+                The server prefix from your Mailchimp API key (the part after the dash, e.g. "us1")
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="mailchimpAudienceId">Audience ID</Label>
+              <Input
+                id="mailchimpAudienceId"
+                value={formData.audienceId}
+                onChange={(e) => setFormData({ ...formData, audienceId: e.target.value })}
+                placeholder="Enter your Audience/List ID"
+                data-testid="input-mailchimp-audience-id"
+              />
+              <p className="text-xs text-muted-foreground">
+                Found under Audience &gt; Settings &gt; Audience name and defaults
+              </p>
+            </div>
+
+            {mailchimpSettings?.configured && (
+              <div className="pt-4 border-t">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleVerify}
+                  disabled={verifying}
+                  data-testid="button-verify-mailchimp"
+                >
+                  {verifying ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <TestTube className="w-4 h-4 mr-2" />}
+                  Test Connection
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+
+        <DialogFooter className="flex gap-2">
+          {mailchimpSettings?.configured && (
+            <Button variant="destructive" onClick={handleRemove} disabled={removing} data-testid="button-remove-mailchimp">
+              {removing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              Remove
+            </Button>
+          )}
+          <Button onClick={handleSave} disabled={saving} data-testid="button-save-mailchimp">
             {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
             Save Configuration
           </Button>
