@@ -49,6 +49,7 @@ import AdminCmsV2Sections from "@/pages/admin-cms-v2-sections";
 import AdminCmsV2Templates from "@/pages/admin-cms-v2-templates";
 import AdminCmsV2Themes from "@/pages/admin-cms-v2-themes";
 import AdminCmsV2Seo from "@/pages/admin-cms-v2-seo";
+import AdminCmsV2Builder from "@/pages/admin-cms-v2-builder";
 import PageView from "@/pages/page-view";
 import Shop from "@/pages/shop";
 import BecomeAffiliate from "@/pages/become-affiliate";
@@ -105,6 +106,7 @@ function Router() {
       <Route path="/admin/media" component={AdminMediaLibrary} />
       <Route path="/admin/support" component={AdminSupport} />
       <Route path="/admin/affiliate-invite-sender" component={AdminAffiliateInviteSender} />
+      <Route path="/admin/cms-v2/pages/:id/builder" component={AdminCmsV2Builder} />
       <Route path="/admin/cms-v2/pages" component={AdminCmsV2Pages} />
       <Route path="/admin/cms-v2/sections" component={AdminCmsV2Sections} />
       <Route path="/admin/cms-v2/templates" component={AdminCmsV2Templates} />

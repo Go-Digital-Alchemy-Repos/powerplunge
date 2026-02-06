@@ -78,15 +78,22 @@ export default function AdminCmsV2Pages() {
                       <p className="text-xs text-gray-500 mt-0.5">/{page.slug}</p>
                     </div>
                   </div>
-                  <Badge
-                    variant="outline"
-                    className={page.status === "published"
-                      ? "border-green-700 text-green-400"
-                      : "border-yellow-700 text-yellow-400"}
-                    data-testid={`badge-status-${page.id}`}
-                  >
-                    {page.status}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      variant="outline"
+                      className={page.status === "published"
+                        ? "border-green-700 text-green-400"
+                        : "border-yellow-700 text-yellow-400"}
+                      data-testid={`badge-status-${page.id}`}
+                    >
+                      {page.status}
+                    </Badge>
+                    <Link href={`/admin/cms-v2/pages/${page.id}/builder`}>
+                      <Button size="sm" variant="outline" className="border-cyan-700 text-cyan-400 hover:bg-cyan-900/30" data-testid={`button-edit-${page.id}`}>
+                        Edit
+                      </Button>
+                    </Link>
+                  </div>
                 </CardContent>
               </Card>
             ))}
