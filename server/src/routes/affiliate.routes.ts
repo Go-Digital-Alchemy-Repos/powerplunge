@@ -3,7 +3,7 @@ import { affiliateCommissionService } from "../services/affiliate-commission.ser
 import { affiliatePayoutService } from "../services/affiliate-payout.service";
 import { db } from "../../db";
 import { storage } from "../../storage";
-import { affiliates, affiliatePayouts, affiliateReferrals, affiliateSettings, customers } from "@shared/schema";
+import { affiliates, affiliatePayouts, affiliateReferrals, affiliateSettings, affiliateAgreements, affiliateClicks, affiliatePayoutAccounts, affiliateInvites, customers } from "@shared/schema";
 import { eq, and, sql, desc, inArray } from "drizzle-orm";
 import {
   payoutRequestSchema,
@@ -683,6 +683,46 @@ router.post(
     } catch (error: any) {
       console.error("Failed to run payout batch:", error);
       res.status(500).json({ error: { code: "PAYOUT_BATCH_ERROR", message: error.message } });
+    }
+  }
+);
+
+// Admin: Permanently delete an affiliate and all related data
+router.delete(
+  "/:affiliateId",
+  validateParams(affiliateIdSchema),
+  async (req: Request, res: Response) => {
+    try {
+      const { affiliateId } = req.params;
+      const adminId = (req.session as any)?.adminId || "system";
+
+      const affiliate = await storage.getAffiliate(affiliateId);
+      if (!affiliate) {
+        return res.status(404).json({ error: { code: "NOT_FOUND", message: "Affiliate not found" } });
+      }
+
+      await db.transaction(async (tx) => {
+        await tx.delete(affiliatePayouts).where(eq(affiliatePayouts.affiliateId, affiliateId));
+        await tx.delete(affiliateReferrals).where(eq(affiliateReferrals.affiliateId, affiliateId));
+        await tx.delete(affiliateClicks).where(eq(affiliateClicks.affiliateId, affiliateId));
+        await tx.delete(affiliateAgreements).where(eq(affiliateAgreements.affiliateId, affiliateId));
+        await tx.delete(affiliatePayoutAccounts).where(eq(affiliatePayoutAccounts.affiliateId, affiliateId));
+        await tx.update(affiliateInvites)
+          .set({ usedByAffiliateId: null })
+          .where(eq(affiliateInvites.usedByAffiliateId, affiliateId));
+        await tx.delete(affiliates).where(eq(affiliates.id, affiliateId));
+      });
+
+      await createAuditLog(adminId, "affiliate.deleted", "affiliate", affiliateId, {
+        affiliateCode: affiliate.affiliateCode,
+        customerId: affiliate.customerId,
+      });
+
+      console.log(`[AFFILIATE] Deleted affiliate ${affiliateId} (code: ${affiliate.affiliateCode})`);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Failed to delete affiliate:", error);
+      res.status(500).json({ error: { code: "DELETE_ERROR", message: error.message } });
     }
   }
 );

@@ -391,6 +391,25 @@ export default function AdminAffiliates() {
     },
   });
 
+  // Delete affiliate mutation
+  const deleteAffiliateMutation = useMutation({
+    mutationFn: async (affiliateId: string) => {
+      const res = await fetch(`/api/admin/affiliates-v2/${affiliateId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Failed to delete affiliate");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/affiliates-v2/leaderboard"] });
+      setSelectedAffiliateId(null);
+      toast({ title: "Affiliate deleted", description: "The affiliate and all related data have been permanently removed." });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
   // Review approve mutation
   const reviewApproveMutation = useMutation({
     mutationFn: async ({ commissionId, notes }: { commissionId: string; notes?: string }) => {
@@ -845,14 +864,30 @@ export default function AdminAffiliates() {
                         </TableCell>
                         <TableCell className="text-right">{affiliate.totalOrders}</TableCell>
                         <TableCell className="text-right">
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={(e) => { e.stopPropagation(); setSelectedAffiliateId(affiliate.affiliateId); }}
-                            data-testid={`button-view-${affiliate.affiliateId}`}
-                          >
-                            <Eye className="w-4 h-4" />
-                          </Button>
+                          <div className="flex items-center justify-end gap-1">
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={(e) => { e.stopPropagation(); setSelectedAffiliateId(affiliate.affiliateId); }}
+                              data-testid={`button-view-${affiliate.affiliateId}`}
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (window.confirm(`Permanently delete affiliate "${affiliate.customerName}" (${affiliate.affiliateCode})? This will remove all their commissions, referrals, payouts, and click data. This cannot be undone.`)) {
+                                  deleteAffiliateMutation.mutate(affiliate.affiliateId);
+                                }
+                              }}
+                              disabled={deleteAffiliateMutation.isPending}
+                              data-testid={`button-delete-affiliate-${affiliate.affiliateId}`}
+                            >
+                              <Trash2 className="w-4 h-4 text-destructive" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
