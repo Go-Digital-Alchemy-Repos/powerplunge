@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Check, Star, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Play, Shield, Award, Zap, Heart, ThermometerSnowflake, Snowflake, Timer, Truck, Filter, Gauge, Volume2, Dumbbell, Building2, HeartPulse, Sparkles, Minus, Plus, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import UnknownBlock from "@/components/UnknownBlock";
 import { getIconWithFallback } from "@/lib/iconUtils";
 
 interface BlockSettings {
@@ -1060,6 +1061,16 @@ const blockComponents: Record<string, React.FC<{ data: Record<string, any>; sett
   iconGrid: IconGridBlock,
 };
 
+function resolveBlockComponent(type: string): React.FC<{ data: Record<string, any>; settings?: BlockSettings; onAddToCart?: (productId: string, quantity: number) => void }> | null {
+  if (blockComponents[type]) return blockComponents[type];
+  try {
+    const { getBlock } = require("@/lib/blockRegistry");
+    const entry = getBlock(type);
+    if (entry?.renderComponent) return entry.renderComponent as any;
+  } catch {}
+  return null;
+}
+
 // Safe accessor for nested data with defaults
 const safeGet = <T,>(obj: Record<string, any> | undefined | null, key: string, defaultValue: T): T => {
   if (!obj || obj[key] === undefined || obj[key] === null) return defaultValue;
@@ -1090,11 +1101,18 @@ export default function PageRenderer({ contentJson, legacyContent, onAddToCart }
 
           // Normalize block to ensure all required fields exist
           const normalizedBlock = normalizeBlock(block);
-          const BlockComponent = blockComponents[normalizedBlock.type];
+          const BlockComponent = resolveBlockComponent(normalizedBlock.type);
           
           if (!BlockComponent) {
-            console.warn(`Unknown block type: ${normalizedBlock.type}`);
-            return null;
+            return (
+              <div
+                key={normalizedBlock.id}
+                id={normalizedBlock.settings?.anchor}
+                data-testid={`block-container-${normalizedBlock.id}`}
+              >
+                <UnknownBlock data={normalizedBlock.data} blockType={normalizedBlock.type} />
+              </div>
+            );
           }
 
           return (
