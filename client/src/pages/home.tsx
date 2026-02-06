@@ -2,12 +2,13 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Check, ShoppingCart, Zap, Shield, Snowflake, Timer, X, Plus, Minus, Truck, Award, HeartPulse, Dumbbell, Building2, Sparkles, ThermometerSnowflake, Volume2, Filter, Gauge, User, LogOut, Settings, Link2 } from "lucide-react";
+import { Check, ShoppingCart, Zap, Shield, Snowflake, Timer, X, Plus, Minus, Truck, Award, HeartPulse, Dumbbell, Building2, Sparkles, ThermometerSnowflake, Volume2, Filter, Gauge, User, LogOut, Settings, Link2, Headphones, Package, LayoutDashboard } from "lucide-react";
 import CartUpsells from "@/components/CartUpsells";
 import PageRenderer from "@/components/PageRenderer";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useCustomerAuth } from "@/hooks/use-customer-auth";
+import { useAdmin } from "@/hooks/use-admin";
 import chillerImage from "@assets/power_plunge_1hp_chiller_mockup_1767902865789.png";
 import tubImage from "@assets/power_plunge_portable_tub_mockup_1767902865790.png";
 import logoImage from "@assets/powerplungelogo_1767907611722.png";
@@ -92,6 +93,7 @@ export default function Home() {
   const [product, setProduct] = useState<Product>(fallbackProduct);
   const [quantity, setQuantity] = useState(1);
   const { customer, isLoading: authLoading, isAuthenticated, logout, getAuthHeader } = useCustomerAuth();
+  const { admin, isAuthenticated: isAdminAuthenticated } = useAdmin();
 
   const { data: homePage, isLoading: isHomePageLoading } = useQuery<HomePage>({
     queryKey: ["/api/pages/home"],
@@ -235,11 +237,40 @@ export default function Home() {
                       <ShoppingCart className="w-4 h-4 mr-2" />
                       My Orders
                     </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setLocation("/my-account")} data-testid="menu-account-details">
+                      <Settings className="w-4 h-4 mr-2" />
+                      Account Details
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setLocation("/my-account")} data-testid="menu-support">
+                      <Headphones className="w-4 h-4 mr-2" />
+                      Support
+                    </DropdownMenuItem>
                     {isAffiliate && (
-                      <DropdownMenuItem onClick={() => setLocation("/affiliate-portal")} data-testid="menu-affiliate-dashboard">
-                        <Link2 className="w-4 h-4 mr-2 text-primary" />
-                        Affiliate Portal
-                      </DropdownMenuItem>
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => setLocation("/affiliate-portal")} data-testid="menu-affiliate-dashboard">
+                          <Link2 className="w-4 h-4 mr-2 text-primary" />
+                          Affiliate Portal
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                    {isAdminAuthenticated && (admin?.role === "admin" || admin?.role === "store_manager") && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => setLocation("/admin/dashboard")} data-testid="menu-admin-dashboard">
+                          <LayoutDashboard className="w-4 h-4 mr-2" />
+                          Admin Dashboard
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                    {isAdminAuthenticated && admin?.role === "fulfillment" && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => setLocation("/admin/orders")} data-testid="menu-fulfillment">
+                          <Package className="w-4 h-4 mr-2" />
+                          Fulfillment
+                        </DropdownMenuItem>
+                      </>
                     )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => logout()} data-testid="menu-logout">
