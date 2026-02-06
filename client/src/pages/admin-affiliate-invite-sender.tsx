@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAdmin } from "@/hooks/use-admin";
 import AdminNav from "@/components/admin/AdminNav";
-import { Mail, Send, Copy, Check, Loader2, Link2, UserPlus, Share2 } from "lucide-react";
+import { Mail, Copy, Check, Loader2, Link2, UserPlus, Share2, MessageSquare } from "lucide-react";
 
 interface InviteResponse {
   invite: {
@@ -59,8 +59,9 @@ export default function AdminAffiliateInviteSender() {
       if (!res.ok) throw new Error(result.message || "Failed to send invite");
       return result as InviteResponse;
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       setLastResult(data);
+
       if (data.emailSent) {
         toast({
           title: "Invite Sent!",
@@ -75,7 +76,10 @@ export default function AdminAffiliateInviteSender() {
           variant: data.emailError ? "destructive" : "default",
         });
       }
+
       setFormData(prev => ({ ...prev, targetEmail: "", targetName: "", notes: "" }));
+
+      await triggerNativeShare(data);
     },
     onError: (error: any) => {
       toast({
@@ -85,6 +89,33 @@ export default function AdminAffiliateInviteSender() {
       });
     },
   });
+
+  const triggerNativeShare = async (data: InviteResponse) => {
+    const shareText = data.invite.targetName
+      ? `Hi ${data.invite.targetName}, here's your private affiliate signup link for Power Plunge: ${data.inviteUrl}`
+      : `Here's your private affiliate signup link for Power Plunge: ${data.inviteUrl}`;
+
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({
+          title: "Power Plunge Affiliate Invite",
+          text: shareText,
+          url: data.inviteUrl,
+        });
+        toast({
+          title: "Shared!",
+          description: "Invite link shared successfully.",
+        });
+      } catch (err: any) {
+        if (err.name !== "AbortError") {
+          toast({
+            title: "Share cancelled",
+            description: "You can still copy or share the link below.",
+          });
+        }
+      }
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,6 +141,31 @@ export default function AdminAffiliateInviteSender() {
       setTimeout(() => setCopied(false), 2000);
     }
   };
+
+  const handleShareAgain = async () => {
+    if (!lastResult) return;
+    await triggerNativeShare(lastResult);
+  };
+
+  const handleSmsShare = () => {
+    if (!lastResult) return;
+    const body = lastResult.invite.targetName
+      ? `Hi ${lastResult.invite.targetName}, here's your Power Plunge affiliate signup link: ${lastResult.inviteUrl}`
+      : `Here's your Power Plunge affiliate signup link: ${lastResult.inviteUrl}`;
+    window.open(`sms:?body=${encodeURIComponent(body)}`, "_self");
+  };
+
+  const handleEmailShare = () => {
+    if (!lastResult) return;
+    const subject = "You're Invited to the Power Plunge Affiliate Program";
+    const body = lastResult.invite.targetName
+      ? `Hi ${lastResult.invite.targetName},\n\nYou've been invited to join the Power Plunge affiliate program! Use the link below to sign up:\n\n${lastResult.inviteUrl}\n\nBest regards`
+      : `You've been invited to join the Power Plunge affiliate program! Use the link below to sign up:\n\n${lastResult.inviteUrl}\n\nBest regards`;
+    const mailto = `mailto:${lastResult.invite.targetEmail || ""}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.open(mailto, "_self");
+  };
+
+  const supportsNativeShare = typeof navigator !== "undefined" && !!navigator.share;
 
   if (adminLoading) {
     return (
@@ -218,21 +274,27 @@ export default function AdminAffiliateInviteSender() {
               <Button
                 type="submit"
                 disabled={sendInviteMutation.isPending || !formData.targetEmail.trim()}
-                className="w-full h-12 text-base font-semibold"
+                className="w-full h-14 text-base font-semibold"
                 data-testid="button-send-invite"
               >
                 {sendInviteMutation.isPending ? (
                   <>
                     <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    Sending...
+                    Creating...
                   </>
                 ) : (
                   <>
-                    <Send className="w-5 h-5 mr-2" />
-                    Create & Send Invite
+                    <Share2 className="w-5 h-5 mr-2" />
+                    Create & Share Invite
                   </>
                 )}
               </Button>
+
+              {supportsNativeShare && (
+                <p className="text-xs text-center text-muted-foreground">
+                  Tap Share to send via Messages, Mail, WhatsApp, etc.
+                </p>
+              )}
             </form>
           </CardContent>
         </Card>
@@ -250,7 +312,7 @@ export default function AdminAffiliateInviteSender() {
                   : "Share the link below manually"}
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-4">
               <div className="flex gap-2">
                 <Input
                   value={lastResult.inviteUrl}
@@ -268,6 +330,54 @@ export default function AdminAffiliateInviteSender() {
                   {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
                 </Button>
               </div>
+
+              <div className="grid grid-cols-1 gap-2">
+                {supportsNativeShare && (
+                  <Button
+                    variant="default"
+                    className="w-full h-12 text-base font-semibold"
+                    onClick={handleShareAgain}
+                    data-testid="button-share-again"
+                  >
+                    <Share2 className="w-5 h-5 mr-2" />
+                    Share Again
+                  </Button>
+                )}
+
+                {!supportsNativeShare && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      variant="outline"
+                      className="h-12 text-base"
+                      onClick={handleSmsShare}
+                      data-testid="button-share-sms"
+                    >
+                      <MessageSquare className="w-5 h-5 mr-2" />
+                      Text / SMS
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="h-12 text-base"
+                      onClick={handleEmailShare}
+                      data-testid="button-share-email"
+                    >
+                      <Mail className="w-5 h-5 mr-2" />
+                      Email
+                    </Button>
+                  </div>
+                )}
+
+                <Button
+                  variant="outline"
+                  className="w-full h-12 text-base"
+                  onClick={() => copyToClipboard(lastResult.inviteUrl)}
+                  data-testid="button-copy-link"
+                >
+                  {copied ? <Check className="w-5 h-5 mr-2 text-green-500" /> : <Copy className="w-5 h-5 mr-2" />}
+                  {copied ? "Copied!" : "Copy Link"}
+                </Button>
+              </div>
+
               {!lastResult.emailSent && lastResult.emailError && (
                 <p className="text-sm text-amber-600" data-testid="text-email-warning">
                   Email not sent: {lastResult.emailError}

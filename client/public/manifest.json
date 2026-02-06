@@ -2,7 +2,7 @@
   "name": "Power Plunge",
   "short_name": "Power Plunge",
   "description": "Power Plunge Admin & Affiliate Portal",
-  "start_url": "/admin/dashboard",
+  "start_url": "/admin/affiliate-invite-sender",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#0891b2",
