@@ -1,11 +1,14 @@
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useEffect } from "react";
 import { useAdmin } from "@/hooks/use-admin";
 import { useRoute, useLocation } from "wouter";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import AdminNav from "@/components/admin/AdminNav";
-import { ArrowLeft, Save, Globe, Layers, Unlink } from "lucide-react";
+import { ArrowLeft, Save, Globe, Layers, Unlink, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Puck, usePuck, type Config, type Data } from "@puckeditor/core";
 import "@puckeditor/core/dist/index.css";
@@ -18,6 +21,19 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 
 registerAllBlocks();
@@ -123,6 +139,223 @@ interface SavedSection {
   description: string | null;
   category: string | null;
   blocks: any[];
+}
+
+interface SeoData {
+  metaTitle: string;
+  metaDescription: string;
+  canonicalUrl: string;
+  robots: string;
+  ogTitle: string;
+  ogDescription: string;
+  ogImage: string;
+  twitterCard: string;
+  twitterTitle: string;
+  twitterDescription: string;
+  twitterImage: string;
+  jsonLd: string;
+}
+
+function SeoPanel({ open, onOpenChange, seo, onSeoChange }: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  seo: SeoData;
+  onSeoChange: (seo: SeoData) => void;
+}) {
+  const update = (field: keyof SeoData, value: string) => {
+    onSeoChange({ ...seo, [field]: value });
+  };
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" className="bg-gray-900 border-gray-700 text-white w-[420px] sm:max-w-[420px] overflow-y-auto" data-testid="panel-seo">
+        <SheetHeader>
+          <SheetTitle className="text-white flex items-center gap-2">
+            <Search className="w-5 h-5 text-cyan-400" />
+            SEO Settings
+          </SheetTitle>
+        </SheetHeader>
+
+        <div className="space-y-6 mt-6">
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-cyan-400 uppercase tracking-wider">Basic</h3>
+
+            <div className="space-y-2">
+              <Label className="text-gray-300">Meta Title</Label>
+              <Input
+                value={seo.metaTitle}
+                onChange={(e) => update("metaTitle", e.target.value)}
+                placeholder="Page title for search engines"
+                className="bg-gray-800 border-gray-700 text-white"
+                data-testid="input-seo-meta-title"
+              />
+              <p className="text-xs text-gray-500">{seo.metaTitle.length}/60 characters</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-gray-300">Meta Description</Label>
+              <Textarea
+                value={seo.metaDescription}
+                onChange={(e) => update("metaDescription", e.target.value)}
+                placeholder="Brief description for search results"
+                className="bg-gray-800 border-gray-700 text-white"
+                rows={3}
+                data-testid="input-seo-meta-description"
+              />
+              <p className="text-xs text-gray-500">{seo.metaDescription.length}/160 characters</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-gray-300">Canonical URL</Label>
+              <Input
+                value={seo.canonicalUrl}
+                onChange={(e) => update("canonicalUrl", e.target.value)}
+                placeholder="https://example.com/page"
+                className="bg-gray-800 border-gray-700 text-white"
+                data-testid="input-seo-canonical"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-gray-300">Robots</Label>
+              <Select value={seo.robots || "index, follow"} onValueChange={(val) => update("robots", val)}>
+                <SelectTrigger className="bg-gray-800 border-gray-700 text-white" data-testid="select-seo-robots">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-700 text-white">
+                  <SelectItem value="index, follow">index, follow</SelectItem>
+                  <SelectItem value="noindex, follow">noindex, follow</SelectItem>
+                  <SelectItem value="index, nofollow">index, nofollow</SelectItem>
+                  <SelectItem value="noindex, nofollow">noindex, nofollow</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-cyan-400 uppercase tracking-wider">Open Graph</h3>
+
+            <div className="space-y-2">
+              <Label className="text-gray-300">OG Title</Label>
+              <Input
+                value={seo.ogTitle}
+                onChange={(e) => update("ogTitle", e.target.value)}
+                placeholder="Title for social sharing (defaults to meta title)"
+                className="bg-gray-800 border-gray-700 text-white"
+                data-testid="input-seo-og-title"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-gray-300">OG Description</Label>
+              <Textarea
+                value={seo.ogDescription}
+                onChange={(e) => update("ogDescription", e.target.value)}
+                placeholder="Description for social sharing"
+                className="bg-gray-800 border-gray-700 text-white"
+                rows={2}
+                data-testid="input-seo-og-description"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-gray-300">OG Image URL</Label>
+              <Input
+                value={seo.ogImage}
+                onChange={(e) => update("ogImage", e.target.value)}
+                placeholder="https://example.com/image.jpg"
+                className="bg-gray-800 border-gray-700 text-white"
+                data-testid="input-seo-og-image"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-cyan-400 uppercase tracking-wider">Twitter Card</h3>
+
+            <div className="space-y-2">
+              <Label className="text-gray-300">Card Type</Label>
+              <Select value={seo.twitterCard || "summary_large_image"} onValueChange={(val) => update("twitterCard", val)}>
+                <SelectTrigger className="bg-gray-800 border-gray-700 text-white" data-testid="select-seo-twitter-card">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-700 text-white">
+                  <SelectItem value="summary">summary</SelectItem>
+                  <SelectItem value="summary_large_image">summary_large_image</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-gray-300">Twitter Title</Label>
+              <Input
+                value={seo.twitterTitle}
+                onChange={(e) => update("twitterTitle", e.target.value)}
+                placeholder="Defaults to OG title"
+                className="bg-gray-800 border-gray-700 text-white"
+                data-testid="input-seo-twitter-title"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-gray-300">Twitter Description</Label>
+              <Input
+                value={seo.twitterDescription}
+                onChange={(e) => update("twitterDescription", e.target.value)}
+                placeholder="Defaults to OG description"
+                className="bg-gray-800 border-gray-700 text-white"
+                data-testid="input-seo-twitter-desc"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-gray-300">Twitter Image URL</Label>
+              <Input
+                value={seo.twitterImage}
+                onChange={(e) => update("twitterImage", e.target.value)}
+                placeholder="Defaults to OG image"
+                className="bg-gray-800 border-gray-700 text-white"
+                data-testid="input-seo-twitter-image"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-cyan-400 uppercase tracking-wider">Structured Data</h3>
+
+            <div className="space-y-2">
+              <Label className="text-gray-300">JSON-LD</Label>
+              <Textarea
+                value={seo.jsonLd}
+                onChange={(e) => update("jsonLd", e.target.value)}
+                placeholder={'{\n  "@context": "https://schema.org",\n  "@type": "WebPage",\n  "name": "..."\n}'}
+                className="bg-gray-800 border-gray-700 text-white font-mono text-xs"
+                rows={8}
+                data-testid="input-seo-json-ld"
+              />
+              {seo.jsonLd && (() => {
+                try { JSON.parse(seo.jsonLd); return <p className="text-xs text-green-400">Valid JSON</p>; }
+                catch { return <p className="text-xs text-red-400">Invalid JSON</p>; }
+              })()}
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-gray-700 bg-gray-800/50 p-4 space-y-2">
+            <h3 className="text-sm font-semibold text-white">Preview</h3>
+            <div className="text-blue-400 text-sm truncate" data-testid="text-seo-preview-title">
+              {seo.metaTitle || seo.ogTitle || "Page Title"}
+            </div>
+            <div className="text-green-400 text-xs truncate">
+              {seo.canonicalUrl || "https://example.com/page"}
+            </div>
+            <div className="text-gray-400 text-xs line-clamp-2" data-testid="text-seo-preview-desc">
+              {seo.metaDescription || seo.ogDescription || "Page description will appear here..."}
+            </div>
+          </div>
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
 }
 
 function InsertSectionButton({ onInsert }: { onInsert: (section: SavedSection) => void }) {
@@ -270,7 +503,7 @@ function DetachSectionButton({ pageId, pageTitle, onDone }: { pageId: string; pa
   );
 }
 
-function SaveDraftButton({ pageId, pageTitle, onDone }: { pageId: string; pageTitle: string; onDone: () => void }) {
+function SaveDraftButton({ pageId, pageTitle, seoData, onDone }: { pageId: string; pageTitle: string; seoData: SeoData; onDone: () => void }) {
   const { appState } = usePuck();
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
@@ -280,13 +513,32 @@ function SaveDraftButton({ pageId, pageTitle, onDone }: { pageId: string; pageTi
     try {
       const contentJson = puckDataToContentJson(appState.data);
       const title = (appState.data.root as any)?.props?.title || pageTitle;
+      let parsedJsonLd: any = null;
+      if (seoData.jsonLd) {
+        try { parsedJsonLd = JSON.parse(seoData.jsonLd); } catch {}
+      }
       const res = await fetch(`/api/admin/cms-v2/pages/${pageId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contentJson, title }),
+        body: JSON.stringify({
+          contentJson,
+          title,
+          metaTitle: seoData.metaTitle || null,
+          metaDescription: seoData.metaDescription || null,
+          canonicalUrl: seoData.canonicalUrl || null,
+          robots: seoData.robots || "index, follow",
+          ogTitle: seoData.ogTitle || null,
+          ogDescription: seoData.ogDescription || null,
+          ogImage: seoData.ogImage || null,
+          twitterCard: seoData.twitterCard || "summary_large_image",
+          twitterTitle: seoData.twitterTitle || null,
+          twitterDescription: seoData.twitterDescription || null,
+          twitterImage: seoData.twitterImage || null,
+          jsonLd: parsedJsonLd,
+        }),
       });
       if (!res.ok) throw new Error("Save failed");
-      toast({ title: "Draft saved", description: "Your changes have been saved." });
+      toast({ title: "Draft saved", description: "Content and SEO settings saved." });
       onDone();
     } catch {
       toast({ title: "Error", description: "Failed to save draft.", variant: "destructive" });
@@ -310,7 +562,7 @@ function SaveDraftButton({ pageId, pageTitle, onDone }: { pageId: string; pageTi
   );
 }
 
-function PublishButton({ pageId, pageTitle, onDone }: { pageId: string; pageTitle: string; onDone: () => void }) {
+function PublishButton({ pageId, pageTitle, seoData, onDone }: { pageId: string; pageTitle: string; seoData: SeoData; onDone: () => void }) {
   const { appState } = usePuck();
   const [publishing, setPublishing] = useState(false);
   const { toast } = useToast();
@@ -320,14 +572,33 @@ function PublishButton({ pageId, pageTitle, onDone }: { pageId: string; pageTitl
     try {
       const contentJson = puckDataToContentJson(appState.data);
       const title = (appState.data.root as any)?.props?.title || pageTitle;
+      let parsedJsonLd: any = null;
+      if (seoData.jsonLd) {
+        try { parsedJsonLd = JSON.parse(seoData.jsonLd); } catch {}
+      }
       await fetch(`/api/admin/cms-v2/pages/${pageId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contentJson, title }),
+        body: JSON.stringify({
+          contentJson,
+          title,
+          metaTitle: seoData.metaTitle || null,
+          metaDescription: seoData.metaDescription || null,
+          canonicalUrl: seoData.canonicalUrl || null,
+          robots: seoData.robots || "index, follow",
+          ogTitle: seoData.ogTitle || null,
+          ogDescription: seoData.ogDescription || null,
+          ogImage: seoData.ogImage || null,
+          twitterCard: seoData.twitterCard || "summary_large_image",
+          twitterTitle: seoData.twitterTitle || null,
+          twitterDescription: seoData.twitterDescription || null,
+          twitterImage: seoData.twitterImage || null,
+          jsonLd: parsedJsonLd,
+        }),
       });
       const pubRes = await fetch(`/api/admin/cms-v2/pages/${pageId}/publish`, { method: "POST" });
       if (!pubRes.ok) throw new Error("Publish failed");
-      toast({ title: "Published", description: "Page is now live." });
+      toast({ title: "Published", description: "Page and SEO settings are now live." });
       onDone();
     } catch {
       toast({ title: "Error", description: "Failed to publish.", variant: "destructive" });
@@ -357,11 +628,45 @@ export default function AdminCmsV2Builder() {
   const queryClient = useQueryClient();
   const pageId = params?.id;
   const [puckKey, setPuckKey] = useState(0);
+  const [seoOpen, setSeoOpen] = useState(false);
+  const [seoData, setSeoData] = useState<SeoData>({
+    metaTitle: "",
+    metaDescription: "",
+    canonicalUrl: "",
+    robots: "index, follow",
+    ogTitle: "",
+    ogDescription: "",
+    ogImage: "",
+    twitterCard: "summary_large_image",
+    twitterTitle: "",
+    twitterDescription: "",
+    twitterImage: "",
+    jsonLd: "",
+  });
 
   const { data: page, isLoading } = useQuery<any>({
     queryKey: [`/api/admin/cms-v2/pages/${pageId}`],
     enabled: !!pageId && hasFullAccess,
   });
+
+  useEffect(() => {
+    if (page) {
+      setSeoData({
+        metaTitle: page.metaTitle || "",
+        metaDescription: page.metaDescription || "",
+        canonicalUrl: page.canonicalUrl || "",
+        robots: page.robots || "index, follow",
+        ogTitle: page.ogTitle || "",
+        ogDescription: page.ogDescription || "",
+        ogImage: page.ogImage || "",
+        twitterCard: page.twitterCard || "summary_large_image",
+        twitterTitle: page.twitterTitle || "",
+        twitterDescription: page.twitterDescription || "",
+        twitterImage: page.twitterImage || "",
+        jsonLd: page.jsonLd ? (typeof page.jsonLd === "string" ? page.jsonLd : JSON.stringify(page.jsonLd, null, 2)) : "",
+      });
+    }
+  }, [page]);
 
   const puckConfig = useMemo(() => buildPuckConfig(), []);
 
@@ -448,10 +753,22 @@ export default function AdminCmsV2Builder() {
             </Badge>
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-cyan-700 text-cyan-400 hover:bg-cyan-900/30"
+              onClick={() => setSeoOpen(true)}
+              data-testid="button-open-seo"
+            >
+              <Search className="w-4 h-4 mr-1" />
+              SEO
+            </Button>
             <InsertSectionButton onInsert={handleInsertSection} />
           </div>
         </div>
       </div>
+
+      <SeoPanel open={seoOpen} onOpenChange={setSeoOpen} seo={seoData} onSeoChange={setSeoData} />
 
       <div className="puck-builder-container" data-testid="puck-editor-container" key={puckKey}>
         <Puck
@@ -462,8 +779,8 @@ export default function AdminCmsV2Builder() {
               <>
                 {children}
                 <DetachSectionButton pageId={pageId!} pageTitle={page?.title || ""} onDone={invalidateQueries} />
-                <SaveDraftButton pageId={pageId!} pageTitle={page?.title || ""} onDone={invalidateQueries} />
-                <PublishButton pageId={pageId!} pageTitle={page?.title || ""} onDone={invalidateQueries} />
+                <SaveDraftButton pageId={pageId!} pageTitle={page?.title || ""} seoData={seoData} onDone={invalidateQueries} />
+                <PublishButton pageId={pageId!} pageTitle={page?.title || ""} seoData={seoData} onDone={invalidateQueries} />
               </>
             ),
           }}

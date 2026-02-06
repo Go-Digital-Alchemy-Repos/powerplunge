@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Check, ShoppingCart, Zap, Shield, Snowflake, Timer, X, Plus, Minus, Truck, Award, HeartPulse, Dumbbell, Building2, Sparkles, ThermometerSnowflake, Volume2, Filter, Gauge, User, LogOut, Settings, Link2, Headphones, Package, LayoutDashboard } from "lucide-react";
 import CartUpsells from "@/components/CartUpsells";
 import PageRenderer from "@/components/PageRenderer";
+import SeoHead from "@/components/SeoHead";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useCustomerAuth } from "@/hooks/use-customer-auth";
@@ -29,6 +30,18 @@ interface HomePage {
   title: string;
   contentJson: PageContentJson | null;
   content: string | null;
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+  canonicalUrl?: string | null;
+  robots?: string | null;
+  ogTitle?: string | null;
+  ogDescription?: string | null;
+  ogImage?: string | null;
+  twitterCard?: string | null;
+  twitterTitle?: string | null;
+  twitterDescription?: string | null;
+  twitterImage?: string | null;
+  jsonLd?: any;
 }
 
 interface CartItem {
