@@ -1,91 +1,204 @@
-# Theme System
+# Theme Tokens v1
 
-The CMS v2 theme system provides 10 built-in CSS-variable theme presets that control the visual appearance of the entire storefront. Themes can be activated instantly from the admin panel.
+The CMS v2 theme system uses a structured token schema to control the visual appearance of the storefront. Tokens are organized into seven groups (colors, typography, radius, shadows, spacing, buttons, layout) and are applied to the DOM as CSS custom properties prefixed with `--pp-`.
 
 ## Architecture
 
 ```
-shared/themePresets.ts              → Theme preset definitions
-client/src/components/ThemeProvider.tsx  → Injects CSS variables into :root
-server/src/routes/admin/cms-v2.router.ts → Theme API endpoints
+client/src/cms/themes/
+  themeTokens.types.ts      → TypeScript interfaces for all token groups
+  themeTokens.defaults.ts   → Default token values (Ocean Blue base)
+  presets.ts                → 10 built-in theme presets with descriptions
+  applyTheme.ts             → CSS variable injection (applyThemeTokens, clearThemeTokens)
+
+server/src/
+  routes/admin/cms-v2.router.ts   → Theme API endpoints
+  services/cms-v2.service.ts      → Theme activation logic
 ```
 
-## CSS Variables
+### Data Flow
 
-Each theme defines 15 CSS custom properties:
+1. Admin selects a theme preset in `/admin/cms-v2/themes`
+2. Preview mode: `applyThemeTokens(tokens, "preview")` applies variables to `[data-pp-theme-scope]` element
+3. Activate: `POST /api/admin/cms-v2/themes/activate` stores the preset ID in `site_settings.active_theme_id`
+4. Public pages: `ThemeProvider` fetches `GET /api/theme/active` and injects CSS variables into `:root`
+5. All themed UI reads from `var(--pp-*)` CSS custom properties
 
-| Variable | Purpose | Example (Arctic Default) |
-|----------|---------|-------------------------|
-| `--theme-bg` | Page background | `#030712` |
-| `--theme-bg-card` | Card/panel background | `#111827` |
-| `--theme-bg-elevated` | Elevated surface background | `#1f2937` |
-| `--theme-text` | Primary text color | `#f9fafb` |
-| `--theme-text-muted` | Secondary/muted text | `#9ca3af` |
-| `--theme-primary` | Primary accent color | `#67e8f9` |
-| `--theme-primary-hover` | Primary hover state | `#22d3ee` |
-| `--theme-primary-muted` | Primary with low opacity | `rgba(103,232,249,0.15)` |
-| `--theme-accent` | Secondary accent | `#06b6d4` |
-| `--theme-border` | Border color | `#374151` |
-| `--theme-success` | Success state color | `#34d399` |
-| `--theme-error` | Error state color | `#f87171` |
-| `--theme-warning` | Warning state color | `#fbbf24` |
-| `--theme-radius` | Border radius | `0.5rem` |
-| `--theme-font` | Font family | `'Inter', sans-serif` |
+## Token Schema Reference
 
-## Available Presets
+### Colors (`ThemeColorTokens`)
 
-| ID | Name | Accent Color |
-|----|------|-------------|
-| `arctic-default` | Arctic Default | Icy cyan (`#67e8f9`) |
-| `midnight-blue` | Midnight Blue | Electric blue (`#60a5fa`) |
-| `emerald-dark` | Emerald Dark | Green (`#34d399`) |
-| `sunset-warmth` | Sunset Warmth | Amber (`#fb923c`) |
-| `royal-purple` | Royal Purple | Violet (`#c084fc`) |
-| `rose-gold` | Rose Gold | Pink (`#fb7185`) |
-| `slate-minimal` | Slate Minimal | Neutral gray (`#94a3b8`) |
-| `ocean-teal` | Ocean Teal | Teal (`#2dd4bf`) |
-| `golden-luxury` | Golden Luxury | Gold (`#eab308`) |
-| `nordic-frost` | Nordic Frost | Silver (`#e2e8f0`) |
+15 color tokens control the entire color palette:
 
-All presets use the Inter font and dark backgrounds.
+| Token | CSS Variable | Purpose |
+|-------|-------------|---------|
+| `colorBg` | `--pp-bg` | Page background |
+| `colorSurface` | `--pp-surface` | Card/panel background |
+| `colorSurfaceAlt` | `--pp-surface-alt` | Elevated/alternate surface |
+| `colorText` | `--pp-text` | Primary text color |
+| `colorTextMuted` | `--pp-text-muted` | Secondary/muted text |
+| `colorBorder` | `--pp-border` | Border color |
+| `colorPrimary` | `--pp-primary` | Primary brand color (buttons, links) |
+| `colorPrimaryText` | `--pp-primary-text` | Text on primary background |
+| `colorSecondary` | `--pp-secondary` | Secondary brand color |
+| `colorSecondaryText` | `--pp-secondary-text` | Text on secondary background |
+| `colorAccent` | `--pp-accent` | Accent/highlight color |
+| `colorAccentText` | `--pp-accent-text` | Text on accent background |
+| `colorSuccess` | `--pp-success` | Success state |
+| `colorWarning` | `--pp-warning` | Warning state |
+| `colorDanger` | `--pp-danger` | Error/danger state |
 
-## ThemeProvider
+### Typography (`ThemeTypographyTokens`)
 
-The `ThemeProvider` component wraps the application and:
+| Token | CSS Variable | Default | Purpose |
+|-------|-------------|---------|---------|
+| `fontFamilyBase` | `--pp-font-family` | `'Inter', sans-serif` | Base font family |
+| `fontSizeScale` | `--pp-font-size-scale` | `1` | Font size multiplier |
+| `lineHeightBase` | `--pp-line-height` | `1.5` | Base line height |
+| `letterSpacingBase` | `--pp-letter-spacing` | `0em` | Base letter spacing |
 
-1. Fetches the active theme from the public endpoint `GET /api/theme/active`
-2. Injects all CSS variables into the document's `:root` element
-3. Uses a refetch strategy for reliable updates:
-   - `staleTime: 5 seconds`
-   - `refetchOnMount: always`
-   - `refetchInterval: 30 seconds`
+### Border Radius (`ThemeRadiusTokens`)
 
-This ensures theme changes made in the admin panel propagate to all open browser tabs within 30 seconds.
+| Token | CSS Variable | Default | Purpose |
+|-------|-------------|---------|---------|
+| `radiusSm` | `--pp-radius-sm` | `0.25rem` | Small elements (badges, chips) |
+| `radiusMd` | `--pp-radius-md` | `0.5rem` | Medium elements (cards, inputs) |
+| `radiusLg` | `--pp-radius-lg` | `0.75rem` | Large elements (modals, panels) |
+| `radiusXl` | `--pp-radius-xl` | `1rem` | Extra-large elements (hero sections) |
 
-## Activation
+### Shadows (`ThemeShadowTokens`)
 
-Themes are activated via the admin panel at `/admin/cms-v2/themes`.
+| Token | CSS Variable | Default |
+|-------|-------------|---------|
+| `shadowSm` | `--pp-shadow-sm` | `0 1px 2px 0 rgb(0 0 0 / 0.05)` |
+| `shadowMd` | `--pp-shadow-md` | `0 4px 6px -1px rgb(0 0 0 / 0.1), ...` |
+| `shadowLg` | `--pp-shadow-lg` | `0 10px 15px -3px rgb(0 0 0 / 0.1), ...` |
 
-### How Activation Works
+### Spacing (`ThemeSpacingTokens`)
 
-1. Admin clicks "Activate" on a theme preset
-2. `POST /api/admin/cms-v2/themes/activate` with `{ themeId: "preset-id" }`
-3. The `activeThemeId` field in `site_settings` is updated
-4. The preset object is returned to the client
-5. ThemeProvider picks up the change on next refetch
+| Token | CSS Variable(s) | Default |
+|-------|-----------------|---------|
+| `spaceBase` | (used in computation) | `4` (px) |
+| `spaceScale` | `--pp-space-1` through `--pp-space-6` | `[1, 2, 3, 4, 6, 8]` multipliers |
 
-### Storage
+Generated variables: `--pp-space-1: 4px`, `--pp-space-2: 8px`, `--pp-space-3: 12px`, `--pp-space-4: 16px`, `--pp-space-5: 24px`, `--pp-space-6: 32px`.
 
-The active theme ID is stored in the `site_settings` table:
+### Buttons (`ThemeButtonTokens`)
 
-```sql
-active_theme_id TEXT DEFAULT 'arctic-default'
+| Token | CSS Variable | Default | Options |
+|-------|-------------|---------|---------|
+| `buttonRadius` | `--pp-btn-radius` | `md` → `0.5rem` | `sm`, `md`, `lg` (maps to radius tokens) |
+| `buttonStyle` | `--pp-btn-style` | `solid` | `solid`, `soft`, `outline` |
+| `buttonPaddingY` | `--pp-btn-py` | `0.5rem` | Vertical padding |
+| `buttonPaddingX` | `--pp-btn-px` | `1rem` | Horizontal padding |
+
+### Layout (`ThemeLayoutTokens`)
+
+| Token | CSS Variable | Default | Purpose |
+|-------|-------------|---------|---------|
+| `containerMaxWidth` | `--pp-container-max` | `1280` | Max container width (px) |
+| `sectionPaddingY` | `--pp-section-py` | `3rem` | Vertical section padding |
+| `sectionPaddingX` | `--pp-section-px` | `1rem` | Horizontal section padding |
+
+## CSS Variable Mapping
+
+The complete mapping from token paths to CSS custom properties is defined in `client/src/cms/themes/applyTheme.ts`. All variables use the `--pp-` prefix (Power Plunge).
+
+The `flattenTokens()` function converts a `ThemeTokens` object into a flat `Record<string, string>` of CSS variable name → value pairs. Special handling:
+- `buttonRadius` maps through the radius token lookup (`sm` → `radiusSm` value)
+- `buttonStyle` is passed as-is to `--pp-btn-style`
+- `spaceScale` generates numbered variables (`--pp-space-1` through `--pp-space-N`)
+
+## Presets (10)
+
+Each preset provides a complete set of tokens. Presets are built using a `preset()` helper that deep-merges overrides onto `defaultThemeTokens`.
+
+| ID | Name | Intent |
+|----|------|--------|
+| `ocean-blue` | Ocean Blue | **Default.** Signature Power Plunge look with icy cyan accents on deep dark backgrounds. The brand standard. |
+| `midnight` | Midnight | Ultra-dark mode with soft blue accents for low-light environments and late-night browsing. Slightly tighter radius values. |
+| `minimal-light` | Minimal Light | Clean white and pale gray surfaces with dark text. The only light-mode preset. Subtle shadows. |
+| `contrast-pro` | Contrast Pro | High-contrast pure-black background with bright white text and vivid accents. Maximum readability, WCAG-friendly. Compact button padding. |
+| `warm-neutral` | Warm Neutral | Earthy warm tones with cream text and terracotta/orange accents. Softer, approachable feel. Larger border radii. |
+| `slate-and-blue` | Slate & Blue | Cool blue-gray slate palette with steel blue and indigo accents. Professional and calm. |
+| `frost` | Frost | Icy crystalline tones with pale blue highlights. Crisp, cold aesthetic that matches the cold plunge brand. |
+| `charcoal-gold` | Charcoal Gold Accent | Deep charcoal base with premium gold accent details. Luxury positioning. Tighter, more angular radii. |
+| `clean-clinical` | Clean Clinical | Spa-like serene aesthetic with soft mint/teal tones on light backgrounds. Light-mode with extra-soft shadows and large rounded corners. |
+| `energetic-blue-pop` | Energetic Blue Pop | Vibrant electric blue and purple accents on dark navy. High-energy branding for athletic positioning. Larger button radii. |
+
+### Default Preset
+
+`ocean-blue` is the default preset (`defaultPresetId` in `client/src/cms/themes/presets.ts`). Its tokens match `defaultThemeTokens` exactly.
+
+## Preview vs Activate Behavior
+
+### Preview
+
+- **Function:** `applyThemeTokens(tokens, "preview")`
+- **Scope:** Applies CSS variables to the element with `[data-pp-theme-scope]` attribute, or falls back to `document.documentElement`
+- **Persistence:** None — variables are set in-memory on the DOM. Refreshing the page removes preview changes.
+- **Use case:** Admin clicks a preset card in `/admin/cms-v2/themes` to see how it looks before committing.
+
+### Activate
+
+- **Function:** `POST /api/admin/cms-v2/themes/activate` with `{ themeId: "preset-id" }`
+- **Storage:** Updates `active_theme_id` in the `site_settings` database table
+- **Propagation:** The public `ThemeProvider` component fetches the active theme via `GET /api/theme/active` with a 30-second refetch interval. All open browser tabs update within 30 seconds.
+- **Use case:** Admin confirms the theme and clicks "Activate" to make it live for all visitors.
+
+### Clear
+
+- **Function:** `clearThemeTokens(tokens, scope)`
+- **Behavior:** Removes all CSS variables set by a previous `applyThemeTokens` call from the target element
+- **Use case:** Resetting a preview back to the active theme, or cleaning up before applying a different preview.
+
+## Safety and Rollback
+
+### Non-Destructive Design
+
+- Theme changes are purely visual (CSS variables). No content, pages, or blocks are modified when a theme is changed.
+- The active theme ID is a single field in `site_settings`. Changing it is instantaneous and reversible.
+- All 10 presets are hardcoded in `client/src/cms/themes/presets.ts` — they cannot be accidentally deleted.
+
+### Rollback Procedure
+
+1. Navigate to `/admin/cms-v2/themes`
+2. Click the preset you want to revert to
+3. Click "Activate"
+
+Or via API:
 ```
+POST /api/admin/cms-v2/themes/activate
+{ "themeId": "ocean-blue" }
+```
+
+### Edge Cases
+
+- If `active_theme_id` references a deleted/unknown preset, the system falls back to `ocean-blue` (the default).
+- If the `ThemeProvider` fetch fails, no CSS variables are set — the page renders with whatever CSS defaults the stylesheet provides.
+- Preview mode never touches the database. Closing or refreshing the admin page discards any previewed theme.
 
 ## API Endpoints
 
-| Method | Endpoint | Purpose |
-|--------|----------|---------|
-| GET | `/api/admin/cms-v2/themes` | List all theme presets |
-| GET | `/api/admin/cms-v2/themes/active` | Get active theme with CSS variables |
-| POST | `/api/admin/cms-v2/themes/activate` | Activate a theme by ID |
+| Method | Endpoint | Auth | Purpose |
+|--------|----------|------|---------|
+| `GET` | `/api/admin/cms-v2/themes` | Admin | List all 10 theme presets with full token data |
+| `GET` | `/api/admin/cms-v2/themes/active` | Admin | Get the currently active theme preset |
+| `GET` | `/api/theme/active` | Public | Get active theme (used by ThemeProvider on public pages) |
+| `POST` | `/api/admin/cms-v2/themes/activate` | Admin | Activate a theme by preset ID |
+
+## Extending the Theme System
+
+To add a new preset:
+
+1. Add a `preset(...)` call in `client/src/cms/themes/presets.ts`
+2. Provide an `id`, `name`, `description`, and at minimum a complete `colors` object
+3. Other token groups (typography, radius, etc.) inherit from `defaultThemeTokens` if not overridden
+4. The preset automatically appears in the admin theme picker
+
+To add a new token group:
+
+1. Add the interface to `themeTokens.types.ts`
+2. Add defaults to `themeTokens.defaults.ts`
+3. Add the CSS variable mapping to `TOKEN_TO_CSS_VAR` in `applyTheme.ts`
+4. Update `flattenTokens()` if the mapping requires special logic

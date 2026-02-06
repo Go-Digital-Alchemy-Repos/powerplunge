@@ -14,19 +14,24 @@ The feature flag is checked via `isCmsV2Enabled()` in `server/src/config/env.ts`
 ## Architecture
 
 ```
-shared/schema.ts          → Page & SavedSection schemas, Zod validation
-shared/themePresets.ts     → 10 CSS-variable theme presets
+shared/schema.ts                    → Page & SavedSection schemas, Zod validation
 server/src/
-  routes/admin/cms-v2.router.ts  → All CMS v2 API endpoints
-  services/cms-v2.service.ts     → Business logic layer
-  services/sections.service.ts   → Reusable sections service
+  routes/admin/cms-v2.router.ts     → All CMS v2 API endpoints
+  services/cms-v2.service.ts        → Business logic layer
+  services/sections.service.ts      → Reusable sections service
   repositories/cms-v2.repository.ts → Database queries
 client/src/
-  pages/admin-cms-v2-*.tsx       → Admin UI pages
-  lib/blockRegistry.ts           → Block type registry
-  lib/blockRegistryEntries.ts    → 20+ registered block types
-  components/PageRenderer.tsx    → Public page renderer
-  components/ThemeProvider.tsx    → Theme CSS variable injection
+  pages/admin-cms-v2-*.tsx          → Admin UI pages (8 pages)
+  cms/blocks/registry.ts            → Block type registry (Map-based)
+  cms/blocks/entries.ts             → 12 registered block types
+  cms/blocks/schemas.ts             → Zod validation schemas per block
+  cms/blocks/types.ts               → TypeScript interfaces
+  cms/blocks/categories.ts          → Block category metadata
+  cms/themes/presets.ts             → 10 CSS-variable theme presets
+  cms/themes/applyTheme.ts          → Theme CSS variable injection
+  cms/themes/themeTokens.types.ts   → Token schema interfaces
+  cms/themes/themeTokens.defaults.ts → Default token values
+  components/admin/CmsV2Layout.tsx  → Shared admin layout wrapper
 ```
 
 ## Key Concepts
@@ -37,7 +42,7 @@ Every page has a `title`, `slug`, `status` (draft/published), and optional block
 
 ### Blocks
 
-Blocks are the atomic content units. Each block has a `type`, `data` (props), and `settings`. The block registry defines 20+ types across categories: layout, content, media, commerce, social, and utility. See [Block Registry](02-BLOCK-REGISTRY.md).
+Blocks are the atomic content units. Each block has a `type`, `data` (props), and `settings`. The block registry defines 12 types across six categories: layout, content, media, commerce, social, and utility. See [Block Registry](02-BLOCK-REGISTRY.md).
 
 ### Sections
 
