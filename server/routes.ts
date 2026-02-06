@@ -138,6 +138,22 @@ export async function registerRoutes(
     res.json({ cmsV2Enabled: isCmsV2Enabled() });
   });
 
+  app.get("/api/theme/active", async (_req, res) => {
+    try {
+      const { themePresets } = await import("@shared/themePresets");
+      const { siteSettings } = await import("@shared/schema");
+      const { eq } = await import("drizzle-orm");
+      const { db } = await import("./src/db");
+      const [settings] = await db.select({ activeThemeId: siteSettings.activeThemeId }).from(siteSettings).where(eq(siteSettings.id, "main"));
+      const activeId = settings?.activeThemeId || "arctic-default";
+      const preset = themePresets.find((t: any) => t.id === activeId) || themePresets[0];
+      res.json(preset);
+    } catch {
+      const { themePresets } = await import("@shared/themePresets");
+      res.json(themePresets[0]);
+    }
+  });
+
   app.get("/api/sections/:id", async (req, res) => {
     try {
       const { sectionsService } = await import("./src/services/sections.service");

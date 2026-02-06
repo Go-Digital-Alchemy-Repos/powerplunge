@@ -172,6 +172,8 @@ export const siteSettings = pgTable("site_settings", {
   managerNotificationEmails: text("manager_notification_emails"), // comma-separated
   // Featured product for homepage/shop
   featuredProductId: varchar("featured_product_id"),
+  // CMS v2 active theme
+  activeThemeId: text("active_theme_id").default("arctic-default"),
 });
 
 export const insertSiteSettingsSchema = createInsertSchema(siteSettings);

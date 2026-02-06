@@ -1,7 +1,10 @@
 import { Router } from "express";
 import { cmsV2Service } from "../../services/cms-v2.service";
 import { sectionsService } from "../../services/sections.service";
-import { insertPageSchema, insertSavedSectionSchema } from "@shared/schema";
+import { insertPageSchema, insertSavedSectionSchema, siteSettings } from "@shared/schema";
+import { themePresets } from "@shared/themePresets";
+import { db } from "../../db";
+import { eq } from "drizzle-orm";
 
 const router = Router();
 
@@ -125,6 +128,35 @@ router.delete("/sections/:id", async (req, res) => {
   const section = await sectionsService.remove(req.params.id);
   if (!section) return res.status(404).json({ error: "Section not found" });
   res.json({ success: true });
+});
+
+router.get("/themes", (_req, res) => {
+  res.json(themePresets);
+});
+
+router.get("/themes/active", async (_req, res) => {
+  try {
+    const [settings] = await db.select({ activeThemeId: siteSettings.activeThemeId }).from(siteSettings).where(eq(siteSettings.id, "main"));
+    const activeId = settings?.activeThemeId || "arctic-default";
+    const preset = themePresets.find((t) => t.id === activeId) || themePresets[0];
+    res.json(preset);
+  } catch {
+    res.json(themePresets[0]);
+  }
+});
+
+router.post("/themes/activate", async (req, res) => {
+  const { themeId } = req.body;
+  if (!themeId || !themePresets.find((t) => t.id === themeId)) {
+    return res.status(400).json({ error: "Invalid theme ID" });
+  }
+  try {
+    await db.update(siteSettings).set({ activeThemeId: themeId }).where(eq(siteSettings.id, "main"));
+    const preset = themePresets.find((t) => t.id === themeId)!;
+    res.json(preset);
+  } catch {
+    res.status(500).json({ error: "Failed to activate theme" });
+  }
 });
 
 export default router;
