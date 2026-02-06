@@ -214,6 +214,18 @@ export const integrationSettings = pgTable("integration_settings", {
   r2BucketName: text("r2_bucket_name"),
   r2PublicUrl: text("r2_public_url"),
   r2Configured: boolean("r2_configured").default(false),
+  // TikTok Shop integration
+  tiktokShopConfigured: boolean("tiktok_shop_configured").default(false),
+  tiktokShopId: text("tiktok_shop_id"),
+  tiktokAppKey: text("tiktok_app_key"),
+  tiktokAppSecretEncrypted: text("tiktok_app_secret_encrypted"),
+  tiktokAccessTokenEncrypted: text("tiktok_access_token_encrypted"),
+  tiktokRefreshTokenEncrypted: text("tiktok_refresh_token_encrypted"),
+  // Instagram Shop integration
+  instagramShopConfigured: boolean("instagram_shop_configured").default(false),
+  instagramBusinessAccountId: text("instagram_business_account_id"),
+  instagramCatalogId: text("instagram_catalog_id"),
+  instagramAccessTokenEncrypted: text("instagram_access_token_encrypted"),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   updatedByUserId: varchar("updated_by_user_id"),
 });

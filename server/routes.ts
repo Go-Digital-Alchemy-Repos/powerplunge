@@ -1362,6 +1362,8 @@ export async function registerRoutes(
       mailgun: emailSettings?.provider === "mailgun" && !!emailSettings.mailgunApiKeyEncrypted,
       cloudflareR2: cloudflareR2Configured,
       openai: integrationSettings?.openaiConfigured || false,
+      tiktokShop: integrationSettings?.tiktokShopConfigured || false,
+      instagramShop: integrationSettings?.instagramShopConfigured || false,
     });
   });
 
@@ -1722,6 +1724,160 @@ export async function registerRoutes(
     } catch (error: any) {
       console.error("Error saving R2 settings:", error);
       res.status(500).json({ message: error.message || "Failed to save R2 settings" });
+    }
+  });
+
+  // ==================== TIKTOK SHOP SETTINGS ====================
+
+  app.get("/api/admin/settings/tiktok-shop", requireFullAccess, async (req, res) => {
+    try {
+      const integrationSettings = await storage.getIntegrationSettings();
+      res.json({
+        configured: integrationSettings?.tiktokShopConfigured || false,
+        shopId: integrationSettings?.tiktokShopId || null,
+        appKey: integrationSettings?.tiktokAppKey || null,
+        hasAppSecret: !!integrationSettings?.tiktokAppSecretEncrypted,
+        hasAccessToken: !!integrationSettings?.tiktokAccessTokenEncrypted,
+        hasRefreshToken: !!integrationSettings?.tiktokRefreshTokenEncrypted,
+        updatedAt: integrationSettings?.updatedAt || null,
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch TikTok Shop settings" });
+    }
+  });
+
+  app.patch("/api/admin/settings/tiktok-shop", requireFullAccess, async (req, res) => {
+    try {
+      const { encrypt } = await import("./src/utils/encryption");
+      const { tiktokShopService } = await import("./src/integrations/tiktok-shop/TikTokShopService");
+      const { shopId, appKey, appSecret, accessToken, refreshToken } = req.body;
+
+      const existingSettings = await storage.getIntegrationSettings();
+      const isUpdate = existingSettings?.tiktokShopConfigured;
+
+      if (!isUpdate && (!shopId || !appKey)) {
+        return res.status(400).json({ message: "Shop ID and App Key are required" });
+      }
+
+      const updateData: any = {
+        tiktokShopConfigured: true,
+      };
+
+      if (shopId) updateData.tiktokShopId = shopId;
+      if (appKey) updateData.tiktokAppKey = appKey;
+      if (appSecret) updateData.tiktokAppSecretEncrypted = encrypt(appSecret);
+      if (accessToken) updateData.tiktokAccessTokenEncrypted = encrypt(accessToken);
+      if (refreshToken) updateData.tiktokRefreshTokenEncrypted = encrypt(refreshToken);
+
+      await storage.updateIntegrationSettings(updateData);
+      tiktokShopService.clearCache();
+
+      res.json({ success: true, message: "TikTok Shop configuration saved" });
+    } catch (error: any) {
+      console.error("Error saving TikTok Shop settings:", error);
+      res.status(500).json({ message: error.message || "Failed to save TikTok Shop settings" });
+    }
+  });
+
+  app.post("/api/admin/settings/tiktok-shop/verify", requireFullAccess, async (req, res) => {
+    try {
+      const { tiktokShopService } = await import("./src/integrations/tiktok-shop/TikTokShopService");
+      const result = await tiktokShopService.verify();
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message || "Verification failed" });
+    }
+  });
+
+  app.delete("/api/admin/settings/tiktok-shop", requireFullAccess, async (req, res) => {
+    try {
+      const { tiktokShopService } = await import("./src/integrations/tiktok-shop/TikTokShopService");
+      await storage.updateIntegrationSettings({
+        tiktokShopConfigured: false,
+        tiktokShopId: null,
+        tiktokAppKey: null,
+        tiktokAppSecretEncrypted: null,
+        tiktokAccessTokenEncrypted: null,
+        tiktokRefreshTokenEncrypted: null,
+      });
+      tiktokShopService.clearCache();
+      res.json({ success: true, message: "TikTok Shop configuration removed" });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message || "Failed to remove TikTok Shop settings" });
+    }
+  });
+
+  // ==================== INSTAGRAM SHOP SETTINGS ====================
+
+  app.get("/api/admin/settings/instagram-shop", requireFullAccess, async (req, res) => {
+    try {
+      const integrationSettings = await storage.getIntegrationSettings();
+      res.json({
+        configured: integrationSettings?.instagramShopConfigured || false,
+        businessAccountId: integrationSettings?.instagramBusinessAccountId || null,
+        catalogId: integrationSettings?.instagramCatalogId || null,
+        hasAccessToken: !!integrationSettings?.instagramAccessTokenEncrypted,
+        updatedAt: integrationSettings?.updatedAt || null,
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch Instagram Shop settings" });
+    }
+  });
+
+  app.patch("/api/admin/settings/instagram-shop", requireFullAccess, async (req, res) => {
+    try {
+      const { encrypt } = await import("./src/utils/encryption");
+      const { instagramShopService } = await import("./src/integrations/instagram-shop/InstagramShopService");
+      const { businessAccountId, catalogId, accessToken } = req.body;
+
+      const existingSettings = await storage.getIntegrationSettings();
+      const isUpdate = existingSettings?.instagramShopConfigured;
+
+      if (!isUpdate && !businessAccountId) {
+        return res.status(400).json({ message: "Business Account ID is required" });
+      }
+
+      const updateData: any = {
+        instagramShopConfigured: true,
+      };
+
+      if (businessAccountId) updateData.instagramBusinessAccountId = businessAccountId;
+      if (catalogId) updateData.instagramCatalogId = catalogId;
+      if (accessToken) updateData.instagramAccessTokenEncrypted = encrypt(accessToken);
+
+      await storage.updateIntegrationSettings(updateData);
+      instagramShopService.clearCache();
+
+      res.json({ success: true, message: "Instagram Shop configuration saved" });
+    } catch (error: any) {
+      console.error("Error saving Instagram Shop settings:", error);
+      res.status(500).json({ message: error.message || "Failed to save Instagram Shop settings" });
+    }
+  });
+
+  app.post("/api/admin/settings/instagram-shop/verify", requireFullAccess, async (req, res) => {
+    try {
+      const { instagramShopService } = await import("./src/integrations/instagram-shop/InstagramShopService");
+      const result = await instagramShopService.verify();
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message || "Verification failed" });
+    }
+  });
+
+  app.delete("/api/admin/settings/instagram-shop", requireFullAccess, async (req, res) => {
+    try {
+      const { instagramShopService } = await import("./src/integrations/instagram-shop/InstagramShopService");
+      await storage.updateIntegrationSettings({
+        instagramShopConfigured: false,
+        instagramBusinessAccountId: null,
+        instagramCatalogId: null,
+        instagramAccessTokenEncrypted: null,
+      });
+      instagramShopService.clearCache();
+      res.json({ success: true, message: "Instagram Shop configuration removed" });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message || "Failed to remove Instagram Shop settings" });
     }
   });
 

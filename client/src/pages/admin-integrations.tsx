@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAdmin } from "@/hooks/use-admin";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle2, XCircle, ExternalLink, Key, CreditCard, Loader2, TestTube, AlertCircle, Save, HardDrive, Mail, Brain, Link2, Copy } from "lucide-react";
+import { CheckCircle2, XCircle, ExternalLink, Key, CreditCard, Loader2, TestTube, AlertCircle, Save, HardDrive, Mail, Brain, Link2, Copy, ShoppingBag, Instagram } from "lucide-react";
 import AdminNav from "@/components/admin/AdminNav";
 
 interface IntegrationStatus {
@@ -19,6 +19,26 @@ interface IntegrationStatus {
   mailgun: boolean;
   cloudflareR2?: boolean;
   openai?: boolean;
+  tiktokShop?: boolean;
+  instagramShop?: boolean;
+}
+
+interface TikTokShopSettings {
+  configured: boolean;
+  shopId?: string;
+  appKey?: string;
+  hasAppSecret?: boolean;
+  hasAccessToken?: boolean;
+  hasRefreshToken?: boolean;
+  updatedAt?: string;
+}
+
+interface InstagramShopSettings {
+  configured: boolean;
+  businessAccountId?: string;
+  catalogId?: string;
+  hasAccessToken?: boolean;
+  updatedAt?: string;
 }
 
 interface EmailSettings {
@@ -57,6 +77,8 @@ export default function AdminIntegrations() {
   const [showStripeDialog, setShowStripeDialog] = useState(false);
   const [showR2Dialog, setShowR2Dialog] = useState(false);
   const [showOpenAIDialog, setShowOpenAIDialog] = useState(false);
+  const [showTikTokDialog, setShowTikTokDialog] = useState(false);
+  const [showInstagramDialog, setShowInstagramDialog] = useState(false);
 
   const { data: integrations, refetch: refetchIntegrations } = useQuery<IntegrationStatus>({
     queryKey: ["/api/admin/integrations"],
@@ -222,6 +244,64 @@ export default function AdminIntegrations() {
               </div>
             </CardContent>
           </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ShoppingBag className="w-5 h-5 text-primary" />
+                TikTok Shop
+              </CardTitle>
+              <CardDescription>
+                Sync products and manage orders from your TikTok Shop
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <StatusBadge configured={integrations?.tiktokShop} />
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowTikTokDialog(true)}
+                  data-testid="button-configure-tiktok"
+                >
+                  Configure
+                </Button>
+              </div>
+              <div className="mt-4 text-xs text-muted-foreground">
+                <a href="https://partner.tiktokshop.com/account/login" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1">
+                  Get your credentials from TikTok Shop Seller Center <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Instagram className="w-5 h-5 text-primary" />
+                Instagram Shop
+              </CardTitle>
+              <CardDescription>
+                Connect your Instagram Business account to manage your shop catalog
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <StatusBadge configured={integrations?.instagramShop} />
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowInstagramDialog(true)}
+                  data-testid="button-configure-instagram"
+                >
+                  Configure
+                </Button>
+              </div>
+              <div className="mt-4 text-xs text-muted-foreground">
+                <a href="https://developers.facebook.com/apps/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1">
+                  Get your credentials from Meta for Developers <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
 
@@ -246,6 +326,18 @@ export default function AdminIntegrations() {
       <OpenAIConfigDialog
         open={showOpenAIDialog}
         onOpenChange={setShowOpenAIDialog}
+        onSuccess={() => refetchIntegrations()}
+      />
+
+      <TikTokShopConfigDialog
+        open={showTikTokDialog}
+        onOpenChange={setShowTikTokDialog}
+        onSuccess={() => refetchIntegrations()}
+      />
+
+      <InstagramShopConfigDialog
+        open={showInstagramDialog}
+        onOpenChange={setShowInstagramDialog}
         onSuccess={() => refetchIntegrations()}
       />
     </div>
@@ -1105,6 +1197,441 @@ function OpenAIConfigDialog({ open, onOpenChange, onSuccess }: {
             </Button>
           )}
           <Button onClick={handleSave} disabled={saving || !apiKey} data-testid="button-save-openai">
+            {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+            Save Configuration
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function TikTokShopConfigDialog({ open, onOpenChange, onSuccess }: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSuccess: () => void;
+}) {
+  const { toast } = useToast();
+  const [formData, setFormData] = useState({
+    shopId: "",
+    appKey: "",
+    appSecret: "",
+    accessToken: "",
+    refreshToken: "",
+  });
+  const [saving, setSaving] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [removing, setRemoving] = useState(false);
+
+  const { data: tiktokSettings, isLoading } = useQuery<TikTokShopSettings>({
+    queryKey: ["/api/admin/settings/tiktok-shop"],
+    enabled: open,
+    queryFn: async () => {
+      const res = await fetch("/api/admin/settings/tiktok-shop");
+      if (!res.ok) throw new Error("Failed to fetch TikTok Shop settings");
+      return res.json();
+    },
+  });
+
+  useEffect(() => {
+    if (tiktokSettings) {
+      setFormData({
+        shopId: tiktokSettings.shopId || "",
+        appKey: tiktokSettings.appKey || "",
+        appSecret: "",
+        accessToken: "",
+        refreshToken: "",
+      });
+    }
+  }, [tiktokSettings]);
+
+  const handleSave = async () => {
+    if (!tiktokSettings?.configured && (!formData.shopId || !formData.appKey)) {
+      toast({ title: "Shop ID and App Key are required", variant: "destructive" });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/settings/tiktok-shop", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Failed to save settings");
+      }
+
+      toast({ title: "TikTok Shop configuration saved" });
+      onSuccess();
+      onOpenChange(false);
+    } catch (error: any) {
+      toast({ title: error.message, variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleVerify = async () => {
+    setVerifying(true);
+    try {
+      const res = await fetch("/api/admin/settings/tiktok-shop/verify", { method: "POST" });
+      const result = await res.json();
+      if (result.success) {
+        toast({ title: `Connection verified! Shop: ${result.shopName || "Connected"}` });
+      } else {
+        toast({ title: result.error || "Verification failed", variant: "destructive" });
+      }
+    } catch (error: any) {
+      toast({ title: error.message, variant: "destructive" });
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const handleRemove = async () => {
+    setRemoving(true);
+    try {
+      const res = await fetch("/api/admin/settings/tiktok-shop", { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Failed to remove configuration");
+      }
+      toast({ title: "TikTok Shop configuration removed" });
+      onSuccess();
+      onOpenChange(false);
+    } catch (error: any) {
+      toast({ title: error.message, variant: "destructive" });
+    } finally {
+      setRemoving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <ShoppingBag className="w-5 h-5" />
+            TikTok Shop Configuration
+          </DialogTitle>
+          <DialogDescription>
+            Connect your TikTok Shop to sync products and manage orders.
+          </DialogDescription>
+        </DialogHeader>
+
+        {isLoading ? (
+          <div className="py-8 text-center">
+            <Loader2 className="w-6 h-6 animate-spin mx-auto" />
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {tiktokSettings?.configured && (
+              <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                <div className="flex items-center gap-2 text-green-500 text-sm font-medium">
+                  <CheckCircle2 className="w-4 h-4" />
+                  TikTok Shop is configured
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="tiktokShopId">Shop ID</Label>
+                <Input
+                  id="tiktokShopId"
+                  value={formData.shopId}
+                  onChange={(e) => setFormData({ ...formData, shopId: e.target.value })}
+                  placeholder="Your TikTok Shop ID"
+                  data-testid="input-tiktok-shop-id"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="tiktokAppKey">App Key</Label>
+                <Input
+                  id="tiktokAppKey"
+                  value={formData.appKey}
+                  onChange={(e) => setFormData({ ...formData, appKey: e.target.value })}
+                  placeholder="Your App Key"
+                  data-testid="input-tiktok-app-key"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="tiktokAppSecret">App Secret</Label>
+              <Input
+                id="tiktokAppSecret"
+                type="password"
+                value={formData.appSecret}
+                onChange={(e) => setFormData({ ...formData, appSecret: e.target.value })}
+                placeholder={tiktokSettings?.hasAppSecret ? "••••••••••••••••" : "Enter your App Secret"}
+                data-testid="input-tiktok-app-secret"
+              />
+              {tiktokSettings?.hasAppSecret && (
+                <p className="text-xs text-muted-foreground">Leave blank to keep the existing secret</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="tiktokAccessToken">Access Token</Label>
+              <Input
+                id="tiktokAccessToken"
+                type="password"
+                value={formData.accessToken}
+                onChange={(e) => setFormData({ ...formData, accessToken: e.target.value })}
+                placeholder={tiktokSettings?.hasAccessToken ? "••••••••••••••••" : "Enter your Access Token"}
+                data-testid="input-tiktok-access-token"
+              />
+              {tiktokSettings?.hasAccessToken && (
+                <p className="text-xs text-muted-foreground">Leave blank to keep the existing token</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="tiktokRefreshToken">Refresh Token (optional)</Label>
+              <Input
+                id="tiktokRefreshToken"
+                type="password"
+                value={formData.refreshToken}
+                onChange={(e) => setFormData({ ...formData, refreshToken: e.target.value })}
+                placeholder={tiktokSettings?.hasRefreshToken ? "••••••••••••••••" : "Enter your Refresh Token"}
+                data-testid="input-tiktok-refresh-token"
+              />
+              {tiktokSettings?.hasRefreshToken && (
+                <p className="text-xs text-muted-foreground">Leave blank to keep the existing token</p>
+              )}
+            </div>
+
+            {tiktokSettings?.configured && (
+              <div className="pt-4 border-t">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleVerify}
+                  disabled={verifying}
+                  data-testid="button-verify-tiktok"
+                >
+                  {verifying ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <TestTube className="w-4 h-4 mr-2" />}
+                  Test Connection
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+
+        <DialogFooter className="flex gap-2">
+          {tiktokSettings?.configured && (
+            <Button variant="destructive" onClick={handleRemove} disabled={removing} data-testid="button-remove-tiktok">
+              {removing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              Remove
+            </Button>
+          )}
+          <Button onClick={handleSave} disabled={saving} data-testid="button-save-tiktok">
+            {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+            Save Configuration
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function InstagramShopConfigDialog({ open, onOpenChange, onSuccess }: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSuccess: () => void;
+}) {
+  const { toast } = useToast();
+  const [formData, setFormData] = useState({
+    businessAccountId: "",
+    catalogId: "",
+    accessToken: "",
+  });
+  const [saving, setSaving] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [removing, setRemoving] = useState(false);
+
+  const { data: instagramSettings, isLoading } = useQuery<InstagramShopSettings>({
+    queryKey: ["/api/admin/settings/instagram-shop"],
+    enabled: open,
+    queryFn: async () => {
+      const res = await fetch("/api/admin/settings/instagram-shop");
+      if (!res.ok) throw new Error("Failed to fetch Instagram Shop settings");
+      return res.json();
+    },
+  });
+
+  useEffect(() => {
+    if (instagramSettings) {
+      setFormData({
+        businessAccountId: instagramSettings.businessAccountId || "",
+        catalogId: instagramSettings.catalogId || "",
+        accessToken: "",
+      });
+    }
+  }, [instagramSettings]);
+
+  const handleSave = async () => {
+    if (!instagramSettings?.configured && !formData.businessAccountId) {
+      toast({ title: "Business Account ID is required", variant: "destructive" });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/settings/instagram-shop", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Failed to save settings");
+      }
+
+      toast({ title: "Instagram Shop configuration saved" });
+      onSuccess();
+      onOpenChange(false);
+    } catch (error: any) {
+      toast({ title: error.message, variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleVerify = async () => {
+    setVerifying(true);
+    try {
+      const res = await fetch("/api/admin/settings/instagram-shop/verify", { method: "POST" });
+      const result = await res.json();
+      if (result.success) {
+        toast({ title: `Connection verified! Account: ${result.accountName || "Connected"}` });
+      } else {
+        toast({ title: result.error || "Verification failed", variant: "destructive" });
+      }
+    } catch (error: any) {
+      toast({ title: error.message, variant: "destructive" });
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const handleRemove = async () => {
+    setRemoving(true);
+    try {
+      const res = await fetch("/api/admin/settings/instagram-shop", { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Failed to remove configuration");
+      }
+      toast({ title: "Instagram Shop configuration removed" });
+      onSuccess();
+      onOpenChange(false);
+    } catch (error: any) {
+      toast({ title: error.message, variant: "destructive" });
+    } finally {
+      setRemoving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Instagram className="w-5 h-5" />
+            Instagram Shop Configuration
+          </DialogTitle>
+          <DialogDescription>
+            Connect your Instagram Business account to manage your product catalog.
+          </DialogDescription>
+        </DialogHeader>
+
+        {isLoading ? (
+          <div className="py-8 text-center">
+            <Loader2 className="w-6 h-6 animate-spin mx-auto" />
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {instagramSettings?.configured && (
+              <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                <div className="flex items-center gap-2 text-green-500 text-sm font-medium">
+                  <CheckCircle2 className="w-4 h-4" />
+                  Instagram Shop is configured
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="instagramBusinessAccountId">Business Account ID</Label>
+              <Input
+                id="instagramBusinessAccountId"
+                value={formData.businessAccountId}
+                onChange={(e) => setFormData({ ...formData, businessAccountId: e.target.value })}
+                placeholder="Your Instagram Business Account ID"
+                data-testid="input-instagram-business-account-id"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="instagramCatalogId">Catalog ID (optional)</Label>
+              <Input
+                id="instagramCatalogId"
+                value={formData.catalogId}
+                onChange={(e) => setFormData({ ...formData, catalogId: e.target.value })}
+                placeholder="Your Facebook Catalog ID"
+                data-testid="input-instagram-catalog-id"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="instagramAccessToken">Access Token</Label>
+              <Input
+                id="instagramAccessToken"
+                type="password"
+                value={formData.accessToken}
+                onChange={(e) => setFormData({ ...formData, accessToken: e.target.value })}
+                placeholder={instagramSettings?.hasAccessToken ? "••••••••••••••••" : "Enter your Access Token"}
+                data-testid="input-instagram-access-token"
+              />
+              {instagramSettings?.hasAccessToken && (
+                <p className="text-xs text-muted-foreground">Leave blank to keep the existing token</p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Requires a long-lived token with Instagram Shopping permissions
+              </p>
+            </div>
+
+            {instagramSettings?.configured && (
+              <div className="pt-4 border-t">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleVerify}
+                  disabled={verifying}
+                  data-testid="button-verify-instagram"
+                >
+                  {verifying ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <TestTube className="w-4 h-4 mr-2" />}
+                  Test Connection
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+
+        <DialogFooter className="flex gap-2">
+          {instagramSettings?.configured && (
+            <Button variant="destructive" onClick={handleRemove} disabled={removing} data-testid="button-remove-instagram">
+              {removing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              Remove
+            </Button>
+          )}
+          <Button onClick={handleSave} disabled={saving} data-testid="button-save-instagram">
             {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
             Save Configuration
           </Button>
