@@ -56,7 +56,7 @@ export default function AdminNav({ currentPage, role = "admin" }: AdminNavProps)
 
   const isActive = (page: string) => currentPage === page;
   const isClientManagement = currentPage === "customers" || currentPage === "affiliates" || currentPage === "support" || currentPage === "affiliate-invite-sender";
-  const isCms = currentPage === "pages" || currentPage === "page-builder" || currentPage === "theme" || currentPage === "sections" || currentPage === "media" || currentPage === "cms-v2";
+  const isCms = currentPage === "pages" || currentPage === "page-builder" || currentPage === "theme" || currentPage === "sections" || currentPage === "media" || currentPage?.startsWith("cms-v2");
   const isSettings = currentPage === "settings" || currentPage === "team" || currentPage === "email-templates" || currentPage === "integrations" || currentPage === "docs";
 
   const hasFullAccess = role === "admin" || role === "store_manager";

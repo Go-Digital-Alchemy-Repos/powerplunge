@@ -44,6 +44,11 @@ import AdminSections from "@/pages/admin-sections";
 import AdminMediaLibrary from "@/pages/admin-media-library";
 import AdminAffiliateInviteSender from "@/pages/admin-affiliate-invite-sender";
 import AdminCmsV2 from "@/pages/admin-cms-v2";
+import AdminCmsV2Pages from "@/pages/admin-cms-v2-pages";
+import AdminCmsV2Sections from "@/pages/admin-cms-v2-sections";
+import AdminCmsV2Templates from "@/pages/admin-cms-v2-templates";
+import AdminCmsV2Themes from "@/pages/admin-cms-v2-themes";
+import AdminCmsV2Seo from "@/pages/admin-cms-v2-seo";
 import PageView from "@/pages/page-view";
 import Shop from "@/pages/shop";
 import BecomeAffiliate from "@/pages/become-affiliate";
@@ -100,6 +105,11 @@ function Router() {
       <Route path="/admin/media" component={AdminMediaLibrary} />
       <Route path="/admin/support" component={AdminSupport} />
       <Route path="/admin/affiliate-invite-sender" component={AdminAffiliateInviteSender} />
+      <Route path="/admin/cms-v2/pages" component={AdminCmsV2Pages} />
+      <Route path="/admin/cms-v2/sections" component={AdminCmsV2Sections} />
+      <Route path="/admin/cms-v2/templates" component={AdminCmsV2Templates} />
+      <Route path="/admin/cms-v2/themes" component={AdminCmsV2Themes} />
+      <Route path="/admin/cms-v2/seo" component={AdminCmsV2Seo} />
       <Route path="/admin/cms-v2" component={AdminCmsV2} />
       <Route component={NotFound} />
     </Switch>
