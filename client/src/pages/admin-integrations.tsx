@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAdmin } from "@/hooks/use-admin";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle2, XCircle, ExternalLink, Key, CreditCard, Loader2, TestTube, AlertCircle, Save, HardDrive, Mail, Brain, Link2, Copy, ShoppingBag, Instagram } from "lucide-react";
+import { CheckCircle2, XCircle, ExternalLink, Key, CreditCard, Loader2, TestTube, AlertCircle, Save, HardDrive, Mail, Brain, Link2, Copy, ShoppingBag, Instagram, RefreshCw } from "lucide-react";
 import AdminNav from "@/components/admin/AdminNav";
 
 interface IntegrationStatus {
@@ -21,6 +21,10 @@ interface IntegrationStatus {
   openai?: boolean;
   tiktokShop?: boolean;
   instagramShop?: boolean;
+  pinterestShopping?: boolean;
+  youtubeShopping?: boolean;
+  snapchatShopping?: boolean;
+  xShopping?: boolean;
 }
 
 interface TikTokShopSettings {
@@ -38,6 +42,58 @@ interface InstagramShopSettings {
   businessAccountId?: string;
   catalogId?: string;
   hasAccessToken?: boolean;
+  updatedAt?: string;
+}
+
+interface PinterestShoppingSettings {
+  configured: boolean;
+  merchantId?: string;
+  catalogId?: string;
+  clientId?: string;
+  hasClientSecret?: boolean;
+  hasAccessToken?: boolean;
+  hasRefreshToken?: boolean;
+  lastSyncAt?: string;
+  lastSyncStatus?: string;
+  updatedAt?: string;
+}
+
+interface YouTubeShoppingSettings {
+  configured: boolean;
+  channelId?: string;
+  merchantId?: string;
+  clientId?: string;
+  hasClientSecret?: boolean;
+  hasAccessToken?: boolean;
+  hasRefreshToken?: boolean;
+  lastSyncAt?: string;
+  lastSyncStatus?: string;
+  updatedAt?: string;
+}
+
+interface SnapchatShoppingSettings {
+  configured: boolean;
+  accountId?: string;
+  catalogId?: string;
+  clientId?: string;
+  hasClientSecret?: boolean;
+  hasAccessToken?: boolean;
+  hasRefreshToken?: boolean;
+  lastSyncAt?: string;
+  lastSyncStatus?: string;
+  updatedAt?: string;
+}
+
+interface XShoppingSettings {
+  configured: boolean;
+  accountId?: string;
+  catalogId?: string;
+  clientId?: string;
+  hasClientSecret?: boolean;
+  hasAccessToken?: boolean;
+  hasRefreshToken?: boolean;
+  lastSyncAt?: string;
+  lastSyncStatus?: string;
   updatedAt?: string;
 }
 
@@ -79,6 +135,10 @@ export default function AdminIntegrations() {
   const [showOpenAIDialog, setShowOpenAIDialog] = useState(false);
   const [showTikTokDialog, setShowTikTokDialog] = useState(false);
   const [showInstagramDialog, setShowInstagramDialog] = useState(false);
+  const [showPinterestDialog, setShowPinterestDialog] = useState(false);
+  const [showYouTubeDialog, setShowYouTubeDialog] = useState(false);
+  const [showSnapchatDialog, setShowSnapchatDialog] = useState(false);
+  const [showXDialog, setShowXDialog] = useState(false);
 
   const { data: integrations, refetch: refetchIntegrations } = useQuery<IntegrationStatus>({
     queryKey: ["/api/admin/integrations"],
@@ -302,6 +362,122 @@ export default function AdminIntegrations() {
               </div>
             </CardContent>
           </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ShoppingBag className="w-5 h-5 text-primary" />
+                Pinterest Shopping
+              </CardTitle>
+              <CardDescription>
+                Sync your product catalog to Pinterest for shopping ads and pins
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <StatusBadge configured={integrations?.pinterestShopping} />
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowPinterestDialog(true)}
+                  data-testid="button-configure-pinterest"
+                >
+                  Configure
+                </Button>
+              </div>
+              <div className="mt-4 text-xs text-muted-foreground">
+                <a href="https://developers.pinterest.com/docs/shopping/overview/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1">
+                  Get your credentials from Pinterest for Developers <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ShoppingBag className="w-5 h-5 text-primary" />
+                YouTube Shopping
+              </CardTitle>
+              <CardDescription>
+                Connect your YouTube channel to showcase products in videos
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <StatusBadge configured={integrations?.youtubeShopping} />
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowYouTubeDialog(true)}
+                  data-testid="button-configure-youtube"
+                >
+                  Configure
+                </Button>
+              </div>
+              <div className="mt-4 text-xs text-muted-foreground">
+                <a href="https://developers.google.com/youtube/v3" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1">
+                  Get your credentials from Google for Developers <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ShoppingBag className="w-5 h-5 text-primary" />
+                Snapchat Shopping
+              </CardTitle>
+              <CardDescription>
+                Sync your product catalog to Snapchat for shopping ads
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <StatusBadge configured={integrations?.snapchatShopping} />
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowSnapchatDialog(true)}
+                  data-testid="button-configure-snapchat"
+                >
+                  Configure
+                </Button>
+              </div>
+              <div className="mt-4 text-xs text-muted-foreground">
+                <a href="https://developers.snap.com/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1">
+                  Get your credentials from Snap for Developers <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ShoppingBag className="w-5 h-5 text-primary" />
+                X Shopping
+              </CardTitle>
+              <CardDescription>
+                Connect your X account to showcase products
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <StatusBadge configured={integrations?.xShopping} />
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowXDialog(true)}
+                  data-testid="button-configure-x"
+                >
+                  Configure
+                </Button>
+              </div>
+              <div className="mt-4 text-xs text-muted-foreground">
+                <a href="https://developer.x.com/en/docs" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1">
+                  Get your credentials from X Developer Portal <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
 
@@ -338,6 +514,27 @@ export default function AdminIntegrations() {
       <InstagramShopConfigDialog
         open={showInstagramDialog}
         onOpenChange={setShowInstagramDialog}
+        onSuccess={() => refetchIntegrations()}
+      />
+
+      <PinterestShoppingConfigDialog
+        open={showPinterestDialog}
+        onOpenChange={setShowPinterestDialog}
+        onSuccess={() => refetchIntegrations()}
+      />
+      <YouTubeShoppingConfigDialog
+        open={showYouTubeDialog}
+        onOpenChange={setShowYouTubeDialog}
+        onSuccess={() => refetchIntegrations()}
+      />
+      <SnapchatShoppingConfigDialog
+        open={showSnapchatDialog}
+        onOpenChange={setShowSnapchatDialog}
+        onSuccess={() => refetchIntegrations()}
+      />
+      <XShoppingConfigDialog
+        open={showXDialog}
+        onOpenChange={setShowXDialog}
         onSuccess={() => refetchIntegrations()}
       />
     </div>
@@ -1632,6 +1829,1126 @@ function InstagramShopConfigDialog({ open, onOpenChange, onSuccess }: {
             </Button>
           )}
           <Button onClick={handleSave} disabled={saving} data-testid="button-save-instagram">
+            {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+            Save Configuration
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function PinterestShoppingConfigDialog({ open, onOpenChange, onSuccess }: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSuccess: () => void;
+}) {
+  const { toast } = useToast();
+  const [formData, setFormData] = useState({
+    merchantId: "",
+    catalogId: "",
+    clientId: "",
+    clientSecret: "",
+    accessToken: "",
+    refreshToken: "",
+  });
+  const [saving, setSaving] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [removing, setRemoving] = useState(false);
+
+  const { data: pinterestSettings, isLoading } = useQuery<PinterestShoppingSettings>({
+    queryKey: ["/api/admin/settings/pinterest-shopping"],
+    enabled: open,
+    queryFn: async () => {
+      const res = await fetch("/api/admin/settings/pinterest-shopping");
+      if (!res.ok) throw new Error("Failed to fetch Pinterest Shopping settings");
+      return res.json();
+    },
+  });
+
+  useEffect(() => {
+    if (pinterestSettings) {
+      setFormData({
+        merchantId: pinterestSettings.merchantId || "",
+        catalogId: pinterestSettings.catalogId || "",
+        clientId: pinterestSettings.clientId || "",
+        clientSecret: "",
+        accessToken: "",
+        refreshToken: "",
+      });
+    }
+  }, [pinterestSettings]);
+
+  const handleSave = async () => {
+    if (!pinterestSettings?.configured && (!formData.merchantId || !formData.clientId)) {
+      toast({ title: "Merchant ID and Client ID are required", variant: "destructive" });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/settings/pinterest-shopping", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Failed to save settings");
+      }
+
+      toast({ title: "Pinterest Shopping configuration saved" });
+      onSuccess();
+      onOpenChange(false);
+    } catch (error: any) {
+      toast({ title: error.message, variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleVerify = async () => {
+    setVerifying(true);
+    try {
+      const res = await fetch("/api/admin/settings/pinterest-shopping/verify", { method: "POST" });
+      const result = await res.json();
+      if (result.success) {
+        toast({ title: `Connection verified! ${result.accountName || "Connected"}` });
+      } else {
+        toast({ title: result.error || "Verification failed", variant: "destructive" });
+      }
+    } catch (error: any) {
+      toast({ title: error.message, variant: "destructive" });
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      const res = await fetch("/api/admin/integrations/pinterest-shopping/sync", { method: "POST" });
+      const result = await res.json();
+      if (result.success) {
+        toast({ title: "Pinterest Shopping sync started" });
+      } else {
+        toast({ title: result.error || "Sync failed", variant: "destructive" });
+      }
+    } catch (error: any) {
+      toast({ title: error.message, variant: "destructive" });
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const handleRemove = async () => {
+    setRemoving(true);
+    try {
+      const res = await fetch("/api/admin/settings/pinterest-shopping", { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Failed to remove configuration");
+      }
+      toast({ title: "Pinterest Shopping configuration removed" });
+      onSuccess();
+      onOpenChange(false);
+    } catch (error: any) {
+      toast({ title: error.message, variant: "destructive" });
+    } finally {
+      setRemoving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <ShoppingBag className="w-5 h-5" />
+            Pinterest Shopping Configuration
+          </DialogTitle>
+          <DialogDescription>
+            Connect your Pinterest Business account to sync your product catalog.
+          </DialogDescription>
+        </DialogHeader>
+
+        {isLoading ? (
+          <div className="py-8 text-center">
+            <Loader2 className="w-6 h-6 animate-spin mx-auto" />
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {pinterestSettings?.configured && (
+              <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                <div className="flex items-center gap-2 text-green-500 text-sm font-medium">
+                  <CheckCircle2 className="w-4 h-4" />
+                  Pinterest Shopping is configured
+                </div>
+                {pinterestSettings.lastSyncStatus && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Last sync: {pinterestSettings.lastSyncStatus}{pinterestSettings.lastSyncAt ? ` at ${new Date(pinterestSettings.lastSyncAt).toLocaleString()}` : ""}
+                  </p>
+                )}
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="pinterestMerchantId">Merchant ID</Label>
+                <Input
+                  id="pinterestMerchantId"
+                  value={formData.merchantId}
+                  onChange={(e) => setFormData({ ...formData, merchantId: e.target.value })}
+                  placeholder="Your Pinterest Merchant ID"
+                  data-testid="input-pinterest-merchant-id"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="pinterestCatalogId">Catalog ID</Label>
+                <Input
+                  id="pinterestCatalogId"
+                  value={formData.catalogId}
+                  onChange={(e) => setFormData({ ...formData, catalogId: e.target.value })}
+                  placeholder="Your Catalog ID"
+                  data-testid="input-pinterest-catalog-id"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="pinterestClientId">Client ID</Label>
+              <Input
+                id="pinterestClientId"
+                value={formData.clientId}
+                onChange={(e) => setFormData({ ...formData, clientId: e.target.value })}
+                placeholder="Your Client ID"
+                data-testid="input-pinterest-client-id"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="pinterestClientSecret">Client Secret</Label>
+              <Input
+                id="pinterestClientSecret"
+                type="password"
+                value={formData.clientSecret}
+                onChange={(e) => setFormData({ ...formData, clientSecret: e.target.value })}
+                placeholder={pinterestSettings?.hasClientSecret ? "••••••••••••••••" : "Enter your Client Secret"}
+                data-testid="input-pinterest-client-secret"
+              />
+              {pinterestSettings?.hasClientSecret && (
+                <p className="text-xs text-muted-foreground">Leave blank to keep the existing secret</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="pinterestAccessToken">Access Token</Label>
+              <Input
+                id="pinterestAccessToken"
+                type="password"
+                value={formData.accessToken}
+                onChange={(e) => setFormData({ ...formData, accessToken: e.target.value })}
+                placeholder={pinterestSettings?.hasAccessToken ? "••••••••••••••••" : "Enter your Access Token"}
+                data-testid="input-pinterest-access-token"
+              />
+              {pinterestSettings?.hasAccessToken && (
+                <p className="text-xs text-muted-foreground">Leave blank to keep the existing token</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="pinterestRefreshToken">Refresh Token (optional)</Label>
+              <Input
+                id="pinterestRefreshToken"
+                type="password"
+                value={formData.refreshToken}
+                onChange={(e) => setFormData({ ...formData, refreshToken: e.target.value })}
+                placeholder={pinterestSettings?.hasRefreshToken ? "••••••••••••••••" : "Enter your Refresh Token"}
+                data-testid="input-pinterest-refresh-token"
+              />
+              {pinterestSettings?.hasRefreshToken && (
+                <p className="text-xs text-muted-foreground">Leave blank to keep the existing token</p>
+              )}
+            </div>
+
+            {pinterestSettings?.configured && (
+              <div className="pt-4 border-t flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleVerify}
+                  disabled={verifying}
+                  data-testid="button-verify-pinterest"
+                >
+                  {verifying ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <TestTube className="w-4 h-4 mr-2" />}
+                  Test Connection
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleSync}
+                  disabled={syncing}
+                  data-testid="button-sync-pinterest"
+                >
+                  {syncing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <RefreshCw className="w-4 h-4 mr-2" />}
+                  Sync Now
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+
+        <DialogFooter className="flex gap-2">
+          {pinterestSettings?.configured && (
+            <Button variant="destructive" onClick={handleRemove} disabled={removing} data-testid="button-remove-pinterest">
+              {removing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              Remove
+            </Button>
+          )}
+          <Button onClick={handleSave} disabled={saving} data-testid="button-save-pinterest">
+            {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+            Save Configuration
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function YouTubeShoppingConfigDialog({ open, onOpenChange, onSuccess }: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSuccess: () => void;
+}) {
+  const { toast } = useToast();
+  const [formData, setFormData] = useState({
+    channelId: "",
+    merchantId: "",
+    clientId: "",
+    clientSecret: "",
+    accessToken: "",
+    refreshToken: "",
+  });
+  const [saving, setSaving] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [removing, setRemoving] = useState(false);
+
+  const { data: youtubeSettings, isLoading } = useQuery<YouTubeShoppingSettings>({
+    queryKey: ["/api/admin/settings/youtube-shopping"],
+    enabled: open,
+    queryFn: async () => {
+      const res = await fetch("/api/admin/settings/youtube-shopping");
+      if (!res.ok) throw new Error("Failed to fetch YouTube Shopping settings");
+      return res.json();
+    },
+  });
+
+  useEffect(() => {
+    if (youtubeSettings) {
+      setFormData({
+        channelId: youtubeSettings.channelId || "",
+        merchantId: youtubeSettings.merchantId || "",
+        clientId: youtubeSettings.clientId || "",
+        clientSecret: "",
+        accessToken: "",
+        refreshToken: "",
+      });
+    }
+  }, [youtubeSettings]);
+
+  const handleSave = async () => {
+    if (!youtubeSettings?.configured && (!formData.channelId || !formData.clientId)) {
+      toast({ title: "Channel ID and Client ID are required", variant: "destructive" });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/settings/youtube-shopping", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Failed to save settings");
+      }
+
+      toast({ title: "YouTube Shopping configuration saved" });
+      onSuccess();
+      onOpenChange(false);
+    } catch (error: any) {
+      toast({ title: error.message, variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleVerify = async () => {
+    setVerifying(true);
+    try {
+      const res = await fetch("/api/admin/settings/youtube-shopping/verify", { method: "POST" });
+      const result = await res.json();
+      if (result.success) {
+        toast({ title: `Connection verified! ${result.channelName || "Connected"}` });
+      } else {
+        toast({ title: result.error || "Verification failed", variant: "destructive" });
+      }
+    } catch (error: any) {
+      toast({ title: error.message, variant: "destructive" });
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      const res = await fetch("/api/admin/integrations/youtube-shopping/sync", { method: "POST" });
+      const result = await res.json();
+      if (result.success) {
+        toast({ title: "YouTube Shopping sync started" });
+      } else {
+        toast({ title: result.error || "Sync failed", variant: "destructive" });
+      }
+    } catch (error: any) {
+      toast({ title: error.message, variant: "destructive" });
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const handleRemove = async () => {
+    setRemoving(true);
+    try {
+      const res = await fetch("/api/admin/settings/youtube-shopping", { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Failed to remove configuration");
+      }
+      toast({ title: "YouTube Shopping configuration removed" });
+      onSuccess();
+      onOpenChange(false);
+    } catch (error: any) {
+      toast({ title: error.message, variant: "destructive" });
+    } finally {
+      setRemoving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <ShoppingBag className="w-5 h-5" />
+            YouTube Shopping Configuration
+          </DialogTitle>
+          <DialogDescription>
+            Connect your YouTube channel to showcase and sell products.
+          </DialogDescription>
+        </DialogHeader>
+
+        {isLoading ? (
+          <div className="py-8 text-center">
+            <Loader2 className="w-6 h-6 animate-spin mx-auto" />
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {youtubeSettings?.configured && (
+              <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                <div className="flex items-center gap-2 text-green-500 text-sm font-medium">
+                  <CheckCircle2 className="w-4 h-4" />
+                  YouTube Shopping is configured
+                </div>
+                {youtubeSettings.lastSyncStatus && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Last sync: {youtubeSettings.lastSyncStatus}{youtubeSettings.lastSyncAt ? ` at ${new Date(youtubeSettings.lastSyncAt).toLocaleString()}` : ""}
+                  </p>
+                )}
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="youtubeChannelId">Channel ID</Label>
+                <Input
+                  id="youtubeChannelId"
+                  value={formData.channelId}
+                  onChange={(e) => setFormData({ ...formData, channelId: e.target.value })}
+                  placeholder="Your YouTube Channel ID"
+                  data-testid="input-youtube-channel-id"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="youtubeMerchantId">Merchant ID</Label>
+                <Input
+                  id="youtubeMerchantId"
+                  value={formData.merchantId}
+                  onChange={(e) => setFormData({ ...formData, merchantId: e.target.value })}
+                  placeholder="Your Merchant ID"
+                  data-testid="input-youtube-merchant-id"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="youtubeClientId">Client ID</Label>
+              <Input
+                id="youtubeClientId"
+                value={formData.clientId}
+                onChange={(e) => setFormData({ ...formData, clientId: e.target.value })}
+                placeholder="Your Client ID"
+                data-testid="input-youtube-client-id"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="youtubeClientSecret">Client Secret</Label>
+              <Input
+                id="youtubeClientSecret"
+                type="password"
+                value={formData.clientSecret}
+                onChange={(e) => setFormData({ ...formData, clientSecret: e.target.value })}
+                placeholder={youtubeSettings?.hasClientSecret ? "••••••••••••••••" : "Enter your Client Secret"}
+                data-testid="input-youtube-client-secret"
+              />
+              {youtubeSettings?.hasClientSecret && (
+                <p className="text-xs text-muted-foreground">Leave blank to keep the existing secret</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="youtubeAccessToken">Access Token</Label>
+              <Input
+                id="youtubeAccessToken"
+                type="password"
+                value={formData.accessToken}
+                onChange={(e) => setFormData({ ...formData, accessToken: e.target.value })}
+                placeholder={youtubeSettings?.hasAccessToken ? "••••••••••••••••" : "Enter your Access Token"}
+                data-testid="input-youtube-access-token"
+              />
+              {youtubeSettings?.hasAccessToken && (
+                <p className="text-xs text-muted-foreground">Leave blank to keep the existing token</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="youtubeRefreshToken">Refresh Token (optional)</Label>
+              <Input
+                id="youtubeRefreshToken"
+                type="password"
+                value={formData.refreshToken}
+                onChange={(e) => setFormData({ ...formData, refreshToken: e.target.value })}
+                placeholder={youtubeSettings?.hasRefreshToken ? "••••••••••••••••" : "Enter your Refresh Token"}
+                data-testid="input-youtube-refresh-token"
+              />
+              {youtubeSettings?.hasRefreshToken && (
+                <p className="text-xs text-muted-foreground">Leave blank to keep the existing token</p>
+              )}
+            </div>
+
+            {youtubeSettings?.configured && (
+              <div className="pt-4 border-t flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleVerify}
+                  disabled={verifying}
+                  data-testid="button-verify-youtube"
+                >
+                  {verifying ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <TestTube className="w-4 h-4 mr-2" />}
+                  Test Connection
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleSync}
+                  disabled={syncing}
+                  data-testid="button-sync-youtube"
+                >
+                  {syncing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <RefreshCw className="w-4 h-4 mr-2" />}
+                  Sync Now
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+
+        <DialogFooter className="flex gap-2">
+          {youtubeSettings?.configured && (
+            <Button variant="destructive" onClick={handleRemove} disabled={removing} data-testid="button-remove-youtube">
+              {removing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              Remove
+            </Button>
+          )}
+          <Button onClick={handleSave} disabled={saving} data-testid="button-save-youtube">
+            {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+            Save Configuration
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function SnapchatShoppingConfigDialog({ open, onOpenChange, onSuccess }: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSuccess: () => void;
+}) {
+  const { toast } = useToast();
+  const [formData, setFormData] = useState({
+    accountId: "",
+    catalogId: "",
+    clientId: "",
+    clientSecret: "",
+    accessToken: "",
+    refreshToken: "",
+  });
+  const [saving, setSaving] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [removing, setRemoving] = useState(false);
+
+  const { data: snapchatSettings, isLoading } = useQuery<SnapchatShoppingSettings>({
+    queryKey: ["/api/admin/settings/snapchat-shopping"],
+    enabled: open,
+    queryFn: async () => {
+      const res = await fetch("/api/admin/settings/snapchat-shopping");
+      if (!res.ok) throw new Error("Failed to fetch Snapchat Shopping settings");
+      return res.json();
+    },
+  });
+
+  useEffect(() => {
+    if (snapchatSettings) {
+      setFormData({
+        accountId: snapchatSettings.accountId || "",
+        catalogId: snapchatSettings.catalogId || "",
+        clientId: snapchatSettings.clientId || "",
+        clientSecret: "",
+        accessToken: "",
+        refreshToken: "",
+      });
+    }
+  }, [snapchatSettings]);
+
+  const handleSave = async () => {
+    if (!snapchatSettings?.configured && (!formData.accountId || !formData.clientId)) {
+      toast({ title: "Account ID and Client ID are required", variant: "destructive" });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/settings/snapchat-shopping", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Failed to save settings");
+      }
+
+      toast({ title: "Snapchat Shopping configuration saved" });
+      onSuccess();
+      onOpenChange(false);
+    } catch (error: any) {
+      toast({ title: error.message, variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleVerify = async () => {
+    setVerifying(true);
+    try {
+      const res = await fetch("/api/admin/settings/snapchat-shopping/verify", { method: "POST" });
+      const result = await res.json();
+      if (result.success) {
+        toast({ title: `Connection verified! ${result.accountName || "Connected"}` });
+      } else {
+        toast({ title: result.error || "Verification failed", variant: "destructive" });
+      }
+    } catch (error: any) {
+      toast({ title: error.message, variant: "destructive" });
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      const res = await fetch("/api/admin/integrations/snapchat-shopping/sync", { method: "POST" });
+      const result = await res.json();
+      if (result.success) {
+        toast({ title: "Snapchat Shopping sync started" });
+      } else {
+        toast({ title: result.error || "Sync failed", variant: "destructive" });
+      }
+    } catch (error: any) {
+      toast({ title: error.message, variant: "destructive" });
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const handleRemove = async () => {
+    setRemoving(true);
+    try {
+      const res = await fetch("/api/admin/settings/snapchat-shopping", { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Failed to remove configuration");
+      }
+      toast({ title: "Snapchat Shopping configuration removed" });
+      onSuccess();
+      onOpenChange(false);
+    } catch (error: any) {
+      toast({ title: error.message, variant: "destructive" });
+    } finally {
+      setRemoving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <ShoppingBag className="w-5 h-5" />
+            Snapchat Shopping Configuration
+          </DialogTitle>
+          <DialogDescription>
+            Connect your Snapchat Business account to sync your product catalog.
+          </DialogDescription>
+        </DialogHeader>
+
+        {isLoading ? (
+          <div className="py-8 text-center">
+            <Loader2 className="w-6 h-6 animate-spin mx-auto" />
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {snapchatSettings?.configured && (
+              <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                <div className="flex items-center gap-2 text-green-500 text-sm font-medium">
+                  <CheckCircle2 className="w-4 h-4" />
+                  Snapchat Shopping is configured
+                </div>
+                {snapchatSettings.lastSyncStatus && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Last sync: {snapchatSettings.lastSyncStatus}{snapchatSettings.lastSyncAt ? ` at ${new Date(snapchatSettings.lastSyncAt).toLocaleString()}` : ""}
+                  </p>
+                )}
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="snapchatAccountId">Account ID</Label>
+                <Input
+                  id="snapchatAccountId"
+                  value={formData.accountId}
+                  onChange={(e) => setFormData({ ...formData, accountId: e.target.value })}
+                  placeholder="Your Snapchat Account ID"
+                  data-testid="input-snapchat-account-id"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="snapchatCatalogId">Catalog ID</Label>
+                <Input
+                  id="snapchatCatalogId"
+                  value={formData.catalogId}
+                  onChange={(e) => setFormData({ ...formData, catalogId: e.target.value })}
+                  placeholder="Your Catalog ID"
+                  data-testid="input-snapchat-catalog-id"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="snapchatClientId">Client ID</Label>
+              <Input
+                id="snapchatClientId"
+                value={formData.clientId}
+                onChange={(e) => setFormData({ ...formData, clientId: e.target.value })}
+                placeholder="Your Client ID"
+                data-testid="input-snapchat-client-id"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="snapchatClientSecret">Client Secret</Label>
+              <Input
+                id="snapchatClientSecret"
+                type="password"
+                value={formData.clientSecret}
+                onChange={(e) => setFormData({ ...formData, clientSecret: e.target.value })}
+                placeholder={snapchatSettings?.hasClientSecret ? "••••••••••••••••" : "Enter your Client Secret"}
+                data-testid="input-snapchat-client-secret"
+              />
+              {snapchatSettings?.hasClientSecret && (
+                <p className="text-xs text-muted-foreground">Leave blank to keep the existing secret</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="snapchatAccessToken">Access Token</Label>
+              <Input
+                id="snapchatAccessToken"
+                type="password"
+                value={formData.accessToken}
+                onChange={(e) => setFormData({ ...formData, accessToken: e.target.value })}
+                placeholder={snapchatSettings?.hasAccessToken ? "••••••••••••••••" : "Enter your Access Token"}
+                data-testid="input-snapchat-access-token"
+              />
+              {snapchatSettings?.hasAccessToken && (
+                <p className="text-xs text-muted-foreground">Leave blank to keep the existing token</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="snapchatRefreshToken">Refresh Token (optional)</Label>
+              <Input
+                id="snapchatRefreshToken"
+                type="password"
+                value={formData.refreshToken}
+                onChange={(e) => setFormData({ ...formData, refreshToken: e.target.value })}
+                placeholder={snapchatSettings?.hasRefreshToken ? "••••••••••••••••" : "Enter your Refresh Token"}
+                data-testid="input-snapchat-refresh-token"
+              />
+              {snapchatSettings?.hasRefreshToken && (
+                <p className="text-xs text-muted-foreground">Leave blank to keep the existing token</p>
+              )}
+            </div>
+
+            {snapchatSettings?.configured && (
+              <div className="pt-4 border-t flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleVerify}
+                  disabled={verifying}
+                  data-testid="button-verify-snapchat"
+                >
+                  {verifying ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <TestTube className="w-4 h-4 mr-2" />}
+                  Test Connection
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleSync}
+                  disabled={syncing}
+                  data-testid="button-sync-snapchat"
+                >
+                  {syncing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <RefreshCw className="w-4 h-4 mr-2" />}
+                  Sync Now
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+
+        <DialogFooter className="flex gap-2">
+          {snapchatSettings?.configured && (
+            <Button variant="destructive" onClick={handleRemove} disabled={removing} data-testid="button-remove-snapchat">
+              {removing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              Remove
+            </Button>
+          )}
+          <Button onClick={handleSave} disabled={saving} data-testid="button-save-snapchat">
+            {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+            Save Configuration
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function XShoppingConfigDialog({ open, onOpenChange, onSuccess }: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSuccess: () => void;
+}) {
+  const { toast } = useToast();
+  const [formData, setFormData] = useState({
+    accountId: "",
+    catalogId: "",
+    clientId: "",
+    clientSecret: "",
+    accessToken: "",
+    refreshToken: "",
+  });
+  const [saving, setSaving] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [removing, setRemoving] = useState(false);
+
+  const { data: xSettings, isLoading } = useQuery<XShoppingSettings>({
+    queryKey: ["/api/admin/settings/x-shopping"],
+    enabled: open,
+    queryFn: async () => {
+      const res = await fetch("/api/admin/settings/x-shopping");
+      if (!res.ok) throw new Error("Failed to fetch X Shopping settings");
+      return res.json();
+    },
+  });
+
+  useEffect(() => {
+    if (xSettings) {
+      setFormData({
+        accountId: xSettings.accountId || "",
+        catalogId: xSettings.catalogId || "",
+        clientId: xSettings.clientId || "",
+        clientSecret: "",
+        accessToken: "",
+        refreshToken: "",
+      });
+    }
+  }, [xSettings]);
+
+  const handleSave = async () => {
+    if (!xSettings?.configured && (!formData.accountId || !formData.clientId)) {
+      toast({ title: "Account ID and Client ID are required", variant: "destructive" });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/settings/x-shopping", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Failed to save settings");
+      }
+
+      toast({ title: "X Shopping configuration saved" });
+      onSuccess();
+      onOpenChange(false);
+    } catch (error: any) {
+      toast({ title: error.message, variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleVerify = async () => {
+    setVerifying(true);
+    try {
+      const res = await fetch("/api/admin/settings/x-shopping/verify", { method: "POST" });
+      const result = await res.json();
+      if (result.success) {
+        toast({ title: `Connection verified! ${result.accountName || "Connected"}` });
+      } else {
+        toast({ title: result.error || "Verification failed", variant: "destructive" });
+      }
+    } catch (error: any) {
+      toast({ title: error.message, variant: "destructive" });
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      const res = await fetch("/api/admin/integrations/x-shopping/sync", { method: "POST" });
+      const result = await res.json();
+      if (result.success) {
+        toast({ title: "X Shopping sync started" });
+      } else {
+        toast({ title: result.error || "Sync failed", variant: "destructive" });
+      }
+    } catch (error: any) {
+      toast({ title: error.message, variant: "destructive" });
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const handleRemove = async () => {
+    setRemoving(true);
+    try {
+      const res = await fetch("/api/admin/settings/x-shopping", { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Failed to remove configuration");
+      }
+      toast({ title: "X Shopping configuration removed" });
+      onSuccess();
+      onOpenChange(false);
+    } catch (error: any) {
+      toast({ title: error.message, variant: "destructive" });
+    } finally {
+      setRemoving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <ShoppingBag className="w-5 h-5" />
+            X Shopping Configuration
+          </DialogTitle>
+          <DialogDescription>
+            Connect your X account to showcase and sell products.
+          </DialogDescription>
+        </DialogHeader>
+
+        {isLoading ? (
+          <div className="py-8 text-center">
+            <Loader2 className="w-6 h-6 animate-spin mx-auto" />
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {xSettings?.configured && (
+              <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                <div className="flex items-center gap-2 text-green-500 text-sm font-medium">
+                  <CheckCircle2 className="w-4 h-4" />
+                  X Shopping is configured
+                </div>
+                {xSettings.lastSyncStatus && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Last sync: {xSettings.lastSyncStatus}{xSettings.lastSyncAt ? ` at ${new Date(xSettings.lastSyncAt).toLocaleString()}` : ""}
+                  </p>
+                )}
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="xAccountId">Account ID</Label>
+                <Input
+                  id="xAccountId"
+                  value={formData.accountId}
+                  onChange={(e) => setFormData({ ...formData, accountId: e.target.value })}
+                  placeholder="Your X Account ID"
+                  data-testid="input-x-account-id"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="xCatalogId">Catalog ID</Label>
+                <Input
+                  id="xCatalogId"
+                  value={formData.catalogId}
+                  onChange={(e) => setFormData({ ...formData, catalogId: e.target.value })}
+                  placeholder="Your Catalog ID"
+                  data-testid="input-x-catalog-id"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="xClientId">Client ID</Label>
+              <Input
+                id="xClientId"
+                value={formData.clientId}
+                onChange={(e) => setFormData({ ...formData, clientId: e.target.value })}
+                placeholder="Your Client ID"
+                data-testid="input-x-client-id"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="xClientSecret">Client Secret</Label>
+              <Input
+                id="xClientSecret"
+                type="password"
+                value={formData.clientSecret}
+                onChange={(e) => setFormData({ ...formData, clientSecret: e.target.value })}
+                placeholder={xSettings?.hasClientSecret ? "••••••••••••••••" : "Enter your Client Secret"}
+                data-testid="input-x-client-secret"
+              />
+              {xSettings?.hasClientSecret && (
+                <p className="text-xs text-muted-foreground">Leave blank to keep the existing secret</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="xAccessToken">Access Token</Label>
+              <Input
+                id="xAccessToken"
+                type="password"
+                value={formData.accessToken}
+                onChange={(e) => setFormData({ ...formData, accessToken: e.target.value })}
+                placeholder={xSettings?.hasAccessToken ? "••••••••••••••••" : "Enter your Access Token"}
+                data-testid="input-x-access-token"
+              />
+              {xSettings?.hasAccessToken && (
+                <p className="text-xs text-muted-foreground">Leave blank to keep the existing token</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="xRefreshToken">Refresh Token (optional)</Label>
+              <Input
+                id="xRefreshToken"
+                type="password"
+                value={formData.refreshToken}
+                onChange={(e) => setFormData({ ...formData, refreshToken: e.target.value })}
+                placeholder={xSettings?.hasRefreshToken ? "••••••••••••••••" : "Enter your Refresh Token"}
+                data-testid="input-x-refresh-token"
+              />
+              {xSettings?.hasRefreshToken && (
+                <p className="text-xs text-muted-foreground">Leave blank to keep the existing token</p>
+              )}
+            </div>
+
+            {xSettings?.configured && (
+              <div className="pt-4 border-t flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleVerify}
+                  disabled={verifying}
+                  data-testid="button-verify-x"
+                >
+                  {verifying ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <TestTube className="w-4 h-4 mr-2" />}
+                  Test Connection
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleSync}
+                  disabled={syncing}
+                  data-testid="button-sync-x"
+                >
+                  {syncing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <RefreshCw className="w-4 h-4 mr-2" />}
+                  Sync Now
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+
+        <DialogFooter className="flex gap-2">
+          {xSettings?.configured && (
+            <Button variant="destructive" onClick={handleRemove} disabled={removing} data-testid="button-remove-x">
+              {removing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              Remove
+            </Button>
+          )}
+          <Button onClick={handleSave} disabled={saving} data-testid="button-save-x">
             {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
             Save Configuration
           </Button>

@@ -1364,6 +1364,10 @@ export async function registerRoutes(
       openai: integrationSettings?.openaiConfigured || false,
       tiktokShop: integrationSettings?.tiktokShopConfigured || false,
       instagramShop: integrationSettings?.instagramShopConfigured || false,
+      pinterestShopping: integrationSettings?.pinterestShoppingConfigured || false,
+      youtubeShopping: integrationSettings?.youtubeShoppingConfigured || false,
+      snapchatShopping: integrationSettings?.snapchatShoppingConfigured || false,
+      xShopping: integrationSettings?.xShoppingConfigured || false,
     });
   });
 
@@ -1878,6 +1882,402 @@ export async function registerRoutes(
       res.json({ success: true, message: "Instagram Shop configuration removed" });
     } catch (error: any) {
       res.status(500).json({ message: error.message || "Failed to remove Instagram Shop settings" });
+    }
+  });
+
+  // ==================== PINTEREST SHOPPING SETTINGS ====================
+
+  app.get("/api/admin/settings/pinterest-shopping", requireFullAccess, async (req, res) => {
+    try {
+      const integrationSettings = await storage.getIntegrationSettings();
+      res.json({
+        configured: integrationSettings?.pinterestShoppingConfigured || false,
+        merchantId: integrationSettings?.pinterestMerchantId || null,
+        catalogId: integrationSettings?.pinterestCatalogId || null,
+        clientId: integrationSettings?.pinterestClientId || null,
+        hasClientSecret: !!integrationSettings?.pinterestClientSecretEncrypted,
+        hasAccessToken: !!integrationSettings?.pinterestAccessTokenEncrypted,
+        hasRefreshToken: !!integrationSettings?.pinterestRefreshTokenEncrypted,
+        lastSyncAt: integrationSettings?.pinterestLastSyncAt || null,
+        lastSyncStatus: integrationSettings?.pinterestLastSyncStatus || "never",
+        updatedAt: integrationSettings?.updatedAt || null,
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch Pinterest Shopping settings" });
+    }
+  });
+
+  app.patch("/api/admin/settings/pinterest-shopping", requireFullAccess, async (req, res) => {
+    try {
+      const { encrypt } = await import("./src/utils/encryption");
+      const { pinterestShoppingService } = await import("./src/integrations/pinterest-shopping/PinterestShoppingService");
+      const { merchantId, catalogId, clientId, clientSecret, accessToken, refreshToken } = req.body;
+
+      const existingSettings = await storage.getIntegrationSettings();
+      const isUpdate = existingSettings?.pinterestShoppingConfigured;
+
+      if (!isUpdate && (!merchantId || !clientId)) {
+        return res.status(400).json({ message: "Merchant ID and Client ID are required" });
+      }
+
+      const updateData: any = {
+        pinterestShoppingConfigured: true,
+      };
+
+      if (merchantId) updateData.pinterestMerchantId = merchantId;
+      if (catalogId) updateData.pinterestCatalogId = catalogId;
+      if (clientId) updateData.pinterestClientId = clientId;
+      if (clientSecret) updateData.pinterestClientSecretEncrypted = encrypt(clientSecret);
+      if (accessToken) updateData.pinterestAccessTokenEncrypted = encrypt(accessToken);
+      if (refreshToken) updateData.pinterestRefreshTokenEncrypted = encrypt(refreshToken);
+
+      await storage.updateIntegrationSettings(updateData);
+      pinterestShoppingService.clearCache();
+
+      console.log(`[Audit] Pinterest Shopping settings updated by admin`);
+      res.json({ success: true, message: "Pinterest Shopping configuration saved" });
+    } catch (error: any) {
+      console.error("Error saving Pinterest Shopping settings:", error);
+      res.status(500).json({ message: error.message || "Failed to save Pinterest Shopping settings" });
+    }
+  });
+
+  app.post("/api/admin/settings/pinterest-shopping/verify", requireFullAccess, async (req, res) => {
+    try {
+      const { pinterestShoppingService } = await import("./src/integrations/pinterest-shopping/PinterestShoppingService");
+      const result = await pinterestShoppingService.verifyCredentials();
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message || "Verification failed" });
+    }
+  });
+
+  app.post("/api/admin/integrations/pinterest-shopping/sync", requireFullAccess, async (req, res) => {
+    try {
+      const { pinterestShoppingService } = await import("./src/integrations/pinterest-shopping/PinterestShoppingService");
+      const result = await pinterestShoppingService.syncCatalog();
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message || "Sync failed" });
+    }
+  });
+
+  app.delete("/api/admin/settings/pinterest-shopping", requireFullAccess, async (req, res) => {
+    try {
+      const { pinterestShoppingService } = await import("./src/integrations/pinterest-shopping/PinterestShoppingService");
+      await storage.updateIntegrationSettings({
+        pinterestShoppingConfigured: false,
+        pinterestMerchantId: null,
+        pinterestCatalogId: null,
+        pinterestClientId: null,
+        pinterestClientSecretEncrypted: null,
+        pinterestAccessTokenEncrypted: null,
+        pinterestRefreshTokenEncrypted: null,
+        pinterestLastSyncAt: null,
+        pinterestLastSyncStatus: "never",
+      });
+      pinterestShoppingService.clearCache();
+      console.log(`[Audit] Pinterest Shopping settings removed by admin`);
+      res.json({ success: true, message: "Pinterest Shopping configuration removed" });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message || "Failed to remove Pinterest Shopping settings" });
+    }
+  });
+
+  // ==================== YOUTUBE SHOPPING SETTINGS ====================
+
+  app.get("/api/admin/settings/youtube-shopping", requireFullAccess, async (req, res) => {
+    try {
+      const integrationSettings = await storage.getIntegrationSettings();
+      res.json({
+        configured: integrationSettings?.youtubeShoppingConfigured || false,
+        channelId: integrationSettings?.youtubeChannelId || null,
+        merchantId: integrationSettings?.youtubeMerchantId || null,
+        clientId: integrationSettings?.youtubeClientId || null,
+        hasClientSecret: !!integrationSettings?.youtubeClientSecretEncrypted,
+        hasAccessToken: !!integrationSettings?.youtubeAccessTokenEncrypted,
+        hasRefreshToken: !!integrationSettings?.youtubeRefreshTokenEncrypted,
+        lastSyncAt: integrationSettings?.youtubeLastSyncAt || null,
+        lastSyncStatus: integrationSettings?.youtubeLastSyncStatus || "never",
+        updatedAt: integrationSettings?.updatedAt || null,
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch YouTube Shopping settings" });
+    }
+  });
+
+  app.patch("/api/admin/settings/youtube-shopping", requireFullAccess, async (req, res) => {
+    try {
+      const { encrypt } = await import("./src/utils/encryption");
+      const { youtubeShoppingService } = await import("./src/integrations/youtube-shopping/YouTubeShoppingService");
+      const { channelId, merchantId, clientId, clientSecret, accessToken, refreshToken } = req.body;
+
+      const existingSettings = await storage.getIntegrationSettings();
+      const isUpdate = existingSettings?.youtubeShoppingConfigured;
+
+      if (!isUpdate && (!channelId || !clientId)) {
+        return res.status(400).json({ message: "Channel ID and Client ID are required" });
+      }
+
+      const updateData: any = {
+        youtubeShoppingConfigured: true,
+      };
+
+      if (channelId) updateData.youtubeChannelId = channelId;
+      if (merchantId) updateData.youtubeMerchantId = merchantId;
+      if (clientId) updateData.youtubeClientId = clientId;
+      if (clientSecret) updateData.youtubeClientSecretEncrypted = encrypt(clientSecret);
+      if (accessToken) updateData.youtubeAccessTokenEncrypted = encrypt(accessToken);
+      if (refreshToken) updateData.youtubeRefreshTokenEncrypted = encrypt(refreshToken);
+
+      await storage.updateIntegrationSettings(updateData);
+      youtubeShoppingService.clearCache();
+
+      console.log(`[Audit] YouTube Shopping settings updated by admin`);
+      res.json({ success: true, message: "YouTube Shopping configuration saved" });
+    } catch (error: any) {
+      console.error("Error saving YouTube Shopping settings:", error);
+      res.status(500).json({ message: error.message || "Failed to save YouTube Shopping settings" });
+    }
+  });
+
+  app.post("/api/admin/settings/youtube-shopping/verify", requireFullAccess, async (req, res) => {
+    try {
+      const { youtubeShoppingService } = await import("./src/integrations/youtube-shopping/YouTubeShoppingService");
+      const result = await youtubeShoppingService.verifyCredentials();
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message || "Verification failed" });
+    }
+  });
+
+  app.post("/api/admin/integrations/youtube-shopping/sync", requireFullAccess, async (req, res) => {
+    try {
+      const { youtubeShoppingService } = await import("./src/integrations/youtube-shopping/YouTubeShoppingService");
+      const result = await youtubeShoppingService.syncCatalog();
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message || "Sync failed" });
+    }
+  });
+
+  app.delete("/api/admin/settings/youtube-shopping", requireFullAccess, async (req, res) => {
+    try {
+      const { youtubeShoppingService } = await import("./src/integrations/youtube-shopping/YouTubeShoppingService");
+      await storage.updateIntegrationSettings({
+        youtubeShoppingConfigured: false,
+        youtubeChannelId: null,
+        youtubeMerchantId: null,
+        youtubeClientId: null,
+        youtubeClientSecretEncrypted: null,
+        youtubeAccessTokenEncrypted: null,
+        youtubeRefreshTokenEncrypted: null,
+        youtubeLastSyncAt: null,
+        youtubeLastSyncStatus: "never",
+      });
+      youtubeShoppingService.clearCache();
+      console.log(`[Audit] YouTube Shopping settings removed by admin`);
+      res.json({ success: true, message: "YouTube Shopping configuration removed" });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message || "Failed to remove YouTube Shopping settings" });
+    }
+  });
+
+  // ==================== SNAPCHAT SHOPPING SETTINGS ====================
+
+  app.get("/api/admin/settings/snapchat-shopping", requireFullAccess, async (req, res) => {
+    try {
+      const integrationSettings = await storage.getIntegrationSettings();
+      res.json({
+        configured: integrationSettings?.snapchatShoppingConfigured || false,
+        accountId: integrationSettings?.snapchatAccountId || null,
+        catalogId: integrationSettings?.snapchatCatalogId || null,
+        clientId: integrationSettings?.snapchatClientId || null,
+        hasClientSecret: !!integrationSettings?.snapchatClientSecretEncrypted,
+        hasAccessToken: !!integrationSettings?.snapchatAccessTokenEncrypted,
+        hasRefreshToken: !!integrationSettings?.snapchatRefreshTokenEncrypted,
+        lastSyncAt: integrationSettings?.snapchatLastSyncAt || null,
+        lastSyncStatus: integrationSettings?.snapchatLastSyncStatus || "never",
+        updatedAt: integrationSettings?.updatedAt || null,
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch Snapchat Shopping settings" });
+    }
+  });
+
+  app.patch("/api/admin/settings/snapchat-shopping", requireFullAccess, async (req, res) => {
+    try {
+      const { encrypt } = await import("./src/utils/encryption");
+      const { snapchatShoppingService } = await import("./src/integrations/snapchat-shopping/SnapchatShoppingService");
+      const { accountId, catalogId, clientId, clientSecret, accessToken, refreshToken } = req.body;
+
+      const existingSettings = await storage.getIntegrationSettings();
+      const isUpdate = existingSettings?.snapchatShoppingConfigured;
+
+      if (!isUpdate && (!accountId || !clientId)) {
+        return res.status(400).json({ message: "Account ID and Client ID are required" });
+      }
+
+      const updateData: any = {
+        snapchatShoppingConfigured: true,
+      };
+
+      if (accountId) updateData.snapchatAccountId = accountId;
+      if (catalogId) updateData.snapchatCatalogId = catalogId;
+      if (clientId) updateData.snapchatClientId = clientId;
+      if (clientSecret) updateData.snapchatClientSecretEncrypted = encrypt(clientSecret);
+      if (accessToken) updateData.snapchatAccessTokenEncrypted = encrypt(accessToken);
+      if (refreshToken) updateData.snapchatRefreshTokenEncrypted = encrypt(refreshToken);
+
+      await storage.updateIntegrationSettings(updateData);
+      snapchatShoppingService.clearCache();
+
+      console.log(`[Audit] Snapchat Shopping settings updated by admin`);
+      res.json({ success: true, message: "Snapchat Shopping configuration saved" });
+    } catch (error: any) {
+      console.error("Error saving Snapchat Shopping settings:", error);
+      res.status(500).json({ message: error.message || "Failed to save Snapchat Shopping settings" });
+    }
+  });
+
+  app.post("/api/admin/settings/snapchat-shopping/verify", requireFullAccess, async (req, res) => {
+    try {
+      const { snapchatShoppingService } = await import("./src/integrations/snapchat-shopping/SnapchatShoppingService");
+      const result = await snapchatShoppingService.verifyCredentials();
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message || "Verification failed" });
+    }
+  });
+
+  app.post("/api/admin/integrations/snapchat-shopping/sync", requireFullAccess, async (req, res) => {
+    try {
+      const { snapchatShoppingService } = await import("./src/integrations/snapchat-shopping/SnapchatShoppingService");
+      const result = await snapchatShoppingService.syncCatalog();
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message || "Sync failed" });
+    }
+  });
+
+  app.delete("/api/admin/settings/snapchat-shopping", requireFullAccess, async (req, res) => {
+    try {
+      const { snapchatShoppingService } = await import("./src/integrations/snapchat-shopping/SnapchatShoppingService");
+      await storage.updateIntegrationSettings({
+        snapchatShoppingConfigured: false,
+        snapchatAccountId: null,
+        snapchatCatalogId: null,
+        snapchatClientId: null,
+        snapchatClientSecretEncrypted: null,
+        snapchatAccessTokenEncrypted: null,
+        snapchatRefreshTokenEncrypted: null,
+        snapchatLastSyncAt: null,
+        snapchatLastSyncStatus: "never",
+      });
+      snapchatShoppingService.clearCache();
+      console.log(`[Audit] Snapchat Shopping settings removed by admin`);
+      res.json({ success: true, message: "Snapchat Shopping configuration removed" });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message || "Failed to remove Snapchat Shopping settings" });
+    }
+  });
+
+  // ==================== X SHOPPING SETTINGS ====================
+
+  app.get("/api/admin/settings/x-shopping", requireFullAccess, async (req, res) => {
+    try {
+      const integrationSettings = await storage.getIntegrationSettings();
+      res.json({
+        configured: integrationSettings?.xShoppingConfigured || false,
+        accountId: integrationSettings?.xAccountId || null,
+        catalogId: integrationSettings?.xCatalogId || null,
+        clientId: integrationSettings?.xClientId || null,
+        hasClientSecret: !!integrationSettings?.xClientSecretEncrypted,
+        hasAccessToken: !!integrationSettings?.xAccessTokenEncrypted,
+        hasRefreshToken: !!integrationSettings?.xRefreshTokenEncrypted,
+        lastSyncAt: integrationSettings?.xLastSyncAt || null,
+        lastSyncStatus: integrationSettings?.xLastSyncStatus || "never",
+        updatedAt: integrationSettings?.updatedAt || null,
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch X Shopping settings" });
+    }
+  });
+
+  app.patch("/api/admin/settings/x-shopping", requireFullAccess, async (req, res) => {
+    try {
+      const { encrypt } = await import("./src/utils/encryption");
+      const { xShoppingService } = await import("./src/integrations/x-shopping/XShoppingService");
+      const { accountId, catalogId, clientId, clientSecret, accessToken, refreshToken } = req.body;
+
+      const existingSettings = await storage.getIntegrationSettings();
+      const isUpdate = existingSettings?.xShoppingConfigured;
+
+      if (!isUpdate && (!accountId || !clientId)) {
+        return res.status(400).json({ message: "Account ID and Client ID are required" });
+      }
+
+      const updateData: any = {
+        xShoppingConfigured: true,
+      };
+
+      if (accountId) updateData.xAccountId = accountId;
+      if (catalogId) updateData.xCatalogId = catalogId;
+      if (clientId) updateData.xClientId = clientId;
+      if (clientSecret) updateData.xClientSecretEncrypted = encrypt(clientSecret);
+      if (accessToken) updateData.xAccessTokenEncrypted = encrypt(accessToken);
+      if (refreshToken) updateData.xRefreshTokenEncrypted = encrypt(refreshToken);
+
+      await storage.updateIntegrationSettings(updateData);
+      xShoppingService.clearCache();
+
+      console.log(`[Audit] X Shopping settings updated by admin`);
+      res.json({ success: true, message: "X Shopping configuration saved" });
+    } catch (error: any) {
+      console.error("Error saving X Shopping settings:", error);
+      res.status(500).json({ message: error.message || "Failed to save X Shopping settings" });
+    }
+  });
+
+  app.post("/api/admin/settings/x-shopping/verify", requireFullAccess, async (req, res) => {
+    try {
+      const { xShoppingService } = await import("./src/integrations/x-shopping/XShoppingService");
+      const result = await xShoppingService.verifyCredentials();
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message || "Verification failed" });
+    }
+  });
+
+  app.post("/api/admin/integrations/x-shopping/sync", requireFullAccess, async (req, res) => {
+    try {
+      const { xShoppingService } = await import("./src/integrations/x-shopping/XShoppingService");
+      const result = await xShoppingService.syncCatalog();
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message || "Sync failed" });
+    }
+  });
+
+  app.delete("/api/admin/settings/x-shopping", requireFullAccess, async (req, res) => {
+    try {
+      const { xShoppingService } = await import("./src/integrations/x-shopping/XShoppingService");
+      await storage.updateIntegrationSettings({
+        xShoppingConfigured: false,
+        xAccountId: null,
+        xCatalogId: null,
+        xClientId: null,
+        xClientSecretEncrypted: null,
+        xAccessTokenEncrypted: null,
+        xRefreshTokenEncrypted: null,
+        xLastSyncAt: null,
+        xLastSyncStatus: "never",
+      });
+      xShoppingService.clearCache();
+      console.log(`[Audit] X Shopping settings removed by admin`);
+      res.json({ success: true, message: "X Shopping configuration removed" });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message || "Failed to remove X Shopping settings" });
     }
   });
 
