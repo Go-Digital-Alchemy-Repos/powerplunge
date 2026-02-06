@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { Section, Container } from "@/cms/layout";
 import type { BlockRenderProps } from "./types";
 
 export default function ImageBlock({ data, settings }: BlockRenderProps) {
@@ -11,14 +12,13 @@ export default function ImageBlock({ data, settings }: BlockRenderProps) {
 
   if (!src) {
     return (
-      <section
-        className={cn("max-w-7xl mx-auto px-4 py-12", settings?.className)}
-        data-testid="block-image"
-      >
-        <div className="bg-slate-800 rounded-lg p-8 text-center text-slate-500">
-          No image source provided
-        </div>
-      </section>
+      <Section className={settings?.className} data-testid="block-image">
+        <Container>
+          <div className="pp-surface-bg rounded-lg p-8 text-center pp-text-muted">
+            No image source provided
+          </div>
+        </Container>
+      </Section>
     );
   }
 
@@ -37,24 +37,23 @@ export default function ImageBlock({ data, settings }: BlockRenderProps) {
   );
 
   return (
-    <section
-      className={cn("max-w-7xl mx-auto px-4 py-12", settings?.className)}
-      data-testid="block-image"
-    >
-      <figure className={cn(settings?.alignment === "center" && "flex flex-col items-center")}>
-        {linkHref ? (
-          <a href={linkHref} className="block">
-            {imgEl}
-          </a>
-        ) : (
-          imgEl
-        )}
-        {caption && (
-          <figcaption className="mt-4 text-sm text-slate-400">
-            {caption}
-          </figcaption>
-        )}
-      </figure>
-    </section>
+    <Section className={settings?.className} data-testid="block-image">
+      <Container>
+        <figure className={cn(settings?.alignment === "center" && "flex flex-col items-center")}>
+          {linkHref ? (
+            <a href={linkHref} className="block">
+              {imgEl}
+            </a>
+          ) : (
+            imgEl
+          )}
+          {caption && (
+            <figcaption className="mt-4 text-sm pp-text-muted">
+              {caption}
+            </figcaption>
+          )}
+        </figure>
+      </Container>
+    </Section>
   );
 }

@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { Container } from "@/cms/layout";
 import type { BlockRenderProps } from "./types";
 
 export default function HeroBlock({ data, settings }: BlockRenderProps) {
@@ -18,6 +19,10 @@ export default function HeroBlock({ data, settings }: BlockRenderProps) {
         "relative min-h-[70vh] flex items-center justify-center overflow-hidden",
         settings?.className
       )}
+      style={{
+        paddingTop: "var(--pp-section-py, 3rem)",
+        paddingBottom: "var(--pp-section-py, 3rem)",
+      }}
       data-testid="block-hero"
     >
       {backgroundImage && (
@@ -31,58 +36,60 @@ export default function HeroBlock({ data, settings }: BlockRenderProps) {
           <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
         </div>
       )}
-      <div
-        className={cn(
-          "relative z-10 max-w-7xl mx-auto px-6 py-24",
-          align === "center" ? "text-center" : "text-left"
-        )}
-      >
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
+      <Container className="relative z-10">
+        <div
+          className={cn(
+            "py-24",
+            align === "center" ? "text-center" : "text-left"
+          )}
         >
-          <h1
-            className={cn(
-              "font-display text-5xl md:text-7xl lg:text-8xl font-bold mb-6 leading-tight",
-              themeVariant === "ice" && "text-gradient-ice"
-            )}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
           >
-            {headline}
-          </h1>
-          {subheadline && (
-            <p
+            <h1
               className={cn(
-                "text-muted-foreground text-lg md:text-xl mb-10",
-                align === "center" ? "max-w-2xl mx-auto" : "max-w-2xl"
+                "font-display text-5xl md:text-7xl lg:text-8xl font-bold mb-6 leading-tight",
+                themeVariant === "ice" && "text-gradient-ice"
               )}
             >
-              {subheadline}
-            </p>
-          )}
-          {ctaText && (
-            <div
-              className={cn(
-                "flex gap-4",
-                align === "center"
-                  ? "justify-center"
-                  : "justify-start"
-              )}
-            >
-              <Button
-                size="lg"
-                className="glow-ice-sm text-lg px-8"
-                onClick={() => {
-                  if (ctaHref) window.location.href = ctaHref;
-                }}
-                data-testid="button-hero-primary"
+              {headline}
+            </h1>
+            {subheadline && (
+              <p
+                className={cn(
+                  "pp-text-muted text-lg md:text-xl mb-10",
+                  align === "center" ? "max-w-2xl mx-auto" : "max-w-2xl"
+                )}
               >
-                {ctaText}
-              </Button>
-            </div>
-          )}
-        </motion.div>
-      </div>
+                {subheadline}
+              </p>
+            )}
+            {ctaText && (
+              <div
+                className={cn(
+                  "flex gap-4",
+                  align === "center"
+                    ? "justify-center"
+                    : "justify-start"
+                )}
+              >
+                <Button
+                  size="lg"
+                  className="glow-ice-sm text-lg px-8"
+                  onClick={() => {
+                    if (ctaHref) window.location.href = ctaHref;
+                  }}
+                  data-testid="button-hero-primary"
+                >
+                  {ctaText}
+                </Button>
+              </div>
+            )}
+          </motion.div>
+        </div>
+      </Container>
     </section>
   );
 }

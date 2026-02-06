@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { Section, Container } from "@/cms/layout";
 import type { BlockRenderProps } from "./types";
 
 const gridColsMap: Record<number, string> = {
@@ -19,48 +20,47 @@ export default function ImageGridBlock({ data, settings }: BlockRenderProps) {
   const spacing = data?.spacing || "normal";
 
   return (
-    <section
-      className={cn("max-w-7xl mx-auto px-4 py-12", settings?.className)}
-      data-testid="block-imagegrid"
-    >
-      <div
-        className={cn(
-          "grid grid-cols-2",
-          gridColsMap[columns] || "md:grid-cols-3",
-          spacingMap[spacing] || "gap-4"
-        )}
-      >
-        {items.map(
-          (
-            img: { src: string; alt?: string; caption?: string; linkHref?: string },
-            idx: number
-          ) => {
-            const imgEl = (
-              <img
-                src={img.src}
-                alt={img.alt || ""}
-                className="rounded-lg shadow-lg w-full h-48 object-cover"
-              />
-            );
-            return (
-              <figure key={idx}>
-                {img.linkHref ? (
-                  <a href={img.linkHref} className="block">
-                    {imgEl}
-                  </a>
-                ) : (
-                  imgEl
-                )}
-                {img.caption && (
-                  <figcaption className="mt-2 text-sm text-slate-400 text-center">
-                    {img.caption}
-                  </figcaption>
-                )}
-              </figure>
-            );
-          }
-        )}
-      </div>
-    </section>
+    <Section className={settings?.className} data-testid="block-imagegrid">
+      <Container>
+        <div
+          className={cn(
+            "grid grid-cols-2",
+            gridColsMap[columns] || "md:grid-cols-3",
+            spacingMap[spacing] || "gap-4"
+          )}
+        >
+          {items.map(
+            (
+              img: { src: string; alt?: string; caption?: string; linkHref?: string },
+              idx: number
+            ) => {
+              const imgEl = (
+                <img
+                  src={img.src}
+                  alt={img.alt || ""}
+                  className="rounded-lg shadow-lg w-full h-48 object-cover"
+                />
+              );
+              return (
+                <figure key={idx}>
+                  {img.linkHref ? (
+                    <a href={img.linkHref} className="block">
+                      {imgEl}
+                    </a>
+                  ) : (
+                    imgEl
+                  )}
+                  {img.caption && (
+                    <figcaption className="mt-2 text-sm pp-text-muted text-center">
+                      {img.caption}
+                    </figcaption>
+                  )}
+                </figure>
+              );
+            }
+          )}
+        </div>
+      </Container>
+    </Section>
   );
 }
