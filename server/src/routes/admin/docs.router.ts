@@ -32,6 +32,7 @@ const CATEGORY_CONFIG: Record<string, CategoryConfig> = {
   "16-CHANGELOG": { displayName: "Changelog", icon: "History", order: 16 },
   "17-API-REGISTRY": { displayName: "API Registry", icon: "FileJson", order: 17 },
   "18-FUNCTIONAL-DOCS": { displayName: "Functional Docs", icon: "ClipboardList", order: 18 },
+  "19-CMS-V2": { displayName: "CMS v2", icon: "LayoutDashboard", order: 19 },
 };
 
 interface DocMeta {
