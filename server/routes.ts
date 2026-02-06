@@ -62,6 +62,7 @@ import affiliateRoutes from "./src/routes/affiliate.routes";
 import affiliatePortalRoutes from "./src/routes/customer/affiliate-portal.routes";
 import upsellRoutes from "./src/routes/upsell.routes";
 import supportRoutes, { adminSupportRouter } from "./src/routes/support.routes";
+import docsRouter from "./src/routes/admin/docs.router";
 import vipRoutes from "./src/routes/vip.routes";
 import couponRoutes from "./src/routes/coupon.routes";
 import recoveryRoutes from "./src/routes/recovery.routes";
@@ -125,6 +126,7 @@ export async function registerRoutes(
   app.use("/api/alerts", requireFullAccess, alertsRoutes);
   app.use("/api/customer/support", isAuthenticated, supportRoutes);
   app.use("/api/admin/support", requireFullAccess, adminSupportRouter);
+  app.use("/api/admin/docs", requireFullAccess, docsRouter);
   app.use("/api/customer/orders", orderTrackingRoutes);
   app.use("/api/customer/auth", customerAuthRoutes);
   app.use("/api/orders", publicOrderStatusRoutes);
@@ -4941,7 +4943,9 @@ Respond with ONLY the generated text - no quotes, no explanations, no formatting
   });
 
   // ==================== DOCS LIBRARY (Admin) ====================
-  
+  // NOTE: Old DB-backed docs system replaced by file-system docs router (docs.router.ts)
+  // Endpoints below are disabled — kept for reference only.
+  /*
   // Get all docs (with optional filters)
   app.get("/api/admin/docs", requireFullAccess, async (req, res) => {
     try {
@@ -5134,6 +5138,7 @@ Respond with ONLY the generated text - no quotes, no explanations, no formatting
       res.status(500).json({ message: "Failed to check documentation health" });
     }
   });
+  */
 
   return httpServer;
 }

@@ -235,6 +235,12 @@ export default function AdminNav({ currentPage, role = "admin" }: AdminNavProps)
                       Docs Library
                     </Link>
                   </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/admin/docs-coverage" className="flex items-center gap-2 cursor-pointer">
+                      <FileText className="w-4 h-4" />
+                      Docs Coverage
+                    </Link>
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             )}

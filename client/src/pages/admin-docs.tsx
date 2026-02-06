@@ -1,712 +1,529 @@
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useLocation } from "wouter";
-import { 
-  Plus, Edit, Trash2, FileText, Eye, EyeOff, Search, 
-  FolderOpen, History, ChevronRight, ChevronDown, Save, X, RotateCcw, 
-  Sparkles, RefreshCw, AlertTriangle
+import {
+  Search, ChevronRight, ChevronDown, RefreshCw, FileText, Rocket,
+  Layers, Sparkles, Code, Monitor, Server, Shield, Database, TestTube,
+  Cloud, Terminal, Settings, Plug, AlertTriangle, BookOpen, History,
+  FileJson, ClipboardList, Folder, ExternalLink, Download
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useAdmin } from "@/hooks/use-admin";
-import ReactMarkdown from "react-markdown";
 import AdminNav from "@/components/admin/AdminNav";
 
-interface Doc {
+const ICON_MAP: Record<string, React.ComponentType<any>> = {
+  Rocket, Layers, Sparkles, Code, Monitor, Server, Shield, Database,
+  TestTube, Cloud, Terminal, Settings, Plug, AlertTriangle, BookOpen,
+  History, FileJson, ClipboardList, Folder, FileText,
+};
+
+interface DocMeta {
   id: string;
-  slug: string;
+  filename: string;
   title: string;
   category: string;
-  tags: string[];
-  status: string;
-  content: string;
-  sortOrder: number;
-  parentId: string | null;
-  createdAt: string;
-  updatedAt: string;
-  updatedByUserId: string | null;
+  relativePath: string;
+  sizeBytes: number;
+  modifiedAt: string;
 }
 
-interface DocVersion {
+interface CategoryGroup {
   id: string;
-  docId: string;
-  content: string;
+  displayName: string;
+  icon: string;
+  order: number;
+  docs: DocMeta[];
+}
+
+interface DocDetail {
+  id: string;
+  filename: string;
   title: string;
-  createdAt: string;
-  createdByUserId: string | null;
+  content: string;
+  relativePath: string;
+  sizeBytes: number;
+  modifiedAt: string;
 }
 
-interface DocsHealth {
-  routeCount: number;
-  envVarCount: number;
-  integrationCount: number;
-  tableCount: number;
-  docsCount: number;
-  lastGenerated: string | null;
-  warnings: string[];
+interface SyncResult {
+  success: boolean;
+  summary: { created: number; updated: number; skipped: number; errors: number };
+  details: Array<{ domain: string; action: string; file: string }>;
 }
 
-const CATEGORIES = [
-  { value: "architecture", label: "Architecture" },
-  { value: "integrations", label: "Integrations" },
-  { value: "features", label: "Features" },
-  { value: "data-model", label: "Data Model" },
-  { value: "deployment", label: "Deployment" },
-  { value: "security", label: "Security" },
-  { value: "troubleshooting", label: "Troubleshooting" },
-  { value: "general", label: "General" },
-];
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function formatDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString("en-US", {
+    month: "short", day: "numeric", year: "numeric",
+    hour: "numeric", minute: "2-digit",
+  });
+}
+
+function InlineContent({ text }: { text: string }) {
+  const parts: React.ReactNode[] = [];
+  let remaining = text;
+  let key = 0;
+
+  while (remaining.length > 0) {
+    const codeMatch = remaining.match(/^`([^`]+)`/);
+    if (codeMatch) {
+      parts.push(
+        <code key={key++} className="bg-gray-800 text-cyan-300 px-1.5 py-0.5 rounded text-sm font-mono">
+          {codeMatch[1]}
+        </code>
+      );
+      remaining = remaining.slice(codeMatch[0].length);
+      continue;
+    }
+
+    const boldMatch = remaining.match(/^\*\*([^*]+)\*\*/);
+    if (boldMatch) {
+      parts.push(<strong key={key++} className="font-semibold text-white">{boldMatch[1]}</strong>);
+      remaining = remaining.slice(boldMatch[0].length);
+      continue;
+    }
+
+    const linkMatch = remaining.match(/^\[([^\]]+)\]\(([^)]+)\)/);
+    if (linkMatch) {
+      parts.push(
+        <a key={key++} href={linkMatch[2]} target="_blank" rel="noopener noreferrer"
+          className="text-cyan-400 hover:text-cyan-300 underline inline-flex items-center gap-1">
+          {linkMatch[1]}<ExternalLink className="w-3 h-3" />
+        </a>
+      );
+      remaining = remaining.slice(linkMatch[0].length);
+      continue;
+    }
+
+    const nextSpecial = remaining.search(/`|\*\*|\[/);
+    if (nextSpecial === -1) {
+      parts.push(<span key={key++}>{remaining}</span>);
+      break;
+    } else if (nextSpecial === 0) {
+      parts.push(<span key={key++}>{remaining[0]}</span>);
+      remaining = remaining.slice(1);
+    } else {
+      parts.push(<span key={key++}>{remaining.slice(0, nextSpecial)}</span>);
+      remaining = remaining.slice(nextSpecial);
+    }
+  }
+
+  return <>{parts}</>;
+}
+
+function MarkdownRenderer({ content }: { content: string }) {
+  const lines = content.split("\n");
+  const elements: React.ReactNode[] = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+
+    if (line.startsWith("```")) {
+      const lang = line.slice(3).trim();
+      const codeLines: string[] = [];
+      i++;
+      while (i < lines.length && !lines[i].startsWith("```")) {
+        codeLines.push(lines[i]);
+        i++;
+      }
+      i++;
+      elements.push(
+        <div key={elements.length} className="my-3">
+          {lang && <div className="text-xs text-gray-500 bg-gray-900 px-3 py-1 rounded-t border border-b-0 border-gray-700 font-mono">{lang}</div>}
+          <pre className={`bg-gray-900 p-4 rounded${lang ? "-b" : ""} overflow-x-auto border border-gray-700 text-sm`}>
+            <code className="text-green-300 font-mono">{codeLines.join("\n")}</code>
+          </pre>
+        </div>
+      );
+      continue;
+    }
+
+    if (line.startsWith("# ")) {
+      elements.push(<h1 key={elements.length} className="text-2xl font-bold text-white mt-6 mb-3 border-b border-gray-700 pb-2"><InlineContent text={line.slice(2)} /></h1>);
+      i++; continue;
+    }
+    if (line.startsWith("## ")) {
+      elements.push(<h2 key={elements.length} className="text-xl font-semibold text-white mt-5 mb-2"><InlineContent text={line.slice(3)} /></h2>);
+      i++; continue;
+    }
+    if (line.startsWith("### ")) {
+      elements.push(<h3 key={elements.length} className="text-lg font-medium text-gray-200 mt-4 mb-2"><InlineContent text={line.slice(4)} /></h3>);
+      i++; continue;
+    }
+    if (line.startsWith("#### ")) {
+      elements.push(<h4 key={elements.length} className="text-base font-medium text-gray-300 mt-3 mb-1"><InlineContent text={line.slice(5)} /></h4>);
+      i++; continue;
+    }
+
+    if (line.startsWith("> ")) {
+      elements.push(
+        <blockquote key={elements.length} className="border-l-4 border-cyan-500 pl-4 py-1 my-2 text-gray-400 italic">
+          <InlineContent text={line.slice(2)} />
+        </blockquote>
+      );
+      i++; continue;
+    }
+
+    if (/^---+$/.test(line.trim()) || /^\*\*\*+$/.test(line.trim())) {
+      elements.push(<hr key={elements.length} className="border-gray-700 my-4" />);
+      i++; continue;
+    }
+
+    if (line.startsWith("- ") || line.startsWith("* ")) {
+      const listItems: React.ReactNode[] = [];
+      while (i < lines.length && (lines[i].startsWith("- ") || lines[i].startsWith("* "))) {
+        listItems.push(
+          <li key={listItems.length} className="text-gray-300 ml-4">
+            <InlineContent text={lines[i].slice(2)} />
+          </li>
+        );
+        i++;
+      }
+      elements.push(<ul key={elements.length} className="list-disc pl-4 my-2 space-y-1">{listItems}</ul>);
+      continue;
+    }
+
+    const numberedMatch = line.match(/^(\d+)\.\s+(.*)/);
+    if (numberedMatch) {
+      const listItems: React.ReactNode[] = [];
+      while (i < lines.length && /^\d+\.\s+/.test(lines[i])) {
+        const m = lines[i].match(/^\d+\.\s+(.*)/);
+        if (m) {
+          listItems.push(
+            <li key={listItems.length} className="text-gray-300 ml-4">
+              <InlineContent text={m[1]} />
+            </li>
+          );
+        }
+        i++;
+      }
+      elements.push(<ol key={elements.length} className="list-decimal pl-4 my-2 space-y-1">{listItems}</ol>);
+      continue;
+    }
+
+    if (line.includes("|") && line.trim().startsWith("|")) {
+      const tableRows: string[][] = [];
+      let hasHeader = false;
+      while (i < lines.length && lines[i].includes("|") && lines[i].trim().startsWith("|")) {
+        const row = lines[i].trim();
+        if (/^\|[\s-:|]+\|$/.test(row)) {
+          hasHeader = true;
+          i++; continue;
+        }
+        const cells = row.split("|").slice(1, -1).map(c => c.trim());
+        tableRows.push(cells);
+        i++;
+      }
+
+      if (tableRows.length > 0) {
+        elements.push(
+          <div key={elements.length} className="overflow-x-auto my-3">
+            <table className="w-full text-sm border border-gray-700">
+              {hasHeader && tableRows.length > 0 && (
+                <thead>
+                  <tr className="bg-gray-800">
+                    {tableRows[0].map((cell, ci) => (
+                      <th key={ci} className="px-3 py-2 text-left text-gray-300 font-medium border-b border-gray-700">
+                        <InlineContent text={cell} />
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+              )}
+              <tbody>
+                {tableRows.slice(hasHeader ? 1 : 0).map((row, ri) => (
+                  <tr key={ri} className="border-b border-gray-800 hover:bg-gray-800/50">
+                    {row.map((cell, ci) => (
+                      <td key={ci} className="px-3 py-2 text-gray-400">
+                        <InlineContent text={cell} />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+      }
+      continue;
+    }
+
+    if (line.startsWith("<!--")) {
+      while (i < lines.length && !lines[i].includes("-->")) i++;
+      i++; continue;
+    }
+
+    if (line.trim() === "") {
+      i++; continue;
+    }
+
+    elements.push(<p key={elements.length} className="text-gray-300 my-1.5 leading-relaxed"><InlineContent text={line} /></p>);
+    i++;
+  }
+
+  return <div className="prose prose-invert max-w-none">{elements}</div>;
+}
 
 export default function AdminDocs() {
-  const [, navigate] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { role, hasFullAccess, isLoading: adminLoading } = useAdmin();
-  
-  const [selectedDoc, setSelectedDoc] = useState<Doc | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<string>("all");
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(CATEGORIES.map(c => c.value)));
-  const [showVersionHistory, setShowVersionHistory] = useState(false);
-  const [editorTab, setEditorTab] = useState<string>("edit");
-  
-  const [formData, setFormData] = useState({
-    title: "",
-    slug: "",
-    category: "general",
-    content: "",
-    tags: [] as string[],
-    status: "draft",
-    sortOrder: 0,
-    parentId: null as string | null,
-  });
+  const { hasFullAccess, isLoading: adminLoading } = useAdmin();
 
-  const { data: docs = [], isLoading } = useQuery<Doc[]>({
-    queryKey: ["/api/admin/docs", categoryFilter !== "all" ? categoryFilter : undefined],
+  const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+
+  const { data: docsData, isLoading } = useQuery<{ categories: CategoryGroup[] }>({
+    queryKey: ["/api/admin/docs"],
     queryFn: async () => {
-      const params = new URLSearchParams();
-      if (categoryFilter !== "all") params.set("category", categoryFilter);
-      const res = await fetch(`/api/admin/docs?${params}`, { credentials: "include" });
+      const res = await fetch("/api/admin/docs", { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch docs");
       return res.json();
     },
   });
 
-  const { data: versions = [], refetch: refetchVersions } = useQuery<DocVersion[]>({
-    queryKey: ["/api/admin/docs", selectedDoc?.id, "versions"],
+  const { data: selectedDoc, isLoading: docLoading } = useQuery<DocDetail>({
+    queryKey: ["/api/admin/docs", selectedDocId],
     queryFn: async () => {
-      if (!selectedDoc) return [];
-      const res = await fetch(`/api/admin/docs/${selectedDoc.id}/versions`, { credentials: "include" });
-      if (!res.ok) throw new Error("Failed to fetch versions");
+      const res = await fetch(`/api/admin/docs/${selectedDocId}`, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch document");
       return res.json();
     },
-    enabled: !!selectedDoc && showVersionHistory,
+    enabled: !!selectedDocId,
   });
 
-  const createMutation = useMutation({
-    mutationFn: async (data: any) => {
-      const res = await fetch("/api/admin/docs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(data),
-      });
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to create document");
-      }
-      return res.json();
-    },
-    onSuccess: (newDoc) => {
-      toast({ title: "Document created successfully!" });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/docs"] });
-      setIsCreating(false);
-      setSelectedDoc(newDoc);
-      setIsEditing(false);
-    },
-    onError: (error: Error) => {
-      toast({ title: error.message, variant: "destructive" });
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: any }) => {
-      const res = await fetch(`/api/admin/docs/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(data),
-      });
-      if (!res.ok) throw new Error("Failed to update document");
-      return res.json();
-    },
-    onSuccess: (updated) => {
-      toast({ title: "Document saved!" });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/docs"] });
-      setSelectedDoc(updated);
-      setIsEditing(false);
-    },
-    onError: () => {
-      toast({ title: "Failed to save document", variant: "destructive" });
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const res = await fetch(`/api/admin/docs/${id}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error("Failed to delete document");
-      return res.json();
-    },
-    onSuccess: () => {
-      toast({ title: "Document deleted!" });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/docs"] });
-      setSelectedDoc(null);
-    },
-    onError: () => {
-      toast({ title: "Failed to delete document", variant: "destructive" });
-    },
-  });
-
-  const publishMutation = useMutation({
-    mutationFn: async ({ id, publish }: { id: string; publish: boolean }) => {
-      const res = await fetch(`/api/admin/docs/${id}/publish`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ publish }),
-      });
-      if (!res.ok) throw new Error("Failed to update status");
-      return res.json();
-    },
-    onSuccess: (updated) => {
-      toast({ title: updated.status === "published" ? "Document published!" : "Document unpublished" });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/docs"] });
-      setSelectedDoc(updated);
-    },
-    onError: () => {
-      toast({ title: "Failed to update status", variant: "destructive" });
-    },
-  });
-
-  const restoreMutation = useMutation({
-    mutationFn: async ({ docId, versionId }: { docId: string; versionId: string }) => {
-      const res = await fetch(`/api/admin/docs/${docId}/restore/${versionId}`, {
-        method: "POST",
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error("Failed to restore version");
-      return res.json();
-    },
-    onSuccess: (restored) => {
-      toast({ title: "Version restored!" });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/docs"] });
-      refetchVersions();
-      setSelectedDoc(restored);
-      setShowVersionHistory(false);
-    },
-    onError: () => {
-      toast({ title: "Failed to restore version", variant: "destructive" });
-    },
-  });
-
-  // Health check query
-  const { data: health, refetch: refetchHealth } = useQuery<DocsHealth>({
-    queryKey: ["/api/admin/docs/health"],
-    queryFn: async () => {
-      const res = await fetch("/api/admin/docs/health", { credentials: "include" });
-      if (!res.ok) throw new Error("Failed to fetch health");
-      return res.json();
-    },
-    staleTime: 60000,
-  });
-
-  // Generate system docs mutation
-  const generateMutation = useMutation({
+  const syncMutation = useMutation<SyncResult>({
     mutationFn: async () => {
-      const res = await fetch("/api/admin/docs/generate", {
+      const res = await fetch("/api/admin/docs/sync", {
         method: "POST",
         credentials: "include",
       });
-      if (!res.ok) throw new Error("Failed to generate documentation");
+      if (!res.ok) throw new Error("Sync failed");
       return res.json();
     },
-    onSuccess: (result) => {
-      toast({ 
-        title: "Documentation generated!",
-        description: `Created ${result.created}, updated ${result.updated} docs. Scanned ${result.stats.routes} routes, ${result.stats.tables} tables.`,
-      });
+    onSuccess: (data) => {
+      toast({ title: `API Docs Synced: ${data.summary.created} created, ${data.summary.updated} updated` });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/docs"] });
-      refetchHealth();
     },
     onError: () => {
-      toast({ title: "Failed to generate documentation", variant: "destructive" });
+      toast({ title: "Failed to sync API docs", variant: "destructive" });
     },
   });
 
-  const resetForm = () => {
-    setFormData({
-      title: "",
-      slug: "",
-      category: "general",
-      content: "",
-      tags: [],
-      status: "draft",
-      sortOrder: 0,
-      parentId: null,
+  const categories = docsData?.categories || [];
+
+  const allDocsExpanded = useMemo(() => {
+    if (expandedCategories.size === 0 && categories.length > 0) {
+      return new Set(categories.map(c => c.id));
+    }
+    return expandedCategories;
+  }, [expandedCategories, categories]);
+
+  const filteredCategories = useMemo(() => {
+    if (!searchQuery.trim()) return categories;
+    const q = searchQuery.toLowerCase();
+    return categories
+      .map(cat => ({
+        ...cat,
+        docs: cat.docs.filter(doc =>
+          doc.title.toLowerCase().includes(q) ||
+          doc.filename.toLowerCase().includes(q)
+        ),
+      }))
+      .filter(cat => cat.docs.length > 0);
+  }, [categories, searchQuery]);
+
+  const totalDocs = categories.reduce((sum, cat) => sum + cat.docs.length, 0);
+
+  const toggleCategory = (catId: string) => {
+    setExpandedCategories(prev => {
+      const base = prev.size === 0 ? new Set(categories.map(c => c.id)) : new Set(prev);
+      if (base.has(catId)) {
+        base.delete(catId);
+      } else {
+        base.add(catId);
+      }
+      return base;
     });
   };
 
-  const startEditing = (doc: Doc) => {
-    setFormData({
-      title: doc.title,
-      slug: doc.slug,
-      category: doc.category,
-      content: doc.content,
-      tags: doc.tags || [],
-      status: doc.status,
-      sortOrder: doc.sortOrder,
-      parentId: doc.parentId,
-    });
-    setIsEditing(true);
-  };
-
-  const startCreating = () => {
-    resetForm();
-    setSelectedDoc(null);
-    setIsCreating(true);
-    setIsEditing(true);
-  };
-
-  const handleSave = () => {
-    const data = {
-      ...formData,
-      slug: formData.slug || formData.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""),
-    };
-
-    if (isCreating) {
-      createMutation.mutate(data);
-    } else if (selectedDoc) {
-      updateMutation.mutate({ id: selectedDoc.id, data });
-    }
-  };
-
-  const handleCancel = () => {
-    setIsEditing(false);
-    setIsCreating(false);
-    if (selectedDoc) {
-      setFormData({
-        title: selectedDoc.title,
-        slug: selectedDoc.slug,
-        category: selectedDoc.category,
-        content: selectedDoc.content,
-        tags: selectedDoc.tags || [],
-        status: selectedDoc.status,
-        sortOrder: selectedDoc.sortOrder,
-        parentId: selectedDoc.parentId,
-      });
-    }
-  };
-
-  const toggleCategory = (category: string) => {
-    const newExpanded = new Set(expandedCategories);
-    if (newExpanded.has(category)) {
-      newExpanded.delete(category);
-    } else {
-      newExpanded.add(category);
-    }
-    setExpandedCategories(newExpanded);
-  };
-
-  const filteredDocs = docs.filter(doc => {
-    if (searchQuery) {
-      const search = searchQuery.toLowerCase();
-      return doc.title.toLowerCase().includes(search) || 
-             doc.content.toLowerCase().includes(search) ||
-             doc.tags.some(t => t.toLowerCase().includes(search));
-    }
-    return true;
-  });
-
-  const docsByCategory = CATEGORIES.reduce((acc, cat) => {
-    acc[cat.value] = filteredDocs.filter(d => d.category === cat.value);
-    return acc;
-  }, {} as Record<string, Doc[]>);
-
-  if (!adminLoading && !hasFullAccess) {
+  if (adminLoading || !hasFullAccess) {
     return (
-      <div className="min-h-screen bg-background">
-        <AdminNav role={role} />
-        <div className="max-w-2xl mx-auto p-8 text-center">
-          <Card>
-            <CardContent className="p-8">
-              <h2 className="text-2xl font-bold text-destructive mb-4">Access Denied</h2>
-              <p className="text-muted-foreground">You don't have permission to access docs. This area is restricted to administrators only.</p>
-            </CardContent>
-          </Card>
+      <div className="min-h-screen bg-gray-950 text-white">
+        <AdminNav currentPage="docs" />
+        <div className="p-8 text-center text-gray-400">
+          {adminLoading ? "Loading..." : "Access Denied"}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background font-sans">
-      <AdminNav currentPage="docs" role={role} />
+    <div className="min-h-screen bg-gray-950 text-white" data-testid="admin-docs-page">
+      <AdminNav currentPage="docs" />
 
-      {/* Page Header */}
-      <div className="max-w-7xl mx-auto px-6 py-6 flex items-center justify-between border-b border-border">
-        <div className="flex items-center gap-3">
-          <FileText className="w-6 h-6 text-primary" />
-          <h2 className="text-2xl font-bold font-sans">Docs Library</h2>
-          {health && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground ml-4">
-              <span>{health.docsCount} docs</span>
-              <span>•</span>
-              <span>{health.routeCount} routes</span>
-              <span>•</span>
-              <span>{health.tableCount} tables</span>
-              {health.warnings.length > 0 && (
-                <Badge variant="outline" className="text-yellow-400 border-yellow-400/50 ml-2">
-                  <AlertTriangle className="w-3 h-3 mr-1" />
-                  {health.warnings.length}
-                </Badge>
-              )}
+      <div className="flex h-[calc(100vh-64px)]">
+        <div className="w-80 border-r border-gray-800 flex flex-col bg-gray-950">
+          <div className="p-3 border-b border-gray-800 space-y-2">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-gray-300 uppercase tracking-wider">Documentation</h2>
+              <Badge variant="secondary" className="text-xs" data-testid="badge-doc-count">{totalDocs} docs</Badge>
             </div>
-          )}
-        </div>
-        <div className="flex items-center gap-3">
-          <Button 
-            onClick={() => generateMutation.mutate()} 
-            variant="outline"
-            disabled={generateMutation.isPending}
-            data-testid="btn-generate-docs"
-          >
-            {generateMutation.isPending ? (
-              <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-            ) : (
-              <Sparkles className="w-4 h-4 mr-2" />
-            )}
-            Generate System Docs
-          </Button>
-          <Button onClick={startCreating} data-testid="btn-new-doc">
-            <Plus className="w-4 h-4 mr-2" /> New Document
-          </Button>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-6 py-6 flex gap-6" style={{ height: 'calc(100vh - 180px)' }}>
-        {/* Sidebar - TOC */}
-        <aside className="w-72 bg-card border border-border rounded-lg flex flex-col overflow-hidden">
-          <div className="p-4 border-b border-border">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Search className="absolute left-2.5 top-2.5 w-4 h-4 text-gray-500" />
               <Input
                 placeholder="Search docs..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
+                className="pl-9 bg-gray-900 border-gray-700 h-9 text-sm"
                 data-testid="input-search-docs"
               />
             </div>
+            <div className="flex gap-1.5">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => syncMutation.mutate()}
+                disabled={syncMutation.isPending}
+                className="flex-1 text-xs h-8 border-gray-700"
+                data-testid="button-sync-api-docs"
+              >
+                <Download className="w-3.5 h-3.5 mr-1" />
+                {syncMutation.isPending ? "Syncing..." : "Sync API Docs"}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/admin/docs"] })}
+                className="h-8 px-2 border-gray-700"
+                data-testid="button-refresh-docs"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+              </Button>
+            </div>
           </div>
-          
-          <div className="flex-1 overflow-y-auto p-2">
+
+          <div className="flex-1 overflow-y-auto">
             {isLoading ? (
-              <div className="text-muted-foreground text-sm p-4">Loading...</div>
+              <div className="p-4 text-gray-500 text-sm">Loading docs...</div>
+            ) : filteredCategories.length === 0 ? (
+              <div className="p-4 text-gray-500 text-sm">
+                {searchQuery ? "No matching documents" : "No documentation found"}
+              </div>
             ) : (
-              CATEGORIES.map(cat => (
-                <div key={cat.value} className="mb-1">
-                  <button
-                    onClick={() => toggleCategory(cat.value)}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-foreground hover:bg-secondary rounded-lg transition-colors"
-                    data-testid={`btn-category-${cat.value}`}
-                  >
-                    {expandedCategories.has(cat.value) ? (
-                      <ChevronDown className="w-4 h-4" />
-                    ) : (
-                      <ChevronRight className="w-4 h-4" />
+              filteredCategories.map(cat => {
+                const IconComponent = ICON_MAP[cat.icon] || FileText;
+                const isExpanded = allDocsExpanded.has(cat.id);
+
+                return (
+                  <div key={cat.id} className="border-b border-gray-800/50" data-testid={`category-${cat.id}`}>
+                    <button
+                      onClick={() => toggleCategory(cat.id)}
+                      className="w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-900 text-left text-sm"
+                      data-testid={`button-toggle-category-${cat.id}`}
+                    >
+                      {isExpanded ? (
+                        <ChevronDown className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />
+                      ) : (
+                        <ChevronRight className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />
+                      )}
+                      <IconComponent className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+                      <span className="text-gray-300 font-medium truncate flex-1">{cat.displayName}</span>
+                      <Badge variant="outline" className="text-xs px-1.5 py-0 border-gray-700 text-gray-500">
+                        {cat.docs.length}
+                      </Badge>
+                    </button>
+
+                    {isExpanded && (
+                      <div className="pb-1">
+                        {cat.docs.map(doc => (
+                          <button
+                            key={doc.id}
+                            onClick={() => setSelectedDocId(doc.id)}
+                            className={`w-full text-left px-3 py-1.5 pl-10 text-sm truncate transition-colors ${
+                              selectedDocId === doc.id
+                                ? "bg-cyan-900/30 text-cyan-300 border-r-2 border-cyan-400"
+                                : "text-gray-400 hover:bg-gray-900 hover:text-gray-200"
+                            }`}
+                            data-testid={`button-select-doc-${doc.id}`}
+                          >
+                            {doc.title}
+                          </button>
+                        ))}
+                      </div>
                     )}
-                    <FolderOpen className="w-4 h-4 text-primary" />
-                    <span>{cat.label}</span>
-                    <Badge variant="secondary" className="ml-auto text-xs">
-                      {docsByCategory[cat.value]?.length || 0}
-                    </Badge>
-                  </button>
-                  
-                  {expandedCategories.has(cat.value) && docsByCategory[cat.value]?.length > 0 && (
-                    <div className="ml-6 mt-1 space-y-1">
-                      {docsByCategory[cat.value].map(doc => (
-                        <button
-                          key={doc.id}
-                          onClick={() => {
-                            setSelectedDoc(doc);
-                            setIsCreating(false);
-                            setIsEditing(false);
-                            setShowVersionHistory(false);
-                          }}
-                          className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                            selectedDoc?.id === doc.id
-                              ? "bg-primary/20 text-primary"
-                              : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-                          }`}
-                          data-testid={`btn-doc-${doc.id}`}
-                        >
-                          <FileText className="w-3 h-3" />
-                          <span className="truncate flex-1 text-left">{doc.title}</span>
-                          {doc.status === "draft" && (
-                            <Badge variant="outline" className="text-xs text-yellow-400 border-yellow-400/50">
-                              Draft
-                            </Badge>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))
+                  </div>
+                );
+              })
             )}
           </div>
-        </aside>
+        </div>
 
-        {/* Main Content */}
-        <main className="flex-1 bg-card border border-border rounded-lg flex flex-col overflow-hidden">
-          {(selectedDoc || isCreating) ? (
-            <>
-              {/* Toolbar */}
-              <div className="bg-secondary border-b border-border px-6 py-3 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  {isEditing ? (
-                    <Input
-                      value={formData.title}
-                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                      className="text-lg font-semibold w-64"
-                      placeholder="Document Title"
-                      data-testid="input-doc-title"
-                    />
-                  ) : (
-                    <h2 className="text-lg font-semibold">{selectedDoc?.title}</h2>
-                  )}
-                  
-                  {selectedDoc && !isEditing && (
-                    <Badge variant={selectedDoc.status === "published" ? "default" : "secondary"}>
-                      {selectedDoc.status === "published" ? "Published" : "Draft"}
-                    </Badge>
-                  )}
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  {isEditing ? (
-                    <>
-                      <Button variant="ghost" onClick={handleCancel} data-testid="btn-cancel-edit">
-                        <X className="w-4 h-4 mr-2" /> Cancel
-                      </Button>
-                      <Button 
-                        onClick={handleSave} 
-                        disabled={createMutation.isPending || updateMutation.isPending}
-                        data-testid="btn-save-doc"
-                      >
-                        <Save className="w-4 h-4 mr-2" /> Save
-                      </Button>
-                    </>
-                  ) : selectedDoc && (
-                    <>
-                      <Button 
-                        variant="ghost" 
-                        onClick={() => setShowVersionHistory(!showVersionHistory)}
-                        data-testid="btn-version-history"
-                      >
-                        <History className="w-4 h-4 mr-2" /> History
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        onClick={() => publishMutation.mutate({ 
-                          id: selectedDoc.id, 
-                          publish: selectedDoc.status !== "published" 
-                        })}
-                        data-testid="btn-toggle-publish"
-                      >
-                        {selectedDoc.status === "published" ? (
-                          <><EyeOff className="w-4 h-4 mr-2" /> Unpublish</>
-                        ) : (
-                          <><Eye className="w-4 h-4 mr-2" /> Publish</>
-                        )}
-                      </Button>
-                      <Button variant="ghost" onClick={() => startEditing(selectedDoc)} data-testid="btn-edit-doc">
-                        <Edit className="w-4 h-4 mr-2" /> Edit
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        className="text-red-400 hover:text-red-300"
-                        onClick={() => {
-                          if (confirm("Are you sure you want to delete this document?")) {
-                            deleteMutation.mutate(selectedDoc.id);
-                          }
-                        }}
-                        data-testid="btn-delete-doc"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </>
-                  )}
-                </div>
+        <div className="flex-1 overflow-y-auto bg-gray-950">
+          {selectedDocId && selectedDoc ? (
+            <div className="max-w-4xl mx-auto p-6" data-testid="doc-viewer">
+              <div className="flex items-center gap-3 text-xs text-gray-500 mb-4 pb-3 border-b border-gray-800">
+                <span>{selectedDoc.relativePath}</span>
+                <span>|</span>
+                <span>{formatBytes(selectedDoc.sizeBytes)}</span>
+                <span>|</span>
+                <span>Modified {formatDate(selectedDoc.modifiedAt)}</span>
               </div>
-
-              {/* Editor/Viewer */}
-              <div className="flex-1 flex overflow-hidden">
-                <div className={`flex-1 flex flex-col overflow-hidden ${showVersionHistory ? 'w-2/3' : ''}`}>
-                  {isEditing ? (
-                    <div className="flex-1 flex flex-col overflow-hidden">
-                      <div className="px-6 py-3 border-b border-border flex gap-4">
-                        <div className="flex-1">
-                          <Label className="text-xs text-muted-foreground">Slug</Label>
-                          <Input
-                            value={formData.slug}
-                            onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                            placeholder="document-slug"
-                            className="text-sm"
-                            data-testid="input-doc-slug"
-                          />
-                        </div>
-                        <div className="w-40">
-                          <Label className="text-xs text-muted-foreground">Category</Label>
-                          <Select 
-                            value={formData.category} 
-                            onValueChange={(v) => setFormData({ ...formData, category: v })}
-                          >
-                            <SelectTrigger data-testid="select-category">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {CATEGORIES.map(cat => (
-                                <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="w-32">
-                          <Label className="text-xs text-muted-foreground">Status</Label>
-                          <Select 
-                            value={formData.status} 
-                            onValueChange={(v) => setFormData({ ...formData, status: v })}
-                          >
-                            <SelectTrigger data-testid="select-status">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="draft">Draft</SelectItem>
-                              <SelectItem value="published">Published</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                      
-                      <Tabs value={editorTab} onValueChange={setEditorTab} className="flex-1 flex flex-col overflow-hidden">
-                        <TabsList className="mx-6 mt-3">
-                          <TabsTrigger value="edit">Edit</TabsTrigger>
-                          <TabsTrigger value="preview">Preview</TabsTrigger>
-                        </TabsList>
-                        
-                        <TabsContent value="edit" className="flex-1 overflow-hidden m-0 px-6 pb-6">
-                          <Textarea
-                            value={formData.content}
-                            onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                            className="h-full font-mono text-sm resize-none"
-                            placeholder="Write your documentation in Markdown..."
-                            data-testid="textarea-doc-content"
-                          />
-                        </TabsContent>
-                        
-                        <TabsContent value="preview" className="flex-1 overflow-y-auto m-0 px-6 pb-6">
-                          <div className="prose prose-invert max-w-none">
-                            <ReactMarkdown>{formData.content || "*No content yet*"}</ReactMarkdown>
-                          </div>
-                        </TabsContent>
-                      </Tabs>
-                    </div>
-                  ) : (
-                    <div className="flex-1 overflow-y-auto p-6">
-                      <div className="prose prose-invert max-w-none">
-                        <ReactMarkdown>{selectedDoc?.content || "*No content*"}</ReactMarkdown>
-                      </div>
-                      
-                      {selectedDoc && (
-                        <div className="mt-8 pt-4 border-t border-border text-sm text-muted-foreground">
-                          Last updated: {new Date(selectedDoc.updatedAt).toLocaleString()}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-                
-                {/* Version History Panel */}
-                {showVersionHistory && selectedDoc && (
-                  <div className="w-80 border-l border-border bg-secondary flex flex-col overflow-hidden">
-                    <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-                      <h3 className="font-medium">Version History</h3>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => setShowVersionHistory(false)}
-                        data-testid="btn-close-history"
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
-                    
-                    <div className="flex-1 overflow-y-auto p-2">
-                      {versions.length === 0 ? (
-                        <p className="text-muted-foreground text-sm p-4">No previous versions</p>
-                      ) : (
-                        versions.map(version => (
-                          <div 
-                            key={version.id} 
-                            className="p-3 mb-2 bg-muted/50 rounded-lg"
-                          >
-                            <div className="text-sm font-medium">{version.title}</div>
-                            <div className="text-xs text-muted-foreground mt-1">
-                              {new Date(version.createdAt).toLocaleString()}
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="mt-2 text-primary"
-                              onClick={() => restoreMutation.mutate({ 
-                                docId: selectedDoc.id, 
-                                versionId: version.id 
-                              })}
-                              data-testid={`btn-restore-${version.id}`}
-                            >
-                              <RotateCcw className="w-3 h-3 mr-1" /> Restore
-                            </Button>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </>
+              <MarkdownRenderer content={selectedDoc.content} />
+            </div>
+          ) : docLoading ? (
+            <div className="flex items-center justify-center h-full text-gray-500">
+              Loading document...
+            </div>
           ) : (
-            <div className="flex-1 flex items-center justify-center text-muted-foreground">
-              <div className="text-center">
-                <FileText className="w-16 h-16 mx-auto mb-4 opacity-30" />
-                <p className="text-lg">Select a document or create a new one</p>
+            <div className="flex items-center justify-center h-full" data-testid="doc-welcome">
+              <div className="text-center max-w-lg">
+                <FileText className="w-16 h-16 text-gray-700 mx-auto mb-4" />
+                <h2 className="text-xl font-semibold text-gray-300 mb-2">App Documentation</h2>
+                <p className="text-gray-500 mb-6">
+                  Browse project documentation organized by category. Select a document from the sidebar to view its contents.
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  {categories.slice(0, 4).map(cat => {
+                    const IconComp = ICON_MAP[cat.icon] || FileText;
+                    return (
+                      <Card
+                        key={cat.id}
+                        className="bg-gray-900 border-gray-800 hover:border-cyan-800 cursor-pointer transition-colors"
+                        onClick={() => {
+                          setExpandedCategories(prev => {
+                            const base = new Set(prev);
+                            base.add(cat.id);
+                            return base;
+                          });
+                          if (cat.docs.length > 0) setSelectedDocId(cat.docs[0].id);
+                        }}
+                        data-testid={`card-quick-link-${cat.id}`}
+                      >
+                        <CardContent className="p-3 flex items-center gap-2">
+                          <IconComp className="w-5 h-5 text-cyan-400" />
+                          <div>
+                            <div className="text-sm text-gray-300 font-medium">{cat.displayName}</div>
+                            <div className="text-xs text-gray-500">{cat.docs.length} doc{cat.docs.length !== 1 ? "s" : ""}</div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           )}
-        </main>
+        </div>
       </div>
     </div>
   );

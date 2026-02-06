@@ -107,6 +107,28 @@ On server start, `ensureCmsDefaults()` runs to:
 2. Set `featuredProductId` from first active product if not already configured
 This ensures the CMS is always in a functional state without manual seeding.
 
+## App Docs System (File-System Based)
+
+The documentation system is a file-system-based read-only browser accessible from the admin area. It replaced the previous database-backed docs library.
+
+**Architecture:**
+- Source of truth: `docs/` directory with numbered category folders (01-GETTING-STARTED through 18-FUNCTIONAL-DOCS)
+- Backend: `server/src/routes/admin/docs.router.ts` with 4 endpoints (list, read, sync, coverage)
+- Route Scanner: `server/src/utils/routeScanner.ts` auto-generates API reference docs from Express route files
+- Frontend: Doc Browser at `/admin/docs` and Coverage Dashboard at `/admin/docs-coverage`
+- Custom MarkdownRenderer (no external library) handles headings, lists, code blocks, tables, inline formatting
+
+**API Endpoints:**
+- `GET /api/admin/docs` — List all docs grouped by category
+- `GET /api/admin/docs/:docPath` — Read a single doc (path uses `__` as separator)
+- `POST /api/admin/docs/sync` — Auto-generate API registry docs in `docs/17-API-REGISTRY/`
+- `GET /api/admin/docs/coverage` — Coverage report for API and functional docs
+
+**Key Design:**
+- No database — plain `.md` files on disk, scanned per request
+- API registry docs preserve manual notes between syncs using HTML comment markers
+- Coverage tracks required functional docs in `docs/18-FUNCTIONAL-DOCS/`
+
 ## Removed Features (Database Tables Retained)
 - **A/B Testing/Experiments:** UI and API removed. Database tables (`experiments`, `experiment_assignments`, `experiment_conversions`) retained for historical data preservation.
 

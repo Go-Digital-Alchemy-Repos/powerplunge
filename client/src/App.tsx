@@ -33,6 +33,7 @@ import AdminShipping from "@/pages/admin-shipping";
 import AdminEmailTemplates from "@/pages/admin-email-templates";
 import AdminIntegrations from "@/pages/admin-integrations";
 import AdminDocs from "@/pages/admin-docs";
+import AdminDocsCoverage from "@/pages/admin-docs-coverage";
 import AdminRevenue from "@/pages/admin-revenue";
 import AdminSupport from "@/pages/admin-support";
 import AdminUpsells from "@/pages/admin-upsells";
@@ -88,6 +89,7 @@ function Router() {
       <Route path="/admin/email-templates" component={AdminEmailTemplates} />
       <Route path="/admin/integrations" component={AdminIntegrations} />
       <Route path="/admin/docs" component={AdminDocs} />
+      <Route path="/admin/docs-coverage" component={AdminDocsCoverage} />
       <Route path="/admin/revenue" component={AdminRevenue} />
       <Route path="/admin/upsells" component={AdminUpsells} />
       <Route path="/admin/vip" component={AdminVip} />
