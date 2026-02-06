@@ -46,6 +46,7 @@ import PageView from "@/pages/page-view";
 import Shop from "@/pages/shop";
 import BecomeAffiliate from "@/pages/become-affiliate";
 import AffiliatePortal from "@/pages/affiliate-portal";
+import OrderStatusPage from "@/pages/order-status";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -55,6 +56,7 @@ function Router() {
       <Route path="/checkout" component={Checkout} />
       <Route path="/order-success" component={OrderSuccess} />
       <Route path="/track-order" component={TrackOrder} />
+      <Route path="/order-status/:orderId" component={OrderStatusPage} />
       <Route path="/my-account" component={MyAccount} />
       <Route path="/login" component={CustomerLogin} />
       <Route path="/register" component={CustomerRegister} />
