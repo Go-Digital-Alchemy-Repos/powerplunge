@@ -672,6 +672,7 @@ export const pages = pgTable("pages", {
   twitterDescription: text("twitter_description"),
   twitterImage: text("twitter_image"),
   robots: text("robots").default("index, follow"),
+  jsonLd: jsonb("json_ld"), // JSON-LD structured data for SEO
   featuredImage: text("featured_image"), // OG image for social sharing
   status: text("status").notNull().default("draft"), // draft, published
   showInNav: boolean("show_in_nav").default(false),
