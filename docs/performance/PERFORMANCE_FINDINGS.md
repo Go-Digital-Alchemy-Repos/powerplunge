@@ -115,11 +115,94 @@ Date: 2026-02-07
 
 ---
 
+## Round 2 — Deep N+1 Fixes, Indexing & Client Optimizations (2026-02-07)
+
+### A. N+1 Fix: Admin Orders List
+
+**Severity:** Critical | **Impact:** `GET /api/admin/orders`
+**Before:** For each order, 3 separate queries: getCustomer, getOrderItems, getShipments. With 100 orders = 301 queries.
+**After:** 4 total batch queries (orders, customers by IDs, order items by order IDs, shipments by order IDs) with Map-based in-memory joins. O(1) query count regardless of order volume. When paginated, only items/shipments for the current page's orders are fetched.
+**Files:** `server/src/routes/admin/orders.routes.ts`, `server/storage.ts` (added `getOrderItemsByOrderIds()`, `getShipmentsByOrderIds()`)
+
+### B. N+1 Fix: Admin Affiliates List
+
+**Severity:** High | **Impact:** `GET /api/admin/affiliates`
+**Before:** For each affiliate, 2 separate queries: getCustomer, count referrals. With 50 affiliates = 101 queries.
+**After:** 3 total batch queries (affiliates, customers by IDs, referral counts via GROUP BY) with Map-based joins. O(1) query count.
+**Files:** `server/src/routes/admin/affiliates.routes.ts`, `server/storage.ts` (added `getAffiliateReferralCounts()`)
+
+### C. Database Indexes (6 new)
+
+Added targeted indexes for high-traffic query patterns using `CREATE INDEX CONCURRENTLY IF NOT EXISTS` (non-destructive):
+
+| Index | Table | Columns | Notes |
+|-------|-------|---------|-------|
+| `idx_cms_v2_posts_status_published` | `cms_v2_posts` | `status, published_at DESC` | Partial: WHERE status='published' |
+| `idx_cms_v2_posts_category` | `cms_v2_posts` | `category` | Partial: WHERE category IS NOT NULL |
+| `idx_cms_v2_menus_location_active` | `cms_v2_menus` | `location, active` | Composite |
+| `idx_pages_status` | `pages` | `status` | Simple |
+| `idx_orders_status` | `orders` | `status` | Simple |
+| `idx_orders_customer_id` | `orders` | `customer_id` | Simple |
+
+### D. Admin Orders Pagination
+
+**Impact:** `GET /api/admin/orders`
+- Added optional `?page=N&pageSize=M&status=X` query parameters
+- **Backward compatible:** Without `?page` returns raw array (existing clients unchanged)
+- With `?page`: Returns `{ data: [...], total, page, pageSize }`
+- Page size capped at 100
+**File:** `server/src/routes/admin/orders.routes.ts`
+
+### E. Lazy Block Registry Initialization
+
+**Impact:** Initial bundle for non-CMS pages
+**Before:** `import "@/cms/blocks/init"` in `App.tsx` eagerly loaded all 25 block components on every page load.
+**After:** Block registration deferred via `ensureBlocksRegistered()` guard. Called only when CMS rendering or builder is needed.
+- `PageRenderer.tsx` calls guard before block lookup
+- Builder pages call at module level (unchanged behavior, already lazy-loaded)
+- Non-CMS pages (home, shop, checkout, login) skip block loading entirely
+**Files:** `client/src/cms/blocks/init.ts`, `client/src/App.tsx`, `client/src/components/PageRenderer.tsx`
+
+### Round 2 Summary
+
+| Change | Type | Impact |
+|--------|------|--------|
+| Orders N+1 fix | Server | 301 → 4 queries (100 orders), scoped to current page |
+| Affiliates N+1 fix | Server | 101 → 3 queries (50 affiliates) |
+| 6 database indexes | Database | Faster filtering/sorting on high-traffic columns |
+| Orders pagination | Server | Bounded response size, backward compatible |
+| Lazy block registry | Client | Smaller initial bundle for non-CMS pages |
+
+---
+
+## Server Timing Instrumentation
+
+Access dev-only timing endpoints:
+- `GET /api/health/timings` — Top 10 slowest + all endpoint timings (avg/max/count)
+- `POST /api/health/timings/reset` — Reset timing data
+
+### Post-Optimization Public Endpoint Timings
+
+| Endpoint | Avg (ms) | Max (ms) |
+|----------|----------|----------|
+| `GET /api/theme/active` | 10 | 10 |
+| `GET /api/products` | 3 | 3 |
+| `GET /api/blog/posts` | 3 | 3 |
+| `GET /api/pages/home` | 2 | 2 |
+| `GET /api/pages/shop` | 2 | 2 |
+| `GET /api/menus/:location` | 3 | 3 |
+| `GET /api/site-settings` | 1 | 1 |
+
+All public endpoints consistently <10ms.
+
+---
+
 ## Future Recommendations
 
-1. **Add pagination** to orders/media/sections when dataset exceeds ~500 rows
-2. **SQL aggregation** for media stats instead of JS computation
-3. **Dedicated folder query** for media folders endpoint
-4. **Bundle analysis** — Run `npx vite-bundle-visualizer` to identify remaining large dependencies
-5. **Consider React Query Devtools** in development for cache debugging
-6. **Extract storage.ts** — The 1,666-line `DatabaseStorage` class could be split into domain-specific repositories (similar to the route extraction)
+1. **Paginate admin customer list** — `GET /api/admin/customers` fetches all; add `?page=N` (same pattern as orders)
+2. **Optimize reports with SQL JOINs** — `GET /api/admin/reports/customers` loads all orders + customers for JS join; replace with SQL JOIN + GROUP BY
+3. **SQL aggregation for media stats** — Replace JS computation with `SUM`/`COUNT`/`GROUP BY`
+4. **Response caching for public endpoints** — Add `Cache-Control` headers or in-memory TTL cache for blog/menus/settings
+5. **Paginate admin media library** — Add cursor/offset pagination for large uploads
+6. **Bundle analysis** — Run `npx vite-bundle-visualizer` to identify remaining large dependencies
+7. **Extract storage.ts** — The 1,666-line `DatabaseStorage` class could be split into domain-specific repositories

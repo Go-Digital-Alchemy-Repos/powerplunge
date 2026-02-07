@@ -7,6 +7,7 @@ import UnknownBlock from "@/components/UnknownBlock";
 import { getIconWithFallback } from "@/lib/iconUtils";
 import { getBlock as getLegacyBlock } from "@/lib/blockRegistry";
 import { getBlock as getCmsBlock } from "@/cms/blocks/registry";
+import { ensureBlocksRegistered } from "@/cms/blocks/init";
 import { sanitizeHtml } from "@/lib/sanitizeHtml";
 import BlogPostFeedBlock from "@/cms/blocks/BlogPostFeedBlock";
 
@@ -1144,6 +1145,7 @@ function resolveBlockComponent(type: string): React.FC<{ data: Record<string, an
   if (blockComponents[type]) return blockComponents[type];
   const legacyEntry = getLegacyBlock(type);
   if (legacyEntry?.renderComponent) return legacyEntry.renderComponent as any;
+  ensureBlocksRegistered();
   const cmsEntry = getCmsBlock(type);
   if (cmsEntry?.renderComponent) return cmsEntry.renderComponent as any;
   return null;

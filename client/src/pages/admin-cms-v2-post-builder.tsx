@@ -11,14 +11,15 @@ import { Puck, usePuck, type Config, type Data } from "@puckeditor/core";
 import "@puckeditor/core/dist/index.css";
 import { registerAllBlocks } from "@/lib/blockRegistryEntries";
 import { getAllBlocks } from "@/lib/blockRegistry";
-import { registerCmsV1Blocks, getAllBlocks as getCmsBlocks, BLOCK_CATEGORIES } from "@/cms/blocks";
+import { getAllBlocks as getCmsBlocks, BLOCK_CATEGORIES } from "@/cms/blocks";
+import { ensureBlocksRegistered } from "@/cms/blocks/init";
 import { getCategoriesOrdered } from "@/cms/blocks/blockCategories";
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from "@/components/ui/tooltip";
 
 registerAllBlocks();
-registerCmsV1Blocks();
+ensureBlocksRegistered();
 
 const QUICK_INSERT_BLOCKS = [
   { type: "hero", label: "Hero", icon: "\u{1F3D4}" },

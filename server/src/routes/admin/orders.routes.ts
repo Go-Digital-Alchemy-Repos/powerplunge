@@ -6,18 +6,62 @@ const router = Router();
 
 router.get("/", async (req: Request, res: Response) => {
   try {
-    const orders = await storage.getOrders();
-    
-    const enrichedOrders = await Promise.all(
-      orders.map(async (order) => {
-        const customer = await storage.getCustomer(order.customerId);
-        const items = await storage.getOrderItems(order.id);
-        const shipments = await storage.getShipments(order.id);
-        return { ...order, customer, items, shipments };
-      })
-    );
+    const rawPage = req.query.page ? parseInt(req.query.page as string, 10) : undefined;
+    const rawPageSize = parseInt(req.query.pageSize as string, 10);
+    const page = rawPage !== undefined && Number.isFinite(rawPage) && rawPage >= 1 ? rawPage : (rawPage !== undefined ? 1 : undefined);
+    const pageSize = Math.min(Number.isFinite(rawPageSize) && rawPageSize >= 1 ? rawPageSize : 50, 100);
+    const statusFilter = req.query.status as string | undefined;
 
-    res.json(enrichedOrders);
+    let orders = await storage.getOrders();
+
+    if (statusFilter) {
+      orders = orders.filter(o => o.status === statusFilter);
+    }
+
+    const total = orders.length;
+
+    if (page !== undefined) {
+      const offset = (page - 1) * pageSize;
+      orders = orders.slice(offset, offset + pageSize);
+    }
+
+    const orderIds = orders.map(o => o.id);
+    const customerIds = [...new Set(orders.map(o => o.customerId).filter(Boolean))];
+
+    const [allCustomers, items, orderShipments] = await Promise.all([
+      customerIds.length > 0 ? storage.getCustomersByIds(customerIds) : Promise.resolve([]),
+      orderIds.length > 0 ? storage.getOrderItemsByOrderIds(orderIds) : Promise.resolve([]),
+      orderIds.length > 0 ? storage.getShipmentsByOrderIds(orderIds) : Promise.resolve([]),
+    ]);
+
+    const customerMap = new Map(allCustomers.map(c => [c.id, c]));
+    const itemsByOrder = new Map<string, typeof items>();
+    for (const item of items) {
+      const arr = itemsByOrder.get(item.orderId) || [];
+      arr.push(item);
+      itemsByOrder.set(item.orderId, arr);
+    }
+    const shipmentsByOrder = new Map<string, typeof orderShipments>();
+    for (const s of orderShipments) {
+      if (s.orderId) {
+        const arr = shipmentsByOrder.get(s.orderId) || [];
+        arr.push(s);
+        shipmentsByOrder.set(s.orderId, arr);
+      }
+    }
+
+    const enrichedOrders = orders.map(order => ({
+      ...order,
+      customer: customerMap.get(order.customerId) || null,
+      items: itemsByOrder.get(order.id) || [],
+      shipments: shipmentsByOrder.get(order.id) || [],
+    }));
+
+    if (page !== undefined) {
+      res.json({ data: enrichedOrders, total, page, pageSize });
+    } else {
+      res.json(enrichedOrders);
+    }
   } catch (error) {
     res.status(500).json({ message: "Failed to fetch orders" });
   }

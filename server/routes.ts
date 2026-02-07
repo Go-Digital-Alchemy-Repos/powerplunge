@@ -130,6 +130,18 @@ export async function registerRoutes(
     res.json({ cmsV2Enabled: isCmsV2Enabled() });
   });
 
+  if (process.env.NODE_ENV !== "production") {
+    const { getTimingReport, resetTimings } = await import("./src/middleware/server-timing.middleware");
+    app.get("/api/health/timings", (req, res) => {
+      const report = getTimingReport();
+      res.json({ top10: report.slice(0, 10), all: report });
+    });
+    app.post("/api/health/timings/reset", (req, res) => {
+      resetTimings();
+      res.json({ ok: true });
+    });
+  }
+
   // ==================== NEWLY-EXTRACTED ROUTES ====================
 
   // Public routes (no auth)

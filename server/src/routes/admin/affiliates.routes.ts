@@ -97,14 +97,21 @@ router.patch("/affiliate-settings", async (req, res) => {
 router.get("/affiliates", async (req, res) => {
   try {
     const affiliates = await storage.getAffiliates();
-    
-    const affiliatesWithDetails = await Promise.all(
-      affiliates.map(async (affiliate) => {
-        const customer = await storage.getCustomer(affiliate.customerId);
-        const referrals = await storage.getAffiliateReferrals(affiliate.id);
-        return { ...affiliate, customer, referralCount: referrals.length };
-      })
-    );
+
+    const customerIds = [...new Set(affiliates.map(a => a.customerId).filter(Boolean))];
+    const customers = customerIds.length > 0
+      ? await storage.getCustomersByIds(customerIds)
+      : [];
+    const customerMap = new Map(customers.map(c => [c.id, c]));
+
+    const referralCounts = await storage.getAffiliateReferralCounts();
+    const countMap = new Map(referralCounts.map(r => [r.affiliateId, r.count]));
+
+    const affiliatesWithDetails = affiliates.map(affiliate => ({
+      ...affiliate,
+      customer: customerMap.get(affiliate.customerId) || null,
+      referralCount: countMap.get(affiliate.id) || 0,
+    }));
 
     res.json(affiliatesWithDetails);
   } catch (error) {

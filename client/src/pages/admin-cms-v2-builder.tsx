@@ -14,7 +14,8 @@ import { Puck, usePuck, type Config, type Data } from "@puckeditor/core";
 import "@puckeditor/core/dist/index.css";
 import { registerAllBlocks } from "@/lib/blockRegistryEntries";
 import { getAllBlocks } from "@/lib/blockRegistry";
-import { registerCmsV1Blocks, getAllBlocks as getCmsBlocks, BLOCK_CATEGORIES } from "@/cms/blocks";
+import { getAllBlocks as getCmsBlocks, BLOCK_CATEGORIES } from "@/cms/blocks";
+import { ensureBlocksRegistered } from "@/cms/blocks/init";
 import { getCategoriesOrdered } from "@/cms/blocks/blockCategories";
 import {
   Dialog,
@@ -45,7 +46,7 @@ import {
 } from "@/components/ui/tooltip";
 
 registerAllBlocks();
-registerCmsV1Blocks();
+ensureBlocksRegistered();
 
 const CATEGORY_MAP: Record<string, { label: string; description: string }> = Object.fromEntries(
   BLOCK_CATEGORIES.map((c) => [c.id, { label: c.label, description: c.description }])

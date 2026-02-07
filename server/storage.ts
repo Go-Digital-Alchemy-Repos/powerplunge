@@ -101,6 +101,8 @@ export interface IStorage {
 
   // Order Items
   getOrderItems(orderId: string): Promise<OrderItem[]>;
+  getAllOrderItems(): Promise<OrderItem[]>;
+  getOrderItemsByOrderIds(orderIds: string[]): Promise<OrderItem[]>;
   createOrderItem(item: InsertOrderItem): Promise<OrderItem>;
 
   // Site Settings
@@ -126,6 +128,7 @@ export interface IStorage {
 
   // Affiliate Referrals
   getAffiliateReferrals(affiliateId: string): Promise<AffiliateReferral[]>;
+  getAffiliateReferralCounts(): Promise<Array<{ affiliateId: string; count: number }>>;
   getAffiliateReferralByOrderId(orderId: string): Promise<AffiliateReferral | undefined>;
   createAffiliateReferral(referral: InsertAffiliateReferral): Promise<AffiliateReferral>;
   updateAffiliateReferral(id: string, referral: Partial<InsertAffiliateReferral>): Promise<AffiliateReferral | undefined>;
@@ -203,6 +206,7 @@ export interface IStorage {
 
   // Shipments
   getShipments(orderId?: string): Promise<Shipment[]>;
+  getShipmentsByOrderIds(orderIds: string[]): Promise<Shipment[]>;
   getShipment(id: string): Promise<Shipment | undefined>;
   createShipment(shipment: InsertShipment): Promise<Shipment>;
   updateShipment(id: string, shipment: Partial<InsertShipment>): Promise<Shipment | undefined>;
@@ -511,6 +515,15 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(orderItems).where(eq(orderItems.orderId, orderId));
   }
 
+  async getAllOrderItems(): Promise<OrderItem[]> {
+    return db.select().from(orderItems);
+  }
+
+  async getOrderItemsByOrderIds(orderIds: string[]): Promise<OrderItem[]> {
+    if (orderIds.length === 0) return [];
+    return db.select().from(orderItems).where(inArray(orderItems.orderId, orderIds));
+  }
+
   async createOrderItem(item: InsertOrderItem): Promise<OrderItem> {
     const [newItem] = await db.insert(orderItems).values(item).returning();
     return newItem;
@@ -598,6 +611,17 @@ export class DatabaseStorage implements IStorage {
   // Affiliate Referrals
   async getAffiliateReferrals(affiliateId: string): Promise<AffiliateReferral[]> {
     return db.select().from(affiliateReferrals).where(eq(affiliateReferrals.affiliateId, affiliateId)).orderBy(desc(affiliateReferrals.createdAt));
+  }
+
+  async getAffiliateReferralCounts(): Promise<Array<{ affiliateId: string; count: number }>> {
+    const rows = await db
+      .select({
+        affiliateId: affiliateReferrals.affiliateId,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(affiliateReferrals)
+      .groupBy(affiliateReferrals.affiliateId);
+    return rows;
   }
 
   async getAffiliateReferralByOrderId(orderId: string): Promise<AffiliateReferral | undefined> {
@@ -882,6 +906,11 @@ export class DatabaseStorage implements IStorage {
       return db.select().from(shipments).where(eq(shipments.orderId, orderId)).orderBy(desc(shipments.createdAt));
     }
     return db.select().from(shipments).orderBy(desc(shipments.createdAt));
+  }
+
+  async getShipmentsByOrderIds(orderIds: string[]): Promise<Shipment[]> {
+    if (orderIds.length === 0) return [];
+    return db.select().from(shipments).where(inArray(shipments.orderId, orderIds)).orderBy(desc(shipments.createdAt));
   }
 
   async getShipment(id: string): Promise<Shipment | undefined> {

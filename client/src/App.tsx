@@ -6,7 +6,6 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import ThemeProvider from "@/components/ThemeProvider";
 import CmsV2ErrorBoundary from "@/components/CmsV2ErrorBoundary";
-import "@/cms/blocks/init";
 
 import Home from "@/pages/home";
 import Checkout from "@/pages/checkout";

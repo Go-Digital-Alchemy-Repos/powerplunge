@@ -1,3 +1,10 @@
 import { registerCmsV1Blocks } from "./entries";
 
-registerCmsV1Blocks();
+let initialized = false;
+
+export function ensureBlocksRegistered() {
+  if (!initialized) {
+    registerCmsV1Blocks();
+    initialized = true;
+  }
+}
