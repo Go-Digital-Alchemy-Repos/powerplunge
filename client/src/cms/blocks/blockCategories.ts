@@ -42,6 +42,12 @@ export const BLOCK_CATEGORIES: BlockCategoryDefinition[] = [
     description: "Informational and supporting content blocks",
     sortOrder: 6,
   },
+  {
+    id: "powerplunge",
+    label: "PowerPlunge",
+    description: "Industry-specific blocks for cold plunge content and conversion",
+    sortOrder: 7,
+  },
 ];
 
 export function getCategoryLabel(categoryId: string): string {
