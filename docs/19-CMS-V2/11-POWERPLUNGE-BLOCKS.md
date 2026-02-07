@@ -1,6 +1,6 @@
 # Power Plunge Blocks
 
-This document covers the domain-specific block types created for Power Plunge landing pages. These blocks are used inside **Section Kits** and are distinct from the 12 core CMS blocks documented in [Block Registry](02-BLOCK-REGISTRY.md).
+This document covers the domain-specific block types created for Power Plunge landing pages. These blocks are used inside **Section Kits** and are registered alongside all other blocks in the unified registry documented in [Block Registry](02-BLOCK-REGISTRY.md) (25 total registered block types).
 
 ## Block Index
 

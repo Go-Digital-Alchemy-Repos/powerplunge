@@ -401,6 +401,223 @@ Update global site settings directly (independent of presets). Validated against
 
 **Response:** Updated settings object.
 
+## Posts
+
+Admin post endpoints are mounted under `/api/admin/cms-v2/posts` via `server/src/routes/admin/cms-v2-posts.routes.ts`.
+
+### GET /posts
+
+List all blog posts (admin view, includes drafts and archived).
+
+**Query params:** `?page=1&pageSize=10&status=published&tag=wellness&category=guides&search=cold`
+
+**Response:** `200 OK`
+```json
+{
+  "data": [
+    {
+      "id": "uuid",
+      "title": "Cold Plunge Benefits",
+      "slug": "cold-plunge-benefits",
+      "excerpt": "Learn about...",
+      "status": "published",
+      "tags": ["health"],
+      "category": "guides",
+      "publishedAt": "2026-01-15T10:00:00.000Z",
+      "createdAt": "2026-01-10T08:00:00.000Z"
+    }
+  ],
+  "total": 42,
+  "page": 1,
+  "pageSize": 10
+}
+```
+
+### GET /posts/:id
+
+Get a single post by ID.
+
+**Response:** Full post object or `404`.
+
+### POST /posts
+
+Create a new blog post.
+
+**Body:**
+```json
+{
+  "title": "My Post Title",
+  "slug": "my-post-title",
+  "body": "<p>Post content...</p>",
+  "excerpt": "Short summary",
+  "featuredImage": "/uploads/hero.jpg",
+  "tags": ["wellness", "recovery"],
+  "category": "guides",
+  "authorName": "Admin",
+  "metaTitle": "My Post | Power Plunge",
+  "metaDescription": "Learn about..."
+}
+```
+
+**Response:** `201` with created post object (status defaults to `draft`).
+
+### PUT /posts/:id
+
+Update an existing post (partial update).
+
+**Response:** Updated post object or `404`.
+
+### POST /posts/:id/publish
+
+Set post status to "published" and set `publishedAt` to now (if not already set).
+
+**Response:** Updated post object or `404`.
+
+### POST /posts/:id/unpublish
+
+Set post status to "draft".
+
+**Response:** Updated post object or `404`.
+
+### DELETE /posts/:id
+
+Delete a post.
+
+**Response:** `{ success: true }` or `404`.
+
+### GET /posts/check-slug
+
+Check whether a post slug is available.
+
+**Query params:** `?slug=my-post-slug`
+
+**Response:**
+```json
+{ "available": true }
+```
+
+### GET /posts/tags
+
+List all unique tags across all posts.
+
+**Response:** `["health", "wellness", "recovery"]`
+
+### GET /posts/categories
+
+List all unique categories across all posts.
+
+**Response:** `["guides", "news", "research"]`
+
+### Public Blog Endpoints
+
+Public endpoints are mounted at `/api/blog/` via `server/src/routes/public.blog.routes.ts`.
+
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| GET | `/api/blog/posts` | List published posts (paginated, `publishedAt <= now()`) |
+| GET | `/api/blog/posts/:slug` | Get published post by slug (404 for drafts) |
+| GET | `/api/blog/tags` | List unique tags from published posts |
+| GET | `/api/blog/categories` | List unique categories from published posts |
+
+**Blog list response format:**
+```json
+{
+  "data": [{ "id": "...", "title": "...", "slug": "...", "..." }],
+  "total": 10,
+  "page": 1,
+  "pageSize": 10
+}
+```
+
+## Menus
+
+Admin menu endpoints are mounted under `/api/admin/cms-v2/menus` via `server/src/routes/admin/cms-v2-menus.routes.ts`.
+
+### GET /menus
+
+List all navigation menus.
+
+**Response:** Array of menu objects.
+
+### POST /menus
+
+Create a new menu.
+
+**Body:**
+```json
+{
+  "name": "Main Navigation",
+  "location": "main",
+  "active": true,
+  "items": [
+    {
+      "id": "item-1",
+      "label": "Shop",
+      "url": "/shop",
+      "type": "internal",
+      "children": []
+    },
+    {
+      "id": "item-2",
+      "label": "Blog",
+      "url": "/blog",
+      "type": "internal",
+      "children": [
+        {
+          "id": "item-2a",
+          "label": "Recovery Tips",
+          "url": "/blog?category=recovery",
+          "type": "internal",
+          "children": []
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Response:** `201` with created menu object.
+
+### GET /menus/by-location/:location
+
+Get a menu by its assigned location (e.g., `main`, `footer`).
+
+**Response:** Menu object or `404`.
+
+### PUT /menus/by-location/:location
+
+Upsert a menu at a specific location. Creates if none exists, updates if one does.
+
+**Body:** Same as POST /menus (minus location, which comes from URL param).
+
+**Response:** Created or updated menu object.
+
+### GET /menus/:id
+
+Get a single menu by ID.
+
+**Response:** Menu object or `404`.
+
+### PUT /menus/:id
+
+Update an existing menu.
+
+**Response:** Updated menu object or `404`.
+
+### DELETE /menus/:id
+
+Delete a menu.
+
+**Response:** `{ success: true }` or `404`.
+
+### Public Menu Endpoint
+
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| GET | `/api/menus/:location` | Get active menu by location (returns `null` if none) |
+
+**Response:** Menu object with items, or `null`.
+
 ## Legacy CMS Endpoints
 
 These endpoints in `server/routes.ts` operate on the same `pages` table:
@@ -481,3 +698,30 @@ All CMS v2 admin endpoints (prefix `/api/admin/cms-v2`):
 | GET | `/site-presets/apply-history/:id` | Single history entry |
 | GET | `/site-settings` | Get site settings |
 | PUT | `/site-settings` | Update site settings |
+| GET | `/posts` | List all posts (admin) |
+| GET | `/posts/:id` | Get post by ID |
+| POST | `/posts` | Create post |
+| PUT | `/posts/:id` | Update post |
+| POST | `/posts/:id/publish` | Publish post |
+| POST | `/posts/:id/unpublish` | Unpublish post |
+| DELETE | `/posts/:id` | Delete post |
+| GET | `/posts/check-slug` | Check post slug availability |
+| GET | `/posts/tags` | List all tags |
+| GET | `/posts/categories` | List all categories |
+| GET | `/menus` | List all menus |
+| POST | `/menus` | Create menu |
+| GET | `/menus/by-location/:loc` | Get menu by location |
+| PUT | `/menus/by-location/:loc` | Upsert menu by location |
+| GET | `/menus/:id` | Get menu by ID |
+| PUT | `/menus/:id` | Update menu |
+| DELETE | `/menus/:id` | Delete menu |
+
+### Public Blog & Menu Endpoints
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `/api/blog/posts` | Published posts (paginated) |
+| GET | `/api/blog/posts/:slug` | Published post by slug |
+| GET | `/api/blog/tags` | Unique tags |
+| GET | `/api/blog/categories` | Unique categories |
+| GET | `/api/menus/:location` | Active menu by location |

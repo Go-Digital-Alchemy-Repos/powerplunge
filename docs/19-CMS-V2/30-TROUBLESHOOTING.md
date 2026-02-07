@@ -1,6 +1,6 @@
-# Troubleshooting & Verification
+# CMS v2 Troubleshooting & Verification
 
-Common issues and verification steps for the CMS v2 Posts, Blog, and Menus systems.
+Comprehensive troubleshooting guide covering all CMS v2 subsystems: feature flag, pages, blocks, builder, sections, templates, themes, theme packs, site presets, rendering, posts/blog, and navigation menus.
 
 ---
 
@@ -12,32 +12,353 @@ Common issues and verification steps for the CMS v2 Posts, Blog, and Menus syste
 curl http://localhost:5000/api/admin/cms-v2/health
 ```
 
-**Expected:** `200` with `{ "enabled": true, ... }`
-**If 403:** Set `CMS_V2_ENABLED=true` in environment variables and restart.
+**Expected:** `200` with `{ "status": "ok", "version": "2.0" }`
+**If 401:** You need an admin auth token.
+**If feature is disabled:** Set `CMS_V2_ENABLED=true` in environment variables and restart.
 
-### 2. Are Posts Endpoints Working?
+### 2. Are All Tables Present?
 
 ```bash
-# Public — should return array (possibly empty)
-curl http://localhost:5000/api/blog/posts
-
-# Admin — should return 401 (auth required)
-curl http://localhost:5000/api/admin/cms-v2/posts
+npx tsx scripts/db/verifySchema.ts
 ```
 
-### 3. Are Menu Endpoints Working?
+**Expected:** 67/67 tables pass (including `cms_v2_posts`, `cms_v2_menus`).
+
+### 3. Are All Endpoints Responding?
 
 ```bash
-# Public — should return null or menu object
-curl http://localhost:5000/api/menus/main
+npx tsx scripts/smoke/apiSmoke.ts
+```
 
-# Admin — should return 401 (auth required)
-curl http://localhost:5000/api/admin/cms-v2/menus
+**Expected:** 22/22 pass.
+
+### 4. Is the Blog Subsystem Working?
+
+```bash
+npx tsx scripts/smoke/blogSmoke.ts
+```
+
+**Expected:** 19/19 pass.
+
+### 5. Is Content Validation Working?
+
+```bash
+npx tsx scripts/smoke/cmsContentSafety.ts
+```
+
+**Expected:** 21/21 pass.
+
+---
+
+## Feature Flag Issues
+
+### CMS v2 Sidebar Not Showing in Admin
+
+**Symptom:** Admin nav does not show CMS v2 links (Pages, Posts, Menus, etc.).
+
+**Cause:** `CMS_V2_ENABLED` is not set or is `false`.
+
+**Fix:** Set `CMS_V2_ENABLED=true` in environment and restart.
+
+**Verification:**
+```bash
+echo $CMS_V2_ENABLED
+# Should output: true
+```
+
+### CMS v2 API Routes Return 404
+
+**Symptom:** `GET /api/admin/cms-v2/health` returns 404.
+
+**Cause:** Routes not mounted. Check `server/routes.ts` for CMS v2 router imports.
+
+**Verification:**
+```bash
+grep -r "cms-v2" server/routes.ts
 ```
 
 ---
 
-## Common Issues
+## Page Issues
+
+### Page Renders Blank
+
+**Symptom:** Navigating to `/page/:slug` shows empty content.
+
+**Causes:**
+1. Page has no `contentJson` blocks AND no legacy `content` HTML
+2. Page status is "draft" (only published pages render publicly)
+3. Block types in `contentJson` are not registered
+
+**Verification:**
+```bash
+curl http://localhost:5000/api/pages/<slug>
+# Check contentJson.blocks array and content field
+```
+
+### Can't Set Home/Shop Page
+
+**Symptom:** "Set as Home" or "Set as Shop" returns error.
+
+**Cause:** Database transaction conflict or concurrent update.
+
+**Fix:** Refresh and retry. Check if another page already has the designation.
+
+**Verification:**
+```sql
+SELECT id, title, is_home, is_shop FROM pages WHERE is_home = true OR is_shop = true;
+```
+
+### Duplicate Home/Shop Pages
+
+**Symptom:** Multiple pages have `is_home = true`.
+
+**Cause:** Race condition during concurrent set-home calls.
+
+**Fix:**
+```sql
+-- Keep only the most recently updated
+UPDATE pages SET is_home = false WHERE is_home = true AND id != '<correct-page-id>';
+```
+
+### Page Slug Conflict
+
+**Symptom:** `POST /pages` returns 400 or creates duplicate.
+
+**Verification:**
+```bash
+curl "http://localhost:5000/api/admin/cms-v2/pages/check-slug?slug=<your-slug>"
+```
+
+---
+
+## Block & Registry Issues
+
+### Block Renders as Yellow "Unknown Block" Warning
+
+**Symptom:** A yellow warning box appears instead of the block content.
+
+**Causes:**
+1. Block type was removed or renamed in the registry
+2. `registerCmsV1Blocks()` not called at startup
+3. Typo in block type key (keys are case-sensitive, lowerCamelCase)
+
+**Verification:** Check browser console for registry warnings. Verify the block type exists:
+```bash
+grep -r "registerBlock" client/src/cms/blocks/entries.ts
+```
+
+### Block Not Appearing in Editor Palette
+
+**Symptom:** Block type exists in code but doesn't show in the Puck sidebar.
+
+**Causes:**
+1. Block not registered via `registerBlock()` in `entries.ts`
+2. Block category not defined in `blockCategories.ts`
+3. `init.ts` not calling `registerCmsV1Blocks()`
+
+**Verification:** Check `client/src/cms/blocks/entries.ts` for the registration call.
+
+### Block Validation Fails on Save
+
+**Symptom:** Saving a page with a specific block returns a 400 error.
+
+**Cause:** Block data doesn't match its Zod schema in `schemas.ts`.
+
+**Fix:** Check the schema definition and ensure all required fields have defaults.
+
+---
+
+## Page Builder (Puck) Issues
+
+### Builder Won't Load
+
+**Symptom:** `/admin/cms-v2/pages/:id/builder` shows blank or error.
+
+**Causes:**
+1. Page ID doesn't exist
+2. Puck library not loaded (check browser console for import errors)
+3. Block registry not initialized
+
+**Verification:**
+```bash
+curl -H "Authorization: Bearer $TOKEN" \
+  http://localhost:5000/api/admin/cms-v2/pages/<id>
+```
+
+### Save Draft / Publish Button Not Working
+
+**Symptom:** Clicking Save or Publish does nothing.
+
+**Causes:**
+1. Network error (check browser console Network tab)
+2. Auth token expired
+3. Content validation failure (check response body for error details)
+
+### Section Insert Dialog Empty
+
+**Symptom:** "Insert Section" dialog shows no sections.
+
+**Cause:** No saved sections exist.
+
+**Fix:** Create sections via `/admin/cms-v2/sections`, or seed kits:
+```bash
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+  http://localhost:5000/api/admin/cms-v2/sections/seed-kits
+```
+
+### Detach Sections Not Working
+
+**Symptom:** "Detach Sections" button does nothing.
+
+**Cause:** No `sectionRef` blocks exist in the current page.
+
+---
+
+## Section Issues
+
+### Section Renders "Section Not Found"
+
+**Symptom:** A `sectionRef` block shows placeholder instead of section content.
+
+**Causes:**
+1. The referenced section was deleted
+2. The `sectionId` in the block data is incorrect
+
+**Fix:** Either detach the section reference (converts to inline blocks) or re-create the section.
+
+### Deleting a Section Breaks Pages
+
+**Symptom:** Pages that reference a deleted section show "Section not found".
+
+**Note:** Deleting a section is intentionally non-destructive to pages — the `sectionRef` block remains but renders a placeholder. Use "Detach Sections" in the builder before deleting to preserve content.
+
+---
+
+## Template Issues
+
+### Template Not Appearing in Create Dialog
+
+**Symptom:** A template defined in code doesn't show in the page create dialog.
+
+**Cause:** Template not added to the `CMS_TEMPLATES` array in `client/src/cms/templates/templateLibrary.ts`.
+
+### Template Creates Page with Missing Blocks
+
+**Symptom:** Page created from template is missing expected blocks.
+
+**Cause:** Block type keys in template don't match registry keys (case-sensitive).
+
+**Verification:** Compare template block `type` values against `entries.ts` registrations.
+
+---
+
+## Theme Issues
+
+### Theme Not Applying to Public Pages
+
+**Symptom:** Admin activates a theme but public pages don't reflect the change.
+
+**Causes:**
+1. `ThemeProvider` not mounted in the public app layout
+2. `GET /api/theme/active` returning error (check server logs)
+3. Browser cache — theme updates propagate within 30 seconds via refetch
+
+**Verification:**
+```bash
+curl http://localhost:5000/api/theme/active
+# Should return the active theme token object
+```
+
+### Preview Mode Persisting After Admin Close
+
+**Symptom:** Theme changes appear stuck after navigating away from themes page.
+
+**Cause:** This shouldn't happen — preview is DOM-only and clears on navigation. If it persists, hard-refresh the browser.
+
+### Unknown Theme ID Falls Back to Default
+
+**Symptom:** Active theme shows as "Ocean Blue" even though a different theme was set.
+
+**Cause:** The stored `active_theme_id` references an unknown preset. The system falls back to `ocean-blue`.
+
+**Verification:**
+```sql
+SELECT active_theme_id FROM site_settings WHERE id = 'main';
+```
+
+---
+
+## Theme Pack Issues
+
+### Theme Pack Overrides Color Theme
+
+**Symptom:** Activating a theme pack changes colors even though a different color theme was active.
+
+**Expected behavior:** Theme packs supersede color themes — they include their own color tokens.
+
+### Component Variants Not Applying
+
+**Symptom:** Theme pack activated but button/card styles don't change.
+
+**Cause:** `--cv-*` CSS variables not being read by components. Check that components reference the correct CSS variable names.
+
+---
+
+## Site Preset Issues
+
+### Preset Activation Changes Unexpected Settings
+
+**Symptom:** Activating a preset changes nav, footer, or other settings you didn't expect.
+
+**Fix:** Use the preview endpoint first:
+```bash
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+  http://localhost:5000/api/admin/cms-v2/site-presets/<id>/preview
+```
+This returns a diff showing exactly what will change.
+
+### Rollback Not Available
+
+**Symptom:** "Rollback" button disabled or returns error.
+
+**Cause:** No activation snapshot exists (no preset has been activated yet).
+
+**Verification:**
+```bash
+curl -H "Authorization: Bearer $TOKEN" \
+  http://localhost:5000/api/admin/cms-v2/site-presets/apply-history
+```
+
+---
+
+## Rendering Issues
+
+### Blocks Render but Legacy HTML Also Appears
+
+**Symptom:** Page shows both block content and raw HTML.
+
+**Cause:** This shouldn't happen — the rendering pipeline uses blocks-first logic. If `contentJson.blocks[]` has entries, legacy `content` is ignored.
+
+**Verification:** Check the page data — if both `contentJson` and `content` are populated, blocks take priority.
+
+### HTML Sanitization Stripping Valid Content
+
+**Symptom:** Content loses formatting after save.
+
+**Cause:** `sanitizeHtml()` strips `<script>`, `on*` handlers, and `javascript:` URIs. If your content relies on these, they will be removed.
+
+**Note:** This is by design for security. Use blocks instead of raw HTML for interactive content.
+
+### Error Boundary Catches Render Crash
+
+**Symptom:** CMS v2 admin page shows "Something went wrong" with a "Try Again" button.
+
+**Cause:** A React rendering error occurred. Check browser console for the specific error and component stack.
+
+---
+
+## Blog Post Issues
 
 ### Posts Not Appearing on Public Blog
 
@@ -61,10 +382,21 @@ curl http://localhost:5000/api/admin/cms-v2/menus
 
 **Verification:**
 ```bash
-# Check if the post exists (admin)
 curl -H "Authorization: Bearer $TOKEN" \
   http://localhost:5000/api/admin/cms-v2/posts
 ```
+
+### Tags/Categories Return Empty
+
+**Symptom:** `GET /api/blog/tags` or `/categories` returns `[]`.
+
+**Causes:**
+1. No published posts exist with tags/categories set
+2. Tags/categories are stored as arrays/strings on post records — if none are set, endpoints return empty
+
+---
+
+## Navigation Menu Issues
 
 ### Menu Not Rendering on Frontend
 
@@ -100,6 +432,15 @@ Should return the menu object with items. If `null`, check admin.
 
 **Verification:** Check `server/src/routes/admin/cms-v2-menus.routes.ts` — the `by-location` routes should appear before `/:id` routes.
 
+### Nested Menu Items Not Displaying
+
+**Symptom:** Child menu items don't appear in dropdown.
+
+**Causes:**
+1. Children array is empty
+2. DynamicNav component doesn't support the nesting depth (max 3 levels)
+3. CSS/styling issue hiding the dropdown
+
 ---
 
 ## Smoke Test Scripts
@@ -110,7 +451,7 @@ Should return the menu object with items. If `null`, check admin.
 npx tsx scripts/smoke/blogSmoke.ts
 ```
 
-Tests the full post lifecycle: create → list → publish → public visibility → unpublish → delete.
+Tests the full post lifecycle: create → list → publish → public visibility → unpublish → delete. (19 checks)
 
 ### API Smoke Test
 
@@ -118,7 +459,7 @@ Tests the full post lifecycle: create → list → publish → public visibility
 npx tsx scripts/smoke/apiSmoke.ts
 ```
 
-Hits all key endpoints (public + admin auth enforcement) and reports PASS/FAIL.
+Hits all key endpoints (public + admin auth enforcement) and reports PASS/FAIL. (22 checks)
 
 ### Content Safety Test
 
@@ -126,7 +467,7 @@ Hits all key endpoints (public + admin auth enforcement) and reports PASS/FAIL.
 npx tsx scripts/smoke/cmsContentSafety.ts
 ```
 
-Validates contentJson schema enforcement and HTML sanitization.
+Validates contentJson schema enforcement and HTML sanitization. (21 checks)
 
 ---
 
@@ -138,14 +479,22 @@ Validates contentJson schema enforcement and HTML sanitization.
 npx tsx scripts/db/verifySchema.ts
 ```
 
-Verifies `cms_v2_posts` and `cms_v2_menus` tables exist alongside all other expected tables.
+Verifies all 67 tables including `cms_v2_posts` and `cms_v2_menus`.
 
 ### Manual Table Check
 
 ```sql
 SELECT tablename FROM pg_tables
 WHERE schemaname = 'public'
-AND tablename IN ('cms_v2_posts', 'cms_v2_menus');
+AND tablename IN ('pages', 'saved_sections', 'site_settings', 'cms_v2_posts', 'cms_v2_menus');
+```
+
+### Check Page Data
+
+```sql
+SELECT id, title, slug, status, is_home, is_shop,
+  CASE WHEN content_json IS NOT NULL THEN 'blocks' ELSE 'legacy' END as render_mode
+FROM pages ORDER BY created_at DESC LIMIT 10;
 ```
 
 ### Check Post Data
@@ -153,8 +502,7 @@ AND tablename IN ('cms_v2_posts', 'cms_v2_menus');
 ```sql
 SELECT id, title, slug, status, published_at
 FROM cms_v2_posts
-ORDER BY created_at DESC
-LIMIT 10;
+ORDER BY created_at DESC LIMIT 10;
 ```
 
 ### Check Menu Data
@@ -164,47 +512,129 @@ SELECT id, name, location, active, jsonb_array_length(items) as item_count
 FROM cms_v2_menus;
 ```
 
+### Check Theme Settings
+
+```sql
+SELECT active_theme_id, active_theme_pack_id, active_preset_id
+FROM site_settings WHERE id = 'main';
+```
+
 ---
 
 ## Environment Variables
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `CMS_V2_ENABLED` | Yes | Feature flag for all CMS v2 features |
-| `DATABASE_URL` | Yes | PostgreSQL connection string |
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `CMS_V2_ENABLED` | Yes | `false` | Feature flag for all CMS v2 features |
+| `DATABASE_URL` | Yes | — | PostgreSQL connection string |
 
 ---
 
-## Endpoint Reference (Quick)
+## Endpoint Reference (Complete)
 
-### Posts
+### Pages (Admin — `/api/admin/cms-v2`)
 
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| `GET` | `/api/blog/posts` | No | List published posts |
-| `GET` | `/api/blog/posts/:slug` | No | Get published post by slug |
-| `GET` | `/api/blog/tags` | No | List unique tags |
-| `GET` | `/api/blog/categories` | No | List unique categories |
-| `GET` | `/api/admin/cms-v2/posts` | Admin | List all posts |
-| `POST` | `/api/admin/cms-v2/posts` | Admin | Create post |
-| `GET` | `/api/admin/cms-v2/posts/:id` | Admin | Get post by ID |
-| `PUT` | `/api/admin/cms-v2/posts/:id` | Admin | Update post |
-| `POST` | `/api/admin/cms-v2/posts/:id/publish` | Admin | Publish post |
-| `POST` | `/api/admin/cms-v2/posts/:id/unpublish` | Admin | Unpublish post |
-| `DELETE` | `/api/admin/cms-v2/posts/:id` | Admin | Delete post |
-| `GET` | `/api/admin/cms-v2/posts/check-slug` | Admin | Check slug availability |
-| `GET` | `/api/admin/cms-v2/posts/tags` | Admin | List all tags |
-| `GET` | `/api/admin/cms-v2/posts/categories` | Admin | List all categories |
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/health` | Service health check |
+| `GET` | `/pages` | List all pages |
+| `GET` | `/pages/home` | Get home page |
+| `GET` | `/pages/shop` | Get shop page |
+| `GET` | `/pages/check-slug` | Check slug availability |
+| `GET` | `/pages/:id` | Get page by ID |
+| `POST` | `/pages` | Create page |
+| `PUT` | `/pages/:id` | Update page |
+| `POST` | `/pages/:id/publish` | Publish page |
+| `POST` | `/pages/:id/unpublish` | Unpublish page |
+| `POST` | `/pages/:id/set-home` | Set as home page |
+| `POST` | `/pages/:id/set-shop` | Set as shop page |
+| `POST` | `/pages/:id/migrate-to-blocks` | Migrate legacy HTML |
 
-### Menus
+### Sections (Admin — `/api/admin/cms-v2`)
 
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| `GET` | `/api/menus/:location` | No | Get active menu by location |
-| `GET` | `/api/admin/cms-v2/menus` | Admin | List all menus |
-| `POST` | `/api/admin/cms-v2/menus` | Admin | Create menu |
-| `GET` | `/api/admin/cms-v2/menus/by-location/:loc` | Admin | Get menu by location |
-| `PUT` | `/api/admin/cms-v2/menus/by-location/:loc` | Admin | Upsert menu by location |
-| `GET` | `/api/admin/cms-v2/menus/:id` | Admin | Get menu by ID |
-| `PUT` | `/api/admin/cms-v2/menus/:id` | Admin | Update menu |
-| `DELETE` | `/api/admin/cms-v2/menus/:id` | Admin | Delete menu |
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/sections` | List sections |
+| `GET` | `/sections/:id` | Get section |
+| `POST` | `/sections` | Create section |
+| `PUT` | `/sections/:id` | Update section |
+| `DELETE` | `/sections/:id` | Delete section |
+| `POST` | `/sections/seed-kits` | Seed kits |
+
+### Themes (Admin — `/api/admin/cms-v2`)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/themes` | List presets |
+| `GET` | `/themes/active` | Active theme |
+| `POST` | `/themes/activate` | Activate theme |
+| `GET` | `/theme-packs` | List packs |
+| `GET` | `/theme-packs/active` | Active pack |
+| `POST` | `/theme-packs/activate` | Activate pack |
+
+### Site Presets (Admin — `/api/admin/cms-v2`)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/site-presets` | List presets |
+| `GET` | `/site-presets/:id` | Get preset |
+| `POST` | `/site-presets` | Create preset |
+| `PUT` | `/site-presets/:id` | Update preset |
+| `DELETE` | `/site-presets/:id` | Delete preset |
+| `POST` | `/site-presets/seed` | Seed built-in |
+| `POST` | `/site-presets/:id/preview` | Preview activation |
+| `POST` | `/site-presets/:id/activate` | Activate |
+| `POST` | `/site-presets/rollback` | Rollback |
+| `POST` | `/site-presets/:id/duplicate` | Duplicate |
+| `GET` | `/site-presets/:id/export` | Export |
+| `POST` | `/site-presets/import` | Import |
+| `GET` | `/site-presets/apply-history` | History |
+
+### Site Settings (Admin — `/api/admin/cms-v2`)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/site-settings` | Get settings |
+| `PUT` | `/site-settings` | Update settings |
+
+### Posts (Admin — `/api/admin/cms-v2`)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/posts` | List all posts |
+| `POST` | `/posts` | Create post |
+| `GET` | `/posts/:id` | Get post by ID |
+| `PUT` | `/posts/:id` | Update post |
+| `POST` | `/posts/:id/publish` | Publish post |
+| `POST` | `/posts/:id/unpublish` | Unpublish post |
+| `DELETE` | `/posts/:id` | Delete post |
+| `GET` | `/posts/check-slug` | Check slug availability |
+| `GET` | `/posts/tags` | List all tags |
+| `GET` | `/posts/categories` | List all categories |
+
+### Menus (Admin — `/api/admin/cms-v2`)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/menus` | List all menus |
+| `POST` | `/menus` | Create menu |
+| `GET` | `/menus/by-location/:loc` | Get menu by location |
+| `PUT` | `/menus/by-location/:loc` | Upsert menu by location |
+| `GET` | `/menus/:id` | Get menu by ID |
+| `PUT` | `/menus/:id` | Update menu |
+| `DELETE` | `/menus/:id` | Delete menu |
+
+### Public Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/blog/posts` | Published posts (paginated) |
+| `GET` | `/api/blog/posts/:slug` | Published post by slug |
+| `GET` | `/api/blog/tags` | Unique tags |
+| `GET` | `/api/blog/categories` | Unique categories |
+| `GET` | `/api/menus/:location` | Active menu by location |
+| `GET` | `/api/pages/home` | Published home page |
+| `GET` | `/api/pages/shop` | Published shop page |
+| `GET` | `/api/pages/:slug` | Published page by slug |
+| `GET` | `/api/theme/active` | Active theme tokens |
+| `GET` | `/api/site-settings` | Public site settings |

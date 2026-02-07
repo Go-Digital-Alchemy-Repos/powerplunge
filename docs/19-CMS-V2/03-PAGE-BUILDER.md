@@ -7,18 +7,21 @@ The CMS v2 page builder uses the Puck visual editor library to provide a drag-an
 The page builder is accessible at:
 
 ```
-/admin/cms-v2/pages/:id/builder
+/admin/cms-v2/pages/:id/builder     → Page builder
+/admin/cms-v2/posts/:id/builder     → Post builder
 ```
 
-Admin users navigate here by clicking "Edit" or "Open Builder" on any page in the pages list.
+Admin users navigate here by clicking "Edit" or "Open Builder" on any page/post in the list.
 
 ## Architecture
 
 ```
-client/src/pages/admin-cms-v2-builder.tsx  → Main builder page component
-@puckeditor/core                           → Puck editor library
-client/src/lib/blockRegistry.ts            → Block type definitions
-client/src/lib/blockRegistryEntries.ts     → Block registrations
+client/src/pages/admin-cms-v2-builder.tsx       → Page builder component
+client/src/pages/admin-cms-v2-post-builder.tsx   → Post builder component
+client/src/cms/blocks/registry.ts                → Block type definitions (Map-based)
+client/src/cms/blocks/entries.ts                 → Block registrations (registerCmsV1Blocks)
+client/src/cms/blocks/types.ts                   → TypeScript interfaces
+client/src/cms/blocks/schemas.ts                 → Zod validation schemas
 ```
 
 ### Key Functions
@@ -86,3 +89,46 @@ Converts all `sectionRef` blocks in the current page into their constituent inli
 ## Page Title
 
 The page title is editable via the Puck root configuration. It appears as an editable field in the right sidebar when no block is selected. On save, the root title overrides the page's `title` field.
+
+## Troubleshooting
+
+### Builder Shows Blank Canvas
+
+**Cause:** Page has no blocks yet (new or empty page).
+**Resolution:** Normal behavior — drag blocks from the sidebar to start building.
+
+### Block Palette Empty
+
+**Cause:** `registerCmsV1Blocks()` was not called at app startup.
+**Verification:** Check browser console for "Block registry initialized" log.
+**Fix:** Ensure `client/src/cms/blocks/init.ts` is imported in the app entry point.
+
+### Save Returns 400 Error
+
+**Cause:** Content validation failed on the server.
+**Check:** Browser Network tab → response body for specific validation error.
+**Common:** Block missing `id` or `type` field, or `contentJson` is malformed.
+
+### Blocks Not Rendering in Preview
+
+**Cause:** Block type key mismatch between Puck config and registry.
+**Verification:** Compare block `type` in saved data with `entries.ts` registration keys.
+
+### SEO Panel Not Opening
+
+**Cause:** JavaScript error preventing panel render.
+**Fix:** Check browser console for errors. Hard-refresh the page.
+
+### Insert Section Shows Empty List
+
+**Cause:** No saved sections exist.
+**Fix:** Create sections at `/admin/cms-v2/sections` or seed kits via API.
+
+## How to Verify
+
+1. Navigate to `/admin/cms-v2/pages/:id/builder` — editor should render
+2. Drag a block from sidebar — block appears in editor
+3. Edit block properties in right sidebar — changes reflect in preview
+4. Click **Save Draft** — page saves without errors
+5. Click **Publish** — page status changes to published
+6. Visit `/page/:slug` — page renders with saved blocks

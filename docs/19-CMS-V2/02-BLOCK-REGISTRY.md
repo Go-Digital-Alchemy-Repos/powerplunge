@@ -7,7 +7,7 @@ The Block Registry is the central catalog of all content block types available i
 ```
 client/src/cms/blocks/
   registry.ts           → Core registry (Map<string, BlockDefinition>)
-  entries.ts            → Registers all 12 block types via registerCmsV1Blocks()
+  entries.ts            → Registers all 25 block types via registerCmsV1Blocks()
   types.ts              → TypeScript interfaces (BlockDefinition, BlockCategory, etc.)
   blockCategories.ts    → Category definitions (single source of truth)
   schemas.ts            → Zod validation schemas per block type
