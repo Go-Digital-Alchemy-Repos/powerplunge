@@ -56,6 +56,7 @@ const NAV_ITEMS: NavItem[] = [
     href: "/admin/cms-v2/generator/landing",
     children: [
       { id: "generator-landing", label: "Landing Pages", href: "/admin/cms-v2/generator/landing" },
+      { id: "generator-campaigns", label: "Campaign Packs", href: "/admin/cms-v2/generator/campaigns" },
     ],
   },
   { id: "themes", label: "Themes", icon: Palette, href: "/admin/cms-v2/themes" },
