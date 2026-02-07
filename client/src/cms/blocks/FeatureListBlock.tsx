@@ -45,16 +45,16 @@ export default function FeatureListBlock({ data, settings }: BlockRenderProps) {
                   style={{
                     backgroundColor: "var(--pp-surface, #111827)",
                     borderRadius: "var(--pp-card-radius, 0.75rem)",
-                    border: "1px solid color-mix(in srgb, var(--pp-primary, #67e8f9) 12%, transparent)",
+                    border: "1px solid color-mix(in srgb, var(--pp-primary, #67e8f9) 10%, transparent)",
                     padding: "2rem 1.5rem",
                     transition: "border-color 200ms ease, box-shadow 200ms ease",
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = "color-mix(in srgb, var(--pp-primary, #67e8f9) 30%, transparent)";
+                    e.currentTarget.style.borderColor = "color-mix(in srgb, var(--pp-primary, #67e8f9) 25%, transparent)";
                     e.currentTarget.style.boxShadow = "0 0 24px color-mix(in srgb, var(--pp-primary, #67e8f9) 8%, transparent)";
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = "color-mix(in srgb, var(--pp-primary, #67e8f9) 12%, transparent)";
+                    e.currentTarget.style.borderColor = "color-mix(in srgb, var(--pp-primary, #67e8f9) 10%, transparent)";
                     e.currentTarget.style.boxShadow = "none";
                   }}
                   data-testid={`card-feature-${idx}`}

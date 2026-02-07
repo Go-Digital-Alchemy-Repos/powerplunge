@@ -32,8 +32,8 @@ function AccordionItem({
       style={{
         borderRadius: "var(--pp-card-radius, 0.75rem)",
         border: isOpen
-          ? "1px solid color-mix(in srgb, var(--pp-primary, #67e8f9) 20%, transparent)"
-          : "1px solid color-mix(in srgb, var(--pp-primary, #67e8f9) 8%, transparent)",
+          ? "1px solid color-mix(in srgb, var(--pp-primary, #67e8f9) 25%, transparent)"
+          : "1px solid color-mix(in srgb, var(--pp-primary, #67e8f9) 10%, transparent)",
         backgroundColor: isOpen
           ? "var(--pp-surface, #111827)"
           : "transparent",

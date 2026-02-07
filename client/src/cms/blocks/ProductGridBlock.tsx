@@ -50,7 +50,7 @@ function ProductCard({
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.transform = "translateY(-4px)";
-        e.currentTarget.style.boxShadow = "0 12px 32px rgba(0,0,0,0.3)";
+        e.currentTarget.style.boxShadow = "0 8px 32px rgba(0,0,0,0.2), 0 0 24px color-mix(in srgb, var(--pp-primary, #67e8f9) 8%, transparent)";
         e.currentTarget.style.borderColor = "color-mix(in srgb, var(--pp-primary, #67e8f9) 25%, transparent)";
       }}
       onMouseLeave={(e) => {
@@ -204,7 +204,7 @@ export default function ProductGridBlock({ data, settings, onAddToCart }: BlockR
     return (
       <Section className={settings?.className} data-testid="block-productgrid">
         <Container>
-          {title && <Heading level={2} align="center" className="mb-8">{title}</Heading>}
+          {title && <Heading level={2} align="center" className="mb-12">{title}</Heading>}
           <div
             className="text-center py-16 rounded-xl"
             style={{

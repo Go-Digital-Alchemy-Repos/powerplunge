@@ -63,7 +63,7 @@ export default function ImageGridBlock({ data, settings }: BlockRenderProps) {
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.transform = "translateY(-4px)";
-                    e.currentTarget.style.boxShadow = "0 12px 32px rgba(0,0,0,0.3)";
+                    e.currentTarget.style.boxShadow = "0 8px 32px rgba(0,0,0,0.2), 0 0 24px color-mix(in srgb, var(--pp-primary, #67e8f9) 8%, transparent)";
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.transform = "translateY(0)";

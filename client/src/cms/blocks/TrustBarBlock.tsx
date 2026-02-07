@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { getIconWithFallback } from "@/lib/iconUtils";
 import { Section, Container } from "@/cms/layout";
 import { FadeIn } from "@/cms/motion";
+import { Text } from "@/cms/typography";
 import type { BlockRenderProps } from "./types";
 
 export default function TrustBarBlock({ data, settings }: BlockRenderProps) {
@@ -57,25 +58,21 @@ export default function TrustBarBlock({ data, settings }: BlockRenderProps) {
                   />
                 </div>
                 <div>
-                  <p
-                    className="text-sm font-semibold leading-tight"
-                    style={{
-                      fontFamily: "var(--pp-font-family, 'Inter', sans-serif)",
-                      color: "var(--pp-text, #f9fafb)",
-                    }}
+                  <Text
+                    size="sm"
+                    className="font-semibold leading-tight !mb-0"
+                    style={{ color: "var(--pp-text, #f9fafb)" }}
                   >
                     {item.label}
-                  </p>
+                  </Text>
                   {item.sublabel && (
-                    <p
-                      className="text-xs mt-0.5"
-                      style={{
-                        fontFamily: "var(--pp-font-family, 'Inter', sans-serif)",
-                        color: "var(--pp-text-muted, #9ca3af)",
-                      }}
+                    <Text
+                      size="sm"
+                      muted
+                      className="text-xs mt-0.5 !mb-0"
                     >
                       {item.sublabel}
-                    </p>
+                    </Text>
                   )}
                 </div>
               </div>

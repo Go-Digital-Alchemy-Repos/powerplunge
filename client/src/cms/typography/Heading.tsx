@@ -9,6 +9,7 @@ interface HeadingProps {
   className?: string;
   align?: "left" | "center" | "right";
   gradient?: boolean;
+  style?: CSSProperties;
 }
 
 const levelStyles: Record<HeadingLevel, string> = {
@@ -23,6 +24,7 @@ export default function Heading({
   className,
   align,
   gradient,
+  style: styleProp,
 }: HeadingProps) {
   const Tag = `h${level}` as ElementType;
 
@@ -32,6 +34,7 @@ export default function Heading({
       level === 1
         ? "-0.025em"
         : "var(--pp-letter-spacing, 0em)",
+    ...styleProp,
   };
 
   return (

@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import { Section, Container } from "@/cms/layout";
 import { FadeIn } from "@/cms/motion";
+import { Text } from "@/cms/typography";
 import type { BlockRenderProps } from "./types";
 
 export default function ImageBlock({ data, settings }: BlockRenderProps) {
@@ -41,7 +42,7 @@ export default function ImageBlock({ data, settings }: BlockRenderProps) {
 
   return (
     <Section className={settings?.className} data-testid="block-image">
-      <Container>
+      <Container width="default">
         <FadeIn>
         <figure className={cn(settings?.alignment === "center" && "flex flex-col items-center")}>
           {linkHref ? (
@@ -52,8 +53,8 @@ export default function ImageBlock({ data, settings }: BlockRenderProps) {
             imgEl
           )}
           {caption && (
-            <figcaption className="mt-4 text-sm pp-text-muted">
-              {caption}
+            <figcaption className="mt-4">
+              <Text size="sm" muted className="!mb-0">{caption}</Text>
             </figcaption>
           )}
         </figure>

@@ -10,6 +10,7 @@ interface TextProps {
   align?: "left" | "center" | "right";
   prose?: boolean;
   className?: string;
+  style?: CSSProperties;
 }
 
 const sizeMap: Record<TextSize, string> = {
@@ -26,11 +27,13 @@ export default function Text({
   align,
   prose = false,
   className,
+  style: styleProp,
 }: TextProps) {
   const style: CSSProperties = {
     fontFamily: "var(--pp-font-family, 'Inter', sans-serif)",
     lineHeight: "var(--pp-line-height, 1.5)",
     ...(prose ? { maxWidth: "70ch" } : {}),
+    ...styleProp,
   };
 
   return (

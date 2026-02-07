@@ -22,7 +22,7 @@ export default function RichTextBlock({ data, settings }: BlockRenderProps) {
           style={{ maxWidth: "72ch" }}
         >
           {title && (
-            <Heading level={2} className="mb-8">{title}</Heading>
+            <Heading level={2} className="mb-12">{title}</Heading>
           )}
           <div
             className="pp-richtext"
