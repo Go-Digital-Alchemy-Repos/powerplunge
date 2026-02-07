@@ -63,6 +63,42 @@ class SitePresetsRepository {
     return deleted || undefined;
   }
 
+  async getCmsV2Settings() {
+    const [settings] = await db.select({
+      activeThemeId: siteSettings.activeThemeId,
+      activePresetId: siteSettings.activePresetId,
+      navPreset: siteSettings.navPreset,
+      footerPreset: siteSettings.footerPreset,
+      seoDefaults: siteSettings.seoDefaults,
+      globalCtaDefaults: siteSettings.globalCtaDefaults,
+      updatedAt: siteSettings.updatedAt,
+    }).from(siteSettings).where(eq(siteSettings.id, "main"));
+    return settings || null;
+  }
+
+  async updateCmsV2Settings(values: {
+    activeThemeId?: string;
+    activePresetId?: string | null;
+    navPreset?: unknown;
+    footerPreset?: unknown;
+    seoDefaults?: unknown;
+    globalCtaDefaults?: unknown;
+  }) {
+    const [updated] = await db.update(siteSettings)
+      .set({ ...values, updatedAt: new Date() })
+      .where(eq(siteSettings.id, "main"))
+      .returning({
+        activeThemeId: siteSettings.activeThemeId,
+        activePresetId: siteSettings.activePresetId,
+        navPreset: siteSettings.navPreset,
+        footerPreset: siteSettings.footerPreset,
+        seoDefaults: siteSettings.seoDefaults,
+        globalCtaDefaults: siteSettings.globalCtaDefaults,
+        updatedAt: siteSettings.updatedAt,
+      });
+    return updated || null;
+  }
+
   async getCurrentSettings(): Promise<SiteSettingsSnapshot> {
     const [settings] = await db.select({
       activeThemeId: siteSettings.activeThemeId,
@@ -100,7 +136,7 @@ class SitePresetsRepository {
     seoDefaults?: unknown;
     globalCtaDefaults?: unknown;
   }): Promise<void> {
-    await db.update(siteSettings).set(values).where(eq(siteSettings.id, "main"));
+    await db.update(siteSettings).set({ ...values, updatedAt: new Date() }).where(eq(siteSettings.id, "main"));
   }
 
   async saveSnapshot(data: {
