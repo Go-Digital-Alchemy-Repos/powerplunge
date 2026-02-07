@@ -24,9 +24,16 @@ The Power Plunge e-commerce platform utilizes a modern full-stack architecture.
 - Customer accounts use a custom authentication system with email/password and magic link login options, branded for Power Plunge. Session tokens are stored in localStorage and passed as Bearer tokens.
 - VIP customer program includes auto-promotion triggers, configurable benefits, and progress tracking.
 
+**Admin UI Design System:**
+- Admin pages use a dark design system: bg-gray-950 (page), bg-gray-900/50 (cards), border-gray-800/60
+- CMS v2 pages use `CmsV2Layout` for consistent sidebar + topbar chrome
+- Reusable primitives in `client/src/components/admin/AdminPagePrimitives.tsx`: AdminPage, AdminSection, AdminCard, AdminToolbar, AdminStat
+- Theme preview is isolated — never modifies `:root` CSS variables from admin pages
+- Full rules documented in `docs/architecture/ADMIN_UI_RULES.md`
+
 **Backend:**
 - Developed with Express, adopting a layered, modular architecture.
-- **Route Architecture:** API routes are organized into dedicated router files grouped by domain (admin, customer, public, webhooks) with a slim orchestrator `server/routes.ts`. Middleware (e.g., `requireAdmin`, `isAuthenticated`) is applied at the mount level.
+- **Route Architecture:** API routes are organized into dedicated router files grouped by domain (admin, customer, public, webhooks) under `server/src/routes/{admin,public,customer,webhooks}/` with a slim orchestrator `server/routes.ts`. Middleware (e.g., `requireAdmin`, `isAuthenticated`) is applied at the mount level. Root-level re-export stubs exist for backward compatibility.
 - Includes dedicated modules for configuration, database interactions, middleware (logging, error handling, authentication), and custom error handling.
 - Integrations with external services are encapsulated.
 - Database operations are managed via Drizzle ORM, connected to a PostgreSQL database.
