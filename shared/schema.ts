@@ -1403,3 +1403,69 @@ export const customerMagicLinkTokens = pgTable("customer_magic_link_tokens", {
 export const insertCustomerMagicLinkTokenSchema = createInsertSchema(customerMagicLinkTokens).omit({ id: true, createdAt: true });
 export type InsertCustomerMagicLinkToken = z.infer<typeof insertCustomerMagicLinkTokenSchema>;
 export type CustomerMagicLinkToken = typeof customerMagicLinkTokens.$inferSelect;
+
+// Theme Packs — bundled theme tokens, component variants, and block style defaults
+export const themePacks = pgTable("theme_packs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  description: text("description").notNull().default(""),
+  themeTokens: jsonb("theme_tokens").notNull().default({}),
+  componentVariants: jsonb("component_variants").notNull().default({}),
+  blockStyleDefaults: jsonb("block_style_defaults").notNull().default({}),
+  previewImage: text("preview_image"),
+  isActive: boolean("is_active").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const themeTokensSchema = z.object({
+  bg: z.string().optional(),
+  bgCard: z.string().optional(),
+  bgElevated: z.string().optional(),
+  text: z.string().optional(),
+  textMuted: z.string().optional(),
+  primary: z.string().optional(),
+  primaryHover: z.string().optional(),
+  primaryMuted: z.string().optional(),
+  accent: z.string().optional(),
+  border: z.string().optional(),
+  success: z.string().optional(),
+  error: z.string().optional(),
+  warning: z.string().optional(),
+  radius: z.string().optional(),
+  font: z.string().optional(),
+}).passthrough();
+
+export const componentVariantSchema = z.object({
+  variant: z.string().optional(),
+  size: z.string().optional(),
+  rounded: z.string().optional(),
+  styles: z.record(z.string(), z.string()).optional(),
+}).passthrough();
+
+export const componentVariantsSchema = z.record(
+  z.string(),
+  componentVariantSchema,
+);
+
+export const blockStyleDefaultSchema = z.object({
+  padding: z.string().optional(),
+  margin: z.string().optional(),
+  background: z.string().optional(),
+  borderRadius: z.string().optional(),
+  styles: z.record(z.string(), z.string()).optional(),
+}).passthrough();
+
+export const blockStyleDefaultsSchema = z.record(
+  z.string(),
+  blockStyleDefaultSchema,
+);
+
+export const insertThemePackSchema = createInsertSchema(themePacks, {
+  themeTokens: () => themeTokensSchema,
+  componentVariants: () => componentVariantsSchema,
+  blockStyleDefaults: () => blockStyleDefaultsSchema,
+}).omit({ id: true, createdAt: true, updatedAt: true });
+
+export type InsertThemePack = z.infer<typeof insertThemePackSchema>;
+export type ThemePack = typeof themePacks.$inferSelect;
