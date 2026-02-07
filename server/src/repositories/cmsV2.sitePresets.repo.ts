@@ -5,6 +5,7 @@ import {
   siteSettings,
   presetApplyHistory,
   auditLogs,
+  pages,
   type SitePresetDb,
   type PresetApplyHistory,
 } from "@shared/schema";
@@ -16,6 +17,9 @@ export interface SiteSettingsSnapshot {
   footerPreset: unknown;
   seoDefaults: unknown;
   globalCtaDefaults: unknown;
+  homePageId: string | null;
+  homePageSlug: string | null;
+  homePageTemplate: string | null;
 }
 
 class SitePresetsRepository {
@@ -69,13 +73,22 @@ class SitePresetsRepository {
       globalCtaDefaults: siteSettings.globalCtaDefaults,
     }).from(siteSettings).where(eq(siteSettings.id, "main"));
 
-    return settings || {
-      activeThemeId: null,
-      activePresetId: null,
-      navPreset: null,
-      footerPreset: null,
-      seoDefaults: null,
-      globalCtaDefaults: null,
+    const [homePage] = await db.select({
+      id: pages.id,
+      slug: pages.slug,
+      template: pages.template,
+    }).from(pages).where(eq(pages.isHome, true)).limit(1);
+
+    return {
+      activeThemeId: settings?.activeThemeId ?? null,
+      activePresetId: settings?.activePresetId ?? null,
+      navPreset: settings?.navPreset ?? null,
+      footerPreset: settings?.footerPreset ?? null,
+      seoDefaults: settings?.seoDefaults ?? null,
+      globalCtaDefaults: settings?.globalCtaDefaults ?? null,
+      homePageId: homePage?.id ?? null,
+      homePageSlug: homePage?.slug ?? null,
+      homePageTemplate: homePage?.template ?? null,
     };
   }
 
@@ -95,12 +108,14 @@ class SitePresetsRepository {
     presetName: string;
     snapshot: SiteSettingsSnapshot;
     appliedBy?: string;
+    notes?: string;
   }): Promise<PresetApplyHistory> {
     const [entry] = await db.insert(presetApplyHistory).values({
       presetId: data.presetId,
       presetName: data.presetName,
       snapshot: data.snapshot,
       appliedBy: data.appliedBy ?? null,
+      notes: data.notes ?? null,
     }).returning();
     return entry;
   }
@@ -114,6 +129,13 @@ class SitePresetsRepository {
     return entry || undefined;
   }
 
+  async findSnapshotById(id: string): Promise<PresetApplyHistory | undefined> {
+    const [entry] = await db.select()
+      .from(presetApplyHistory)
+      .where(eq(presetApplyHistory.id, id));
+    return entry || undefined;
+  }
+
   async markSnapshotRolledBack(id: string): Promise<void> {
     await db.update(presetApplyHistory)
       .set({ rolledBack: true, rolledBackAt: new Date() })
@@ -124,7 +146,7 @@ class SitePresetsRepository {
     return db.select()
       .from(presetApplyHistory)
       .orderBy(desc(presetApplyHistory.appliedAt))
-      .limit(20);
+      .limit(50);
   }
 
   async logAudit(actor: string, action: string, entityId: string, metadata?: unknown): Promise<void> {

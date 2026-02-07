@@ -1,6 +1,6 @@
 import { sitePresetsRepo, type SiteSettingsSnapshot } from "../repositories/cmsV2.sitePresets.repo";
 import { cmsV2Repository } from "../repositories/cms-v2.repository";
-import type { SitePresetDb } from "@shared/schema";
+import type { SitePresetDb, PresetApplyHistory } from "@shared/schema";
 
 interface PresetConfig {
   themePackId: string;
@@ -85,7 +85,7 @@ class SitePresetApplyService {
     };
   }
 
-  async activate(presetId: string, adminEmail?: string): Promise<ActivateResult | { error: string }> {
+  async activate(presetId: string, adminEmail?: string, notes?: string): Promise<ActivateResult | { error: string }> {
     const preset = await sitePresetsRepo.findById(presetId);
     if (!preset) return { error: "Site preset not found" };
 
@@ -98,6 +98,7 @@ class SitePresetApplyService {
       presetName: preset.name,
       snapshot: currentSettings,
       appliedBy: adminEmail,
+      notes,
     });
 
     const settingsUpdate: Record<string, unknown> = {
@@ -204,8 +205,12 @@ class SitePresetApplyService {
     };
   }
 
-  async getHistory() {
+  async getHistory(): Promise<PresetApplyHistory[]> {
     return sitePresetsRepo.getApplyHistory();
+  }
+
+  async getHistoryEntry(id: string): Promise<PresetApplyHistory | undefined> {
+    return sitePresetsRepo.findSnapshotById(id);
   }
 }
 

@@ -64,6 +64,7 @@ import upsellRoutes from "./src/routes/upsell.routes";
 import supportRoutes, { adminSupportRouter } from "./src/routes/support.routes";
 import docsRouter from "./src/routes/admin/docs.router";
 import cmsV2Router from "./src/routes/admin/cms-v2.router";
+import sitePresetsRouter from "./src/routes/cmsV2.sitePresets.routes";
 import vipRoutes from "./src/routes/vip.routes";
 import couponRoutes from "./src/routes/coupon.routes";
 import recoveryRoutes from "./src/routes/recovery.routes";
@@ -130,6 +131,7 @@ export async function registerRoutes(
   app.use("/api/admin/support", requireFullAccess, adminSupportRouter);
   app.use("/api/admin/docs", requireFullAccess, docsRouter);
   app.use("/api/admin/cms-v2", requireFullAccess, cmsV2Router);
+  app.use("/api/admin/cms-v2/site-presets", requireFullAccess, sitePresetsRouter);
   app.use("/api/customer/orders", orderTrackingRoutes);
   app.use("/api/customer/auth", customerAuthRoutes);
   app.use("/api/orders", publicOrderStatusRoutes);

@@ -741,7 +741,8 @@ export const presetApplyHistory = pgTable("preset_apply_history", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   presetId: varchar("preset_id").notNull(),
   presetName: text("preset_name").notNull(),
-  snapshot: jsonb("snapshot").notNull(), // Previous siteSettings values before apply
+  snapshot: jsonb("snapshot").notNull(), // Previous siteSettings + home page reference
+  notes: text("notes"), // Optional admin notes for the apply action
   appliedBy: text("applied_by"), // Admin email
   appliedAt: timestamp("applied_at").notNull().defaultNow(),
   rolledBack: boolean("rolled_back").notNull().default(false),

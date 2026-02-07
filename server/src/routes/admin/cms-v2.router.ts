@@ -1,12 +1,11 @@
 import { Router } from "express";
 import { cmsV2Service } from "../../services/cms-v2.service";
 import { sectionsService } from "../../services/sections.service";
-import { insertPageSchema, insertSavedSectionSchema, siteSettings, sitePresets } from "@shared/schema";
+import { insertPageSchema, insertSavedSectionSchema, siteSettings } from "@shared/schema";
 import { themePresets } from "@shared/themePresets";
 import { themePackPresets } from "@shared/themePackPresets";
 import { db } from "../../db";
-import { eq, desc } from "drizzle-orm";
-import { insertSitePresetSchema } from "../../schemas/cmsV2.sitePresets.schema";
+import { eq } from "drizzle-orm";
 import { isCmsV2Enabled } from "../../config/env";
 import { SECTION_KITS } from "../../data/sectionKits";
 
@@ -270,82 +269,6 @@ router.post("/theme-packs/activate", async (req, res) => {
     res.json(pack);
   } catch {
     res.status(500).json({ error: "Failed to activate theme pack" });
-  }
-});
-
-// ── Site Presets CRUD ──
-
-router.get("/site-presets", async (_req, res) => {
-  try {
-    const presets = await db.select().from(sitePresets).orderBy(desc(sitePresets.createdAt));
-    res.json(presets);
-  } catch {
-    res.status(500).json({ error: "Failed to fetch site presets" });
-  }
-});
-
-router.get("/site-presets/:id", async (req, res) => {
-  try {
-    const [preset] = await db.select().from(sitePresets).where(eq(sitePresets.id, req.params.id));
-    if (!preset) return res.status(404).json({ error: "Site preset not found" });
-    res.json(preset);
-  } catch {
-    res.status(500).json({ error: "Failed to fetch site preset" });
-  }
-});
-
-router.post("/site-presets", async (req, res) => {
-  const parsed = insertSitePresetSchema.safeParse(req.body);
-  if (!parsed.success) {
-    return res.status(400).json({ error: "Invalid site preset data", details: parsed.error.flatten() });
-  }
-  try {
-    const { name, description, tags, previewImage, ...configFields } = parsed.data;
-    const [preset] = await db.insert(sitePresets).values({
-      name,
-      description: description ?? null,
-      tags: tags ?? null,
-      previewImage: previewImage ?? null,
-      config: configFields,
-    }).returning();
-    res.status(201).json(preset);
-  } catch {
-    res.status(500).json({ error: "Failed to create site preset" });
-  }
-});
-
-router.put("/site-presets/:id", async (req, res) => {
-  const parsed = insertSitePresetSchema.safeParse(req.body);
-  if (!parsed.success) {
-    return res.status(400).json({ error: "Invalid site preset data", details: parsed.error.flatten() });
-  }
-  try {
-    const { name, description, tags, previewImage, ...configFields } = parsed.data;
-    const [preset] = await db.update(sitePresets)
-      .set({
-        name,
-        description: description ?? null,
-        tags: tags ?? null,
-        previewImage: previewImage ?? null,
-        config: configFields,
-        updatedAt: new Date(),
-      })
-      .where(eq(sitePresets.id, req.params.id))
-      .returning();
-    if (!preset) return res.status(404).json({ error: "Site preset not found" });
-    res.json(preset);
-  } catch {
-    res.status(500).json({ error: "Failed to update site preset" });
-  }
-});
-
-router.delete("/site-presets/:id", async (req, res) => {
-  try {
-    const [deleted] = await db.delete(sitePresets).where(eq(sitePresets.id, req.params.id)).returning();
-    if (!deleted) return res.status(404).json({ error: "Site preset not found" });
-    res.json({ success: true });
-  } catch {
-    res.status(500).json({ error: "Failed to delete site preset" });
   }
 });
 
