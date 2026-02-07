@@ -1,9 +1,9 @@
-import { useMemo, useState, useCallback, useEffect } from "react";
+import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import { useAdmin } from "@/hooks/use-admin";
 import { useRoute, useLocation } from "wouter";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import AdminNav from "@/components/admin/AdminNav";
-import { ArrowLeft, Save, Globe, Layers, Unlink, Search, X, Monitor, Tablet, Smartphone, ChevronUp, ChevronDown, Copy, Zap } from "lucide-react";
+import { ArrowLeft, Save, Globe, Layers, Unlink, Search, X, Monitor, Tablet, Smartphone, ChevronUp, ChevronDown, Copy, Zap, Star, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,7 @@ import "@puckeditor/core/dist/index.css";
 import { registerAllBlocks } from "@/lib/blockRegistryEntries";
 import { getAllBlocks } from "@/lib/blockRegistry";
 import { registerCmsV1Blocks, getAllBlocks as getCmsBlocks, BLOCK_CATEGORIES } from "@/cms/blocks";
+import { getCategoriesOrdered } from "@/cms/blocks/blockCategories";
 import {
   Dialog,
   DialogContent,
@@ -737,6 +738,206 @@ function QuickInsertBar() {
   );
 }
 
+const MOST_USED_BLOCK_TYPES = ["hero", "richText", "callToAction", "productGrid", "testimonials"];
+
+interface BlockPickerEntry {
+  type: string;
+  label: string;
+  category: string;
+  description: string;
+}
+
+function buildBlockPickerEntries(): BlockPickerEntry[] {
+  const legacyEntries = getAllBlocks();
+  const cmsEntries = getCmsBlocks();
+  const cmsTypes = new Set(cmsEntries.map((e) => e.type));
+  const deduped = legacyEntries.filter((e) => !cmsTypes.has(e.type));
+  const entries = [...deduped, ...cmsEntries];
+  return entries
+    .filter((e) => e.type !== "sectionRef")
+    .map((e) => ({
+      type: e.type,
+      label: e.label,
+      category: e.category || "utility",
+      description: getBlockDescription(e.type),
+    }));
+}
+
+function EnhancedBlockPicker() {
+  const { dispatch, appState } = usePuck();
+  const [search, setSearch] = useState("");
+  const [activeTab, setActiveTab] = useState("all");
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  const allEntries = useMemo(() => buildBlockPickerEntries(), []);
+  const categories = useMemo(() => getCategoriesOrdered(), []);
+
+  const filtered = useMemo(() => {
+    let entries = allEntries;
+    if (activeTab === "most-used") {
+      entries = entries.filter((e) => MOST_USED_BLOCK_TYPES.includes(e.type));
+    } else if (activeTab !== "all") {
+      entries = entries.filter((e) => e.category === activeTab);
+    }
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      entries = entries.filter(
+        (e) =>
+          e.label.toLowerCase().includes(q) ||
+          e.type.toLowerCase().includes(q) ||
+          e.description.toLowerCase().includes(q)
+      );
+    }
+    return entries;
+  }, [allEntries, activeTab, search]);
+
+  const handleInsert = (blockType: string) => {
+    dispatch({
+      type: "insert",
+      componentType: blockType,
+      destinationIndex: appState.data.content.length,
+      destinationZone: "root:default-zone",
+    });
+  };
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && search) {
+        setSearch("");
+        searchRef.current?.blur();
+      }
+      if (e.key === "/" && !["INPUT", "TEXTAREA", "SELECT"].includes((e.target as HTMLElement)?.tagName)) {
+        e.preventDefault();
+        searchRef.current?.focus();
+      }
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [search]);
+
+  const tabs = [
+    { id: "all", label: "All" },
+    { id: "most-used", label: "Popular" },
+    ...categories.map((c) => ({ id: c.id, label: c.label })),
+  ];
+
+  return (
+    <div className="flex flex-col h-full" data-testid="enhanced-block-picker">
+      <div className="p-3 border-b border-gray-700/50">
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
+          <input
+            ref={searchRef}
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder='Search blocks... (press "/")'
+            className="w-full h-8 pl-8 pr-8 text-xs bg-gray-800 border border-gray-700 rounded-md text-white placeholder:text-gray-500 focus:outline-none focus:border-cyan-600 focus:ring-1 focus:ring-cyan-600/30"
+            data-testid="input-block-search"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"
+              data-testid="button-clear-search"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="px-3 pt-2 pb-1">
+        <div className="flex flex-wrap gap-1" data-testid="block-category-tabs">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-2 py-1 rounded text-[11px] font-medium transition-colors ${
+                activeTab === tab.id
+                  ? "bg-cyan-600 text-white"
+                  : "bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700"
+              }`}
+              data-testid={`tab-category-${tab.id}`}
+            >
+              {tab.id === "most-used" && <Star className="w-3 h-3 inline mr-0.5 -mt-px" />}
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {activeTab !== "all" && activeTab !== "most-used" && (
+        <div className="px-3 py-1">
+          <p className="text-[10px] text-gray-500">
+            {CATEGORY_MAP[activeTab]?.description}
+          </p>
+        </div>
+      )}
+      {activeTab === "most-used" && (
+        <div className="px-3 py-1">
+          <p className="text-[10px] text-gray-500">Frequently used blocks for quick access</p>
+        </div>
+      )}
+
+      <div className="flex-1 overflow-y-auto px-3 py-2" data-testid="block-picker-list">
+        {filtered.length === 0 ? (
+          <div className="text-center py-6">
+            <p className="text-gray-500 text-xs">No blocks found</p>
+            {search && (
+              <button
+                onClick={() => { setSearch(""); setActiveTab("all"); }}
+                className="text-cyan-400 text-xs mt-1 hover:underline"
+                data-testid="button-clear-filters"
+              >
+                Clear filters
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-1.5">
+            {filtered.map((entry) => (
+              <button
+                key={entry.type}
+                onClick={() => handleInsert(entry.type)}
+                className="w-full text-left group rounded-lg border border-gray-700/50 bg-gray-800/40 hover:border-cyan-700/50 hover:bg-gray-800 p-2.5 transition-all"
+                data-testid={`block-insert-${entry.type}`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-white group-hover:text-cyan-300 transition-colors">
+                    {entry.label}
+                  </span>
+                  <Plus className="w-3.5 h-3.5 text-gray-600 group-hover:text-cyan-400 transition-colors" />
+                </div>
+                <p className="text-[10px] text-gray-500 mt-0.5 leading-relaxed">
+                  {entry.description}
+                </p>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="p-3 border-t border-gray-700/50">
+        <p className="text-[10px] text-gray-600 mb-1.5 font-medium uppercase tracking-wider">Quick Insert</p>
+        <div className="flex flex-wrap gap-1">
+          {QUICK_INSERT_BLOCKS.map((block) => (
+            <button
+              key={block.type}
+              onClick={() => handleInsert(block.type)}
+              className="flex items-center gap-1 px-2 py-1 rounded bg-gray-800 border border-gray-700/50 text-[11px] text-gray-400 hover:text-white hover:border-cyan-700/50 hover:bg-gray-800/80 transition-all"
+              data-testid={`quick-insert-panel-${block.type}`}
+            >
+              <span>{block.icon}</span>
+              <span>{block.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 type ViewportMode = "desktop" | "tablet" | "mobile";
 const VIEWPORTS: Record<ViewportMode, { width: string; label: string; icon: typeof Monitor }> = {
   desktop: { width: "100%", label: "Desktop", icon: Monitor },
@@ -944,11 +1145,7 @@ export default function AdminCmsV2Builder() {
                 <PublishButton pageId={pageId!} pageTitle={page?.title || ""} seoData={seoData} onDone={invalidateQueries} />
               </>
             ),
-            componentItem: ({ children, name }) => (
-              <div title={getBlockDescription(name)} data-testid={`block-picker-item-${name}`}>
-                {children}
-              </div>
-            ),
+            components: () => <EnhancedBlockPicker />,
           }}
         />
       </div>
@@ -972,6 +1169,14 @@ export default function AdminCmsV2Builder() {
           max-width: ${viewportWidth};
           margin: 0 auto;
           transition: max-width 0.3s ease;
+        }
+
+        /* Enhanced block picker in Puck sidebar */
+        .puck-builder-container [class*="ComponentList"] {
+          padding: 0 !important;
+        }
+        .puck-builder-container [class*="Drawer--"] {
+          overflow: hidden;
         }
       `}</style>
     </div>
