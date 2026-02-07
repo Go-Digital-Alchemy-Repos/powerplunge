@@ -4,7 +4,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useLocation } from "wouter";
 import CmsV2Layout from "@/components/admin/CmsV2Layout";
-import { CMS_TEMPLATES, templateToContentJson, type CmsTemplate } from "@/cms/templates/templateLibrary";
+import { CMS_TEMPLATES, type CmsTemplate } from "@/cms/templates/templateLibrary";
+import { assembleLandingPage } from "@/admin/cms-v2/generator/assembleLandingPage";
 import { ChevronRight, ChevronLeft, Check, Wand2, FileText, Package, Layers, Settings2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -56,10 +57,6 @@ function slugify(text: string): string {
     .slice(0, 80);
 }
 
-function uid(): string {
-  return crypto.randomUUID();
-}
-
 export default function AdminCmsV2GeneratorLanding() {
   const { hasFullAccess, isLoading: adminLoading } = useAdmin();
   const { toast } = useToast();
@@ -102,89 +99,26 @@ export default function AdminCmsV2GeneratorLanding() {
       if (!pageTitle.trim()) throw new Error("Page title is required");
       if (!pageSlug.trim()) throw new Error("Page slug is required");
 
-      const contentJson = templateToContentJson(selectedTemplate);
+      const chosenSections = selectedSections.length > 0 && sections
+        ? selectedSections
+            .map((id) => sections.find((s) => s.id === id))
+            .filter((s): s is SavedSection => Boolean(s))
+            .map((s) => ({ id: s.id, name: s.name, blocks: Array.isArray(s.blocks) ? s.blocks : [] }))
+        : [];
 
-      if (primaryProductId) {
-        for (const block of contentJson.blocks) {
-          if (block.type === "productHighlight") {
-            block.data.productId = primaryProductId;
-          }
-        }
-      }
-
-      if (secondaryProductIds.length > 0) {
-        const hasGrid = contentJson.blocks.some((b: any) => b.type === "productGrid");
-        if (!hasGrid) {
-          contentJson.blocks.push({
-            id: uid(),
-            type: "productGrid",
-            data: {
-              title: "More Products",
-              productIds: secondaryProductIds,
-              columns: Math.min(secondaryProductIds.length, 3),
-              showPrices: true,
-              showBuyButtons: true,
-            },
-            settings: {},
-          });
-        } else {
-          for (const block of contentJson.blocks) {
-            if (block.type === "productGrid") {
-              block.data.productIds = secondaryProductIds;
-            }
-          }
-        }
-      }
-
-      const ctaHrefMap: Record<string, string> = {
-        shop: "/shop",
-        product: primaryProductId ? `/products/${primaryProductId}` : "/shop",
-        quote: "/contact",
-      };
-      const ctaHref = ctaHrefMap[ctaDestination];
-
-      for (const block of contentJson.blocks) {
-        if (block.type === "hero") {
-          if (ctaDestination === "quote") {
-            block.data.ctaText = "Get a Quote";
-          }
-          block.data.ctaHref = ctaHref;
-        }
-        if (block.type === "callToAction") {
-          block.data.primaryCtaHref = ctaHref;
-        }
-      }
-
-      if (selectedSections.length > 0 && sections) {
-        const chosenSections = selectedSections
-          .map((id) => sections.find((s) => s.id === id))
-          .filter(Boolean) as SavedSection[];
-
-        for (const section of chosenSections) {
-          const sectionBlocks = Array.isArray(section.blocks) ? section.blocks : [];
-          if (sectionMode === "detach") {
-            for (const block of sectionBlocks) {
-              contentJson.blocks.push({
-                id: uid(),
-                type: block.type,
-                data: { ...block.data },
-                settings: {},
-              });
-            }
-          } else {
-            contentJson.blocks.push({
-              id: uid(),
-              type: "sectionRef",
-              data: { sectionId: section.id, sectionName: section.name },
-              settings: {},
-            });
-          }
-        }
-      }
-
-      if (themeOverride) {
-        (contentJson as any).themeOverride = themeOverride;
-      }
+      const { contentJson, seo } = assembleLandingPage({
+        template: selectedTemplate,
+        primaryProductId,
+        secondaryProductIds,
+        sections: chosenSections,
+        sectionMode,
+        ctaDestination,
+        themeOverride,
+        title: pageTitle.trim(),
+        slug: pageSlug.trim(),
+        metaTitle: metaTitle.trim(),
+        metaDescription: metaDescription.trim(),
+      });
 
       const pageData: Record<string, any> = {
         title: pageTitle.trim(),
@@ -193,12 +127,11 @@ export default function AdminCmsV2GeneratorLanding() {
         contentJson,
         template: selectedTemplate.id,
         status: publishNow ? "published" : "draft",
+        metaTitle: seo.metaTitle,
+        metaDescription: seo.metaDescription,
+        ogTitle: seo.ogTitle,
+        ogDescription: seo.ogDescription,
       };
-
-      if (metaTitle.trim()) pageData.metaTitle = metaTitle.trim();
-      if (metaDescription.trim()) pageData.metaDescription = metaDescription.trim();
-      if (metaTitle.trim()) pageData.ogTitle = metaTitle.trim();
-      if (metaDescription.trim()) pageData.ogDescription = metaDescription.trim();
 
       const res = await apiRequest("POST", "/api/admin/cms-v2/pages", pageData);
       const created = await res.json();
