@@ -26,7 +26,7 @@ client/src/
   cms/blocks/entries.ts             → 12 registered block types
   cms/blocks/schemas.ts             → Zod validation schemas per block
   cms/blocks/types.ts               → TypeScript interfaces
-  cms/blocks/categories.ts          → Block category metadata
+  cms/blocks/blockCategories.ts     → Block category definitions (single source of truth)
   cms/themes/presets.ts             → 10 CSS-variable theme presets
   cms/themes/applyTheme.ts          → Theme CSS variable injection
   cms/themes/themeTokens.types.ts   → Token schema interfaces
@@ -42,7 +42,7 @@ Every page has a `title`, `slug`, `status` (draft/published), and optional block
 
 ### Blocks
 
-Blocks are the atomic content units. Each block has a `type`, `data` (props), and `settings`. The block registry defines 12 types across six categories: layout, content, media, commerce, social, and utility. See [Block Registry](02-BLOCK-REGISTRY.md).
+Blocks are the atomic content units. Each block has a `type`, `data` (props), and `settings`. The block registry defines 12 types across six categories: layout, marketing, ecommerce, trust, media, and utility. See [Block Registry](02-BLOCK-REGISTRY.md).
 
 ### Sections
 

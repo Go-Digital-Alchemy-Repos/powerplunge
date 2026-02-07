@@ -9,7 +9,7 @@ client/src/cms/blocks/
   registry.ts           → Core registry (Map<string, BlockDefinition>)
   entries.ts            → Registers all 12 block types via registerCmsV1Blocks()
   types.ts              → TypeScript interfaces (BlockDefinition, BlockCategory, etc.)
-  categories.ts         → Category metadata (labels, descriptions, ordering)
+  blockCategories.ts    → Category definitions (single source of truth)
   schemas.ts            → Zod validation schemas per block type
   helpers.ts            → Puck field builder helpers (textField, arrayField, etc.)
   init.ts               → Bootstrap/initialization entry point
@@ -86,31 +86,74 @@ interface BlockSettings {
 
 ## Block Categories
 
-Blocks are organized into six categories, defined in `client/src/cms/blocks/categories.ts`:
+Blocks are organized into six categories. The single source of truth is `client/src/cms/blocks/blockCategories.ts`, which exports `BLOCK_CATEGORIES`. Both the Puck editor sidebar and the EnhancedBlockPicker derive their category groupings from this constant.
 
-| Category ID | Label | Description | Order |
-|-------------|-------|-------------|-------|
-| `layout` | Layout | Page structure and hero sections | 1 |
-| `content` | Content | Text, features, and informational blocks | 2 |
-| `media` | Media | Images, video, and galleries | 3 |
-| `commerce` | Commerce | Products, pricing, and trust signals | 4 |
-| `social` | Social | Testimonials, logos, and social proof | 5 |
-| `utility` | Utility | Dividers, spacers, and layout helpers | 6 |
+| Category ID | Label | Description | Sort Order |
+|-------------|-------|-------------|------------|
+| `layout` | Layout | Structural blocks for page layout and hero sections | 1 |
+| `marketing` | Marketing | Conversion-focused blocks for promotions and engagement | 2 |
+| `ecommerce` | Ecommerce | Product display and shopping experience blocks | 3 |
+| `trust` | Trust | Social proof and credibility-building blocks | 4 |
+| `media` | Media | Image and visual content blocks | 5 |
+| `utility` | Utility | Informational and supporting content blocks | 6 |
 
-In the Puck editor, categories are displayed with user-friendly group labels:
-- **Layout & Marketing** (layout blocks)
-- **Content** (content blocks)
-- **Media** (media blocks)
-- **E-commerce** (commerce blocks)
-- **Trust & Social Proof** (social blocks)
-- **Utility** (utility blocks)
+### Category → Block Mapping
+
+| Category | Blocks |
+|----------|--------|
+| Layout | `hero`, `callToAction` |
+| Marketing | `featureList`, `richText` |
+| Ecommerce | `productGrid`, `productHighlight`, `comparisonTable` |
+| Trust | `testimonials`, `trustBar` |
+| Media | `image`, `imageGrid` |
+| Utility | `faq` |
+
+### Helper Functions
+
+```typescript
+getCategoryLabel(categoryId: string): string       // e.g. "marketing" → "Marketing"
+getCategoriesOrdered(): BlockCategoryDefinition[]   // sorted by sortOrder
+getCategoryDefinition(categoryId: string)           // full definition or undefined
+```
+
+## Naming Conventions
+
+Consistent naming ensures maintainability across the registry, templates, and editor.
+
+### Block Type Keys
+
+- **Format:** `lowerCamelCase` (e.g., `hero`, `richText`, `callToAction`, `featureList`, `productHighlight`)
+- **Rule:** Must match exactly between the registry `type`, the Puck component key, template block definitions, and `contentJson.blocks[].type`
+- **No abbreviations:** Use `comparisonTable`, not `compTable`
+
+### Display Labels
+
+- **Format:** Title Case (e.g., "Rich Text", "Call to Action", "Feature List")
+- **Used in:** Puck sidebar, EnhancedBlockPicker, template thumbnails
+
+### File Names
+
+- **Block components:** PascalCase + `Block` suffix (e.g., `HeroBlock.tsx`, `CallToActionBlock.tsx`)
+- **One component per file**
+
+### Category IDs
+
+- **Format:** `lowercase` single word (e.g., `layout`, `marketing`, `ecommerce`, `trust`, `media`, `utility`)
+
+### Template IDs
+
+- **Format:** `kebab-case` with version suffix (e.g., `landing-page-v1`, `product-story-v1`, `sales-funnel-v1`)
+
+### CSS Variable Tokens
+
+- **Prefix:** `--pp-` (e.g., `--pp-primary`, `--pp-bg`, `--pp-surface`, `--pp-font-family`, `--pp-section-py`)
 
 ## The 12 Default Blocks
 
 ### Layout
 
 #### Hero (`hero`) — v1
-Full-width hero section with headline, subheadline, CTA button, and optional background image.
+Full-width hero section with headline, subheadline, CTA button, and optional background image. Uses `Heading` (level 1), `Text`, and `CmsButton` components. Supports `stacked` and `split` layout modes with theme token colors.
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
@@ -118,12 +161,19 @@ Full-width hero section with headline, subheadline, CTA button, and optional bac
 | `subheadline` | `string` | Product benefit copy | Supporting text |
 | `ctaText` | `string` | `"Shop Now"` | CTA button label |
 | `ctaHref` | `string` | `"/shop"` | CTA button link |
+| `secondaryCtaText` | `string` | `"Learn More"` | Secondary CTA label |
+| `secondaryCtaHref` | `string` | `"#features"` | Secondary CTA link |
 | `backgroundImage` | `string` | `""` | Optional background image URL |
+| `heroImage` | `string` | `""` | Side image for split layout |
 | `align` | `"left" \| "center"` | `"center"` | Text alignment |
-| `themeVariant` | `string` | `"ice"` | Visual variant (`""` or `"ice"`) |
+| `layout` | `"stacked" \| "split"` | `"stacked"` | Layout mode |
+| `fullWidth` | `boolean` | `true` | Full viewport width |
+| `overlayOpacity` | `number` | `60` | Background overlay opacity (0-100) |
+| `minHeight` | `"default" \| "tall" \| "full"` | `"default"` | Minimum section height |
+| `themeVariant` | `string` | `"ice"` | Visual variant |
 
 #### Call to Action (`callToAction`) — v1
-Conversion-focused section with primary and secondary CTA buttons.
+Conversion-focused section with primary and secondary CTA buttons. Uses `Heading` (level 2), `Text`, `Eyebrow`, and `CmsButton` components.
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
@@ -134,19 +184,20 @@ Conversion-focused section with primary and secondary CTA buttons.
 | `secondaryCtaText` | `string` | `"Learn More"` | Secondary button label |
 | `secondaryCtaHref` | `string` | `"#features"` | Secondary button link |
 
-### Content
+### Marketing
 
 #### Rich Text (`richText`) — v1
-Text content block with optional title and HTML body.
+Text content block with optional title and HTML body. Uses `Section` and `Container` layout components.
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
 | `title` | `string` | `"About Our Products"` | Section title |
-| `bodyRichText` | `string` | Multi-paragraph product copy | HTML content body |
-| `align` | `"left" \| "center" \| "right"` | `"left"` | Text alignment |
+| `bodyRichText` | `string` | HTML content | Rich HTML body (also reads from `content` as fallback) |
+| `maxWidth` | `"prose" \| "wide" \| "full"` | `"prose"` | Content width constraint |
+| `textAlign` | `"left" \| "center" \| "right"` | `"left"` | Text alignment |
 
 #### Feature List (`featureList`) — v1
-Grid of features with icons, titles, and descriptions.
+Grid of features with icons, titles, and descriptions. Uses `Section`, `Container`, `FadeIn`, `Heading`, and `Text` components. Feature cards use theme surface/border tokens.
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
@@ -155,8 +206,6 @@ Grid of features with icons, titles, and descriptions.
 | `columns` | `number` | `3` | Grid columns (1-3) |
 
 Each item: `{ icon: string (Lucide name), title: string, description: string }`
-
-Default features: Precise Temperature (37-60°F), Medical-Grade Build (304 stainless steel), Rapid Cooling (2 hours from room temp).
 
 #### FAQ (`faq`) — v1
 Accordion-style frequently asked questions.
@@ -188,13 +237,13 @@ Multi-image grid with captions and links.
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `items` | `array` | 3 wellness/fitness photos | Grid image items |
+| `items` | `array` | 3 wellness/fitness photos | Grid image items (also reads `images` as fallback) |
 | `columns` | `number` | `3` | Grid columns (2-4) |
 | `spacing` | `"tight" \| "normal" \| "loose"` | `"normal"` | Gap between items |
 
 Each item: `{ src: string, alt: string, caption: string, linkHref: string }`
 
-### E-commerce
+### Ecommerce
 
 #### Product Grid (`productGrid`) — v1
 Displays products in a grid with filtering options.
@@ -218,25 +267,25 @@ Detailed single product showcase with gallery and bullets.
 | `showGallery` | `boolean` | `true` | Show image gallery |
 | `showBuyButton` | `boolean` | `true` | Show buy/add-to-cart button |
 
-Default bullets: Medical-grade steel, Digital temperature controller, UV sanitation, Energy-efficient design.
-
 #### Comparison Table (`comparisonTable`) — v1
 Feature comparison table with highlight column support.
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
 | `title` | `string` | `"Compare Models"` | Table title |
-| `columns` | `array` | Feature / Standard / Pro | Table columns |
-| `rows` | `array` | 4 comparison rows | Feature rows with values per column |
-| `highlightColumnKey` | `string` | `"pro"` | Column key to visually emphasize |
+| `columns` | `{ key: string, label: string }[]` | Column definitions | Table columns (first is feature label column) |
+| `rows` | `array` | Comparison rows | Feature rows (see formats below) |
+| `highlightColumnKey` | `string` | `""` | Column key to visually emphasize ("Recommended" badge) |
 
-Each column: `{ key: string, label: string }`
-Each row: `{ label: string, [columnKey]: string }`
+Row formats (all supported):
+- `{ label: string, valuesByKey: Record<string, string | boolean> }` — keyed values
+- `{ feature: string, values: (string | boolean)[] }` — positional values (matched by column index)
+- `{ label: string, [columnKey]: string }` — flat object with column keys as properties
 
-### Trust & Social Proof
+### Trust
 
 #### Testimonials (`testimonials`) — v1
-Customer testimonial cards or slider layout.
+Customer testimonial cards with quote, name, title, and optional avatar.
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
@@ -245,8 +294,6 @@ Customer testimonial cards or slider layout.
 | `layout` | `"cards" \| "slider"` | `"cards"` | Display layout |
 
 Each item: `{ quote: string, name: string, title: string, avatar: string }`
-
-Default testimonials include Alex Johnson (Professional Athlete), Sarah Chen (Wellness Studio Owner), Marcus Williams (Fitness Coach).
 
 #### Trust Bar (`trustBar`) — v1
 Row of trust signals with icons and labels.
@@ -257,8 +304,6 @@ Row of trust signals with icons and labels.
 | `layout` | `"row" \| "wrap"` | `"row"` | Display layout |
 
 Each item: `{ icon: string (Lucide name), label: string, sublabel: string }`
-
-Default signals: Free Shipping, 2-Year Warranty, 24/7 Support, 30-Day Returns.
 
 ## Puck Field Types
 
@@ -313,27 +358,76 @@ This ensures pages with removed or renamed block types never crash — they degr
 
 ### Step 1: Create the Render Component
 
-Create a new file `client/src/cms/blocks/MyBlock.tsx`:
+Create a new file `client/src/cms/blocks/MyBlock.tsx`. Use the CMS design system components for consistency:
 
 ```typescript
+import { Section, Container } from "@/cms/layout";
+import { FadeIn } from "@/cms/motion";
+import { Heading, Text, Eyebrow } from "@/cms/typography";
+import { CmsButton } from "@/cms/ui";
 import type { BlockRenderProps } from "./types";
 
-export default function MyBlock({ data }: BlockRenderProps) {
+export default function MyBlock({ data, settings }: BlockRenderProps) {
+  const title = data?.title || "Default Title";
+  const description = data?.description || "";
+  const ctaText = data?.ctaText || "";
+  const ctaHref = data?.ctaHref || "#";
+
   return (
-    <section className="max-w-5xl mx-auto px-4 py-12">
-      <h2 className="text-2xl font-bold text-white">{data.title}</h2>
-      <p className="text-gray-300 mt-2">{data.description}</p>
-    </section>
+    <Section className={settings?.className} data-testid="block-myblock">
+      <Container>
+        <FadeIn>
+          <Heading level={2} align="center">{title}</Heading>
+          <Text size="lg" muted align="center">{description}</Text>
+          {ctaText && (
+            <div className="mt-6 text-center">
+              <CmsButton variant="primary" href={ctaHref}>{ctaText}</CmsButton>
+            </div>
+          )}
+        </FadeIn>
+      </Container>
+    </Section>
   );
 }
+```
+
+**Required design system usage:**
+
+| Component | Import | Purpose |
+|-----------|--------|---------|
+| `Section` | `@/cms/layout` | Wraps every block with consistent vertical padding (`--pp-section-py`) and optional background |
+| `Container` | `@/cms/layout` | Centers content with responsive max-width (`--pp-container-max`) and horizontal padding |
+| `FadeIn` | `@/cms/motion` | Subtle entrance animation (fade + slide up) |
+| `Heading` | `@/cms/typography` | H1/H2/H3 with responsive sizing, `--pp-font-family`, optional gradient |
+| `Text` | `@/cms/typography` | Body text with size variants, `--pp-font-family`, `--pp-text` / `--pp-text-muted` colors |
+| `Eyebrow` | `@/cms/typography` | Small uppercase label using `--pp-primary` color |
+| `CmsButton` | `@/cms/ui` | Themed buttons with `primary` / `secondary` / `outline` / `ghost` variants, respects `--pp-primary`, `--pp-btn-radius` |
+| `Stack` | `@/cms/layout` | Vertical flex with gap from `--pp-space-*` tokens |
+
+**Theme token usage in inline styles:**
+
+All blocks should use CSS custom properties (not hardcoded colors) for theming:
+
+```typescript
+// Colors
+style={{ color: "var(--pp-text, #f9fafb)" }}
+style={{ backgroundColor: "var(--pp-surface, #111827)" }}
+style={{ borderColor: "var(--pp-border, #374151)" }}
+style={{ color: "var(--pp-primary, #67e8f9)" }}
+
+// Typography
+style={{ fontFamily: "var(--pp-font-family, 'Inter', sans-serif)" }}
+
+// Spacing
+style={{ padding: "var(--pp-section-py, 3rem) 0" }}
 ```
 
 All block components receive `BlockRenderProps`:
 ```typescript
 interface BlockRenderProps {
-  data: Record<string, any>;      // The block's prop data
-  settings?: BlockSettings;       // Per-block display settings
-  onAddToCart?: (id: string, qty: number) => void;  // Commerce callback
+  data: Record<string, any>;
+  settings?: BlockSettings;
+  onAddToCart?: (id: string, qty: number) => void;
 }
 ```
 
@@ -345,6 +439,8 @@ Add to `client/src/cms/blocks/schemas.ts`:
 export const myBlockSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().default(""),
+  ctaText: z.string().default(""),
+  ctaHref: z.string().default("#"),
 });
 export type MyBlockProps = z.infer<typeof myBlockSchema>;
 ```
@@ -365,30 +461,75 @@ Add to `registerCmsV1Blocks()` in `client/src/cms/blocks/entries.ts`:
 import MyBlock from "./MyBlock";
 
 registerBlock({
-  type: "myBlock",
-  label: "My Block",
-  category: "content",      // layout | content | media | commerce | social | utility
+  type: "myBlock",              // lowerCamelCase
+  label: "My Block",            // Title Case
+  category: "marketing",        // layout | marketing | ecommerce | trust | media | utility
   version: 1,
   description: "A brief description for the editor tooltip",
   renderComponent: MyBlock,
   defaultProps: {
     title: "Default Title",
     description: "Default description text for preview.",
+    ctaText: "Get Started",
+    ctaHref: "/shop",
   },
   puckFields: {
     title: textField("Title"),
     description: textareaField("Description"),
+    ctaText: textField("CTA Button Text"),
+    ctaHref: textField("CTA Button Link"),
   },
 });
 ```
 
-### Step 4: Done
+### Step 4: Add to Block Categories (if new category needed)
+
+If your block belongs to an existing category, just use that category ID. To add a new category, edit `client/src/cms/blocks/blockCategories.ts`:
+
+```typescript
+export const BLOCK_CATEGORIES: BlockCategoryDefinition[] = [
+  // ... existing categories
+  {
+    id: "myCategory",
+    label: "My Category",
+    description: "Description of the category",
+    sortOrder: 7,
+  },
+];
+```
+
+### Step 5: Done
 
 The block automatically:
 - Appears in the Puck editor component palette under its category
+- Appears in the EnhancedBlockPicker with search and category filtering
 - Is renderable on public-facing pages via the page renderer
 - Gets validated on save via its Zod schema
 - Falls back to `UnknownBlock` if ever unregistered
+
+## Registry Organization
+
+The block registry is organized in layers for separation of concerns:
+
+```
+blockCategories.ts    ← Category definitions (single source of truth)
+       ↓
+types.ts              ← TypeScript interfaces
+       ↓
+helpers.ts            ← Puck field configuration helpers
+       ↓
+schemas.ts            ← Zod validation per block type
+       ↓
+entries.ts            ← Block registration (imports components)
+       ↓
+registry.ts           ← Core Map<string, BlockDefinition> store
+       ↓
+init.ts               ← App startup bootstrap
+       ↓
+index.ts              ← Public barrel export
+```
+
+The EnhancedBlockPicker in the CMS v2 builder derives its category tabs from `BLOCK_CATEGORIES`, ensuring consistent grouping across the sidebar and the quick-insert panel.
 
 ## Versioning Strategy
 
