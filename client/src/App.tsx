@@ -55,6 +55,7 @@ import AdminCmsV2Settings from "@/pages/admin-cms-v2-settings";
 import AdminCmsV2Builder from "@/pages/admin-cms-v2-builder";
 import AdminCmsV2GeneratorLanding from "@/pages/admin-cms-v2-generator-landing";
 import AdminCmsV2GeneratorCampaigns from "@/pages/admin-cms-v2-generator-campaigns";
+import AdminCmsV2Presets from "@/pages/admin-cms-v2-presets";
 import PageView from "@/pages/page-view";
 import Shop from "@/pages/shop";
 import BecomeAffiliate from "@/pages/become-affiliate";
@@ -111,6 +112,7 @@ function Router() {
       <Route path="/admin/media" component={AdminMediaLibrary} />
       <Route path="/admin/support" component={AdminSupport} />
       <Route path="/admin/affiliate-invite-sender" component={AdminAffiliateInviteSender} />
+      <Route path="/admin/cms-v2/presets" component={AdminCmsV2Presets} />
       <Route path="/admin/cms-v2/generator/campaigns" component={AdminCmsV2GeneratorCampaigns} />
       <Route path="/admin/cms-v2/generator/landing" component={AdminCmsV2GeneratorLanding} />
       <Route path="/admin/cms-v2/pages/:id/builder" component={AdminCmsV2Builder} />

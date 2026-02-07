@@ -23,6 +23,7 @@ import {
   PanelLeft,
   ArrowLeft,
   Wand2,
+  Globe,
 } from "lucide-react";
 
 interface Breadcrumb {
@@ -60,6 +61,7 @@ const NAV_ITEMS: NavItem[] = [
     ],
   },
   { id: "themes", label: "Themes", icon: Palette, href: "/admin/cms-v2/themes" },
+  { id: "presets", label: "Site Presets", icon: Globe, href: "/admin/cms-v2/presets" },
   { id: "seo", label: "SEO", icon: Search, href: "/admin/cms-v2/seo" },
   { id: "settings", label: "Settings", icon: Settings, href: "/admin/cms-v2/settings" },
 ];

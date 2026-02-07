@@ -32,6 +32,26 @@ router.get("/apply-history/:id", async (req, res) => {
   }
 });
 
+router.post("/seed", async (req, res) => {
+  try {
+    const result = await sitePresetsService.seed();
+    res.json(result);
+  } catch {
+    res.status(500).json({ error: "Failed to seed presets" });
+  }
+});
+
+router.post("/import", async (req, res) => {
+  try {
+    const adminEmail = (req as any).adminUser?.email || "unknown";
+    const result = await sitePresetsService.importPreset(req.body, adminEmail);
+    if (result.error) return res.status(400).json({ error: result.error });
+    res.status(201).json(result.preset);
+  } catch {
+    res.status(500).json({ error: "Failed to import preset" });
+  }
+});
+
 router.get("/:id", async (req, res) => {
   try {
     const preset = await sitePresetsService.getById(req.params.id);
@@ -39,6 +59,16 @@ router.get("/:id", async (req, res) => {
     res.json(preset);
   } catch {
     res.status(500).json({ error: "Failed to fetch site preset" });
+  }
+});
+
+router.get("/:id/export", async (req, res) => {
+  try {
+    const result = await sitePresetsService.exportPreset(req.params.id);
+    if ("error" in result) return res.status(404).json({ error: result.error });
+    res.json(result);
+  } catch {
+    res.status(500).json({ error: "Failed to export preset" });
   }
 });
 
