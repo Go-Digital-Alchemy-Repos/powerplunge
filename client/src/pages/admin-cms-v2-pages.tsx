@@ -4,7 +4,8 @@ import { Link, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import CmsV2Layout from "@/components/admin/CmsV2Layout";
-import { FileText, Home, ShoppingBag, Plus, Globe, GlobeLock, MoreHorizontal, Pencil, Eye, ArrowRightLeft, Search, Filter } from "lucide-react";
+import { FileText, Home, ShoppingBag, Plus, Globe, GlobeLock, MoreHorizontal, Pencil, Eye, ArrowRightLeft, Search, Filter, Sparkles, Layers } from "lucide-react";
+import { CMS_TEMPLATES, templateToContentJson, type CmsTemplate } from "@/cms/templates/templateLibrary";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -56,6 +57,7 @@ export default function AdminCmsV2Pages() {
   const [newSlug, setNewSlug] = useState("");
   const [newPageType, setNewPageType] = useState("page");
   const [slugTouched, setSlugTouched] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<string>("blank");
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "published" | "draft">("all");
@@ -66,13 +68,15 @@ export default function AdminCmsV2Pages() {
   });
 
   const createMutation = useMutation({
-    mutationFn: async (data: { title: string; slug: string; pageType: string }) => {
+    mutationFn: async (data: { title: string; slug: string; pageType: string; templateId: string }) => {
+      const template = CMS_TEMPLATES.find((t) => t.id === data.templateId);
+      const contentJson = template ? templateToContentJson(template) : { version: 1, blocks: [] };
       const res = await apiRequest("POST", "/api/admin/cms-v2/pages", {
         title: data.title,
         slug: data.slug,
         pageType: data.pageType,
         status: "draft",
-        contentJson: { version: 1, blocks: [] },
+        contentJson,
       });
       return res.json();
     },
@@ -122,6 +126,7 @@ export default function AdminCmsV2Pages() {
     setNewSlug("");
     setNewPageType("page");
     setSlugTouched(false);
+    setSelectedTemplate("blank");
   }
 
   function handleTitleChange(val: string) {
@@ -133,7 +138,7 @@ export default function AdminCmsV2Pages() {
 
   function handleCreate() {
     if (!newTitle.trim() || !newSlug.trim()) return;
-    createMutation.mutate({ title: newTitle.trim(), slug: newSlug.trim(), pageType: newPageType });
+    createMutation.mutate({ title: newTitle.trim(), slug: newSlug.trim(), pageType: newPageType, templateId: selectedTemplate });
   }
 
   if (adminLoading || !hasFullAccess) {
@@ -378,14 +383,48 @@ export default function AdminCmsV2Pages() {
       </div>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="bg-gray-900 border-gray-700 text-white" data-testid="dialog-create-page">
+        <DialogContent className="bg-gray-900 border-gray-700 text-white sm:max-w-lg" data-testid="dialog-create-page">
           <DialogHeader>
             <DialogTitle className="text-white">Create New Page</DialogTitle>
             <DialogDescription className="text-gray-400">
-              Add a new page to your site. You can edit the content in the builder after creating it.
+              Choose a template and configure your new page.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label className="text-gray-300 text-sm">Template</Label>
+              <div className="grid grid-cols-2 gap-2" data-testid="template-selector">
+                {CMS_TEMPLATES.map((tmpl) => (
+                  <button
+                    key={tmpl.id}
+                    type="button"
+                    onClick={() => setSelectedTemplate(tmpl.id)}
+                    className={`text-left rounded-lg border p-3 transition-all ${
+                      selectedTemplate === tmpl.id
+                        ? "border-cyan-500 bg-cyan-950/30 ring-1 ring-cyan-500/30"
+                        : "border-gray-700 bg-gray-800/50 hover:border-gray-600"
+                    }`}
+                    data-testid={`template-option-${tmpl.id}`}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      {tmpl.id === "blank" ? (
+                        <FileText className="w-4 h-4 text-gray-500" />
+                      ) : (
+                        <Sparkles className="w-4 h-4 text-cyan-400" />
+                      )}
+                      <span className="text-xs font-medium text-white">{tmpl.name}</span>
+                    </div>
+                    <p className="text-[10px] text-gray-500 leading-relaxed">{tmpl.description}</p>
+                    {tmpl.blocks.length > 0 && (
+                      <div className="flex items-center gap-1 mt-1.5">
+                        <Layers className="w-3 h-3 text-gray-600" />
+                        <span className="text-[10px] text-gray-600">{tmpl.blocks.length} blocks</span>
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="space-y-2">
               <Label htmlFor="page-title" className="text-gray-300 text-sm">Title</Label>
               <Input
