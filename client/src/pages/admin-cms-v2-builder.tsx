@@ -14,7 +14,7 @@ import { Puck, usePuck, type Config, type Data } from "@puckeditor/core";
 import "@puckeditor/core/dist/index.css";
 import { registerAllBlocks } from "@/lib/blockRegistryEntries";
 import { getAllBlocks } from "@/lib/blockRegistry";
-import { registerCmsV1Blocks, getAllBlocks as getCmsBlocks } from "@/cms/blocks";
+import { registerCmsV1Blocks, getAllBlocks as getCmsBlocks, BLOCK_CATEGORIES } from "@/cms/blocks";
 import {
   Dialog,
   DialogContent,
@@ -46,14 +46,9 @@ import {
 registerAllBlocks();
 registerCmsV1Blocks();
 
-const CATEGORY_MAP: Record<string, { label: string; description: string }> = {
-  layout: { label: "Layout & Marketing", description: "Hero sections, CTAs, and page structure" },
-  content: { label: "Content", description: "Rich text, features, and FAQ blocks" },
-  media: { label: "Media", description: "Images, galleries, and visual content" },
-  commerce: { label: "E-commerce", description: "Products, pricing, and comparison tables" },
-  social: { label: "Trust & Social Proof", description: "Testimonials, trust bars, and reviews" },
-  utility: { label: "Utility", description: "Sections, dividers, and layout helpers" },
-};
+const CATEGORY_MAP: Record<string, { label: string; description: string }> = Object.fromEntries(
+  BLOCK_CATEGORIES.map((c) => [c.id, { label: c.label, description: c.description }])
+);
 
 const QUICK_INSERT_BLOCKS = [
   { type: "hero", label: "Hero", icon: "🏔" },

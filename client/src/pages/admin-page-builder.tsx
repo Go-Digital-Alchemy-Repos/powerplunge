@@ -8,8 +8,9 @@ import {
   Type, Image, Grid, Layout, Quote, HelpCircle, Megaphone, Users, 
   List, Minus, Square, Video, Shield, Table, Layers, X, FileText,
   Bookmark, BookMarked, FolderPlus, Upload, Loader2, FolderOpen, Sparkles, 
-  EyeOff, Search
+  EyeOff, Search, Star, BarChart3, Package
 } from "lucide-react";
+import { getCategoriesOrdered, type BlockCategoryDefinition } from "@/cms/blocks/blockCategories";
 import { MediaPickerDialog } from "@/components/admin/MediaPickerDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -151,26 +152,37 @@ function AIInput({
   );
 }
 
+const CATEGORY_ICONS: Record<string, typeof Layout> = {
+  layout: Layout,
+  marketing: Megaphone,
+  ecommerce: ShoppingBag,
+  trust: Shield,
+  media: Image,
+  utility: HelpCircle,
+};
+
 const BLOCK_TYPES = [
-  { type: 'hero', label: 'Hero', icon: Layout, description: 'Full-width hero section' },
-  { type: 'statsBar', label: 'Stats Bar', icon: Grid, description: 'Stats with icons' },
-  { type: 'featuredProduct', label: 'Featured Product', icon: ShoppingBag, description: 'Featured product display' },
-  { type: 'iconGrid', label: 'Icon Grid', icon: Grid, description: 'Icons with titles' },
-  { type: 'richText', label: 'Rich Text', icon: Type, description: 'Text content block' },
-  { type: 'image', label: 'Image', icon: Image, description: 'Single image with caption' },
-  { type: 'imageGrid', label: 'Image Grid', icon: Grid, description: 'Grid of images' },
-  { type: 'productGrid', label: 'Product Grid', icon: ShoppingBag, description: 'Display products' },
-  { type: 'testimonial', label: 'Testimonials', icon: Quote, description: 'Customer testimonials' },
-  { type: 'faq', label: 'FAQ', icon: HelpCircle, description: 'Frequently asked questions' },
-  { type: 'cta', label: 'Call to Action', icon: Megaphone, description: 'CTA banner' },
-  { type: 'logoCloud', label: 'Logo Cloud', icon: Users, description: 'Partner/client logos' },
-  { type: 'featureList', label: 'Feature List', icon: List, description: 'Features with icons' },
-  { type: 'divider', label: 'Divider', icon: Minus, description: 'Horizontal divider' },
-  { type: 'spacer', label: 'Spacer', icon: Square, description: 'Vertical spacing' },
-  { type: 'videoEmbed', label: 'Video', icon: Video, description: 'YouTube/Vimeo embed' },
-  { type: 'guarantee', label: 'Guarantee', icon: Shield, description: 'Guarantee badge' },
-  { type: 'comparisonTable', label: 'Comparison Table', icon: Table, description: 'Feature comparison' },
-  { type: 'slider', label: 'Slider', icon: Layers, description: 'Image carousel' },
+  { type: 'hero', label: 'Hero', icon: Layout, category: 'layout', description: 'Full-width hero section with headline, subheadline, and CTA' },
+  { type: 'callToAction', label: 'Call To Action', icon: Megaphone, category: 'marketing', description: 'Conversion-focused CTA section with primary and secondary buttons' },
+  { type: 'featureList', label: 'Feature List', icon: List, category: 'marketing', description: 'List of features with icons, titles, and descriptions' },
+  { type: 'productGrid', label: 'Product Grid', icon: ShoppingBag, category: 'ecommerce', description: 'Display products in a grid with optional filtering by IDs or tags' },
+  { type: 'productHighlight', label: 'Product Highlight', icon: Star, category: 'ecommerce', description: 'Detailed single product showcase with gallery, bullets, and buy button' },
+  { type: 'comparisonTable', label: 'Comparison Table', icon: Table, category: 'ecommerce', description: 'Feature comparison table with highlight column support' },
+  { type: 'featuredProduct', label: 'Featured Product', icon: Package, category: 'ecommerce', description: 'Featured product display' },
+  { type: 'testimonials', label: 'Testimonials', icon: Quote, category: 'trust', description: 'Customer testimonials in cards or slider layout' },
+  { type: 'trustBar', label: 'Trust Bar', icon: Shield, category: 'trust', description: 'Row of trust signals with icons, labels, and sublabels' },
+  { type: 'guarantee', label: 'Guarantee', icon: Shield, category: 'trust', description: 'Guarantee badge with details' },
+  { type: 'image', label: 'Image', icon: Image, category: 'media', description: 'Single image with optional caption and link' },
+  { type: 'imageGrid', label: 'Image Grid', icon: Grid, category: 'media', description: 'Grid of images with optional captions and links' },
+  { type: 'videoEmbed', label: 'Video', icon: Video, category: 'media', description: 'YouTube/Vimeo embed' },
+  { type: 'slider', label: 'Slider', icon: Layers, category: 'media', description: 'Image carousel' },
+  { type: 'logoCloud', label: 'Logo Cloud', icon: Users, category: 'media', description: 'Partner/client logos' },
+  { type: 'richText', label: 'Rich Text', icon: Type, category: 'utility', description: 'Text content block with optional title and HTML body' },
+  { type: 'faq', label: 'FAQ', icon: HelpCircle, category: 'utility', description: 'Accordion-style frequently asked questions' },
+  { type: 'statsBar', label: 'Stats Bar', icon: BarChart3, category: 'utility', description: 'Stats with icons' },
+  { type: 'iconGrid', label: 'Icon Grid', icon: Grid, category: 'utility', description: 'Icons with titles' },
+  { type: 'divider', label: 'Divider', icon: Minus, category: 'utility', description: 'Horizontal divider' },
+  { type: 'spacer', label: 'Spacer', icon: Square, category: 'utility', description: 'Vertical spacing' },
 ];
 
 const getDefaultBlockData = (type: string): Record<string, any> => {
@@ -1197,43 +1209,60 @@ export default function AdminPageBuilder() {
                 )}
               </div>
               <ScrollArea className="h-[calc(100vh-260px)]">
-                <div className="space-y-2 pr-4">
-                  {BLOCK_TYPES.filter(bt => 
-                    blockSearchQuery === '' ||
-                    bt.label.toLowerCase().includes(blockSearchQuery.toLowerCase()) ||
-                    bt.description.toLowerCase().includes(blockSearchQuery.toLowerCase()) ||
-                    bt.type.toLowerCase().includes(blockSearchQuery.toLowerCase())
-                  ).map((blockType) => {
-                    const Icon = blockType.icon;
-                    return (
-                      <button
-                        key={blockType.type}
-                        onClick={() => { addBlock(blockType.type); setBlockSearchQuery(''); }}
-                        className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors text-left"
-                        data-testid={`add-block-${blockType.type}`}
-                      >
-                        <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center">
-                          <Icon className="w-5 h-5 text-primary" />
-                        </div>
-                        <div>
-                          <div className="font-medium">{blockType.label}</div>
-                          <div className="text-xs text-muted-foreground">{blockType.description}</div>
-                        </div>
-                      </button>
+                <div className="space-y-1 pr-4">
+                  {(() => {
+                    const q = blockSearchQuery.toLowerCase();
+                    const filtered = BLOCK_TYPES.filter(bt =>
+                      q === '' ||
+                      bt.label.toLowerCase().includes(q) ||
+                      bt.description.toLowerCase().includes(q) ||
+                      bt.type.toLowerCase().includes(q) ||
+                      bt.category.toLowerCase().includes(q)
                     );
-                  })}
-                  {BLOCK_TYPES.filter(bt => 
-                    blockSearchQuery !== '' && (
-                      bt.label.toLowerCase().includes(blockSearchQuery.toLowerCase()) ||
-                      bt.description.toLowerCase().includes(blockSearchQuery.toLowerCase()) ||
-                      bt.type.toLowerCase().includes(blockSearchQuery.toLowerCase())
-                    )
-                  ).length === 0 && blockSearchQuery !== '' && (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <Search className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">No blocks match "{blockSearchQuery}"</p>
-                    </div>
-                  )}
+
+                    if (filtered.length === 0 && blockSearchQuery !== '') {
+                      return (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <Search className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                          <p className="text-sm">No blocks match "{blockSearchQuery}"</p>
+                        </div>
+                      );
+                    }
+
+                    const categories = getCategoriesOrdered();
+                    return categories.map((cat) => {
+                      const catBlocks = filtered.filter(bt => bt.category === cat.id);
+                      if (catBlocks.length === 0) return null;
+                      const CatIcon = CATEGORY_ICONS[cat.id] || Layout;
+                      return (
+                        <div key={cat.id} className="mb-4" data-testid={`block-category-${cat.id}`}>
+                          <div className="flex items-center gap-2 px-2 py-2 mb-1">
+                            <CatIcon className="w-3.5 h-3.5 text-primary/70" />
+                            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{cat.label}</span>
+                          </div>
+                          {catBlocks.map((blockType) => {
+                            const Icon = blockType.icon;
+                            return (
+                              <button
+                                key={blockType.type}
+                                onClick={() => { addBlock(blockType.type); setBlockSearchQuery(''); }}
+                                className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors text-left"
+                                data-testid={`add-block-${blockType.type}`}
+                              >
+                                <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center flex-shrink-0">
+                                  <Icon className="w-5 h-5 text-primary" />
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="font-medium">{blockType.label}</div>
+                                  <div className="text-xs text-muted-foreground line-clamp-2">{blockType.description}</div>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      );
+                    });
+                  })()}
                 </div>
               </ScrollArea>
             </TabsContent>

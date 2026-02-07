@@ -80,7 +80,7 @@ export function registerCmsV1Blocks() {
   registerBlock({
     type: "richText",
     label: "Rich Text",
-    category: "content",
+    category: "utility",
     version: 1,
     description: "Text content block with optional title and HTML body",
     renderComponent: RichTextBlock,
@@ -165,7 +165,7 @@ export function registerCmsV1Blocks() {
   registerBlock({
     type: "featureList",
     label: "Feature List",
-    category: "content",
+    category: "marketing",
     version: 1,
     description: "List of features with icons, titles, and descriptions",
     renderComponent: FeatureListBlock,
@@ -192,7 +192,7 @@ export function registerCmsV1Blocks() {
   registerBlock({
     type: "testimonials",
     label: "Testimonials",
-    category: "social",
+    category: "trust",
     version: 1,
     description: "Customer testimonials in cards or slider layout",
     renderComponent: TestimonialsBlock,
@@ -223,7 +223,7 @@ export function registerCmsV1Blocks() {
   registerBlock({
     type: "faq",
     label: "FAQ",
-    category: "content",
+    category: "utility",
     version: 1,
     description: "Accordion-style frequently asked questions",
     renderComponent: FAQBlock,
@@ -249,7 +249,7 @@ export function registerCmsV1Blocks() {
   registerBlock({
     type: "callToAction",
     label: "Call to Action",
-    category: "layout",
+    category: "marketing",
     version: 1,
     description: "Conversion-focused CTA section with primary and secondary buttons",
     renderComponent: CallToActionBlock,
@@ -274,7 +274,7 @@ export function registerCmsV1Blocks() {
   registerBlock({
     type: "productGrid",
     label: "Product Grid",
-    category: "commerce",
+    category: "ecommerce",
     version: 1,
     description: "Display products in a grid with optional filtering by IDs or tags",
     renderComponent: ProductGridBlock,
@@ -302,7 +302,7 @@ export function registerCmsV1Blocks() {
   registerBlock({
     type: "productHighlight",
     label: "Product Highlight",
-    category: "commerce",
+    category: "ecommerce",
     version: 1,
     description: "Detailed single product showcase with gallery, bullets, and buy button",
     renderComponent: ProductHighlightBlock,
@@ -327,7 +327,7 @@ export function registerCmsV1Blocks() {
   registerBlock({
     type: "trustBar",
     label: "Trust Bar",
-    category: "social",
+    category: "trust",
     version: 1,
     description: "Row of trust signals with icons, labels, and sublabels",
     renderComponent: TrustBarBlock,
@@ -356,7 +356,7 @@ export function registerCmsV1Blocks() {
   registerBlock({
     type: "comparisonTable",
     label: "Comparison Table",
-    category: "commerce",
+    category: "ecommerce",
     version: 1,
     description: "Feature comparison table with highlight column support",
     renderComponent: ComparisonTableBlock,

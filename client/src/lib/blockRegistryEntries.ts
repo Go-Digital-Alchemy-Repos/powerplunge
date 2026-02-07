@@ -51,7 +51,7 @@ export function registerAllBlocks() {
   registerBlock({
     type: "richText",
     label: "Rich Text",
-    category: "content",
+    category: "utility",
     version: 1,
     renderComponent: blockComponents.richText,
     defaultProps: { content: "<p>Enter your content here...</p>" },
@@ -94,7 +94,7 @@ export function registerAllBlocks() {
   registerBlock({
     type: "productGrid",
     label: "Product Grid",
-    category: "commerce",
+    category: "ecommerce",
     version: 1,
     renderComponent: blockComponents.productGrid,
     defaultProps: { title: "Our Products", mode: "all", columns: 3, limit: 4 },
@@ -113,7 +113,7 @@ export function registerAllBlocks() {
   registerBlock({
     type: "testimonial",
     label: "Testimonials",
-    category: "social",
+    category: "trust",
     version: 1,
     renderComponent: blockComponents.testimonial,
     defaultProps: { title: "What Our Customers Say", testimonials: [] },
@@ -125,7 +125,7 @@ export function registerAllBlocks() {
   registerBlock({
     type: "faq",
     label: "FAQ",
-    category: "content",
+    category: "utility",
     version: 1,
     renderComponent: blockComponents.faq,
     defaultProps: { title: "Frequently Asked Questions", items: [] },
@@ -137,7 +137,7 @@ export function registerAllBlocks() {
   registerBlock({
     type: "cta",
     label: "Call to Action",
-    category: "layout",
+    category: "marketing",
     version: 1,
     renderComponent: blockComponents.cta,
     defaultProps: {
@@ -167,7 +167,7 @@ export function registerAllBlocks() {
   registerBlock({
     type: "logoCloud",
     label: "Logo Cloud",
-    category: "social",
+    category: "media",
     version: 1,
     renderComponent: blockComponents.logoCloud,
     defaultProps: { title: "Trusted By", logos: [] },
@@ -179,7 +179,7 @@ export function registerAllBlocks() {
   registerBlock({
     type: "featureList",
     label: "Feature List",
-    category: "content",
+    category: "marketing",
     version: 1,
     renderComponent: blockComponents.featureList,
     defaultProps: { title: "Features", subtitle: "", columns: 3, features: [] },
@@ -193,7 +193,7 @@ export function registerAllBlocks() {
   registerBlock({
     type: "featureGrid",
     label: "Feature Grid",
-    category: "content",
+    category: "marketing",
     version: 1,
     renderComponent: blockComponents.featureGrid,
     defaultProps: { title: "Features", titleHighlight: "", columns: 3, items: [] },
@@ -261,7 +261,7 @@ export function registerAllBlocks() {
   registerBlock({
     type: "guarantee",
     label: "Guarantee",
-    category: "commerce",
+    category: "trust",
     version: 1,
     renderComponent: blockComponents.guarantee,
     defaultProps: { title: "Our Guarantee", description: "", icon: "" },
@@ -275,7 +275,7 @@ export function registerAllBlocks() {
   registerBlock({
     type: "comparisonTable",
     label: "Comparison Table",
-    category: "commerce",
+    category: "ecommerce",
     version: 1,
     renderComponent: blockComponents.comparisonTable,
     defaultProps: { title: "Compare", featureColumnLabel: "Feature", columns: [], rows: [] },
@@ -300,7 +300,7 @@ export function registerAllBlocks() {
   registerBlock({
     type: "statsBar",
     label: "Stats Bar",
-    category: "content",
+    category: "utility",
     version: 1,
     renderComponent: blockComponents.statsBar,
     defaultProps: { stats: [] },
@@ -310,7 +310,7 @@ export function registerAllBlocks() {
   registerBlock({
     type: "featuredProduct",
     label: "Featured Product",
-    category: "commerce",
+    category: "ecommerce",
     version: 1,
     renderComponent: blockComponents.featuredProduct,
     defaultProps: {},
@@ -320,7 +320,7 @@ export function registerAllBlocks() {
   registerBlock({
     type: "iconGrid",
     label: "Icon Grid",
-    category: "content",
+    category: "utility",
     version: 1,
     renderComponent: blockComponents.iconGrid,
     defaultProps: { title: "", titleHighlight: "", columns: 4, items: [] },

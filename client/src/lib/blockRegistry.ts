@@ -4,7 +4,7 @@ import type { BlockSettings } from "@/components/PageRenderer";
 export interface BlockRegistryEntry {
   type: string;
   label: string;
-  category: "layout" | "content" | "media" | "commerce" | "social" | "utility";
+  category: "layout" | "marketing" | "ecommerce" | "trust" | "media" | "utility";
   defaultProps: Record<string, any>;
   renderComponent: ComponentType<{
     data: Record<string, any>;

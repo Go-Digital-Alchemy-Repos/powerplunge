@@ -33,7 +33,7 @@ export interface BlockDefinition {
   label: string;
   category: BlockCategory;
   version: number;
-  description?: string;
+  description: string;
   icon?: string;
   renderComponent: BlockRenderComponent;
   defaultProps: Record<string, any>;
@@ -42,10 +42,10 @@ export interface BlockDefinition {
 
 export type BlockCategory =
   | "layout"
-  | "content"
+  | "marketing"
+  | "ecommerce"
+  | "trust"
   | "media"
-  | "commerce"
-  | "social"
   | "utility";
 
 export interface PageBlock {
