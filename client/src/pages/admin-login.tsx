@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Lock, Mail, ArrowLeft, User, ShieldCheck } from "lucide-react";
+import { Lock, Mail, ArrowLeft, User, ShieldCheck, Bug } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 export default function AdminLogin() {
   const [, setLocation] = useLocation();
@@ -294,6 +295,50 @@ export default function AdminLogin() {
           </div>
         </CardContent>
       </Card>
+
+      {import.meta.env.DEV && !needsSetup && (
+        <Card className="w-full max-w-md mt-4 border-dashed border-yellow-500/50">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <Bug className="w-4 h-4 text-yellow-500" />
+              <CardTitle className="text-sm text-yellow-500">Dev Test Accounts</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {[
+              { email: "admin@test.com", password: "testpass123", role: "admin" },
+              { email: "manager@test.com", password: "testpass123", role: "store_manager" },
+              { email: "fulfillment@test.com", password: "testpass123", role: "fulfillment" },
+            ].map((user) => (
+              <div
+                key={user.email}
+                className="flex items-center justify-between rounded-md border border-border/50 px-3 py-2 text-sm"
+              >
+                <div className="flex flex-col gap-0.5">
+                  <span className="font-mono text-xs">{user.email}</span>
+                  <span className="text-muted-foreground text-xs">pw: {user.password}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-xs capitalize">
+                    {user.role.replace("_", " ")}
+                  </Badge>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs"
+                    data-testid={`dev-login-${user.role}`}
+                    onClick={() =>
+                      setFormData({ ...formData, email: user.email, password: user.password })
+                    }
+                  >
+                    Use
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

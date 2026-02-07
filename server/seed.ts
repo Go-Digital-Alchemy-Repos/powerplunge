@@ -1,6 +1,59 @@
 import { storage } from "./storage";
 import bcrypt from "bcryptjs";
 
+const TEST_ADMIN_USERS = [
+  {
+    email: "admin@test.com",
+    password: "testpass123",
+    firstName: "Test",
+    lastName: "Admin",
+    name: "Test Admin",
+    role: "admin",
+  },
+  {
+    email: "manager@test.com",
+    password: "testpass123",
+    firstName: "Test",
+    lastName: "Manager",
+    name: "Test Manager",
+    role: "store_manager",
+  },
+  {
+    email: "fulfillment@test.com",
+    password: "testpass123",
+    firstName: "Test",
+    lastName: "Fulfillment",
+    name: "Test Fulfillment",
+    role: "fulfillment",
+  },
+];
+
+export async function seedTestAdminUsers() {
+  if (process.env.NODE_ENV === "production") {
+    return;
+  }
+
+  console.log("Seeding test admin users (dev only)...");
+
+  for (const testUser of TEST_ADMIN_USERS) {
+    const existing = await storage.getAdminUserByEmail(testUser.email);
+    if (existing) {
+      continue;
+    }
+
+    const hashedPassword = await bcrypt.hash(testUser.password, 12);
+    await storage.createAdminUser({
+      email: testUser.email,
+      password: hashedPassword,
+      firstName: testUser.firstName,
+      lastName: testUser.lastName,
+      name: testUser.name,
+      role: testUser.role,
+    });
+    console.log(`  Created test user: ${testUser.email} (${testUser.role})`);
+  }
+}
+
 const firstNames = ["John", "Sarah", "Michael", "Emily", "David", "Jessica", "Chris", "Amanda", "James", "Ashley"];
 const lastNames = ["Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis", "Rodriguez", "Martinez"];
 const cities = ["New York", "Los Angeles", "Chicago", "Houston", "Phoenix", "Philadelphia", "San Antonio", "San Diego", "Dallas", "Austin"];

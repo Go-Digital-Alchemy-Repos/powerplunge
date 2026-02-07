@@ -82,6 +82,17 @@ app.use(requestLoggerMiddleware);
         console.error("[CMS-INIT] Failed to ensure CMS defaults:", error);
       }
 
+      // Seed test admin users in development only
+      if (process.env.NODE_ENV !== "production") {
+        try {
+          const { seedTestAdminUsers } = await import("./seed");
+          await seedTestAdminUsers();
+          log("Test admin users verified");
+        } catch (error) {
+          console.error("[SEED] Failed to seed test admin users:", error);
+        }
+      }
+
       // Start background job runner
       try {
         const { startScheduledJobs } = await import("./src/services/scheduled-jobs");
