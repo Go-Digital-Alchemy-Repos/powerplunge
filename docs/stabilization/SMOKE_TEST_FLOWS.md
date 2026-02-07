@@ -84,6 +84,75 @@ Run these after any stabilization change to confirm nothing is broken.
 
 ---
 
+## BLOG POSTS
+
+### B1. Create a Blog Post
+1. Navigate to `/admin/cms-v2/posts`.
+2. Click **New Post**.
+3. Fill in Title: "Smoke Blog Post", Slug: "smoke-blog-post".
+4. Add Body text, set Tags: ["smoke"], Category: "testing".
+5. Click **Save**.
+6. **Verify:** Post appears in list with "Draft" status.
+
+### B2. Publish Blog Post
+1. On the post row, click **Publish**.
+2. **Verify:** Status changes to "Published", `publishedAt` is set.
+
+### B3. Public Blog List
+1. `curl http://localhost:5000/api/blog/posts`
+2. **Verify:** Response includes the published post.
+3. **Verify:** Draft/archived posts are NOT in the response.
+
+### B4. Public Blog Post by Slug
+1. `curl http://localhost:5000/api/blog/posts/smoke-blog-post`
+2. **Verify:** Returns the post with correct title and body.
+
+### B5. Blog Tags and Categories
+1. `curl http://localhost:5000/api/blog/tags`
+2. **Verify:** Returns array including "smoke".
+3. `curl http://localhost:5000/api/blog/categories`
+4. **Verify:** Returns array including "testing".
+
+### B6. Unpublish and Verify Hidden
+1. Click **Unpublish** on the smoke blog post.
+2. `curl http://localhost:5000/api/blog/posts/smoke-blog-post`
+3. **Verify:** Returns 404.
+
+---
+
+## NAVIGATION MENUS
+
+### M1. Create a Menu
+1. Navigate to `/admin/cms-v2/menus`.
+2. Click **New Menu**.
+3. Set Name: "Smoke Main Nav", Location: "main", Active: true.
+4. Click **Add Item** → select "External", Label: "Blog", URL: "/blog".
+5. Click **Add Item** → select "External", Label: "Shop", URL: "/shop".
+6. Click **Save**.
+7. **Verify:** Menu appears in the list.
+
+### M2. Verify Public Menu Endpoint
+1. `curl http://localhost:5000/api/menus/main`
+2. **Verify:** Returns menu object with 2 items.
+
+### M3. Verify DynamicNav Rendering
+1. Navigate to `/` in the browser.
+2. **Verify:** "Blog" and "Shop" links appear in the header nav.
+3. **Verify:** Links are clickable and navigate correctly.
+
+### M4. Drag-and-Drop Reorder
+1. In the menus admin, drag the "Shop" item above "Blog".
+2. Click **Save**.
+3. **Verify:** Order is preserved after reload.
+
+### M5. Delete Menu and Verify Fallback
+1. Delete the smoke menu.
+2. `curl http://localhost:5000/api/menus/main`
+3. **Verify:** Returns null.
+4. Navigate to `/` — no crash, hardcoded nav still works.
+
+---
+
 ## PUBLIC
 
 ### P1. Load Home Page

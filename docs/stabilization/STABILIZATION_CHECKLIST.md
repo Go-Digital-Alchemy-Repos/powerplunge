@@ -109,6 +109,15 @@ This document defines the stabilization checklist and definition of done for the
 | 8.8 | Landing page generator | Generate a page | Draft page created with correct blocks |
 | 8.9 | Campaign packs | Generate a campaign | Multiple draft pages created |
 | 8.10 | Preset-aware campaigns | Generate with preset selected | Pages inherit preset theme, SEO, CTA |
+| 8.11 | Blog posts CRUD | Admin create/edit/publish/delete post | CRUD succeeds, status transitions work |
+| 8.12 | Blog post visibility | Public list only shows published | Draft/archived posts hidden from public |
+| 8.13 | Blog post by slug | `GET /api/blog/posts/:slug` | Returns published post, 404 for draft |
+| 8.14 | Blog tags & categories | `GET /api/blog/tags`, `/categories` | Returns arrays of strings |
+| 8.15 | Navigation menus CRUD | Admin create/edit/delete menu | CRUD succeeds, items persisted |
+| 8.16 | Menu by-location | `GET/PUT /api/admin/cms-v2/menus/by-location/:loc` | Returns menu or creates new |
+| 8.17 | Public menu endpoint | `GET /api/menus/main` | Returns active menu or null |
+| 8.18 | DynamicNav rendering | Visit homepage with active menu | Nav links render, dropdowns work |
+| 8.19 | DynamicNav fallback | Visit homepage with no menu | No crash, existing nav preserved |
 
 ## 9. Puck Builder Save/Publish Flow
 

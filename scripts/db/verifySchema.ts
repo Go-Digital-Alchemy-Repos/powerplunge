@@ -17,6 +17,8 @@ const EXPECTED_TABLES = [
   "affiliates",
   "audit_logs",
   "categories",
+  "cms_v2_menus",
+  "cms_v2_posts",
   "coupon_redemptions",
   "coupon_stacking_rules",
   "coupons",
