@@ -5,6 +5,7 @@ import { Search, ChevronLeft, ChevronRight, X, ArrowLeft, Rss } from "lucide-rea
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import SeoHead from "@/components/SeoHead";
+import PageRenderer from "@/components/PageRenderer";
 import PostCard from "./components/PostCard";
 
 interface TaxonomyItem {
@@ -33,7 +34,50 @@ interface PostListResult {
   pageSize: number;
 }
 
-export default function BlogIndexPage() {
+interface CmsPage {
+  id: string;
+  title: string;
+  contentJson: { version: number; blocks: any[] } | null;
+  content: string | null;
+  metaTitle: string | null;
+  metaDescription: string | null;
+}
+
+function CmsBlogPage({ pageId }: { pageId: string }) {
+  const { data: cmsPage, isLoading } = useQuery<CmsPage>({
+    queryKey: ["/api/pages/by-id", pageId],
+    queryFn: async () => {
+      const res = await fetch(`/api/pages/by-id/${pageId}`);
+      if (!res.ok) return null;
+      return res.json();
+    },
+  });
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  if (!cmsPage?.contentJson?.blocks?.length) {
+    return <DefaultBlogIndex />;
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-900 text-white" data-testid="blog-cms-page">
+      <SeoHead
+        pageTitle={`${cmsPage.metaTitle || cmsPage.title || "Blog"} | Power Plunge`}
+        metaTitle={cmsPage.metaTitle || cmsPage.title}
+        metaDescription={cmsPage.metaDescription || undefined}
+      />
+      <PageRenderer contentJson={cmsPage.contentJson} legacyContent={cmsPage.content} />
+    </div>
+  );
+}
+
+function DefaultBlogIndex() {
   const [, navigate] = useLocation();
   const searchString = useSearch();
   const params = new URLSearchParams(searchString);
@@ -280,4 +324,28 @@ export default function BlogIndexPage() {
       </footer>
     </div>
   );
+}
+
+export default function BlogIndexPage() {
+  const { data: siteSettings, isLoading } = useQuery<{ blogPageId: string | null }>({
+    queryKey: ["/api/site-settings"],
+    queryFn: async () => {
+      const res = await fetch("/api/site-settings");
+      return res.ok ? res.json() : { blogPageId: null };
+    },
+  });
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  if (siteSettings?.blogPageId) {
+    return <CmsBlogPage pageId={siteSettings.blogPageId} />;
+  }
+
+  return <DefaultBlogIndex />;
 }

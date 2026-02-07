@@ -36,6 +36,18 @@ router.get("/shop", async (_req: Request, res: Response) => {
   }
 });
 
+router.get("/by-id/:id", async (req: Request, res: Response) => {
+  try {
+    const page = await storage.getPage(req.params.id);
+    if (!page || page.status !== "published") {
+      return res.status(404).json({ message: "Page not found" });
+    }
+    res.json(page);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch page" });
+  }
+});
+
 router.get("/:slug", async (req: Request, res: Response) => {
   try {
     const page = await storage.getPageBySlug(req.params.slug);

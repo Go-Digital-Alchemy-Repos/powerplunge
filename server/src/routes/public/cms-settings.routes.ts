@@ -9,6 +9,7 @@ router.get("/", async (_req: Request, res: Response) => {
     const themeSettings = await storage.getThemeSettings();
     res.json({
       featuredProductId: settings?.featuredProductId || null,
+      blogPageId: settings?.blogPageId || null,
       heroTitle: themeSettings?.heroTitle || null,
       heroSubtitle: themeSettings?.heroSubtitle || null,
       heroImage: themeSettings?.heroImage || null,

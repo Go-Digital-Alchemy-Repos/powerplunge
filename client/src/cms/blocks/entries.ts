@@ -8,6 +8,7 @@ import {
   arrayField,
 } from "./helpers";
 
+import BlogPostFeedBlock from "./BlogPostFeedBlock";
 import HeroBlock from "./HeroBlock";
 import RichTextBlock from "./RichTextBlock";
 import ImageBlock from "./ImageBlock";
@@ -756,6 +757,47 @@ export function registerCmsV1Blocks() {
         value: textField("Value"),
         label: textField("Label"),
       }),
+    },
+  });
+
+  registerBlock({
+    type: "blogPostFeed",
+    label: "Blog Post Feed",
+    category: "utility",
+    version: 1,
+    description: "Displays a feed of published blog posts with search, filters, and pagination",
+    renderComponent: BlogPostFeedBlock,
+    defaultProps: {
+      title: "Latest Posts",
+      description: "",
+      layout: "grid",
+      postsPerPage: "12",
+      showSearch: "true",
+      showCategoryFilter: "true",
+      showTagFilter: "true",
+      featuredOnly: "false",
+      categorySlug: "",
+      tagSlug: "",
+    },
+    puckFields: {
+      title: textField("Section Title"),
+      description: textareaField("Description"),
+      layout: selectField("Layout", [
+        { label: "Grid (cards)", value: "grid" },
+        { label: "List", value: "list" },
+      ]),
+      postsPerPage: selectField("Posts Per Page", [
+        { label: "6", value: "6" },
+        { label: "9", value: "9" },
+        { label: "12", value: "12" },
+        { label: "24", value: "24" },
+      ]),
+      showSearch: checkboxField("Show Search"),
+      showCategoryFilter: checkboxField("Show Category Filter"),
+      showTagFilter: checkboxField("Show Tag Filter"),
+      featuredOnly: checkboxField("Featured Posts Only"),
+      categorySlug: textField("Filter by Category Slug (optional)"),
+      tagSlug: textField("Filter by Tag Slug (optional)"),
     },
   });
 }

@@ -8,6 +8,7 @@ import { getIconWithFallback } from "@/lib/iconUtils";
 import { getBlock as getLegacyBlock } from "@/lib/blockRegistry";
 import { getBlock as getCmsBlock } from "@/cms/blocks/registry";
 import { sanitizeHtml } from "@/lib/sanitizeHtml";
+import BlogPostFeedBlock from "@/cms/blocks/BlogPostFeedBlock";
 
 interface BlockSettings {
   visibility?: 'all' | 'desktop' | 'mobile';
@@ -1136,6 +1137,7 @@ const blockComponents: Record<string, React.FC<{ data: Record<string, any>; sett
   featuredProduct: FeaturedProductBlock,
   iconGrid: IconGridBlock,
   sectionRef: SectionRefBlock,
+  blogPostFeed: BlogPostFeedBlock,
 };
 
 function resolveBlockComponent(type: string): React.FC<{ data: Record<string, any>; settings?: BlockSettings; onAddToCart?: (productId: string, quantity: number) => void }> | null {

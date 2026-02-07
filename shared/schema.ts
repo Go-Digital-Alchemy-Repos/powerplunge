@@ -180,6 +180,7 @@ export const siteSettings = pgTable("site_settings", {
   footerPreset: jsonb("footer_preset"),
   seoDefaults: jsonb("seo_defaults"),
   globalCtaDefaults: jsonb("global_cta_defaults"),
+  blogPageId: varchar("blog_page_id"),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 

@@ -372,6 +372,57 @@ export const pageTemplates: PageTemplate[] = [
         }
       ]
     }
+  },
+  {
+    id: "blog-page-v1",
+    name: "Blog Page v1",
+    description: "Blog index page with optional hero, post feed block, and CTA",
+    contentJson: {
+      version: 1,
+      blocks: [
+        {
+          id: "hero-1",
+          type: "hero",
+          data: {
+            headline: "Our Blog",
+            subheadline: "Cold plunge tips, recovery guides, and the latest from Power Plunge",
+            ctaText: "",
+            ctaLink: "",
+            backgroundImage: "",
+            alignment: "center"
+          },
+          settings: { padding: "lg" }
+        },
+        {
+          id: "blog-feed-1",
+          type: "blogPostFeed",
+          data: {
+            title: "",
+            description: "",
+            layout: "grid",
+            postsPerPage: "12",
+            showSearch: "true",
+            showCategoryFilter: "true",
+            showTagFilter: "true",
+            featuredOnly: "false",
+            categorySlug: "",
+            tagSlug: ""
+          },
+          settings: { padding: "lg" }
+        },
+        {
+          id: "cta-1",
+          type: "cta",
+          data: {
+            headline: "Ready to Start Your Cold Plunge Journey?",
+            subheadline: "Browse our collection and find the perfect cold plunge for your needs",
+            buttonText: "Shop Now",
+            buttonLink: "/shop"
+          },
+          settings: { padding: "lg" }
+        }
+      ]
+    }
   }
 ];
 
