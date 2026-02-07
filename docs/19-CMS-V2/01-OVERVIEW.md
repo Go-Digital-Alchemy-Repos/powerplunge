@@ -42,11 +42,15 @@ Every page has a `title`, `slug`, `status` (draft/published), and optional block
 
 ### Blocks
 
-Blocks are the atomic content units. Each block has a `type`, `data` (props), and `settings`. The block registry defines 12 types across six categories: layout, marketing, ecommerce, trust, media, and utility. See [Block Registry](02-BLOCK-REGISTRY.md).
+Blocks are the atomic content units. Each block has a `type`, `data` (props), and `settings`. The block registry defines 12 types across six categories: layout, marketing, ecommerce, trust, media, and utility. See [Block Registry](02-BLOCK-REGISTRY.md). Domain-specific blocks for cold plunge marketing are documented in [Power Plunge Blocks](11-POWERPLUNGE-BLOCKS.md).
 
-### Sections
+### Sections & Kits
 
-Saved sections are reusable groups of blocks. They can be inserted into any page via a `sectionRef` block. Sections can also be "detached" — converting the reference into inline blocks for per-page customization. See [Sections](04-SECTIONS.md).
+Saved sections are reusable groups of blocks. They can be inserted into any page via a `sectionRef` block. Sections can also be "detached" — converting the reference into inline blocks for per-page customization. See [Sections](04-SECTIONS.md). Pre-built section kits are documented in [Page Kits](12-PAGE-KITS.md).
+
+### Landing Page Generator
+
+A 4-step wizard that assembles landing pages from templates, products, and section kits using a deterministic pure-function engine. See [Landing Page Generator](13-LANDING-PAGE-GENERATOR.md).
 
 ### Themes
 
@@ -66,6 +70,7 @@ Every page has full SEO controls: meta title/description, Open Graph, Twitter Ca
 | `/admin/cms-v2/sections` | Manage reusable sections |
 | `/admin/cms-v2/templates` | Page templates |
 | `/admin/cms-v2/themes` | Theme management with instant activation |
+| `/admin/cms-v2/generator/landing` | Landing Page Generator wizard |
 | `/admin/cms-v2/seo` | SEO management |
 
 ## Public Routes
