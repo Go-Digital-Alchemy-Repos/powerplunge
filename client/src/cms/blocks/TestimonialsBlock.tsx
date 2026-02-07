@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Star, ChevronLeft, ChevronRight, Quote } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Section, Container } from "@/cms/layout";
+import { FadeIn } from "@/cms/motion";
 import { Heading, Text } from "@/cms/typography";
 import type { BlockRenderProps } from "./types";
 
@@ -111,6 +112,7 @@ export default function TestimonialsBlock({ data, settings }: BlockRenderProps) 
     return (
       <Section className={settings?.className} data-testid="block-testimonials">
         <Container width="default">
+          <FadeIn>
           {title && (
             <Heading level={2} align="center" className="mb-12">
               {title}
@@ -161,6 +163,7 @@ export default function TestimonialsBlock({ data, settings }: BlockRenderProps) 
               </div>
             )}
           </div>
+          </FadeIn>
         </Container>
       </Section>
     );
@@ -169,6 +172,7 @@ export default function TestimonialsBlock({ data, settings }: BlockRenderProps) 
   return (
     <Section className={settings?.className} data-testid="block-testimonials">
       <Container>
+        <FadeIn>
         {title && (
           <Heading level={2} align="center" className="mb-12">
             {title}
@@ -184,6 +188,7 @@ export default function TestimonialsBlock({ data, settings }: BlockRenderProps) 
             )
           )}
         </div>
+        </FadeIn>
       </Container>
     </Section>
   );

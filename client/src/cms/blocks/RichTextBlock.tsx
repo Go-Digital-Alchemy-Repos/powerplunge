@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { Section, Container } from "@/cms/layout";
+import { FadeIn } from "@/cms/motion";
 import { Heading } from "@/cms/typography";
 import type { BlockRenderProps } from "./types";
 
@@ -11,6 +12,7 @@ export default function RichTextBlock({ data, settings }: BlockRenderProps) {
   return (
     <Section className={settings?.className} data-testid="block-richtext">
       <Container width="default">
+        <FadeIn>
         <div
           className={cn(
             align === "center" && "text-center",
@@ -32,6 +34,7 @@ export default function RichTextBlock({ data, settings }: BlockRenderProps) {
             dangerouslySetInnerHTML={{ __html: body }}
           />
         </div>
+        </FadeIn>
       </Container>
     </Section>
   );

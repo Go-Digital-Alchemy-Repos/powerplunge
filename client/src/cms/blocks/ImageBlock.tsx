@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { Section, Container } from "@/cms/layout";
+import { FadeIn } from "@/cms/motion";
 import type { BlockRenderProps } from "./types";
 
 export default function ImageBlock({ data, settings }: BlockRenderProps) {
@@ -14,9 +15,11 @@ export default function ImageBlock({ data, settings }: BlockRenderProps) {
     return (
       <Section className={settings?.className} data-testid="block-image">
         <Container>
+          <FadeIn>
           <div className="pp-surface-bg rounded-lg p-8 text-center pp-text-muted">
             No image source provided
           </div>
+          </FadeIn>
         </Container>
       </Section>
     );
@@ -39,6 +42,7 @@ export default function ImageBlock({ data, settings }: BlockRenderProps) {
   return (
     <Section className={settings?.className} data-testid="block-image">
       <Container>
+        <FadeIn>
         <figure className={cn(settings?.alignment === "center" && "flex flex-col items-center")}>
           {linkHref ? (
             <a href={linkHref} className="block">
@@ -53,6 +57,7 @@ export default function ImageBlock({ data, settings }: BlockRenderProps) {
             </figcaption>
           )}
         </figure>
+        </FadeIn>
       </Container>
     </Section>
   );

@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { Section, Container } from "@/cms/layout";
+import { FadeIn } from "@/cms/motion";
 import { Text } from "@/cms/typography";
 import type { BlockRenderProps } from "./types";
 
@@ -23,6 +24,7 @@ export default function ImageGridBlock({ data, settings }: BlockRenderProps) {
   return (
     <Section className={settings?.className} data-testid="block-imagegrid">
       <Container>
+        <FadeIn>
         <div
           className={cn(
             "grid grid-cols-2",
@@ -91,6 +93,7 @@ export default function ImageGridBlock({ data, settings }: BlockRenderProps) {
             }
           )}
         </div>
+        </FadeIn>
       </Container>
     </Section>
   );

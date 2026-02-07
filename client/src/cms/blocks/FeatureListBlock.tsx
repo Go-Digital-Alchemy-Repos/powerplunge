@@ -2,6 +2,7 @@ import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getIconWithFallback } from "@/lib/iconUtils";
 import { Section, Container } from "@/cms/layout";
+import { FadeIn } from "@/cms/motion";
 import { Heading, Text } from "@/cms/typography";
 import type { BlockRenderProps } from "./types";
 
@@ -19,6 +20,7 @@ export default function FeatureListBlock({ data, settings }: BlockRenderProps) {
   return (
     <Section className={settings?.className} data-testid="block-featurelist">
       <Container>
+        <FadeIn>
         {title && (
           <Heading level={2} align="center" className="mb-12">
             {title}
@@ -75,6 +77,7 @@ export default function FeatureListBlock({ data, settings }: BlockRenderProps) {
             }
           )}
         </div>
+        </FadeIn>
       </Container>
     </Section>
   );

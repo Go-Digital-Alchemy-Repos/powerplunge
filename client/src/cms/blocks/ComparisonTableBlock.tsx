@@ -1,5 +1,6 @@
 import { Check } from "lucide-react";
 import { Section, Container } from "@/cms/layout";
+import { FadeIn } from "@/cms/motion";
 import { Heading } from "@/cms/typography";
 import type { BlockRenderProps } from "./types";
 
@@ -15,6 +16,7 @@ export default function ComparisonTableBlock({ data, settings }: BlockRenderProp
   return (
     <Section className={settings?.className} data-testid="block-comparisontable">
       <Container width="default">
+        <FadeIn>
         {title && (
           <Heading level={2} align="center" className="mb-12">
             {title}
@@ -182,6 +184,7 @@ export default function ComparisonTableBlock({ data, settings }: BlockRenderProp
             </table>
           </div>
         </div>
+        </FadeIn>
       </Container>
     </Section>
   );

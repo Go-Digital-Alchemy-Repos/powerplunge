@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { ChevronDown } from "lucide-react";
 import { Section, Container } from "@/cms/layout";
+import { FadeIn } from "@/cms/motion";
 import { Heading, Text } from "@/cms/typography";
 import type { BlockRenderProps } from "./types";
 
@@ -113,6 +114,7 @@ export default function FAQBlock({ data, settings }: BlockRenderProps) {
   return (
     <Section className={settings?.className} data-testid="block-faq">
       <Container width="narrow">
+        <FadeIn>
         {title && (
           <Heading level={2} align="center" className="mb-12">
             {title}
@@ -139,6 +141,7 @@ export default function FAQBlock({ data, settings }: BlockRenderProps) {
             }
           )}
         </div>
+        </FadeIn>
       </Container>
     </Section>
   );

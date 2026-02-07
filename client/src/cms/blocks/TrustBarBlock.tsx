@@ -2,6 +2,7 @@ import { Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getIconWithFallback } from "@/lib/iconUtils";
 import { Section, Container } from "@/cms/layout";
+import { FadeIn } from "@/cms/motion";
 import type { BlockRenderProps } from "./types";
 
 export default function TrustBarBlock({ data, settings }: BlockRenderProps) {
@@ -16,6 +17,7 @@ export default function TrustBarBlock({ data, settings }: BlockRenderProps) {
       data-testid="block-trustbar"
     >
       <Container>
+        <FadeIn>
         <div
           className={cn(
             layout === "row"
@@ -80,6 +82,7 @@ export default function TrustBarBlock({ data, settings }: BlockRenderProps) {
             );
           })}
         </div>
+        </FadeIn>
       </Container>
     </Section>
   );
