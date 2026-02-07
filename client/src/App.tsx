@@ -68,6 +68,8 @@ const AdminCmsV2GeneratorLanding = lazy(() => import("@/pages/admin-cms-v2-gener
 const AdminCmsV2GeneratorCampaigns = lazy(() => import("@/pages/admin-cms-v2-generator-campaigns"));
 const AdminCmsV2Presets = lazy(() => import("@/pages/admin-cms-v2-presets"));
 const AdminCmsV2Posts = lazy(() => import("@/pages/admin-cms-v2-posts"));
+const AdminCmsV2PostEditor = lazy(() => import("@/pages/admin-cms-v2-post-editor"));
+const AdminCmsV2PostBuilder = lazy(() => import("@/pages/admin-cms-v2-post-builder"));
 const AdminCmsV2Menus = lazy(() => import("@/pages/admin-cms-v2-menus"));
 
 function LazyFallback() {
@@ -128,6 +130,9 @@ function Router() {
         <Route path="/admin/media" component={AdminMediaLibrary} />
         <Route path="/admin/support" component={AdminSupport} />
         <Route path="/admin/affiliate-invite-sender" component={AdminAffiliateInviteSender} />
+        <Route path="/admin/cms-v2/posts/new">{() => <CmsV2ErrorBoundary><AdminCmsV2PostEditor /></CmsV2ErrorBoundary>}</Route>
+        <Route path="/admin/cms-v2/posts/:id/edit">{() => <CmsV2ErrorBoundary><AdminCmsV2PostEditor /></CmsV2ErrorBoundary>}</Route>
+        <Route path="/admin/cms-v2/posts/:id/builder">{() => <CmsV2ErrorBoundary><AdminCmsV2PostBuilder /></CmsV2ErrorBoundary>}</Route>
         <Route path="/admin/cms-v2/posts">{() => <CmsV2ErrorBoundary><AdminCmsV2Posts /></CmsV2ErrorBoundary>}</Route>
         <Route path="/admin/cms-v2/menus">{() => <CmsV2ErrorBoundary><AdminCmsV2Menus /></CmsV2ErrorBoundary>}</Route>
         <Route path="/admin/cms-v2/presets">{() => <CmsV2ErrorBoundary><AdminCmsV2Presets /></CmsV2ErrorBoundary>}</Route>
