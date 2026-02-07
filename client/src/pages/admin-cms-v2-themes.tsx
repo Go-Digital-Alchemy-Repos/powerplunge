@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { useAdmin } from "@/hooks/use-admin";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import CmsV2Layout from "@/components/admin/CmsV2Layout";
@@ -8,15 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { applyThemeVariables } from "@/components/ThemeProvider";
-import { resolveAllVariantStyles, getDefaultSelection } from "@shared/componentVariants";
+import { resolveAllVariantStyles } from "@shared/componentVariants";
 import type { ThemePreset } from "@shared/themePresets";
 import type { ThemePackPreset } from "@shared/themePackPresets";
-
-function applyPackVariables(pack: ThemePackPreset) {
-  const tokenVars = pack.themeTokens;
-  const cvVars = resolveAllVariantStyles(pack.componentVariants);
-  applyThemeVariables({ ...tokenVars, ...cvVars });
-}
 
 function PackPageThumbnail({ pack, isActive, isPreviewing }: { pack: ThemePackPreset; isActive: boolean; isPreviewing: boolean }) {
   const t = pack.themeTokens;
@@ -223,7 +217,6 @@ export default function AdminCmsV2Themes() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [previewId, setPreviewId] = useState<string | null>(null);
-  const [originalVars, setOriginalVars] = useState<Record<string, string> | null>(null);
   const [activeTab, setActiveTab] = useState<"packs" | "themes">("packs");
 
   const { data: themes } = useQuery<ThemePreset[]>({
@@ -246,26 +239,6 @@ export default function AdminCmsV2Themes() {
     enabled: hasFullAccess,
   });
 
-  const captureOriginal = useCallback(() => {
-    if (!originalVars) {
-      if (activeThemePack) {
-        const cvVars = resolveAllVariantStyles(activeThemePack.componentVariants);
-        setOriginalVars({ ...activeThemePack.themeTokens, ...cvVars });
-      } else if (activeTheme) {
-        const defaultCvVars = resolveAllVariantStyles(getDefaultSelection());
-        setOriginalVars({ ...activeTheme.variables, ...defaultCvVars });
-      }
-    }
-  }, [originalVars, activeThemePack, activeTheme]);
-
-  const restoreOriginal = useCallback(() => {
-    if (originalVars) applyThemeVariables(originalVars);
-    else if (activeThemePack) applyPackVariables(activeThemePack);
-    else if (activeTheme) applyThemeVariables(activeTheme.variables);
-    setPreviewId(null);
-    setOriginalVars(null);
-  }, [originalVars, activeThemePack, activeTheme]);
-
   const activatePackMutation = useMutation({
     mutationFn: async (packId: string) => {
       const res = await fetch("/api/admin/cms-v2/theme-packs/activate", {
@@ -280,9 +253,10 @@ export default function AdminCmsV2Themes() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/cms-v2/themes/active"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/cms-v2/theme-packs/active"] });
       queryClient.invalidateQueries({ queryKey: ["/api/theme/active"] });
-      applyPackVariables(data);
+      const tokenVars = data.themeTokens;
+      const cvVars = resolveAllVariantStyles(data.componentVariants);
+      applyThemeVariables({ ...tokenVars, ...cvVars });
       setPreviewId(null);
-      setOriginalVars(null);
       toast({ title: "Theme pack activated", description: `"${data.name}" is now live. UI updated instantly.` });
     },
     onError: () => {
@@ -306,7 +280,6 @@ export default function AdminCmsV2Themes() {
       queryClient.invalidateQueries({ queryKey: ["/api/theme/active"] });
       applyThemeVariables(data.variables);
       setPreviewId(null);
-      setOriginalVars(null);
       toast({ title: "Theme activated", description: `"${data.name}" is now the active theme.` });
     },
     onError: () => {
@@ -316,29 +289,19 @@ export default function AdminCmsV2Themes() {
 
   const handlePreviewPack = (pack: ThemePackPreset) => {
     if (previewId === pack.id) {
-      restoreOriginal();
+      setPreviewId(null);
       return;
     }
-    captureOriginal();
     setPreviewId(pack.id);
-    applyPackVariables(pack);
   };
 
   const handlePreviewTheme = (theme: ThemePreset) => {
     if (previewId === theme.id) {
-      restoreOriginal();
+      setPreviewId(null);
       return;
     }
-    captureOriginal();
     setPreviewId(theme.id);
-    applyThemeVariables(theme.variables);
   };
-
-  useEffect(() => {
-    return () => {
-      if (originalVars) applyThemeVariables(originalVars);
-    };
-  }, []);
 
   const activeId = activeThemePack?.id || activeTheme?.id || null;
 
@@ -373,7 +336,7 @@ export default function AdminCmsV2Themes() {
               size="sm"
               variant="outline"
               className="border-yellow-700 text-yellow-400 hover:bg-yellow-900/20 h-8 text-xs gap-1.5"
-              onClick={restoreOriginal}
+              onClick={() => setPreviewId(null)}
               data-testid="button-stop-preview"
             >
               <RotateCcw className="w-3 h-3" />
@@ -385,7 +348,7 @@ export default function AdminCmsV2Themes() {
         {previewId && (
           <div className="mb-4 p-2.5 rounded-lg border border-yellow-700/30 bg-yellow-900/10 text-yellow-400 text-xs flex items-center gap-2" data-testid="text-preview-banner">
             <Eye className="w-3.5 h-3.5 flex-shrink-0" />
-            <span>Previewing — the admin UI is reflecting this theme live. Activate to make it permanent, or revert to undo.</span>
+            <span>Previewing — the selected theme is highlighted below. Activate to make it permanent, or revert to dismiss.</span>
           </div>
         )}
 
