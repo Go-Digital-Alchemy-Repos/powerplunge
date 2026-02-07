@@ -52,6 +52,10 @@ Saved sections are reusable groups of blocks. They can be inserted into any page
 
 A 4-step wizard that assembles landing pages from templates, products, and section kits using a deterministic pure-function engine. See [Landing Page Generator](13-LANDING-PAGE-GENERATOR.md).
 
+### Campaign Packs
+
+Pre-defined collections of coordinated landing pages for seasonal promotions and targeted campaigns. Campaign packs automate multi-page generation using the same assembly engine. See [Campaign Packs](14-CAMPAIGN-PACKS.md).
+
 ### Themes
 
 10 built-in CSS-variable theme presets control colors, typography, and border radius across the entire storefront. Themes are activated instantly from the admin. See [Themes](07-THEMES.md).
@@ -71,6 +75,7 @@ Every page has full SEO controls: meta title/description, Open Graph, Twitter Ca
 | `/admin/cms-v2/templates` | Page templates |
 | `/admin/cms-v2/themes` | Theme management with instant activation |
 | `/admin/cms-v2/generator/landing` | Landing Page Generator wizard |
+| `/admin/cms-v2/generator/campaigns` | Campaign Packs generator |
 | `/admin/cms-v2/seo` | SEO management |
 
 ## Public Routes

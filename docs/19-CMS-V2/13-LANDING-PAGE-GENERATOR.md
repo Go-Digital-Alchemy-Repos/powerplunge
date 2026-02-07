@@ -10,6 +10,8 @@ The Landing Page Generator is a 4-step wizard that assembles a complete landing 
 - **Requires:** Admin authentication with full access (admin or store_manager role)
 - **Feature flag:** Requires `CMS_V2_ENABLED=true`
 
+> **Tip:** To generate multiple coordinated pages at once, use [Campaign Packs](14-CAMPAIGN-PACKS.md) instead. Campaign packs use the same assembly engine to produce entire campaigns in a single action.
+
 ## Wizard Steps
 
 ### Step 1: Choose a Template
