@@ -80,6 +80,25 @@ A new authentication system using Better Auth is being integrated alongside exis
 **Migration Strategy:**
 Run the migration script to copy existing users to Better Auth tables without modifying original data.
 
+## CMS v2 Blog Posts & Navigation Menus
+
+The CMS v2 system includes blog/articles (Posts) and navigation (Menus) management alongside the existing Pages functionality.
+
+**Posts (cms_v2_posts table):**
+- Fields: title, slug (unique), body (rich text/markdown), excerpt, featuredImage, tags (text array), category, status (draft/published/archived), publishedAt, SEO fields (metaTitle, metaDescription, ogImage)
+- Admin CRUD: `/api/admin/cms-v2/posts` (requireFullAccess, CMS_V2_ENABLED gated)
+- Public read-only: `/api/blog/posts` (list published), `/api/blog/posts/:slug` (single published)
+- Draft filtering: Public endpoints only return posts with status='published' AND publishedAt <= now
+
+**Menus (cms_v2_menus table):**
+- Fields: name, location (header/footer/sidebar), items (jsonb array with id, label, url, target, order, children), active (boolean)
+- Admin CRUD: `/api/admin/cms-v2/menus` (requireFullAccess, CMS_V2_ENABLED gated)
+- Public read-only: `/api/menus/:location` (returns active menu by location)
+
+**Admin UI:** `/admin/cms-v2/posts` and `/admin/cms-v2/menus` pages integrated into CmsV2Layout navigation.
+
+**Backend Pattern:** Repository + Service layers following existing cms-v2-pages pattern.
+
 ## CMS Page Builder (Data Model)
 
 The CMS pages system supports a block-based page builder architecture for creating custom landing pages, the home page, and shop page.
