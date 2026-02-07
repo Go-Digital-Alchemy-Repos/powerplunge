@@ -89,6 +89,14 @@ router.patch("/:id", async (req: Request, res: Response) => {
       if (!validRoles.includes(role)) {
         return res.status(400).json({ message: "Invalid role. Must be admin, store_manager, or fulfillment" });
       }
+      const currentAdmin = await storage.getAdminUser(req.params.id);
+      if (currentAdmin?.role === "admin" && role !== "admin") {
+        const allAdmins = await storage.getAdminUsers();
+        const adminCount = allAdmins.filter(a => a.role === "admin").length;
+        if (adminCount <= 1) {
+          return res.status(400).json({ message: "Cannot change the role of the last admin. At least one admin must remain." });
+        }
+      }
       updateData.role = role;
     }
 
@@ -114,6 +122,15 @@ router.delete("/:id", async (req: any, res: Response) => {
   try {
     if (req.params.id === req.session.adminId) {
       return res.status(400).json({ message: "Cannot delete your own account" });
+    }
+
+    const targetAdmin = await storage.getAdminUser(req.params.id);
+    if (targetAdmin?.role === "admin") {
+      const allAdmins = await storage.getAdminUsers();
+      const adminCount = allAdmins.filter(a => a.role === "admin").length;
+      if (adminCount <= 1) {
+        return res.status(400).json({ message: "Cannot delete the last admin. At least one admin must remain to manage the system." });
+      }
     }
 
     await storage.deleteAdminUser(req.params.id);

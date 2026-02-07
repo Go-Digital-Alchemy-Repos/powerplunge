@@ -67,6 +67,8 @@ export default function AdminUserManagement() {
   const [adminForm, setAdminForm] = useState({ name: "", email: "", password: "", role: "store_manager" });
   const [newPassword, setNewPassword] = useState("");
   const [orderForm, setOrderForm] = useState({ customerId: "", productId: "", quantity: 1, notes: "" });
+  const [deleteCustomerConfirm, setDeleteCustomerConfirm] = useState<Customer | null>(null);
+  const [deleteAdminConfirm, setDeleteAdminConfirm] = useState<AdminUser | null>(null);
 
   const { data: customers = [], isLoading: customersLoading } = useQuery<Customer[]>({
     queryKey: ["/api/admin/customers"],
@@ -144,8 +146,12 @@ export default function AdminUserManagement() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/customers"] });
       toast({ title: "Customer deleted" });
+      setDeleteCustomerConfirm(null);
     },
-    onError: (error: Error) => toast({ title: "Error", description: error.message, variant: "destructive" }),
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+      setDeleteCustomerConfirm(null);
+    },
   });
 
   const createAdminMutation = useMutation({
@@ -196,8 +202,12 @@ export default function AdminUserManagement() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/team"] });
       toast({ title: "Admin removed" });
+      setDeleteAdminConfirm(null);
     },
-    onError: (error: Error) => toast({ title: "Error", description: error.message, variant: "destructive" }),
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+      setDeleteAdminConfirm(null);
+    },
   });
 
   const createManualOrderMutation = useMutation({
@@ -451,7 +461,7 @@ export default function AdminUserManagement() {
                                 variant="ghost" 
                                 size="sm" 
                                 className="text-destructive hover:text-destructive"
-                                onClick={() => deleteCustomerMutation.mutate(customer.id)}
+                                onClick={() => setDeleteCustomerConfirm(customer)}
                                 data-testid={`button-delete-customer-${customer.id}`}
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -518,7 +528,7 @@ export default function AdminUserManagement() {
                                 variant="ghost" 
                                 size="sm" 
                                 className="text-destructive hover:text-destructive"
-                                onClick={() => deleteAdminMutation.mutate(admin.id)}
+                                onClick={() => setDeleteAdminConfirm(admin)}
                                 data-testid={`button-delete-admin-${admin.id}`}
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -729,6 +739,54 @@ export default function AdminUserManagement() {
               data-testid="button-confirm-reset"
             >
               Reset Password
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!deleteCustomerConfirm} onOpenChange={(open) => !open && setDeleteCustomerConfirm(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Customer</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete <strong>{deleteCustomerConfirm?.name}</strong> ({deleteCustomerConfirm?.email})? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteCustomerConfirm(null)} data-testid="button-cancel-delete-customer">
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => deleteCustomerConfirm && deleteCustomerMutation.mutate(deleteCustomerConfirm.id)}
+              disabled={deleteCustomerMutation.isPending}
+              data-testid="button-confirm-delete-customer"
+            >
+              {deleteCustomerMutation.isPending ? "Deleting..." : "Delete Customer"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!deleteAdminConfirm} onOpenChange={(open) => !open && setDeleteAdminConfirm(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remove Admin</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to remove <strong>{deleteAdminConfirm?.name}</strong> ({deleteAdminConfirm?.email})? This will revoke all their admin access. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteAdminConfirm(null)} data-testid="button-cancel-delete-admin">
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => deleteAdminConfirm && deleteAdminMutation.mutate(deleteAdminConfirm.id)}
+              disabled={deleteAdminMutation.isPending}
+              data-testid="button-confirm-delete-admin"
+            >
+              {deleteAdminMutation.isPending ? "Removing..." : "Remove Admin"}
             </Button>
           </DialogFooter>
         </DialogContent>

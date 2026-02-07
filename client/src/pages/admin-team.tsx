@@ -7,10 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SlideOutPanel, PanelFooter } from "@/components/ui/slide-out-panel";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAdmin } from "@/hooks/use-admin";
-import { Trash2, Mail, User, UserPlus, Users, Shield, Package } from "lucide-react";
+import { Trash2, Mail, User, UserPlus, Users, Shield, Package, Edit } from "lucide-react";
 import AdminNav from "@/components/admin/AdminNav";
 
 interface TeamMember {
@@ -36,6 +37,8 @@ export default function AdminTeam() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [newMember, setNewMember] = useState({ firstName: "", lastName: "", email: "", password: "", role: "admin" as "admin" | "store_manager" | "fulfillment" });
   const [isDirty, setIsDirty] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<TeamMember | null>(null);
+  const [editingRoleMemberId, setEditingRoleMemberId] = useState<string | null>(null);
 
   const { data: team, isLoading } = useQuery<TeamMember[]>({
     queryKey: ["/api/admin/team"],
@@ -85,6 +88,31 @@ export default function AdminTeam() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/team"] });
       toast({ title: "Team member removed" });
+      setDeleteConfirm(null);
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+      setDeleteConfirm(null);
+    },
+  });
+
+  const updateRoleMutation = useMutation({
+    mutationFn: async ({ id, role }: { id: string; role: string }) => {
+      const res = await fetch(`/api/admin/team/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role }),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Failed to update role");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/team"] });
+      toast({ title: "Role updated" });
+      setEditingRoleMemberId(null);
     },
     onError: (error: Error) => {
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -148,6 +176,7 @@ export default function AdminTeam() {
             {team?.map((member) => {
               const roleInfo = ROLE_LABELS[member.role] || ROLE_LABELS.admin;
               const RoleIcon = roleInfo.icon;
+              const isEditingRole = editingRoleMemberId === member.id;
               return (
                 <Card key={member.id} data-testid={`card-member-${member.id}`}>
                   <CardContent className="flex items-center justify-between py-4">
@@ -158,9 +187,27 @@ export default function AdminTeam() {
                       <div>
                         <div className="flex items-center gap-2">
                           <p className="font-medium">{member.firstName && member.lastName ? `${member.firstName} ${member.lastName}` : member.name}</p>
-                          <Badge variant="outline" className="text-xs">
-                            {roleInfo.label}
-                          </Badge>
+                          {isEditingRole ? (
+                            <Select
+                              defaultValue={member.role}
+                              onValueChange={(value: "admin" | "store_manager" | "fulfillment") => {
+                                updateRoleMutation.mutate({ id: member.id, role: value });
+                              }}
+                            >
+                              <SelectTrigger className="h-7 w-40 text-xs" data-testid={`select-role-${member.id}`}>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="admin">Admin</SelectItem>
+                                <SelectItem value="store_manager">Store Manager</SelectItem>
+                                <SelectItem value="fulfillment">Fulfillment</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <Badge variant="outline" className="text-xs">
+                              {roleInfo.label}
+                            </Badge>
+                          )}
                         </div>
                         <div className="flex items-center gap-1 text-sm text-muted-foreground">
                           <Mail className="w-3 h-3" />
@@ -168,16 +215,26 @@ export default function AdminTeam() {
                         </div>
                       </div>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => deleteMemberMutation.mutate(member.id)}
-                      disabled={deleteMemberMutation.isPending}
-                      data-testid={`button-delete-${member.id}`}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setEditingRoleMemberId(isEditingRole ? null : member.id)}
+                        data-testid={`button-edit-role-${member.id}`}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => setDeleteConfirm(member)}
+                        disabled={deleteMemberMutation.isPending}
+                        data-testid={`button-delete-${member.id}`}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               );
@@ -315,6 +372,30 @@ export default function AdminTeam() {
           </div>
         </div>
       </SlideOutPanel>
+
+      <Dialog open={!!deleteConfirm} onOpenChange={(open) => !open && setDeleteConfirm(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remove Team Member</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to remove <strong>{deleteConfirm?.firstName && deleteConfirm?.lastName ? `${deleteConfirm.firstName} ${deleteConfirm.lastName}` : deleteConfirm?.name}</strong> ({deleteConfirm?.email})? This will revoke all their access to the admin dashboard. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteConfirm(null)} data-testid="button-cancel-delete">
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => deleteConfirm && deleteMemberMutation.mutate(deleteConfirm.id)}
+              disabled={deleteMemberMutation.isPending}
+              data-testid="button-confirm-delete"
+            >
+              {deleteMemberMutation.isPending ? "Removing..." : "Remove Member"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
