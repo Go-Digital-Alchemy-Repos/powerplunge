@@ -14,6 +14,7 @@ import {
   affiliatePayoutAccounts, type AffiliatePayoutAccount, type InsertAffiliatePayoutAccount,
   affiliateClicks, type AffiliateClick, type InsertAffiliateClick,
   affiliateInvites, type AffiliateInvite, type InsertAffiliateInvite,
+  affiliateInviteUsages, type AffiliateInviteUsage, type InsertAffiliateInviteUsage,
   phoneVerificationCodes, type PhoneVerificationCode, type InsertPhoneVerificationCode,
   categories, type Category, type InsertCategory,
   coupons, type Coupon, type InsertCoupon,
@@ -162,6 +163,9 @@ export interface IStorage {
   updateAffiliateInvite(id: string, invite: Partial<InsertAffiliateInvite>): Promise<AffiliateInvite | undefined>;
   deleteAffiliateInvite(id: string): Promise<void>;
   incrementAffiliateInviteUsage(id: string): Promise<void>;
+
+  redeemAffiliateInvite(inviteId: string, affiliateId: string, metadata?: string): Promise<{ success: boolean; invite?: AffiliateInvite; error?: string }>;
+  createAffiliateInviteUsage(usage: InsertAffiliateInviteUsage): Promise<AffiliateInviteUsage>;
 
   // Phone Verification Codes
   createPhoneVerificationCode(data: InsertPhoneVerificationCode): Promise<PhoneVerificationCode>;
@@ -760,6 +764,48 @@ export class DatabaseStorage implements IStorage {
     await db.update(affiliateInvites).set({
       timesUsed: sql`${affiliateInvites.timesUsed} + 1`,
     }).where(eq(affiliateInvites.id, id));
+  }
+
+  async redeemAffiliateInvite(inviteId: string, affiliateId: string, metadata?: string): Promise<{ success: boolean; invite?: AffiliateInvite; error?: string }> {
+    return await db.transaction(async (tx) => {
+      const result = await tx.update(affiliateInvites)
+        .set({
+          timesUsed: sql`${affiliateInvites.timesUsed} + 1`,
+          usedByAffiliateId: affiliateId,
+          usedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(affiliateInvites.id, inviteId),
+            or(
+              sql`${affiliateInvites.maxUses} IS NULL`,
+              sql`${affiliateInvites.timesUsed} < ${affiliateInvites.maxUses}`
+            ),
+            or(
+              sql`${affiliateInvites.expiresAt} IS NULL`,
+              sql`${affiliateInvites.expiresAt} > NOW()`
+            )
+          )
+        )
+        .returning();
+
+      if (result.length === 0) {
+        return { success: false, error: "Invite is no longer available (expired or usage limit reached)" };
+      }
+
+      await tx.insert(affiliateInviteUsages).values({
+        inviteId,
+        affiliateId,
+        metadata: metadata || null,
+      });
+
+      return { success: true, invite: result[0] };
+    });
+  }
+
+  async createAffiliateInviteUsage(usage: InsertAffiliateInviteUsage): Promise<AffiliateInviteUsage> {
+    const [record] = await db.insert(affiliateInviteUsages).values(usage).returning();
+    return record;
   }
 
   async createPhoneVerificationCode(data: InsertPhoneVerificationCode): Promise<PhoneVerificationCode> {

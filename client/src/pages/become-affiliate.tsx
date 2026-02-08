@@ -40,8 +40,9 @@ interface SignupInfo {
     code: string;
     valid: boolean;
     error: string | null;
-    targetEmail: string | null;
-    targetName: string | null;
+    emailMasked: string | null;
+    hasTargetName: boolean;
+    isEmailLocked: boolean;
     requiresPhoneVerification: boolean;
     phoneLastFour: string | null;
   } | null;
@@ -145,12 +146,6 @@ export default function BecomeAffiliate() {
 
   useEffect(() => {
     if (signupInfo?.invite) {
-      if (signupInfo.invite.targetEmail) {
-        setFormData(prev => ({ ...prev, email: signupInfo.invite!.targetEmail! }));
-      }
-      if (signupInfo.invite.targetName) {
-        setFormData(prev => ({ ...prev, name: signupInfo.invite!.targetName!, signatureName: signupInfo.invite!.targetName! }));
-      }
       setFormData(prev => ({ ...prev, inviteCode: signupInfo.invite!.code }));
     }
   }, [signupInfo]);
@@ -662,9 +657,9 @@ export default function BecomeAffiliate() {
         <p className="text-lg text-muted-foreground max-w-xl mx-auto">
           Earn 10% commission on every sale you refer. Share your unique link and get paid for promoting Power Plunge products.
         </p>
-        {signupInfo?.invite?.targetName && (
+        {signupInfo?.invite?.hasTargetName && (
           <p className="text-primary font-medium" data-testid="text-welcome-name">
-            Welcome, {signupInfo.invite.targetName}! You've been personally invited.
+            Welcome! You've been personally invited.
           </p>
         )}
       </div>
@@ -782,10 +777,13 @@ export default function BecomeAffiliate() {
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               className="pl-10"
               required
-              disabled={!!signupInfo?.invite?.targetEmail}
+              disabled={false}
               data-testid="input-email"
             />
           </div>
+          {signupInfo?.invite?.isEmailLocked && signupInfo.invite.emailMasked && (
+            <p className="text-xs text-muted-foreground" data-testid="text-email-locked-hint">This invite is for {signupInfo.invite.emailMasked}. Please enter the matching email address.</p>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-4">

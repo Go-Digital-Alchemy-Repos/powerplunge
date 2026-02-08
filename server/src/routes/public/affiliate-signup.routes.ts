@@ -37,6 +37,10 @@ router.get("/", async (req: Request, res: Response) => {
       }
     }
 
+    const maskedEmail = invite?.targetEmail
+      ? invite.targetEmail.replace(/^(.)(.*)(@.*)$/, (_, first, middle, domain) => first + middle.replace(/./g, "*") + domain)
+      : null;
+
     res.json({
       agreementText,
       inviteRequired: true,
@@ -44,8 +48,9 @@ router.get("/", async (req: Request, res: Response) => {
         code: invite.inviteCode,
         valid: inviteValid,
         error: inviteError,
-        targetEmail: invite.targetEmail,
-        targetName: invite.targetName,
+        emailMasked: maskedEmail,
+        hasTargetName: !!invite.targetName,
+        isEmailLocked: !!invite.targetEmail,
         requiresPhoneVerification: !!invite.targetPhone && !invite.phoneVerified,
         phoneLastFour: invite.targetPhone ? invite.targetPhone.slice(-4) : null,
       } : null,
@@ -143,11 +148,10 @@ router.post("/", async (req: Request, res: Response) => {
         signatureIp: req.ip || "unknown",
       });
       
-      await storage.incrementAffiliateInviteUsage(invite.id);
-      await storage.updateAffiliateInvite(invite.id, {
-        usedByAffiliateId: affiliate.id,
-        usedAt: new Date(),
-      });
+      const redemption = await storage.redeemAffiliateInvite(invite.id, affiliate.id, JSON.stringify({ email, signupType: "existing_customer" }));
+      if (!redemption.success) {
+        return res.status(409).json({ message: redemption.error || "This invite is no longer available" });
+      }
       
       const sessionToken = createSessionToken(existingCustomer.id, email);
       
@@ -196,11 +200,10 @@ router.post("/", async (req: Request, res: Response) => {
       signatureIp: req.ip || "unknown",
     });
     
-    await storage.incrementAffiliateInviteUsage(invite.id);
-    await storage.updateAffiliateInvite(invite.id, {
-      usedByAffiliateId: affiliate.id,
-      usedAt: new Date(),
-    });
+    const redemption = await storage.redeemAffiliateInvite(invite.id, affiliate.id, JSON.stringify({ email, signupType: "new_customer" }));
+    if (!redemption.success) {
+      return res.status(409).json({ message: redemption.error || "This invite is no longer available" });
+    }
     
     const sessionToken = createSessionToken(customer.id, email);
     

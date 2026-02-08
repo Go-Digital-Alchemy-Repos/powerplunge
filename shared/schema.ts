@@ -532,6 +532,29 @@ export const insertAffiliateInviteSchema = createInsertSchema(affiliateInvites).
 export type InsertAffiliateInvite = z.infer<typeof insertAffiliateInviteSchema>;
 export type AffiliateInvite = typeof affiliateInvites.$inferSelect;
 
+export const affiliateInviteUsages = pgTable("affiliate_invite_usages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  inviteId: varchar("invite_id").notNull().references(() => affiliateInvites.id),
+  affiliateId: varchar("affiliate_id").notNull().references(() => affiliates.id),
+  redeemedAt: timestamp("redeemed_at").notNull().defaultNow(),
+  metadata: text("metadata"),
+});
+
+export const affiliateInviteUsagesRelations = relations(affiliateInviteUsages, ({ one }) => ({
+  invite: one(affiliateInvites, {
+    fields: [affiliateInviteUsages.inviteId],
+    references: [affiliateInvites.id],
+  }),
+  affiliate: one(affiliates, {
+    fields: [affiliateInviteUsages.affiliateId],
+    references: [affiliates.id],
+  }),
+}));
+
+export const insertAffiliateInviteUsageSchema = createInsertSchema(affiliateInviteUsages).omit({ id: true, redeemedAt: true });
+export type InsertAffiliateInviteUsage = z.infer<typeof insertAffiliateInviteUsageSchema>;
+export type AffiliateInviteUsage = typeof affiliateInviteUsages.$inferSelect;
+
 export const insertPhoneVerificationCodeSchema = createInsertSchema(phoneVerificationCodes).omit({ id: true, createdAt: true });
 export type InsertPhoneVerificationCode = z.infer<typeof insertPhoneVerificationCodeSchema>;
 export type PhoneVerificationCode = typeof phoneVerificationCodes.$inferSelect;

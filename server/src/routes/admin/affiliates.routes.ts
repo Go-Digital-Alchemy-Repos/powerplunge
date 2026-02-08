@@ -336,19 +336,22 @@ router.post("/affiliate-invites/send", async (req: any, res) => {
     let emailResult = { success: false, error: "No email address provided — share the link manually" } as any;
     if (normalizedEmail) {
       try {
+        const { escapeHtml } = await import("../../utils/html-escape");
         const recipientName = targetName || normalizedEmail.split("@")[0];
+        const safeRecipientName = escapeHtml(recipientName);
+        const safeInviteUrl = escapeHtml(inviteUrl);
         emailResult = await emailService.sendEmail({
           to: normalizedEmail,
           subject: `${recipientName}, you're invited to partner with Power Plunge`,
           html: `<div style="font-family: sans-serif; max-width: 560px; margin: 0 auto;">
-<p>Hi ${recipientName},</p>
+<p>Hi ${safeRecipientName},</p>
 
 <p>I wanted to reach out personally — we'd love to have you as a Power Plunge affiliate partner.</p>
 
 <p>You can sign up and get started here:<br>
-<a href="${inviteUrl}">${inviteUrl}</a></p>
+<a href="${safeInviteUrl}">${safeInviteUrl}</a></p>
 
-${expirationDate ? `<p style="color: #666; font-size: 13px;">This link expires on ${expirationDate.toLocaleDateString()}.</p>` : ""}
+${expirationDate ? `<p style="color: #666; font-size: 13px;">This link expires on ${escapeHtml(expirationDate.toLocaleDateString())}.</p>` : ""}
 
 <p>Let us know if you have any questions.</p>
 
