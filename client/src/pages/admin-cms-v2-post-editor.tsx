@@ -6,7 +6,7 @@ import { useRoute, useLocation } from "wouter";
 import CmsV2Layout from "@/components/admin/CmsV2Layout";
 import {
   ArrowLeft, Save, Globe, GlobeLock, Clock, Blocks, Calendar, History,
-  Plus, X, Search as SearchIcon, Archive,
+  Plus, X, Search as SearchIcon, Archive, ImageIcon, Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +22,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
+import { MediaPickerDialog } from "@/components/admin/MediaPickerDialog";
 
 function slugify(text: string): string {
   return text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
@@ -49,6 +50,8 @@ export default function AdminCmsV2PostEditor() {
   const [legacyHtml, setLegacyHtml] = useState("");
   const [canonicalUrl, setCanonicalUrl] = useState("");
   const [ogImageId, setOgImageId] = useState("");
+  const [coverImageId, setCoverImageId] = useState("");
+  const [showMediaPicker, setShowMediaPicker] = useState(false);
   const [allowIndex, setAllowIndex] = useState(true);
   const [allowFollow, setAllowFollow] = useState(true);
   const [featured, setFeatured] = useState(false);
@@ -56,6 +59,7 @@ export default function AdminCmsV2PostEditor() {
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [newTagName, setNewTagName] = useState("");
+  const [newCategoryName, setNewCategoryName] = useState("");
   const [showSchedule, setShowSchedule] = useState(false);
   const [scheduleDate, setScheduleDate] = useState("");
   const [showRevisions, setShowRevisions] = useState(false);
@@ -96,6 +100,7 @@ export default function AdminCmsV2PostEditor() {
       setLegacyHtml(post.legacyHtml || "");
       setCanonicalUrl(post.canonicalUrl || "");
       setOgImageId(post.ogImageId || "");
+      setCoverImageId(post.coverImageId || "");
       setAllowIndex(post.allowIndex ?? true);
       setAllowFollow(post.allowFollow ?? true);
       setFeatured(post.featured ?? false);
@@ -164,6 +169,17 @@ export default function AdminCmsV2PostEditor() {
     onError: () => toast({ title: "Failed to create tag", variant: "destructive" }),
   });
 
+  const createCategoryMutation = useMutation({
+    mutationFn: (data: any) => apiRequest("POST", "/api/admin/cms-v2/post-categories", data).then((r) => r.json()),
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/cms-v2/post-categories"] });
+      setSelectedCategoryIds((prev) => [...prev, data.id]);
+      setNewCategoryName("");
+      setDirty(true);
+    },
+    onError: () => toast({ title: "Failed to create category", variant: "destructive" }),
+  });
+
   function handleSave() {
     const data: any = {
       title,
@@ -172,6 +188,7 @@ export default function AdminCmsV2PostEditor() {
       legacyHtml: legacyHtml || null,
       canonicalUrl: canonicalUrl || null,
       ogImageId: ogImageId || null,
+      coverImageId: coverImageId || null,
       allowIndex,
       allowFollow,
       featured,
@@ -191,6 +208,12 @@ export default function AdminCmsV2PostEditor() {
     if (!newTagName.trim()) return;
     const tagSlug = slugify(newTagName.trim());
     createTagMutation.mutate({ name: newTagName.trim(), slug: tagSlug });
+  }
+
+  function handleAddNewCategory() {
+    if (!newCategoryName.trim()) return;
+    const catSlug = slugify(newCategoryName.trim());
+    createCategoryMutation.mutate({ name: newCategoryName.trim(), slug: catSlug });
   }
 
   const categoryOptions = useMemo(() => {
@@ -432,6 +455,57 @@ export default function AdminCmsV2PostEditor() {
 
             <Card className="bg-card border-border">
               <CardHeader className="pb-3">
+                <CardTitle className="text-sm text-foreground/80">Featured Image</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {coverImageId ? (
+                  <div className="relative group">
+                    <div className="aspect-video rounded-lg overflow-hidden bg-muted border border-border">
+                      <img
+                        src={`/api/object-storage/${coverImageId}`}
+                        alt="Featured image"
+                        className="w-full h-full object-cover"
+                        data-testid="img-cover-preview"
+                      />
+                    </div>
+                    <div className="flex gap-1 mt-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-border text-foreground/80 flex-1 h-8 text-xs"
+                        onClick={() => setShowMediaPicker(true)}
+                        data-testid="button-change-cover"
+                      >
+                        <ImageIcon className="w-3 h-3 mr-1" />
+                        Change
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-border text-destructive hover:text-destructive h-8 px-2"
+                        onClick={() => { setCoverImageId(""); setDirty(true); }}
+                        data-testid="button-remove-cover"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowMediaPicker(true)}
+                    className="w-full aspect-video rounded-lg border-2 border-dashed border-border hover:border-primary/50 bg-muted/50 flex flex-col items-center justify-center gap-2 transition-colors cursor-pointer"
+                    data-testid="button-add-cover"
+                  >
+                    <ImageIcon className="w-8 h-8 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">Click to add featured image</span>
+                  </button>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="bg-card border-border">
+              <CardHeader className="pb-3">
                 <CardTitle className="text-sm text-foreground/80">Categories</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
@@ -457,6 +531,26 @@ export default function AdminCmsV2PostEditor() {
                     </SelectContent>
                   </Select>
                 )}
+                <div className="flex gap-1">
+                  <Input
+                    value={newCategoryName}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    placeholder="Create new category..."
+                    className="bg-muted border-border text-foreground h-8 text-xs flex-1"
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddNewCategory(); } }}
+                    data-testid="input-new-category"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-border text-foreground/80 h-8 px-2"
+                    onClick={handleAddNewCategory}
+                    disabled={!newCategoryName.trim() || createCategoryMutation.isPending}
+                    data-testid="button-create-category"
+                  >
+                    <Plus className="w-3 h-3" />
+                  </Button>
+                </div>
               </CardContent>
             </Card>
 
@@ -566,6 +660,19 @@ export default function AdminCmsV2PostEditor() {
           </div>
         </div>
       </div>
+
+      <MediaPickerDialog
+        open={showMediaPicker}
+        onOpenChange={setShowMediaPicker}
+        onSelect={(_url, media) => {
+          if (media) {
+            setCoverImageId(String(media.id));
+            setDirty(true);
+          }
+        }}
+        accept="image/*"
+        title="Select Featured Image"
+      />
 
       <Dialog open={showSchedule} onOpenChange={setShowSchedule}>
         <DialogContent className="bg-card border-border text-foreground max-w-sm">
