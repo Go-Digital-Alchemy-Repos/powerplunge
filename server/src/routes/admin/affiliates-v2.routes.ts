@@ -707,9 +707,22 @@ router.delete(
         await tx.delete(affiliateClicks).where(eq(affiliateClicks.affiliateId, affiliateId));
         await tx.delete(affiliateAgreements).where(eq(affiliateAgreements.affiliateId, affiliateId));
         await tx.delete(affiliatePayoutAccounts).where(eq(affiliatePayoutAccounts.affiliateId, affiliateId));
+
+        const usageRecords = await tx.select({ inviteId: affiliateInviteUsages.inviteId })
+          .from(affiliateInviteUsages)
+          .where(eq(affiliateInviteUsages.affiliateId, affiliateId));
+
         await tx.delete(affiliateInviteUsages).where(eq(affiliateInviteUsages.affiliateId, affiliateId));
+
+        const affectedInviteIds = Array.from(new Set(usageRecords.map(r => r.inviteId)));
+        for (const inviteId of affectedInviteIds) {
+          await tx.update(affiliateInvites)
+            .set({ timesUsed: sql`GREATEST(${affiliateInvites.timesUsed} - 1, 0)` })
+            .where(eq(affiliateInvites.id, inviteId));
+        }
+
         await tx.update(affiliateInvites)
-          .set({ usedByAffiliateId: null })
+          .set({ usedByAffiliateId: null, usedAt: null })
           .where(eq(affiliateInvites.usedByAffiliateId, affiliateId));
         await tx.delete(affiliates).where(eq(affiliates.id, affiliateId));
       });
