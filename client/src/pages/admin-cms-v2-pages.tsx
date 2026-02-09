@@ -279,7 +279,12 @@ export default function AdminCmsV2Pages() {
               </thead>
               <tbody>
                 {filteredPages.map((page: any) => (
-                  <tr key={page.id} className="border-b border-border/30 hover:bg-card/40 transition-colors" data-testid={`row-page-${page.id}`}>
+                  <tr
+                    key={page.id}
+                    className="border-b border-border/30 hover:bg-card/40 transition-colors cursor-pointer"
+                    onClick={() => navigate(`/admin/cms-v2/pages/${page.id}/builder`)}
+                    data-testid={`row-page-${page.id}`}
+                  >
                     <td className="px-4 py-3">
                       <span className="text-sm text-foreground font-medium" data-testid={`text-page-title-${page.id}`}>{page.title}</span>
                     </td>
@@ -321,7 +326,7 @@ export default function AdminCmsV2Pages() {
                         )}
                       </div>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1">
                         <Link href={`/admin/cms-v2/pages/${page.id}/builder`}>
                           <Button

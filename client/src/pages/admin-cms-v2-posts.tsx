@@ -218,7 +218,12 @@ export default function AdminCmsV2Posts() {
                     const status = STATUS_CONFIG[post.status] || STATUS_CONFIG.draft;
                     const StatusIcon = status.icon;
                     return (
-                      <tr key={post.id} className="border-b border-border hover:bg-card/40 transition-colors" data-testid={`row-post-${post.id}`}>
+                      <tr
+                        key={post.id}
+                        className="border-b border-border hover:bg-card/40 transition-colors cursor-pointer"
+                        onClick={() => navigate(`/admin/cms-v2/posts/${post.id}/edit`)}
+                        data-testid={`row-post-${post.id}`}
+                      >
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-3">
                             {post.coverImageId && (
@@ -268,7 +273,7 @@ export default function AdminCmsV2Posts() {
                         <td className="py-3 px-3 hidden md:table-cell">
                           <span className="text-xs text-muted-foreground">{formatDate(post.publishedAt)}</span>
                         </td>
-                        <td className="py-3 px-4 text-right">
+                        <td className="py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground" data-testid={`button-post-menu-${post.id}`}>
