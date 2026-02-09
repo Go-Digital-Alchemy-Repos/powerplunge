@@ -62,7 +62,6 @@ export default function AdminAffiliateInviteSender() {
           await navigator.share({
             title: "Power Plunge Affiliate Invite",
             text: shareText,
-            url: data.inviteUrl,
           });
           toast({ title: "Invite Shared!", description: "Your invite link was shared successfully." });
         } catch (err: any) {
