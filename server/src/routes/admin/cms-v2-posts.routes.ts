@@ -1,16 +1,8 @@
 import { Router } from "express";
 import { cmsV2PostsService } from "../../services/cms-v2-posts.service";
 import { insertCmsV2PostSchema } from "@shared/schema";
-import { isCmsV2Enabled } from "../../config/env";
 
 const router = Router();
-
-router.use((_req, res, next) => {
-  if (!isCmsV2Enabled()) {
-    return res.status(403).json({ error: "CMS v2 is not enabled" });
-  }
-  next();
-});
 
 router.get("/", async (_req, res) => {
   const posts = await cmsV2PostsService.list();

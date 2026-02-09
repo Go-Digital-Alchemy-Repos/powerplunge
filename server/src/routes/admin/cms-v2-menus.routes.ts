@@ -1,16 +1,8 @@
 import { Router } from "express";
 import { cmsV2MenusService } from "../../services/cms-v2-menus.service";
 import { insertCmsV2MenuSchema } from "@shared/schema";
-import { isCmsV2Enabled } from "../../config/env";
 
 const router = Router();
-
-router.use((_req, res, next) => {
-  if (!isCmsV2Enabled()) {
-    return res.status(403).json({ error: "CMS v2 is not enabled" });
-  }
-  next();
-});
 
 router.get("/", async (_req, res) => {
   const menus = await cmsV2MenusService.list();

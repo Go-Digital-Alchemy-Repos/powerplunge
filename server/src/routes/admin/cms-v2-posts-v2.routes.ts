@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { isCmsV2Enabled } from "../../config/env";
 import { postsService, SlugConflictError, ValidationError } from "../../services/cmsV2.posts.service";
 import {
   createPostSchema,
@@ -13,12 +12,6 @@ import {
 
 const router = Router();
 
-router.use((_req, res, next) => {
-  if (!isCmsV2Enabled()) {
-    return res.status(403).json({ error: "CMS v2 is not enabled" });
-  }
-  next();
-});
 
 function handleError(res: any, err: any, context: string) {
   if (err.name === "ZodError") {

@@ -6,7 +6,6 @@ import { themePresets } from "@shared/themePresets";
 import { themePackPresets } from "@shared/themePackPresets";
 import { db } from "../../db";
 import { eq } from "drizzle-orm";
-import { isCmsV2Enabled } from "../../config/env";
 import { SECTION_KITS } from "../../data/sectionKits";
 import { validateContentJson, sanitizeHtml } from "../../utils/contentValidation";
 
@@ -212,10 +211,6 @@ router.delete("/sections/:id", async (req, res) => {
 });
 
 router.post("/sections/seed-kits", async (_req, res) => {
-  if (!isCmsV2Enabled()) {
-    return res.status(403).json({ error: "CMS v2 is not enabled" });
-  }
-
   try {
     const existing = await sectionsService.list();
     const existingNames = new Set(existing.map((s: any) => s.name));

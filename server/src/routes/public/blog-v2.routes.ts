@@ -1,14 +1,9 @@
 import { Router } from "express";
 import { publicBlogService } from "../../services/public.blog.service";
-import { isCmsV2Enabled } from "../../config/env";
 
 const router = Router();
 
 router.get("/posts", async (req, res) => {
-  if (!isCmsV2Enabled()) {
-    return res.json({ data: [], total: 0, page: 1, pageSize: 12 });
-  }
-
   try {
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
     const pageSize = Math.min(100, Math.max(1, parseInt(req.query.pageSize as string) || 0));
@@ -32,10 +27,6 @@ router.get("/posts", async (req, res) => {
 });
 
 router.get("/posts/:slug", async (req, res) => {
-  if (!isCmsV2Enabled()) {
-    return res.status(404).json({ error: "Not found" });
-  }
-
   try {
     const post = await publicBlogService.getPublishedBySlug(req.params.slug);
     if (!post) return res.status(404).json({ error: "Post not found" });
@@ -47,10 +38,6 @@ router.get("/posts/:slug", async (req, res) => {
 });
 
 router.get("/tags", async (_req, res) => {
-  if (!isCmsV2Enabled()) {
-    return res.json([]);
-  }
-
   try {
     const tags = await publicBlogService.listTags();
     res.json(tags);
@@ -61,10 +48,6 @@ router.get("/tags", async (_req, res) => {
 });
 
 router.get("/categories", async (_req, res) => {
-  if (!isCmsV2Enabled()) {
-    return res.json([]);
-  }
-
   try {
     const categories = await publicBlogService.listCategories();
     res.json(categories);
@@ -75,10 +58,6 @@ router.get("/categories", async (_req, res) => {
 });
 
 router.get("/rss.xml", async (_req, res) => {
-  if (!isCmsV2Enabled()) {
-    return res.status(404).send("Not found");
-  }
-
   try {
     const rssData = await publicBlogService.getRssItems();
     if (!rssData) {
@@ -89,29 +68,29 @@ router.get("/rss.xml", async (_req, res) => {
 
     const itemsXml = rssData.items
       .map(
-        (item) => `    <item>
+        (item: any) => `
+    <item>
       <title><![CDATA[${item.title}]]></title>
       <link>${baseUrl}/blog/${item.slug}</link>
-      <guid>${baseUrl}/blog/${item.slug}</guid>
       <description><![CDATA[${item.excerpt || ""}]]></description>
-      <pubDate>${item.publishedAt ? new Date(item.publishedAt).toUTCString() : ""}</pubDate>
+      <pubDate>${new Date(item.publishedAt).toUTCString()}</pubDate>
+      <guid>${baseUrl}/blog/${item.slug}</guid>
     </item>`
       )
-      .join("\n");
+      .join("");
 
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+<rss version="2.0">
   <channel>
-    <title><![CDATA[${rssData.title}]]></title>
+    <title>${rssData.title}</title>
     <link>${baseUrl}/blog</link>
-    <description><![CDATA[${rssData.description}]]></description>
+    <description>${rssData.description}</description>
     <language>en-us</language>
-    <atom:link href="${baseUrl}/api/blog/rss.xml" rel="self" type="application/rss+xml"/>
-${itemsXml}
+    ${itemsXml}
   </channel>
 </rss>`;
 
-    res.set("Content-Type", "application/rss+xml; charset=utf-8");
+    res.set("Content-Type", "application/rss+xml");
     res.send(xml);
   } catch (err) {
     console.error("[PUBLIC-BLOG] Error generating RSS:", err);
