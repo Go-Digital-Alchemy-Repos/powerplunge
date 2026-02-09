@@ -1112,8 +1112,6 @@ export default function AdminCmsV2Builder() {
           </div>
 
           <div className="flex items-center gap-2">
-            <QuickInsertBar />
-            <div className="w-px h-5 bg-muted" />
             <ViewportSwitcher mode={viewportMode} onChange={setViewportMode} />
             <div className="w-px h-5 bg-muted" />
             <Button
@@ -1141,6 +1139,7 @@ export default function AdminCmsV2Builder() {
             headerActions: ({ children }) => (
               <>
                 {children}
+                <QuickInsertBar />
                 <DetachSectionButton pageId={pageId!} pageTitle={page?.title || ""} onDone={invalidateQueries} />
                 <SaveDraftButton pageId={pageId!} pageTitle={page?.title || ""} seoData={seoData} onDone={invalidateQueries} />
                 <PublishButton pageId={pageId!} pageTitle={page?.title || ""} seoData={seoData} onDone={invalidateQueries} />
