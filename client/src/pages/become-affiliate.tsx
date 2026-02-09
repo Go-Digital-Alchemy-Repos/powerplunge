@@ -83,7 +83,7 @@ export default function BecomeAffiliate() {
   const searchString = useSearch();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { isAuthenticated, isLoading: authLoading, login, logout, customer: authCustomer, getAuthHeader } = useCustomerAuth();
+  const { isAuthenticated, isLoading: authLoading, login, logout, customer: authCustomer, getAuthHeader, refreshSession } = useCustomerAuth();
 
   const params = new URLSearchParams(searchString);
   const inviteCode = params.get("code") || "";
@@ -110,6 +110,8 @@ export default function BecomeAffiliate() {
   const [editingCode, setEditingCode] = useState(false);
 
   const [existingAccountError, setExistingAccountError] = useState(false);
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
+  const [sendingMagicLink, setSendingMagicLink] = useState(false);
 
   const [phoneVerified, setPhoneVerified] = useState(false);
   const [verificationCode, setVerificationCode] = useState("");
@@ -220,9 +222,13 @@ export default function BecomeAffiliate() {
       if (data.onboarding) {
         setOnboardingMeta(data.onboarding);
       }
-      try {
-        await login(formData.email, formData.password);
-      } catch {}
+      if (data.passwordUpgraded) {
+        toast({
+          title: "Account upgraded!",
+          description: "Your password has been set. You can now log in with your email and password going forward.",
+        });
+      }
+      await refreshSession();
       setAccountCreated(true);
       trackEvent("step_completed", { step: "agreement", affiliateId: data.affiliate.id });
       setCurrentStep("payout");
@@ -941,22 +947,67 @@ export default function BecomeAffiliate() {
               <div className="space-y-1">
                 <p className="text-sm font-medium text-amber-600">An account with this email already exists</p>
                 <p className="text-xs text-muted-foreground">
-                  Please enter your existing account password above. If you've forgotten your password, you can reset it.
+                  Please enter your existing account password above. If you've forgotten your password, you can reset it or use a login link instead.
                 </p>
               </div>
             </div>
-            <Link href={`/reset-password?returnTo=${encodeURIComponent(`/become-affiliate${inviteCode ? `?code=${inviteCode}` : ""}`)}`}>
+            <div className="flex flex-col gap-2">
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                className="w-full border-amber-500/30 text-amber-600 hover:bg-amber-500/10 gap-2"
-                data-testid="button-forgot-password"
+                className="w-full border-primary/30 text-primary hover:bg-primary/10 gap-2"
+                disabled={sendingMagicLink || magicLinkSent || !formData.email}
+                onClick={async () => {
+                  if (!formData.email) {
+                    toast({ title: "Email required", description: "Please enter your email address above first.", variant: "destructive" });
+                    return;
+                  }
+                  setSendingMagicLink(true);
+                  try {
+                    const res = await fetch("/api/customer/auth/magic-link", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ email: formData.email }),
+                    });
+                    if (res.ok) {
+                      setMagicLinkSent(true);
+                      toast({
+                        title: "Login link sent!",
+                        description: "Check your email for a login link. Once logged in, return to this page to continue your affiliate signup.",
+                      });
+                    } else {
+                      toast({ title: "Failed to send", description: "Could not send login link. Please try again.", variant: "destructive" });
+                    }
+                  } catch {
+                    toast({ title: "Failed to send", description: "Could not send login link. Please try again.", variant: "destructive" });
+                  } finally {
+                    setSendingMagicLink(false);
+                  }
+                }}
+                data-testid="button-send-magic-link"
               >
-                <Lock className="w-4 h-4" />
-                Reset My Password
+                {sendingMagicLink ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Sending...</>
+                ) : magicLinkSent ? (
+                  <><CheckCircle className="w-4 h-4" /> Login link sent — check your email</>
+                ) : (
+                  <><Mail className="w-4 h-4" /> Send me a login link instead</>
+                )}
               </Button>
-            </Link>
+              <Link href={`/reset-password?returnTo=${encodeURIComponent(`/become-affiliate${inviteCode ? `?code=${inviteCode}` : ""}`)}`}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="w-full border-amber-500/30 text-amber-600 hover:bg-amber-500/10 gap-2"
+                  data-testid="button-forgot-password"
+                >
+                  <Lock className="w-4 h-4" />
+                  Reset My Password
+                </Button>
+              </Link>
+            </div>
           </div>
         )}
 

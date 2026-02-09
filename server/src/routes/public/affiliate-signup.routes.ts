@@ -142,6 +142,8 @@ router.post("/", async (req: Request, res: Response) => {
         });
       }
       
+      const wasMagicLinkOnly = !existingCustomer.passwordHash;
+      
       if (existingCustomer.passwordHash) {
         const passwordMatch = await bcrypt.compare(password, existingCustomer.passwordHash);
         if (!passwordMatch) {
@@ -185,6 +187,7 @@ router.post("/", async (req: Request, res: Response) => {
       return res.json({
         success: true,
         sessionToken,
+        passwordUpgraded: wasMagicLinkOnly,
         customer: {
           id: existingCustomer.id,
           email: existingCustomer.email,
