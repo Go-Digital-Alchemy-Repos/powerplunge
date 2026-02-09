@@ -187,9 +187,9 @@ export const siteSettings = pgTable("site_settings", {
   managerNotificationEmails: text("manager_notification_emails"), // comma-separated
   // Featured product for homepage/shop
   featuredProductId: varchar("featured_product_id"),
-  // CMS v2 active theme
+  // CMS active theme
   activeThemeId: text("active_theme_id").default("arctic-default"),
-  // CMS v2 site preset config (nav, footer, SEO, CTA defaults)
+  // CMS site preset config (nav, footer, SEO, CTA defaults)
   activePresetId: varchar("active_preset_id"),
   navPreset: jsonb("nav_preset"),
   footerPreset: jsonb("footer_preset"),
@@ -1577,8 +1577,8 @@ export const insertThemePackSchema = createInsertSchema(themePacks, {
 export type InsertThemePack = z.infer<typeof insertThemePackSchema>;
 export type ThemePack = typeof themePacks.$inferSelect;
 
-// ==================== CMS V2: Blog Posts ====================
-export const cmsV2Posts = pgTable("cms_v2_posts", {
+// ==================== CMS: Blog Posts ====================
+export const cmsPosts = pgTable("cms_v2_posts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   title: text("title").notNull(),
   slug: text("slug").notNull().unique(),
@@ -1598,11 +1598,16 @@ export const cmsV2Posts = pgTable("cms_v2_posts", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-export const insertCmsV2PostSchema = createInsertSchema(cmsV2Posts).omit({ id: true, createdAt: true, updatedAt: true });
-export type InsertCmsV2Post = z.infer<typeof insertCmsV2PostSchema>;
-export type CmsV2Post = typeof cmsV2Posts.$inferSelect;
+export const insertCmsPostSchema = createInsertSchema(cmsPosts).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertCmsPost = z.infer<typeof insertCmsPostSchema>;
+export type CmsPost = typeof cmsPosts.$inferSelect;
 
-// ==================== CMS V2: Navigation Menus ====================
+export const cmsV2Posts = cmsPosts;
+export const insertCmsV2PostSchema = insertCmsPostSchema;
+export type InsertCmsV2Post = InsertCmsPost;
+export type CmsV2Post = CmsPost;
+
+// ==================== CMS: Navigation Menus ====================
 export const menuItemSchema: z.ZodType<any> = z.object({
   id: z.string(),
   type: z.enum(["page", "post", "external", "label"]).default("external"),
@@ -1619,7 +1624,7 @@ export const menuItemSchema: z.ZodType<any> = z.object({
 });
 export type MenuItem = z.infer<typeof menuItemSchema>;
 
-export const cmsV2Menus = pgTable("cms_v2_menus", {
+export const cmsMenus = pgTable("cms_v2_menus", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
   location: text("location").notNull().default("header"),
@@ -1629,9 +1634,14 @@ export const cmsV2Menus = pgTable("cms_v2_menus", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-export const insertCmsV2MenuSchema = createInsertSchema(cmsV2Menus).omit({ id: true, createdAt: true, updatedAt: true });
-export type InsertCmsV2Menu = z.infer<typeof insertCmsV2MenuSchema>;
-export type CmsV2Menu = typeof cmsV2Menus.$inferSelect;
+export const insertCmsMenuSchema = createInsertSchema(cmsMenus).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertCmsMenu = z.infer<typeof insertCmsMenuSchema>;
+export type CmsMenu = typeof cmsMenus.$inferSelect;
+
+export const cmsV2Menus = cmsMenus;
+export const insertCmsV2MenuSchema = insertCmsMenuSchema;
+export type InsertCmsV2Menu = InsertCmsMenu;
+export type CmsV2Menu = CmsMenu;
 
 // ==================== Blog Posts Data Model ====================
 
