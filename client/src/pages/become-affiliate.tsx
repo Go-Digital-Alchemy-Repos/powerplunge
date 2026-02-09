@@ -440,8 +440,9 @@ export default function BecomeAffiliate() {
 
   const hasValidInvite = signupInfo?.invite?.valid === true;
   const inviteErrorMessage = signupInfo?.invite?.error || signupInfo?.inviteError || null;
+  const isReturningFromStripe = connectReturn === "complete" || connectReturn === "refresh";
 
-  if (!hasValidInvite) {
+  if (!hasValidInvite && !isReturningFromStripe) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex flex-col">
         <nav className="p-4">

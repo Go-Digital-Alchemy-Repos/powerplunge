@@ -17,6 +17,21 @@ router.get("/", async (req: Request, res: Response) => {
     let inviteValid = false;
     let inviteError: string | null = null;
 
+    let isExistingAffiliate = false;
+    const authHeader = req.headers.authorization;
+    if (authHeader?.startsWith("Bearer ")) {
+      try {
+        const token = authHeader.substring(7);
+        const payload = verifySessionToken(token);
+        if (payload?.customerId) {
+          const existingAffiliate = await storage.getAffiliateByCustomerId(payload.customerId);
+          if (existingAffiliate) {
+            isExistingAffiliate = true;
+          }
+        }
+      } catch {}
+    }
+
     if (!inviteCode) {
       inviteValid = false;
       inviteError = "Affiliate signup is invite-only. Please use a valid invite link.";
@@ -30,8 +45,12 @@ router.get("/", async (req: Request, res: Response) => {
         inviteValid = false;
         inviteError = "This invite has expired";
       } else if (invite.maxUses && invite.timesUsed >= invite.maxUses) {
-        inviteValid = false;
-        inviteError = "This invite has reached its usage limit";
+        if (isExistingAffiliate) {
+          inviteValid = true;
+        } else {
+          inviteValid = false;
+          inviteError = "This invite has reached its usage limit";
+        }
       } else {
         inviteValid = true;
       }
