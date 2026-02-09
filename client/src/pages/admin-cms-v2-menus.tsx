@@ -31,6 +31,7 @@ import {
   PenLine,
   Link2,
   Tag,
+  Layout,
   ChevronRight,
   ChevronDown,
   Search,
@@ -89,6 +90,19 @@ interface MenuData {
 
 const MAX_DEPTH = 3;
 
+const SYSTEM_PAGES = [
+  { id: "system-home", title: "Home", slug: "", path: "/" },
+  { id: "system-shop", title: "Shop", slug: "shop", path: "/shop" },
+  { id: "system-blog", title: "Blog", slug: "blog", path: "/blog" },
+  { id: "system-my-account", title: "My Account", slug: "my-account", path: "/my-account" },
+  { id: "system-track-order", title: "Track Order", slug: "track-order", path: "/track-order" },
+  { id: "system-checkout", title: "Checkout", slug: "checkout", path: "/checkout" },
+  { id: "system-login", title: "Login", slug: "login", path: "/login" },
+  { id: "system-register", title: "Register", slug: "register", path: "/register" },
+  { id: "system-become-affiliate", title: "Become an Affiliate", slug: "become-affiliate", path: "/become-affiliate" },
+  { id: "system-affiliate-portal", title: "Affiliate Portal", slug: "affiliate-portal", path: "/affiliate-portal" },
+];
+
 function generateId() {
   return Math.random().toString(36).substring(2, 10);
 }
@@ -97,7 +111,7 @@ function getItemTypeIcon(type: string) {
   switch (type) {
     case "page": return <FileText className="w-3.5 h-3.5 text-blue-400" />;
     case "post": return <PenLine className="w-3.5 h-3.5 text-green-400" />;
-    case "external": return <ExternalLink className="w-3.5 h-3.5 text-orange-400" />;
+    case "external": return <Link2 className="w-3.5 h-3.5 text-orange-400" />;
     case "label": return <Tag className="w-3.5 h-3.5 text-purple-400" />;
     default: return <Link2 className="w-3.5 h-3.5 text-muted-foreground" />;
   }
@@ -107,7 +121,7 @@ function getItemTypeLabel(type: string) {
   switch (type) {
     case "page": return "Page";
     case "post": return "Post";
-    case "external": return "External Link";
+    case "external": return "Custom Link";
     case "label": return "Label";
     default: return type;
   }
@@ -302,9 +316,14 @@ function AddItemModal({
   });
 
   const filteredPages = useMemo(() => {
-    if (!searchQuery) return pages;
     const q = searchQuery.toLowerCase();
-    return pages.filter((p: any) => p.title?.toLowerCase().includes(q) || p.slug?.toLowerCase().includes(q));
+    const cmsPages = searchQuery
+      ? pages.filter((p: any) => p.title?.toLowerCase().includes(q) || p.slug?.toLowerCase().includes(q))
+      : pages;
+    const systemPages = searchQuery
+      ? SYSTEM_PAGES.filter((p) => p.title.toLowerCase().includes(q) || p.path.toLowerCase().includes(q))
+      : SYSTEM_PAGES;
+    return { cmsPages, systemPages };
   }, [pages, searchQuery]);
 
   const filteredPosts = useMemo(() => {
@@ -326,13 +345,16 @@ function AddItemModal({
   }
 
   function handleAdd() {
+    const isSystemPage = type === "page" && selectedPageId?.startsWith("system-");
+    const systemPage = isSystemPage ? SYSTEM_PAGES.find((p) => p.id === selectedPageId) : null;
+
     const newItem: MenuItemData = {
       id: generateId(),
       type,
       label: label || "(untitled)",
-      href: type === "external" ? href : type === "page" ? `/${selectedPageSlug || ""}` : type === "post" ? `/blog/${selectedPostSlug || ""}` : "",
-      url: type === "external" ? href : "",
-      pageId: type === "page" ? selectedPageId || undefined : undefined,
+      href: type === "external" ? href : isSystemPage ? (systemPage?.path || "/") : type === "page" ? `/${selectedPageSlug || ""}` : type === "post" ? `/blog/${selectedPostSlug || ""}` : "",
+      url: type === "external" ? href : isSystemPage ? (systemPage?.path || "/") : "",
+      pageId: type === "page" && !isSystemPage ? selectedPageId || undefined : undefined,
       pageSlug: type === "page" ? selectedPageSlug || undefined : undefined,
       postId: type === "post" ? selectedPostId || undefined : undefined,
       postSlug: type === "post" ? selectedPostSlug || undefined : undefined,
@@ -396,29 +418,66 @@ function AddItemModal({
                   data-testid="input-search-pages"
                 />
               </div>
-              <div className="mt-2 max-h-48 overflow-y-auto space-y-1 border border-border rounded-md p-1" data-testid="page-list">
-                {filteredPages.length === 0 ? (
+              <div className="mt-2 max-h-60 overflow-y-auto space-y-0.5 border border-border rounded-md p-1" data-testid="page-list">
+                {filteredPages.systemPages.length === 0 && filteredPages.cmsPages.length === 0 ? (
                   <p className="text-xs text-muted-foreground py-3 text-center">No pages found</p>
                 ) : (
-                  filteredPages.map((page: any) => (
-                    <button
-                      key={page.id}
-                      onClick={() => {
-                        setSelectedPageId(page.id);
-                        setSelectedPageSlug(page.slug);
-                        if (!label) setLabel(page.title);
-                      }}
-                      className={`w-full text-left px-3 py-2 rounded text-sm transition-colors flex items-center justify-between ${
-                        selectedPageId === page.id
-                          ? "bg-primary/15 text-primary"
-                          : "text-foreground/80 hover:bg-muted"
-                      }`}
-                      data-testid={`select-page-${page.id}`}
-                    >
-                      <span className="truncate">{page.title}</span>
-                      <span className="text-xs text-muted-foreground ml-2 flex-shrink-0">/{page.slug}</span>
-                    </button>
-                  ))
+                  <>
+                    {filteredPages.systemPages.length > 0 && (
+                      <>
+                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-semibold px-3 pt-2 pb-1 flex items-center gap-1.5">
+                          <Layout className="w-3 h-3" />
+                          System Pages
+                        </p>
+                        {filteredPages.systemPages.map((page) => (
+                          <button
+                            key={page.id}
+                            onClick={() => {
+                              setSelectedPageId(page.id);
+                              setSelectedPageSlug(page.slug);
+                              if (!label) setLabel(page.title);
+                            }}
+                            className={`w-full text-left px-3 py-2 rounded text-sm transition-colors flex items-center justify-between ${
+                              selectedPageId === page.id
+                                ? "bg-primary/15 text-primary"
+                                : "text-foreground/80 hover:bg-muted"
+                            }`}
+                            data-testid={`select-page-${page.id}`}
+                          >
+                            <span className="truncate">{page.title}</span>
+                            <span className="text-xs text-muted-foreground ml-2 flex-shrink-0">{page.path}</span>
+                          </button>
+                        ))}
+                      </>
+                    )}
+                    {filteredPages.cmsPages.length > 0 && (
+                      <>
+                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-semibold px-3 pt-2 pb-1 flex items-center gap-1.5">
+                          <FileText className="w-3 h-3" />
+                          CMS Pages
+                        </p>
+                        {filteredPages.cmsPages.map((page: any) => (
+                          <button
+                            key={page.id}
+                            onClick={() => {
+                              setSelectedPageId(page.id);
+                              setSelectedPageSlug(page.slug);
+                              if (!label) setLabel(page.title);
+                            }}
+                            className={`w-full text-left px-3 py-2 rounded text-sm transition-colors flex items-center justify-between ${
+                              selectedPageId === page.id
+                                ? "bg-primary/15 text-primary"
+                                : "text-foreground/80 hover:bg-muted"
+                            }`}
+                            data-testid={`select-page-${page.id}`}
+                          >
+                            <span className="truncate">{page.title}</span>
+                            <span className="text-xs text-muted-foreground ml-2 flex-shrink-0">/{page.slug}</span>
+                          </button>
+                        ))}
+                      </>
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -961,6 +1020,14 @@ function MenuEditor({
                     className="bg-muted border-border text-foreground mt-1.5"
                     data-testid="input-edit-url"
                   />
+                </div>
+              )}
+              {editingItem.type === "page" && (
+                <div>
+                  <Label className="text-foreground/80 text-sm">Destination</Label>
+                  <p className="text-sm text-muted-foreground mt-1.5 bg-muted rounded px-3 py-2 border border-border">
+                    {editingItem.href || `/${editingItem.pageSlug || ""}`}
+                  </p>
                 </div>
               )}
               {editingItem.type !== "label" && (
