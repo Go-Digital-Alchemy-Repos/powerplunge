@@ -151,13 +151,27 @@ router.post("/stripe/connect", async (req, res) => {
     return res.status(400).json({ message: "Stripe not configured" });
   }
 
-  const connectSecret = process.env.STRIPE_CONNECT_WEBHOOK_SECRET;
-  const mainSecret = await stripeService.getWebhookSecret();
-  const webhookSecret = connectSecret || mainSecret;
-  
-  if (!webhookSecret) {
-    return res.status(400).json({ message: "Stripe webhook secret not configured" });
+  let connectSecret: string | undefined;
+
+  const settings = await storage.getIntegrationSettings();
+  if (settings?.stripeConnectWebhookSecretEncrypted) {
+    try {
+      const { decrypt } = await import("../../utils/encryption");
+      connectSecret = decrypt(settings.stripeConnectWebhookSecretEncrypted);
+    } catch (error) {
+      console.error("Failed to decrypt Stripe Connect webhook secret from database");
+    }
   }
+
+  if (!connectSecret) {
+    connectSecret = process.env.STRIPE_CONNECT_WEBHOOK_SECRET;
+  }
+
+  if (!connectSecret) {
+    return res.status(400).json({ message: "Stripe Connect webhook secret not configured. Please add it in Admin → Integrations → Stripe → Stripe Connect section." });
+  }
+
+  const webhookSecret = connectSecret;
 
   const sig = req.headers["stripe-signature"] as string;
   if (!sig) {

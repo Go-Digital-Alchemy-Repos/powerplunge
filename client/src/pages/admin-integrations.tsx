@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAdmin } from "@/hooks/use-admin";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle2, XCircle, ExternalLink, Key, CreditCard, Loader2, TestTube, AlertCircle, Save, HardDrive, Mail, Brain, Link2, Copy, ShoppingBag, Instagram, RefreshCw } from "lucide-react";
+import { CheckCircle2, XCircle, ExternalLink, Key, CreditCard, Loader2, TestTube, AlertCircle, Save, HardDrive, Mail, Brain, Link2, Copy, ShoppingBag, Instagram, RefreshCw, Users } from "lucide-react";
 import AdminNav from "@/components/admin/AdminNav";
 
 interface IntegrationStatus {
@@ -123,6 +123,8 @@ interface StripeSettings {
   configured: boolean;
   mode?: string;
   hasWebhookSecret?: boolean;
+  hasConnectWebhookSecret?: boolean;
+  connectWebhookSecretSource?: string;
   publishableKeyMasked?: string;
   accountName?: string;
   updatedAt?: string;
@@ -858,6 +860,7 @@ function StripeConfigDialog({ open, onOpenChange, onSuccess }: {
     publishableKey: "",
     secretKey: "",
     webhookSecret: "",
+    connectWebhookSecret: "",
   });
   const [saving, setSaving] = useState(false);
   const [validating, setValidating] = useState(false);
@@ -935,14 +938,14 @@ function StripeConfigDialog({ open, onOpenChange, onSuccess }: {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <CreditCard className="w-5 h-5" />
             Stripe Configuration
           </DialogTitle>
           <DialogDescription>
-            Configure Stripe for payment processing. Your keys are encrypted and stored securely.
+            Configure Stripe for payments and affiliate payouts. All keys are encrypted and stored securely.
           </DialogDescription>
         </DialogHeader>
 
@@ -951,7 +954,7 @@ function StripeConfigDialog({ open, onOpenChange, onSuccess }: {
             <Loader2 className="w-6 h-6 animate-spin mx-auto" />
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-6">
             {stripeSettings?.configured && (
               <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
                 <div className="flex items-center gap-2 text-green-500 text-sm font-medium">
@@ -980,76 +983,163 @@ function StripeConfigDialog({ open, onOpenChange, onSuccess }: {
               </div>
             )}
 
-            <div className="space-y-2">
-              <Label htmlFor="stripePublishableKey">Publishable Key</Label>
-              <Input
-                id="stripePublishableKey"
-                value={formData.publishableKey}
-                onChange={(e) => {
-                  setFormData({ ...formData, publishableKey: e.target.value });
-                  setValidation(null);
-                }}
-                placeholder="pk_test_..."
-                data-testid="input-stripe-publishable-key"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="stripeSecretKey">Secret Key</Label>
-              <Input
-                id="stripeSecretKey"
-                type="password"
-                value={formData.secretKey}
-                onChange={(e) => {
-                  setFormData({ ...formData, secretKey: e.target.value });
-                  setValidation(null);
-                }}
-                placeholder="sk_test_..."
-                data-testid="input-stripe-secret-key"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="stripeWebhookSecret">Webhook Secret (Optional)</Label>
-              <Input
-                id="stripeWebhookSecret"
-                type="password"
-                value={formData.webhookSecret}
-                onChange={(e) => setFormData({ ...formData, webhookSecret: e.target.value })}
-                placeholder="whsec_..."
-                data-testid="input-stripe-webhook-secret"
-              />
+            <div className="space-y-1">
+              <h3 className="text-sm font-semibold flex items-center gap-2">
+                <CreditCard className="w-4 h-4 text-primary" />
+                Stripe Payments
+              </h3>
               <p className="text-xs text-muted-foreground">
-                For webhook signature verification. Get this from your Stripe webhook endpoint settings.
+                For processing customer orders and payments on your store.
               </p>
             </div>
 
-            <div className="p-3 bg-muted/50 border rounded-lg space-y-2">
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <Link2 className="w-4 h-4" />
-                Your Webhook Endpoint URL
-              </div>
-              <div className="flex items-center gap-2">
-                <code className="flex-1 text-xs bg-background px-2 py-1.5 rounded border font-mono break-all" data-testid="text-webhook-url">
-                  {window.location.origin}/api/webhook/stripe
-                </code>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="shrink-0"
-                  onClick={() => {
-                    navigator.clipboard.writeText(`${window.location.origin}/api/webhook/stripe`);
-                    toast({ title: "Webhook URL copied to clipboard" });
+            <div className="space-y-4 pl-1 border-l-2 border-primary/20 ml-1">
+              <div className="space-y-2 pl-3">
+                <Label htmlFor="stripePublishableKey">Publishable Key</Label>
+                <Input
+                  id="stripePublishableKey"
+                  value={formData.publishableKey}
+                  onChange={(e) => {
+                    setFormData({ ...formData, publishableKey: e.target.value });
+                    setValidation(null);
                   }}
-                  data-testid="button-copy-webhook-url"
-                >
-                  <Copy className="w-3 h-3" />
-                </Button>
+                  placeholder="pk_test_..."
+                  data-testid="input-stripe-publishable-key"
+                />
               </div>
+
+              <div className="space-y-2 pl-3">
+                <Label htmlFor="stripeSecretKey">Secret Key</Label>
+                <Input
+                  id="stripeSecretKey"
+                  type="password"
+                  value={formData.secretKey}
+                  onChange={(e) => {
+                    setFormData({ ...formData, secretKey: e.target.value });
+                    setValidation(null);
+                  }}
+                  placeholder="sk_test_..."
+                  data-testid="input-stripe-secret-key"
+                />
+              </div>
+
+              <div className="space-y-2 pl-3">
+                <Label htmlFor="stripeWebhookSecret">Payment Webhook Secret (Optional)</Label>
+                <Input
+                  id="stripeWebhookSecret"
+                  type="password"
+                  value={formData.webhookSecret}
+                  onChange={(e) => setFormData({ ...formData, webhookSecret: e.target.value })}
+                  placeholder="whsec_..."
+                  data-testid="input-stripe-webhook-secret"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Verifies payment webhook signatures. Get this from your Stripe webhook endpoint settings.
+                </p>
+              </div>
+
+              <div className="p-3 ml-3 bg-muted/50 border rounded-lg space-y-2">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <Link2 className="w-4 h-4" />
+                  Payment Webhook URL
+                </div>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 text-xs bg-background px-2 py-1.5 rounded border font-mono break-all" data-testid="text-webhook-url">
+                    {window.location.origin}/api/webhook/stripe
+                  </code>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0"
+                    onClick={() => {
+                      navigator.clipboard.writeText(`${window.location.origin}/api/webhook/stripe`);
+                      toast({ title: "Payment webhook URL copied" });
+                    }}
+                    data-testid="button-copy-webhook-url"
+                  >
+                    <Copy className="w-3 h-3" />
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Add this URL in Stripe Dashboard → Developers → Webhooks for order/payment events.
+                </p>
+              </div>
+            </div>
+
+            <div className="border-t pt-4 space-y-1">
+              <h3 className="text-sm font-semibold flex items-center gap-2">
+                <Users className="w-4 h-4 text-orange-500" />
+                Stripe Connect — Affiliates
+              </h3>
               <p className="text-xs text-muted-foreground">
-                Add this URL as a webhook endpoint in your Stripe Dashboard → Developers → Webhooks
+                For connecting affiliate bank accounts and processing affiliate payouts. This requires a separate webhook endpoint in Stripe.
               </p>
+            </div>
+
+            <div className="space-y-4 pl-1 border-l-2 border-orange-500/20 ml-1">
+              {stripeSettings?.hasConnectWebhookSecret && !formData.connectWebhookSecret && (
+                <div className="p-2 ml-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                  <div className="flex items-center gap-2 text-green-500 text-xs font-medium">
+                    <CheckCircle2 className="w-3 h-3" />
+                    Connect webhook secret is configured
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1 ml-5">
+                    Source: {stripeSettings.connectWebhookSecretSource === "database" ? "Admin Configuration" : "Environment Variable"}
+                  </p>
+                </div>
+              )}
+              {!stripeSettings?.hasConnectWebhookSecret && !formData.connectWebhookSecret && (
+                <div className="p-2 ml-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                  <div className="flex items-center gap-2 text-amber-500 text-xs font-medium">
+                    <AlertCircle className="w-3 h-3" />
+                    Connect webhook secret not configured — affiliate bank account updates won't be received
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-2 pl-3">
+                <Label htmlFor="stripeConnectWebhookSecret">Connect Webhook Secret (Optional)</Label>
+                <Input
+                  id="stripeConnectWebhookSecret"
+                  type="password"
+                  value={formData.connectWebhookSecret}
+                  onChange={(e) => setFormData({ ...formData, connectWebhookSecret: e.target.value })}
+                  placeholder="whsec_..."
+                  data-testid="input-stripe-connect-webhook-secret"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Verifies Connect webhook signatures for affiliate account updates. Get this when you create the Connect webhook endpoint in Stripe.
+                </p>
+              </div>
+
+              <div className="p-3 ml-3 bg-orange-500/5 border border-orange-500/20 rounded-lg space-y-2">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <Link2 className="w-4 h-4 text-orange-500" />
+                  Connect Webhook URL
+                </div>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 text-xs bg-background px-2 py-1.5 rounded border font-mono break-all" data-testid="text-connect-webhook-url">
+                    {window.location.origin}/api/webhook/stripe/connect
+                  </code>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0"
+                    onClick={() => {
+                      navigator.clipboard.writeText(`${window.location.origin}/api/webhook/stripe/connect`);
+                      toast({ title: "Connect webhook URL copied" });
+                    }}
+                    data-testid="button-copy-connect-webhook-url"
+                  >
+                    <Copy className="w-3 h-3" />
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Add this as a <strong>separate</strong> webhook endpoint in Stripe Dashboard → Developers → Webhooks. Listen for Connect events: <code className="text-xs">account.updated</code> and <code className="text-xs">capability.updated</code>.
+                </p>
+              </div>
             </div>
 
             {validation && (

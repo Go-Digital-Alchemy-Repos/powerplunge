@@ -213,6 +213,7 @@ export const integrationSettings = pgTable("integration_settings", {
   stripePublishableKey: text("stripe_publishable_key"),
   stripeSecretKeyEncrypted: text("stripe_secret_key_encrypted"),
   stripeWebhookSecretEncrypted: text("stripe_webhook_secret_encrypted"),
+  stripeConnectWebhookSecretEncrypted: text("stripe_connect_webhook_secret_encrypted"),
   stripeMode: text("stripe_mode").default("test"), // test, live
   stripeConfigured: boolean("stripe_configured").default(false),
   // OpenAI integration for AI-powered features (SEO recommendations, etc.)

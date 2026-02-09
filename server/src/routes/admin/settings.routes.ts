@@ -164,10 +164,29 @@ router.get("/stripe", async (req: any, res) => {
     const config = await stripeService.getConfig();
     const integrationSettings = await storage.getIntegrationSettings();
     
+    let hasConnectWebhookSecret = false;
+    let connectWebhookSecretSource: string | null = null;
+    if (integrationSettings?.stripeConnectWebhookSecretEncrypted) {
+      try {
+        const { decrypt } = await import("../../utils/encryption");
+        const val = decrypt(integrationSettings.stripeConnectWebhookSecretEncrypted);
+        if (val) {
+          hasConnectWebhookSecret = true;
+          connectWebhookSecretSource = "database";
+        }
+      } catch {}
+    }
+    if (!hasConnectWebhookSecret && process.env.STRIPE_CONNECT_WEBHOOK_SECRET) {
+      hasConnectWebhookSecret = true;
+      connectWebhookSecretSource = "environment";
+    }
+
     res.json({
       configured: config.configured,
       mode: config.mode,
       hasWebhookSecret: !!config.webhookSecret,
+      hasConnectWebhookSecret,
+      connectWebhookSecretSource,
       publishableKeyMasked: config.publishableKey ? maskKey(config.publishableKey) : null,
       updatedAt: integrationSettings?.updatedAt || null,
       source: integrationSettings?.stripeConfigured ? "database" : "environment",
@@ -181,7 +200,7 @@ router.patch("/stripe", async (req: any, res) => {
   try {
     const { encrypt, maskKey } = await import("../../utils/encryption");
     const { stripeService } = await import("../../integrations/stripe");
-    const { publishableKey, secretKey, webhookSecret } = req.body;
+    const { publishableKey, secretKey, webhookSecret, connectWebhookSecret } = req.body;
 
     if (!publishableKey || !secretKey) {
       return res.status(400).json({ message: "Publishable key and secret key are required" });
@@ -205,6 +224,10 @@ router.patch("/stripe", async (req: any, res) => {
       updateData.stripeWebhookSecretEncrypted = encrypt(webhookSecret);
     }
 
+    if (connectWebhookSecret) {
+      updateData.stripeConnectWebhookSecretEncrypted = encrypt(connectWebhookSecret);
+    }
+
     const settings = await storage.updateIntegrationSettings(updateData);
     
     stripeService.clearCache();
@@ -215,7 +238,7 @@ router.patch("/stripe", async (req: any, res) => {
       action: "update_stripe_settings",
       targetType: "settings",
       targetId: "stripe",
-      details: { mode, hasWebhookSecret: !!webhookSecret },
+      details: { mode, hasWebhookSecret: !!webhookSecret, hasConnectWebhookSecret: !!connectWebhookSecret },
       ipAddress: req.ip || null,
     });
 
@@ -223,6 +246,7 @@ router.patch("/stripe", async (req: any, res) => {
       configured: true,
       mode,
       hasWebhookSecret: !!webhookSecret,
+      hasConnectWebhookSecret: !!connectWebhookSecret,
       publishableKeyMasked: maskKey(publishableKey),
       accountName: validation.accountName,
       updatedAt: settings.updatedAt,
