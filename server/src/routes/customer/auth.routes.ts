@@ -15,7 +15,7 @@ import { normalizeEmail } from "../../services/customer-identity.service";
 const router = Router();
 
 const registerSchema = z.object({
-  email: z.string().email(),
+  email: z.string().trim().email(),
   password: z.string().min(8, "Password must be at least 8 characters"),
   name: z.string().min(1, "Name is required"),
 });
@@ -74,7 +74,7 @@ router.post("/register", async (req, res) => {
 });
 
 const loginSchema = z.object({
-  email: z.string().email(),
+  email: z.string().trim().email(),
   password: z.string().min(1, "Password is required"),
 });
 
@@ -161,7 +161,7 @@ router.post("/login", async (req: any, res) => {
 });
 
 const magicLinkSchema = z.object({
-  email: z.string().email(),
+  email: z.string().trim().email(),
 });
 
 router.post("/magic-link", async (req, res) => {
@@ -260,7 +260,7 @@ router.get("/me", requireCustomerAuth, async (req: AuthenticatedRequest, res) =>
 const updateProfileSchema = z.object({
   firstName: z.string().optional(),
   lastName: z.string().optional(),
-  email: z.string().email().optional(),
+  email: z.string().trim().email().optional(),
   phone: z.string().optional(),
   address: z.string().optional(),
   city: z.string().optional(),
@@ -336,7 +336,7 @@ router.post("/change-password", requireCustomerAuth, async (req: AuthenticatedRe
 });
 
 const forgotPasswordSchema = z.object({
-  email: z.string().email(),
+  email: z.string().trim().email(),
 });
 
 router.post("/forgot-password", async (req, res) => {
