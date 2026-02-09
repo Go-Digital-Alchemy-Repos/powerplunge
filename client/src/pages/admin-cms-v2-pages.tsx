@@ -4,7 +4,7 @@ import { Link, useLocation, useSearch } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import CmsV2Layout from "@/components/admin/CmsV2Layout";
-import { FileText, Home, ShoppingBag, Plus, Globe, GlobeLock, MoreHorizontal, Pencil, Eye, ArrowRightLeft, Search, Filter, Sparkles, Layers } from "lucide-react";
+import { FileText, Home, ShoppingBag, Plus, Globe, GlobeLock, MoreHorizontal, Pencil, Eye, ArrowRightLeft, Search, Filter, Sparkles, Layers, Trash2 } from "lucide-react";
 import { CMS_TEMPLATES, templateToContentJson, type CmsTemplate } from "@/cms/templates/templateLibrary";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -129,6 +129,23 @@ export default function AdminCmsV2Pages() {
     },
     onError: (err: Error) => {
       toast({ title: "Migration failed", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await apiRequest("DELETE", `/api/admin/cms-v2/pages/${id}`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/cms-v2/pages"] });
+      toast({ title: "Page deleted", description: `"${deleteTarget?.title}" has been permanently deleted.` });
+      setDeleteTarget(null);
+    },
+    onError: (err: Error) => {
+      toast({ title: "Failed to delete page", description: err.message, variant: "destructive" });
     },
   });
 
@@ -381,6 +398,15 @@ export default function AdminCmsV2Pages() {
                                 Unpublish
                               </DropdownMenuItem>
                             )}
+                            <DropdownMenuSeparator className="bg-muted" />
+                            <DropdownMenuItem
+                              className="cursor-pointer text-red-400 hover:bg-muted focus:bg-muted focus:text-red-400 text-xs"
+                              onClick={() => setDeleteTarget({ id: page.id, title: page.title })}
+                              data-testid={`action-delete-${page.id}`}
+                            >
+                              <Trash2 className="w-3.5 h-3.5 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
@@ -392,6 +418,37 @@ export default function AdminCmsV2Pages() {
           </div>
         )}
       </div>
+
+      <Dialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+        <DialogContent className="bg-card border-border text-foreground sm:max-w-md" data-testid="dialog-delete-page">
+          <DialogHeader>
+            <DialogTitle className="text-foreground">Delete Page</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Are you sure you want to delete <span className="font-semibold text-foreground">"{deleteTarget?.title}"</span>? This action cannot be undone and all page content will be permanently removed.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="ghost"
+              onClick={() => setDeleteTarget(null)}
+              className="text-muted-foreground hover:text-foreground"
+              data-testid="button-cancel-delete"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => { if (deleteTarget) deleteMutation.mutate(deleteTarget.id); }}
+              disabled={deleteMutation.isPending}
+              className="bg-red-600 hover:bg-red-700"
+              data-testid="button-confirm-delete"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              {deleteMutation.isPending ? "Deleting..." : "Delete Permanently"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="bg-card border-border text-foreground sm:max-w-lg" data-testid="dialog-create-page">
