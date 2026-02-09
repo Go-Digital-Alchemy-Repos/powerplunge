@@ -227,8 +227,8 @@ export default function AdminAffiliateInviteSender() {
                     </>
                   ) : (
                     <>
-                      <Link2 className="w-4 h-4 mr-2" />
-                      Generate Invite Link
+                      <Share2 className="w-4 h-4 mr-2" />
+                      Share Invite with Contacts
                     </>
                   )}
                 </Button>
