@@ -144,7 +144,7 @@ router.post("/stripe", async (req, res) => {
   res.json({ received: true });
 });
 
-router.post("/stripe/connect", async (req, res) => {
+router.post("/stripe-connect", async (req, res) => {
   const { stripeService } = await import("../../integrations/stripe/StripeService");
   
   if (!(await stripeService.isConfigured())) {

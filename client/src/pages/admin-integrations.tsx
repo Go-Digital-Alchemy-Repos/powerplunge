@@ -906,8 +906,14 @@ function StripeConfigDialog({ open, onOpenChange, onSuccess }: {
   };
 
   const handleSave = async () => {
-    if (!formData.publishableKey || !formData.secretKey) {
-      toast({ title: "Both keys are required", variant: "destructive" });
+    const hasNewKeys = formData.publishableKey || formData.secretKey;
+    const hasNewConnectSecret = !!formData.connectWebhookSecret;
+    if (hasNewKeys && (!formData.publishableKey || !formData.secretKey)) {
+      toast({ title: "Both Publishable Key and Secret Key are required when updating Stripe keys", variant: "destructive" });
+      return;
+    }
+    if (!hasNewKeys && !hasNewConnectSecret && !formData.webhookSecret) {
+      toast({ title: "No changes to save", variant: "destructive" });
       return;
     }
 
@@ -1062,7 +1068,7 @@ function StripeConfigDialog({ open, onOpenChange, onSuccess }: {
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Add this URL in Stripe Dashboard → Developers → Webhooks for order/payment events.
+                  Copy this URL into Stripe Dashboard → Developers → Webhooks for order/payment events.
                 </p>
               </div>
             </div>
@@ -1120,7 +1126,7 @@ function StripeConfigDialog({ open, onOpenChange, onSuccess }: {
                 </div>
                 <div className="flex items-center gap-2">
                   <code className="flex-1 text-xs bg-background px-2 py-1.5 rounded border font-mono break-all" data-testid="text-connect-webhook-url">
-                    {window.location.origin}/api/webhook/stripe/connect
+                    {window.location.origin}/api/webhook/stripe-connect
                   </code>
                   <Button
                     type="button"
@@ -1128,7 +1134,7 @@ function StripeConfigDialog({ open, onOpenChange, onSuccess }: {
                     size="sm"
                     className="shrink-0"
                     onClick={() => {
-                      navigator.clipboard.writeText(`${window.location.origin}/api/webhook/stripe/connect`);
+                      navigator.clipboard.writeText(`${window.location.origin}/api/webhook/stripe-connect`);
                       toast({ title: "Connect webhook URL copied" });
                     }}
                     data-testid="button-copy-connect-webhook-url"
@@ -1137,7 +1143,7 @@ function StripeConfigDialog({ open, onOpenChange, onSuccess }: {
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Add this as a <strong>separate</strong> webhook endpoint in Stripe Dashboard → Developers → Webhooks. Listen for Connect events: <code className="text-xs">account.updated</code> and <code className="text-xs">capability.updated</code>.
+                  Copy this as a <strong>separate</strong> webhook endpoint in Stripe Dashboard → Developers → Webhooks. Listen for Connect events: <code className="text-xs">account.updated</code> and <code className="text-xs">capability.updated</code>.
                 </p>
               </div>
             </div>
@@ -1176,7 +1182,7 @@ function StripeConfigDialog({ open, onOpenChange, onSuccess }: {
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleSave} disabled={saving || !formData.publishableKey || !formData.secretKey} data-testid="button-save-stripe">
+          <Button onClick={handleSave} disabled={saving || (!formData.publishableKey && !formData.secretKey && !formData.connectWebhookSecret && !formData.webhookSecret)} data-testid="button-save-stripe">
             {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
             Save Configuration
           </Button>

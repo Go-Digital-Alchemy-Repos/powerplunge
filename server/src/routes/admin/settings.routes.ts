@@ -202,23 +202,36 @@ router.patch("/stripe", async (req: any, res) => {
     const { stripeService } = await import("../../integrations/stripe");
     const { publishableKey, secretKey, webhookSecret, connectWebhookSecret } = req.body;
 
-    if (!publishableKey || !secretKey) {
-      return res.status(400).json({ message: "Publishable key and secret key are required" });
+    const hasNewKeys = publishableKey || secretKey;
+    const hasConnectOnly = !hasNewKeys && (connectWebhookSecret || webhookSecret);
+
+    if (hasNewKeys && (!publishableKey || !secretKey)) {
+      return res.status(400).json({ message: "Both Publishable Key and Secret Key are required when updating Stripe keys" });
     }
 
-    const validation = await stripeService.validateKeys(publishableKey, secretKey);
-    if (!validation.valid) {
-      return res.status(400).json({ message: validation.error });
+    const updateData: any = {};
+    let mode: string | undefined;
+    let validation: any = {};
+
+    if (hasNewKeys) {
+      validation = await stripeService.validateKeys(publishableKey, secretKey);
+      if (!validation.valid) {
+        return res.status(400).json({ message: validation.error });
+      }
+      mode = secretKey.startsWith("sk_live_") ? "live" : "test";
+      updateData.stripePublishableKey = publishableKey;
+      updateData.stripeSecretKeyEncrypted = encrypt(secretKey);
+      updateData.stripeMode = mode;
+      updateData.stripeConfigured = true;
+    } else if (hasConnectOnly) {
+      const existingConfig = await stripeService.getConfig();
+      if (!existingConfig.configured) {
+        return res.status(400).json({ message: "Stripe keys must be configured before adding webhook secrets" });
+      }
+      mode = existingConfig.mode;
+    } else {
+      return res.status(400).json({ message: "No changes provided" });
     }
-
-    const mode = secretKey.startsWith("sk_live_") ? "live" : "test";
-
-    const updateData: any = {
-      stripePublishableKey: publishableKey,
-      stripeSecretKeyEncrypted: encrypt(secretKey),
-      stripeMode: mode,
-      stripeConfigured: true,
-    };
 
     if (webhookSecret) {
       updateData.stripeWebhookSecretEncrypted = encrypt(webhookSecret);
@@ -242,13 +255,14 @@ router.patch("/stripe", async (req: any, res) => {
       ipAddress: req.ip || null,
     });
 
+    const currentConfig = await stripeService.getConfig();
     res.json({
-      configured: true,
-      mode,
-      hasWebhookSecret: !!webhookSecret,
-      hasConnectWebhookSecret: !!connectWebhookSecret,
-      publishableKeyMasked: maskKey(publishableKey),
-      accountName: validation.accountName,
+      configured: currentConfig.configured,
+      mode: mode || currentConfig.mode,
+      hasWebhookSecret: !!webhookSecret || !!currentConfig.webhookSecret,
+      hasConnectWebhookSecret: !!connectWebhookSecret || !!settings.stripeConnectWebhookSecretEncrypted,
+      publishableKeyMasked: publishableKey ? maskKey(publishableKey) : (currentConfig.publishableKey ? maskKey(currentConfig.publishableKey) : null),
+      accountName: validation?.accountName,
       updatedAt: settings.updatedAt,
     });
   } catch (error: any) {
