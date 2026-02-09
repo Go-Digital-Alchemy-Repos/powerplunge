@@ -107,7 +107,6 @@ export default function BecomeAffiliate() {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const [customCode, setCustomCode] = useState("");
-  const [editingCode, setEditingCode] = useState(false);
 
   const [existingAccountError, setExistingAccountError] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
@@ -335,7 +334,6 @@ export default function BecomeAffiliate() {
     onSuccess: (data: { code: string }) => {
       setAffiliateCode(data.code);
       setCustomCode(data.code);
-      setEditingCode(false);
       toast({ title: "Code updated!", description: `Your affiliate code is now ${data.code}` });
       trackEvent("code_saved", { code: data.code, affiliateId });
     },
@@ -1223,6 +1221,7 @@ export default function BecomeAffiliate() {
 
   const renderCodeStep = () => {
     const referralLink = `${window.location.origin}?ref=${affiliateCode}`;
+    const isCodeLong = affiliateCode.length > 12;
 
     return (
       <Card className="w-full max-w-lg" data-testid="card-code-step">
@@ -1234,77 +1233,96 @@ export default function BecomeAffiliate() {
           </div>
           <CardTitle className="text-2xl font-bold">Your Affiliate Code</CardTitle>
           <CardDescription>
-            Review your unique referral code or set a custom one
+            This is the code customers will enter at checkout for their discount
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="p-4 rounded-lg border space-y-4">
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground mb-2">Your current code</p>
-              <div className="flex items-center justify-center gap-2">
-                <span className="text-2xl font-bold font-mono tracking-wider" data-testid="text-affiliate-code">{affiliateCode}</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    navigator.clipboard.writeText(referralLink);
-                    toast({ title: "Copied!", description: "Referral link copied to clipboard." });
-                  }}
-                  data-testid="button-copy-code"
-                >
-                  <Copy className="w-4 h-4" />
-                </Button>
+        <CardContent className="space-y-5">
+          <div className="p-4 rounded-lg border space-y-3">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide text-center">Your current code</p>
+            <div className="flex items-center justify-center gap-2">
+              <div className="px-4 py-2 bg-muted rounded-lg border">
+                <span className={`font-bold font-mono tracking-wider ${isCodeLong ? "text-sm break-all" : "text-2xl"}`} data-testid="text-affiliate-code">{affiliateCode}</span>
               </div>
-              <p className="text-xs text-muted-foreground mt-2 break-all">{referralLink}</p>
-            </div>
-
-            {editingCode ? (
-              <div className="space-y-3">
-                <div className="space-y-2">
-                  <Label htmlFor="customCode">Custom code (3-20 characters, letters & numbers only)</Label>
-                  <Input
-                    id="customCode"
-                    value={customCode}
-                    onChange={(e) => setCustomCode(e.target.value.replace(/[^a-zA-Z0-9]/g, ""))}
-                    placeholder="MYCODE"
-                    maxLength={20}
-                    className="font-mono text-center text-lg uppercase"
-                    data-testid="input-custom-code"
-                  />
-                  {customCode.length > 0 && customCode.length < 3 && (
-                    <p className="text-xs text-destructive">Code must be at least 3 characters</p>
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => { setEditingCode(false); setCustomCode(affiliateCode); }}
-                    className="flex-1"
-                    data-testid="button-cancel-code"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={() => updateCodeMutation.mutate(customCode)}
-                    disabled={customCode.length < 3 || customCode.length > 20 || updateCodeMutation.isPending}
-                    className="flex-1"
-                    data-testid="button-save-code"
-                  >
-                    {updateCodeMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Code"}
-                  </Button>
-                </div>
-              </div>
-            ) : (
               <Button
-                variant="outline"
-                onClick={() => { setEditingCode(true); setCustomCode(affiliateCode); }}
-                className="w-full gap-2"
-                data-testid="button-customize-code"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  navigator.clipboard.writeText(affiliateCode);
+                  toast({ title: "Copied!", description: "Code copied to clipboard." });
+                }}
+                data-testid="button-copy-code"
               >
-                <Sparkles className="w-4 h-4" />
-                Customize Your Code
+                <Copy className="w-4 h-4" />
+              </Button>
+            </div>
+            {isCodeLong && (
+              <div className="flex items-start gap-2 p-3 rounded-md bg-amber-500/10 border border-amber-500/20">
+                <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                <p className="text-xs text-amber-200/80">
+                  This auto-generated code is hard to remember or say out loud. We recommend setting a short, custom code below — like your name or brand.
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div className="p-4 rounded-lg border space-y-3">
+            <div className="flex items-center gap-2 justify-center">
+              <Sparkles className="w-4 h-4 text-primary" />
+              <p className="text-sm font-medium">Set a custom code</p>
+            </div>
+            <p className="text-xs text-muted-foreground text-center">
+              Pick something short and memorable — like <span className="font-mono font-semibold text-foreground">SARAH20</span> or <span className="font-mono font-semibold text-foreground">FITJOHN</span> — so customers can easily use it.
+            </p>
+            <div className="space-y-2">
+              <Input
+                id="customCode"
+                value={customCode}
+                onChange={(e) => setCustomCode(e.target.value.replace(/[^a-zA-Z0-9]/g, ""))}
+                placeholder="MYCODE"
+                maxLength={20}
+                className="font-mono text-center text-lg uppercase"
+                data-testid="input-custom-code"
+              />
+              <p className="text-xs text-muted-foreground text-center">3-20 characters, letters & numbers only</p>
+              {customCode.length > 0 && customCode.length < 3 && (
+                <p className="text-xs text-destructive text-center">Code must be at least 3 characters</p>
+              )}
+            </div>
+            {customCode && customCode !== affiliateCode && customCode.length >= 3 && (
+              <Button
+                onClick={() => updateCodeMutation.mutate(customCode)}
+                disabled={customCode.length > 20 || updateCodeMutation.isPending}
+                className="w-full"
+                data-testid="button-save-code"
+              >
+                {updateCodeMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : `Save "${customCode.toUpperCase()}" as My Code`}
               </Button>
             )}
+          </div>
+
+          <div className="p-4 rounded-lg border border-dashed space-y-2">
+            <div className="flex items-center gap-2 justify-center">
+              <Share2 className="w-4 h-4 text-muted-foreground" />
+              <p className="text-xs font-medium text-muted-foreground">Your shareable referral link</p>
+            </div>
+            <p className="text-[11px] text-muted-foreground text-center">
+              Send this link via email or QR code — it includes your code automatically, so customers don't need to type anything.
+            </p>
+            <div className="flex items-center gap-2 justify-center">
+              <p className="text-xs text-muted-foreground break-all font-mono bg-muted/50 px-2 py-1 rounded" data-testid="text-referral-link">{referralLink}</p>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="shrink-0"
+                onClick={() => {
+                  navigator.clipboard.writeText(referralLink);
+                  toast({ title: "Copied!", description: "Referral link copied to clipboard." });
+                }}
+                data-testid="button-copy-link"
+              >
+                <Copy className="w-3 h-3" />
+              </Button>
+            </div>
           </div>
 
           <div className="flex gap-3">
@@ -1320,7 +1338,7 @@ export default function BecomeAffiliate() {
               className="flex-1 gap-2"
               data-testid="button-next-code"
             >
-              {editingCode ? "Skip & Continue" : "Next"}
+              Next
               <ArrowRight className="w-4 h-4" />
             </Button>
           </div>
