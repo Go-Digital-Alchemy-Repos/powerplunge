@@ -119,6 +119,19 @@ export const orders = pgTable("orders", {
   isManualOrder: boolean("is_manual_order").default(false), // for admin-created orders
   notes: text("notes"),
   customerIp: text("customer_ip"), // IP address for fraud detection
+  shippingName: text("shipping_name"),
+  shippingAddress: text("shipping_address"),
+  shippingCity: text("shipping_city"),
+  shippingState: text("shipping_state"),
+  shippingZip: text("shipping_zip"),
+  shippingCountry: text("shipping_country").default("US"),
+  billingSameAsShipping: boolean("billing_same_as_shipping").default(true),
+  billingName: text("billing_name"),
+  billingAddress: text("billing_address"),
+  billingCity: text("billing_city"),
+  billingState: text("billing_state"),
+  billingZip: text("billing_zip"),
+  billingCountry: text("billing_country").default("US"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

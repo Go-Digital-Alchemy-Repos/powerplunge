@@ -40,7 +40,8 @@ router.get("/validate-referral-code/:code", async (req, res) => {
 
 router.post("/create-payment-intent", paymentLimiter, async (req: any, res) => {
   try {
-    const { items, customer, affiliateCode } = req.body;
+    const { items, customer, affiliateCode, billingAddress, billingSameAsShipping: billingSame } = req.body;
+    const isBillingSame = billingSame !== false;
 
     const stripeClient = await stripeService.getClient();
     if (!stripeClient) {
@@ -66,6 +67,36 @@ router.post("/create-payment-intent", paymentLimiter, async (req: any, res) => {
       });
     }
     customerData.zipCode = customerData.zipCode.trim();
+
+    let normalizedBillingState: string | null = null;
+    let validatedBilling: { name: string; address: string; city: string; state: string; zipCode: string } | null = null;
+    if (!isBillingSame && billingAddress) {
+      const bName = (billingAddress.name || "").trim();
+      const bAddress = (billingAddress.address || "").trim();
+      const bCity = (billingAddress.city || "").trim();
+      const bZip = (billingAddress.zipCode || "").trim();
+
+      if (bName.length < 2) {
+        return res.status(400).json({ message: "Billing name is required (min 2 characters).", field: "billingName" });
+      }
+      if (bAddress.length < 3) {
+        return res.status(400).json({ message: "Billing street address is required.", field: "billingAddress" });
+      }
+      if (bCity.length < 2) {
+        return res.status(400).json({ message: "Billing city is required.", field: "billingCity" });
+      }
+
+      normalizedBillingState = normalizeState(billingAddress.state || "");
+      if (!normalizedBillingState) {
+        return res.status(400).json({ message: "Invalid billing state. Please select a valid US state.", field: "billingState" });
+      }
+
+      if (!/^\d{5}(-\d{4})?$/.test(bZip)) {
+        return res.status(400).json({ message: "Invalid billing ZIP code.", field: "billingZip" });
+      }
+
+      validatedBilling = { name: bName, address: bAddress, city: bCity, state: normalizedBillingState, zipCode: bZip };
+    }
 
     let affiliateSessionId: string | null = null;
     let cookieAffiliateId: string | null = null;
@@ -182,6 +213,19 @@ router.post("/create-payment-intent", paymentLimiter, async (req: any, res) => {
       taxAmount: taxAmount > 0 ? taxAmount : null,
       stripeTaxCalculationId: taxCalculationId,
       affiliateCode: affiliate?.affiliateCode,
+      shippingName: customerData.name,
+      shippingAddress: customerData.address,
+      shippingCity: customerData.city,
+      shippingState: normalizedState,
+      shippingZip: customerData.zipCode,
+      shippingCountry: "US",
+      billingSameAsShipping: isBillingSame,
+      billingName: validatedBilling?.name || null,
+      billingAddress: validatedBilling?.address || null,
+      billingCity: validatedBilling?.city || null,
+      billingState: validatedBilling?.state || null,
+      billingZip: validatedBilling?.zipCode || null,
+      billingCountry: validatedBilling ? "US" : null,
     });
 
     for (const item of orderItems) {

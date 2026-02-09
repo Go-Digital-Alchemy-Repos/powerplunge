@@ -242,6 +242,29 @@ export default function Checkout() {
     state: "",
     zipCode: "",
   });
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+    if (formData.name.trim().length < 2) errors.name = "Full name is required (min 2 characters)";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) errors.email = "Valid email is required";
+    if (formData.address.trim().length < 3) errors.address = "Street address is required";
+    if (formData.city.trim().length < 2) errors.city = "City is required";
+    if (!formData.state) errors.state = "Please select a state";
+    if (!/^\d{5}(-\d{4})?$/.test(formData.zipCode.trim())) errors.zipCode = "Valid ZIP code required (e.g. 12345)";
+
+    if (!billingSameAsShipping) {
+      if (billingData.name.trim().length < 2) errors.billingName = "Full name is required (min 2 characters)";
+      if (billingData.address.trim().length < 3) errors.billingAddress = "Street address is required";
+      if (billingData.city.trim().length < 2) errors.billingCity = "City is required";
+      if (!billingData.state) errors.billingState = "Please select a state";
+      if (!/^\d{5}(-\d{4})?$/.test(billingData.zipCode.trim())) errors.billingZip = "Valid ZIP code required (e.g. 12345)";
+    }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const [referralCode, setReferralCode] = useState("");
   const [referralStatus, setReferralStatus] = useState<"idle" | "checking" | "valid" | "invalid">("idle");
 
@@ -334,22 +357,24 @@ export default function Checkout() {
     e.preventDefault();
     setIsLoading(true);
 
-    if (!formData.state) {
-      toast({
-        title: "Missing State",
-        description: "Please select a shipping state.",
-        variant: "destructive",
-      });
-      setIsLoading(false);
-      return;
-    }
+    setFormData(prev => ({
+      ...prev,
+      name: prev.name.trim(),
+      email: prev.email.trim(),
+      phone: prev.phone.trim(),
+      address: prev.address.trim(),
+      city: prev.city.trim(),
+      zipCode: prev.zipCode.trim(),
+    }));
+    setBillingData(prev => ({
+      ...prev,
+      name: prev.name.trim(),
+      address: prev.address.trim(),
+      city: prev.city.trim(),
+      zipCode: prev.zipCode.trim(),
+    }));
 
-    if (!billingSameAsShipping && !billingData.state) {
-      toast({
-        title: "Missing Billing State",
-        description: "Please select a billing state.",
-        variant: "destructive",
-      });
+    if (!validateForm()) {
       setIsLoading(false);
       return;
     }
@@ -377,6 +402,8 @@ export default function Checkout() {
             quantity: item.quantity,
           })),
           customer: formData,
+          billingAddress: billingSameAsShipping ? null : billingData,
+          billingSameAsShipping,
           affiliateCode,
         }),
       });
@@ -473,10 +500,14 @@ export default function Checkout() {
                         <Input
                           id="name"
                           value={formData.name}
-                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                          onChange={(e) => { setFormData({ ...formData, name: e.target.value }); setFieldErrors(prev => { const next = {...prev}; delete next['name']; return next; }); }}
+                          autoComplete="shipping name"
                           required
                           data-testid="input-name"
                         />
+                        {fieldErrors.name && (
+                          <p className="text-xs text-red-500 mt-1" data-testid="error-name">{fieldErrors.name}</p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="email">Email</Label>
@@ -484,10 +515,14 @@ export default function Checkout() {
                           id="email"
                           type="email"
                           value={formData.email}
-                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                          onChange={(e) => { setFormData({ ...formData, email: e.target.value }); setFieldErrors(prev => { const next = {...prev}; delete next['email']; return next; }); }}
+                          autoComplete="email"
                           required
                           data-testid="input-email"
                         />
+                        {fieldErrors.email && (
+                          <p className="text-xs text-red-500 mt-1" data-testid="error-email">{fieldErrors.email}</p>
+                        )}
                       </div>
                     </div>
 
@@ -497,9 +532,13 @@ export default function Checkout() {
                         id="phone"
                         type="tel"
                         value={formData.phone}
-                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        onChange={(e) => { setFormData({ ...formData, phone: e.target.value }); setFieldErrors(prev => { const next = {...prev}; delete next['phone']; return next; }); }}
+                        autoComplete="tel"
                         data-testid="input-phone"
                       />
+                      {fieldErrors.phone && (
+                        <p className="text-xs text-red-500 mt-1" data-testid="error-phone">{fieldErrors.phone}</p>
+                      )}
                     </div>
 
                     <div className="space-y-2">
@@ -507,10 +546,19 @@ export default function Checkout() {
                       <Input
                         id="address"
                         value={formData.address}
-                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                        onChange={(e) => { setFormData({ ...formData, address: e.target.value }); setFieldErrors(prev => { const next = {...prev}; delete next['address']; return next; }); }}
+                        autoComplete="shipping address-line1"
                         required
                         data-testid="input-address"
                       />
+                      {fieldErrors.address && (
+                        <p className="text-xs text-red-500 mt-1" data-testid="error-address">{fieldErrors.address}</p>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/30 rounded px-3 py-2">
+                      <span>🇺🇸</span>
+                      <span>Shipping to United States only</span>
                     </div>
 
                     <div className="grid sm:grid-cols-3 gap-4">
@@ -519,16 +567,20 @@ export default function Checkout() {
                         <Input
                           id="city"
                           value={formData.city}
-                          onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                          onChange={(e) => { setFormData({ ...formData, city: e.target.value }); setFieldErrors(prev => { const next = {...prev}; delete next['city']; return next; }); }}
+                          autoComplete="shipping address-level2"
                           required
                           data-testid="input-city"
                         />
+                        {fieldErrors.city && (
+                          <p className="text-xs text-red-500 mt-1" data-testid="error-city">{fieldErrors.city}</p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="state">State</Label>
                         <Select
                           value={formData.state}
-                          onValueChange={(value) => setFormData({ ...formData, state: value })}
+                          onValueChange={(value) => { setFormData({ ...formData, state: value }); setFieldErrors(prev => { const next = {...prev}; delete next['state']; return next; }); }}
                           required
                         >
                           <SelectTrigger id="state" data-testid="select-state">
@@ -542,16 +594,26 @@ export default function Checkout() {
                             ))}
                           </SelectContent>
                         </Select>
+                        {fieldErrors.state && (
+                          <p className="text-xs text-red-500 mt-1" data-testid="error-state">{fieldErrors.state}</p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="zipCode">ZIP Code</Label>
                         <Input
                           id="zipCode"
                           value={formData.zipCode}
-                          onChange={(e) => setFormData({ ...formData, zipCode: e.target.value })}
+                          onChange={(e) => { setFormData({ ...formData, zipCode: e.target.value }); setFieldErrors(prev => { const next = {...prev}; delete next['zipCode']; return next; }); }}
+                          autoComplete="shipping postal-code"
+                          inputMode="numeric"
+                          placeholder="12345"
+                          maxLength={10}
                           required
                           data-testid="input-zip"
                         />
+                        {fieldErrors.zipCode && (
+                          <p className="text-xs text-red-500 mt-1" data-testid="error-zipCode">{fieldErrors.zipCode}</p>
+                        )}
                       </div>
                     </div>
 
@@ -576,20 +638,32 @@ export default function Checkout() {
                             <Input
                               id="billingName"
                               value={billingData.name}
-                              onChange={(e) => setBillingData({ ...billingData, name: e.target.value })}
+                              onChange={(e) => { setBillingData({ ...billingData, name: e.target.value }); setFieldErrors(prev => { const next = {...prev}; delete next['billingName']; return next; }); }}
+                              autoComplete="billing name"
                               required={!billingSameAsShipping}
                               data-testid="input-billing-name"
                             />
+                            {fieldErrors.billingName && (
+                              <p className="text-xs text-red-500 mt-1" data-testid="error-billingName">{fieldErrors.billingName}</p>
+                            )}
                           </div>
                           <div className="space-y-2">
                             <Label htmlFor="billingAddress">Street Address</Label>
                             <Input
                               id="billingAddress"
                               value={billingData.address}
-                              onChange={(e) => setBillingData({ ...billingData, address: e.target.value })}
+                              onChange={(e) => { setBillingData({ ...billingData, address: e.target.value }); setFieldErrors(prev => { const next = {...prev}; delete next['billingAddress']; return next; }); }}
+                              autoComplete="billing address-line1"
                               required={!billingSameAsShipping}
                               data-testid="input-billing-address"
                             />
+                            {fieldErrors.billingAddress && (
+                              <p className="text-xs text-red-500 mt-1" data-testid="error-billingAddress">{fieldErrors.billingAddress}</p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/30 rounded px-3 py-2">
+                            <span>🇺🇸</span>
+                            <span>Shipping to United States only</span>
                           </div>
                           <div className="grid sm:grid-cols-3 gap-4">
                             <div className="space-y-2">
@@ -597,16 +671,20 @@ export default function Checkout() {
                               <Input
                                 id="billingCity"
                                 value={billingData.city}
-                                onChange={(e) => setBillingData({ ...billingData, city: e.target.value })}
+                                onChange={(e) => { setBillingData({ ...billingData, city: e.target.value }); setFieldErrors(prev => { const next = {...prev}; delete next['billingCity']; return next; }); }}
+                                autoComplete="billing address-level2"
                                 required={!billingSameAsShipping}
                                 data-testid="input-billing-city"
                               />
+                              {fieldErrors.billingCity && (
+                                <p className="text-xs text-red-500 mt-1" data-testid="error-billingCity">{fieldErrors.billingCity}</p>
+                              )}
                             </div>
                             <div className="space-y-2">
                               <Label htmlFor="billingState">State</Label>
                               <Select
                                 value={billingData.state}
-                                onValueChange={(value) => setBillingData({ ...billingData, state: value })}
+                                onValueChange={(value) => { setBillingData({ ...billingData, state: value }); setFieldErrors(prev => { const next = {...prev}; delete next['billingState']; return next; }); }}
                                 required={!billingSameAsShipping}
                               >
                                 <SelectTrigger id="billingState" data-testid="select-billing-state">
@@ -620,16 +698,26 @@ export default function Checkout() {
                                   ))}
                                 </SelectContent>
                               </Select>
+                              {fieldErrors.billingState && (
+                                <p className="text-xs text-red-500 mt-1" data-testid="error-billingState">{fieldErrors.billingState}</p>
+                              )}
                             </div>
                             <div className="space-y-2">
                               <Label htmlFor="billingZip">ZIP Code</Label>
                               <Input
                                 id="billingZip"
                                 value={billingData.zipCode}
-                                onChange={(e) => setBillingData({ ...billingData, zipCode: e.target.value })}
+                                onChange={(e) => { setBillingData({ ...billingData, zipCode: e.target.value }); setFieldErrors(prev => { const next = {...prev}; delete next['billingZip']; return next; }); }}
+                                autoComplete="billing postal-code"
+                                inputMode="numeric"
+                                placeholder="12345"
+                                maxLength={10}
                                 required={!billingSameAsShipping}
                                 data-testid="input-billing-zip"
                               />
+                              {fieldErrors.billingZip && (
+                                <p className="text-xs text-red-500 mt-1" data-testid="error-billingZip">{fieldErrors.billingZip}</p>
+                              )}
                             </div>
                           </div>
                         </div>
