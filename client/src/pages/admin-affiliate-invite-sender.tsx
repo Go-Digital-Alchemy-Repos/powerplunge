@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAdmin } from "@/hooks/use-admin";
 import AdminNav from "@/components/admin/AdminNav";
 import {
-  Copy, Check, Loader2, UserPlus, Share2, X, Link2,
+  Loader2, UserPlus, Share2, X,
 } from "lucide-react";
 
 interface InviteResponse {
@@ -39,15 +39,10 @@ export default function AdminAffiliateInviteSender() {
     expiresInDays: "7",
   });
 
-  const [quickShareUrl, setQuickShareUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [tipDismissed, setTipDismissed] = useState(false);
 
-  const supportsNativeShare = typeof navigator !== "undefined" && !!navigator.share;
-
-  const quickSharePlaceholder = `${window.location.origin}/become-affiliate?ref=...`;
-
-  const createQuickLink = useMutation({
+  const shareWithContacts = useMutation({
     mutationFn: async () => {
       const res = await fetch("/api/admin/affiliate-invites/send", {
         method: "POST",
@@ -59,12 +54,27 @@ export default function AdminAffiliateInviteSender() {
       if (!res.ok) throw new Error(result.message || "Failed to create invite");
       return result as InviteResponse;
     },
-    onSuccess: (data) => {
-      setQuickShareUrl(data.inviteUrl);
-      toast({ title: "Link Ready", description: "Copy or share the invite link below." });
+    onSuccess: async (data) => {
+      const shareText = `Here's your private Power Plunge affiliate signup link: ${data.inviteUrl}`;
+
+      if (typeof navigator !== "undefined" && navigator.share) {
+        try {
+          await navigator.share({
+            title: "Power Plunge Affiliate Invite",
+            text: shareText,
+            url: data.inviteUrl,
+          });
+          toast({ title: "Invite Shared!", description: "Your invite link was shared successfully." });
+        } catch (err: any) {
+          if (err.name === "AbortError") return;
+          await copyToClipboard(data.inviteUrl);
+        }
+      } else {
+        await copyToClipboard(data.inviteUrl);
+      }
     },
     onError: (error: any) => {
-      toast({ title: "Failed to create link", description: error.message, variant: "destructive" });
+      toast({ title: "Failed to create invite", description: error.message, variant: "destructive" });
     },
   });
 
@@ -123,22 +133,6 @@ export default function AdminAffiliateInviteSender() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleNativeShare = async () => {
-    if (!quickShareUrl) return;
-    if (typeof navigator !== "undefined" && navigator.share) {
-      try {
-        await navigator.share({
-          title: "Power Plunge Affiliate Invite",
-          text: `Here's your private Power Plunge affiliate signup link: ${quickShareUrl}`,
-          url: quickShareUrl,
-        });
-      } catch (err: any) {
-        if (err.name !== "AbortError") {
-          toast({ title: "Share cancelled", description: "You can still copy the link above." });
-        }
-      }
-    }
-  };
 
   if (adminLoading) {
     return (
@@ -174,66 +168,24 @@ export default function AdminAffiliateInviteSender() {
               <Share2 className="w-4 h-4" />
               Quick Share
             </h2>
-            {quickShareUrl ? (
-              <div className="flex gap-2">
-                <Input
-                  value={quickShareUrl}
-                  readOnly
-                  className="text-sm font-mono flex-1 bg-muted/40"
-                  data-testid="input-share-link"
-                />
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="shrink-0 h-10 w-10"
-                  onClick={() => copyToClipboard(quickShareUrl)}
-                  data-testid="button-copy-link"
-                >
-                  {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
-                </Button>
-                {supportsNativeShare && (
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="shrink-0 h-10 w-10"
-                    onClick={handleNativeShare}
-                    data-testid="button-share-native"
-                  >
-                    <Share2 className="w-4 h-4" />
-                  </Button>
-                )}
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="flex gap-2">
-                  <Input
-                    value={quickSharePlaceholder}
-                    readOnly
-                    className="text-sm font-mono flex-1 bg-muted/40 text-muted-foreground"
-                    data-testid="input-share-link-placeholder"
-                  />
-                </div>
-                <Button
-                  className="w-full h-11 text-sm font-medium"
-                  variant="outline"
-                  onClick={() => createQuickLink.mutate()}
-                  disabled={createQuickLink.isPending}
-                  data-testid="button-generate-link"
-                >
-                  {createQuickLink.isPending ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <Share2 className="w-4 h-4 mr-2" />
-                      Share Invite with Contacts
-                    </>
-                  )}
-                </Button>
-              </div>
-            )}
+            <Button
+              className="w-full h-14 text-base font-semibold"
+              onClick={() => shareWithContacts.mutate()}
+              disabled={shareWithContacts.isPending}
+              data-testid="button-share-contacts"
+            >
+              {shareWithContacts.isPending ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  Creating Invite...
+                </>
+              ) : (
+                <>
+                  <Share2 className="w-5 h-5 mr-2" />
+                  Share Invite with Contacts
+                </>
+              )}
+            </Button>
           </CardContent>
         </Card>
 
