@@ -27,7 +27,7 @@ function formatDate(dateStr: string | null): string {
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
-  draft: { label: "Draft", color: "bg-gray-800 text-gray-400 border-gray-700", icon: GlobeLock },
+  draft: { label: "Draft", color: "bg-muted text-muted-foreground border-border", icon: GlobeLock },
   published: { label: "Published", color: "bg-green-900/40 text-green-400 border-green-800", icon: Globe },
   scheduled: { label: "Scheduled", color: "bg-blue-900/40 text-blue-400 border-blue-800", icon: Clock },
   archived: { label: "Archived", color: "bg-orange-900/40 text-orange-400 border-orange-800", icon: Archive },
@@ -110,7 +110,7 @@ export default function AdminCmsV2Posts() {
     return (
       <CmsV2Layout activeNav="posts" breadcrumbs={[{ label: "Posts" }]}>
         <div className="flex items-center justify-center py-20">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400" />
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
         </div>
       </CmsV2Layout>
     );
@@ -119,7 +119,7 @@ export default function AdminCmsV2Posts() {
   if (!hasFullAccess) {
     return (
       <CmsV2Layout activeNav="posts" breadcrumbs={[{ label: "Posts" }]}>
-        <div className="text-center py-20 text-gray-400" data-testid="text-access-denied">Access Denied</div>
+        <div className="text-center py-20 text-muted-foreground" data-testid="text-access-denied">Access Denied</div>
       </CmsV2Layout>
     );
   }
@@ -130,11 +130,11 @@ export default function AdminCmsV2Posts() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold" data-testid="text-posts-title">Posts</h1>
-            <p className="text-sm text-gray-400 mt-1">{total} post{total !== 1 ? "s" : ""} total</p>
+            <p className="text-sm text-muted-foreground mt-1">{total} post{total !== 1 ? "s" : ""} total</p>
           </div>
           <Button
             onClick={() => navigate("/admin/cms-v2/posts/new")}
-            className="bg-cyan-600 hover:bg-cyan-700 gap-2"
+            className="bg-primary gap-2"
             data-testid="button-create-post"
           >
             <Plus className="w-4 h-4" />
@@ -144,22 +144,22 @@ export default function AdminCmsV2Posts() {
 
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative flex-1 min-w-[200px] max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               value={searchTerm}
               onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
               placeholder="Search posts..."
-              className="pl-10 bg-gray-900/60 border-gray-700 text-white"
+              className="pl-10 bg-card border-border text-foreground"
               data-testid="input-search-posts"
             />
           </div>
 
           <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
-            <SelectTrigger className="w-[140px] bg-gray-900/60 border-gray-700 text-white" data-testid="select-status-filter">
-              <Filter className="w-3 h-3 mr-1 text-gray-500" />
+            <SelectTrigger className="w-[140px] bg-card border-border text-foreground" data-testid="select-status-filter">
+              <Filter className="w-3 h-3 mr-1 text-muted-foreground" />
               <SelectValue placeholder="Status" />
             </SelectTrigger>
-            <SelectContent className="bg-gray-900 border-gray-700 text-white">
+            <SelectContent className="bg-card border-border text-foreground">
               <SelectItem value="all">All Status</SelectItem>
               <SelectItem value="draft">Draft</SelectItem>
               <SelectItem value="published">Published</SelectItem>
@@ -169,10 +169,10 @@ export default function AdminCmsV2Posts() {
           </Select>
 
           <Select value={categoryFilter} onValueChange={(v) => { setCategoryFilter(v); setPage(1); }}>
-            <SelectTrigger className="w-[160px] bg-gray-900/60 border-gray-700 text-white" data-testid="select-category-filter">
+            <SelectTrigger className="w-[160px] bg-card border-border text-foreground" data-testid="select-category-filter">
               <SelectValue placeholder="Category" />
             </SelectTrigger>
-            <SelectContent className="bg-gray-900 border-gray-700 text-white">
+            <SelectContent className="bg-card border-border text-foreground">
               <SelectItem value="all">All Categories</SelectItem>
               {categories.map((cat: any) => (
                 <SelectItem key={cat.id} value={cat.slug}>{cat.name}</SelectItem>
@@ -181,10 +181,10 @@ export default function AdminCmsV2Posts() {
           </Select>
 
           <Select value={tagFilter} onValueChange={(v) => { setTagFilter(v); setPage(1); }}>
-            <SelectTrigger className="w-[140px] bg-gray-900/60 border-gray-700 text-white" data-testid="select-tag-filter">
+            <SelectTrigger className="w-[140px] bg-card border-border text-foreground" data-testid="select-tag-filter">
               <SelectValue placeholder="Tag" />
             </SelectTrigger>
-            <SelectContent className="bg-gray-900 border-gray-700 text-white">
+            <SelectContent className="bg-card border-border text-foreground">
               <SelectItem value="all">All Tags</SelectItem>
               {tags.map((tag: any) => (
                 <SelectItem key={tag.id} value={tag.slug}>{tag.name}</SelectItem>
@@ -194,23 +194,23 @@ export default function AdminCmsV2Posts() {
         </div>
 
         {posts.length === 0 ? (
-          <div className="text-center py-16 text-gray-500" data-testid="text-no-posts">
+          <div className="text-center py-16 text-muted-foreground" data-testid="text-no-posts">
             <PenLine className="w-12 h-12 mx-auto mb-4 opacity-30" />
             <p>No posts found. Create your first blog post.</p>
           </div>
         ) : (
           <>
-            <div className="rounded-lg border border-gray-800 overflow-hidden">
+            <div className="rounded-lg border border-border overflow-hidden">
               <table className="w-full text-sm" data-testid="table-posts">
                 <thead>
-                  <tr className="bg-gray-900/80 border-b border-gray-800">
-                    <th className="text-left py-3 px-4 text-gray-400 font-medium">Title</th>
-                    <th className="text-left py-3 px-3 text-gray-400 font-medium w-[100px]">Status</th>
-                    <th className="text-left py-3 px-3 text-gray-400 font-medium hidden lg:table-cell">Categories</th>
-                    <th className="text-left py-3 px-3 text-gray-400 font-medium hidden lg:table-cell">Tags</th>
-                    <th className="text-left py-3 px-3 text-gray-400 font-medium hidden md:table-cell w-[100px]">Updated</th>
-                    <th className="text-left py-3 px-3 text-gray-400 font-medium hidden md:table-cell w-[110px]">Published</th>
-                    <th className="text-right py-3 px-4 text-gray-400 font-medium w-[50px]">Actions</th>
+                  <tr className="bg-card border-b border-border">
+                    <th className="text-left py-3 px-4 text-muted-foreground font-medium">Title</th>
+                    <th className="text-left py-3 px-3 text-muted-foreground font-medium w-[100px]">Status</th>
+                    <th className="text-left py-3 px-3 text-muted-foreground font-medium hidden lg:table-cell">Categories</th>
+                    <th className="text-left py-3 px-3 text-muted-foreground font-medium hidden lg:table-cell">Tags</th>
+                    <th className="text-left py-3 px-3 text-muted-foreground font-medium hidden md:table-cell w-[100px]">Updated</th>
+                    <th className="text-left py-3 px-3 text-muted-foreground font-medium hidden md:table-cell w-[110px]">Published</th>
+                    <th className="text-right py-3 px-4 text-muted-foreground font-medium w-[50px]">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -218,17 +218,17 @@ export default function AdminCmsV2Posts() {
                     const status = STATUS_CONFIG[post.status] || STATUS_CONFIG.draft;
                     const StatusIcon = status.icon;
                     return (
-                      <tr key={post.id} className="border-b border-gray-800/50 hover:bg-gray-900/40 transition-colors" data-testid={`row-post-${post.id}`}>
+                      <tr key={post.id} className="border-b border-border hover:bg-card/40 transition-colors" data-testid={`row-post-${post.id}`}>
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-3">
                             {post.coverImageId && (
-                              <div className="w-10 h-10 rounded bg-gray-800 flex-shrink-0 overflow-hidden">
-                                <div className="w-full h-full bg-gray-700" />
+                              <div className="w-10 h-10 rounded bg-muted flex-shrink-0 overflow-hidden">
+                                <div className="w-full h-full bg-muted" />
                               </div>
                             )}
                             <div className="min-w-0">
-                              <p className="font-medium text-white truncate" data-testid={`text-post-title-${post.id}`}>{post.title}</p>
-                              <p className="text-xs text-gray-500 truncate">/{post.slug}</p>
+                              <p className="font-medium text-foreground truncate" data-testid={`text-post-title-${post.id}`}>{post.title}</p>
+                              <p className="text-xs text-muted-foreground truncate">/{post.slug}</p>
                             </div>
                           </div>
                         </td>
@@ -241,50 +241,50 @@ export default function AdminCmsV2Posts() {
                         <td className="py-3 px-3 hidden lg:table-cell">
                           <div className="flex flex-wrap gap-1">
                             {(post.categories || []).slice(0, 2).map((cat: any) => (
-                              <Badge key={cat.id} variant="outline" className="text-xs border-gray-700 text-gray-400">
+                              <Badge key={cat.id} variant="outline" className="text-xs border-border text-muted-foreground">
                                 {cat.name}
                               </Badge>
                             ))}
                             {(post.categories || []).length > 2 && (
-                              <Badge variant="outline" className="text-xs border-gray-700 text-gray-500">+{post.categories.length - 2}</Badge>
+                              <Badge variant="outline" className="text-xs border-border text-muted-foreground">+{post.categories.length - 2}</Badge>
                             )}
                           </div>
                         </td>
                         <td className="py-3 px-3 hidden lg:table-cell">
                           <div className="flex flex-wrap gap-1">
                             {(post.tags || []).slice(0, 2).map((tag: any) => (
-                              <Badge key={tag.id} variant="outline" className="text-xs border-cyan-900/50 text-cyan-500">
+                              <Badge key={tag.id} variant="outline" className="text-xs border-primary/30 text-primary">
                                 {tag.name}
                               </Badge>
                             ))}
                             {(post.tags || []).length > 2 && (
-                              <Badge variant="outline" className="text-xs border-gray-700 text-gray-500">+{post.tags.length - 2}</Badge>
+                              <Badge variant="outline" className="text-xs border-border text-muted-foreground">+{post.tags.length - 2}</Badge>
                             )}
                           </div>
                         </td>
                         <td className="py-3 px-3 hidden md:table-cell">
-                          <span className="text-xs text-gray-500">{formatDate(post.updatedAt)}</span>
+                          <span className="text-xs text-muted-foreground">{formatDate(post.updatedAt)}</span>
                         </td>
                         <td className="py-3 px-3 hidden md:table-cell">
-                          <span className="text-xs text-gray-500">{formatDate(post.publishedAt)}</span>
+                          <span className="text-xs text-muted-foreground">{formatDate(post.publishedAt)}</span>
                         </td>
                         <td className="py-3 px-4 text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-gray-500 hover:text-white" data-testid={`button-post-menu-${post.id}`}>
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground" data-testid={`button-post-menu-${post.id}`}>
                                 <MoreHorizontal className="w-4 h-4" />
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="bg-gray-900 border-gray-700 text-white">
+                            <DropdownMenuContent align="end" className="bg-card border-border text-foreground">
                               <DropdownMenuItem
-                                className="cursor-pointer hover:bg-gray-800 focus:bg-gray-800 gap-2"
+                                className="cursor-pointer hover:bg-muted focus:bg-muted gap-2"
                                 onClick={() => navigate(`/admin/cms-v2/posts/${post.id}/edit`)}
                                 data-testid={`button-edit-post-${post.id}`}
                               >
                                 <Pencil className="w-4 h-4" />Edit
                               </DropdownMenuItem>
                               <DropdownMenuItem
-                                className="cursor-pointer hover:bg-gray-800 focus:bg-gray-800 gap-2"
+                                className="cursor-pointer hover:bg-muted focus:bg-muted gap-2"
                                 onClick={() => navigate(`/admin/cms-v2/posts/${post.id}/builder`)}
                                 data-testid={`button-builder-post-${post.id}`}
                               >
@@ -292,17 +292,17 @@ export default function AdminCmsV2Posts() {
                               </DropdownMenuItem>
                               {post.status === "published" && (
                                 <DropdownMenuItem
-                                  className="cursor-pointer hover:bg-gray-800 focus:bg-gray-800 gap-2"
+                                  className="cursor-pointer hover:bg-muted focus:bg-muted gap-2"
                                   onClick={() => window.open(`/blog/${post.slug}`, "_blank")}
                                   data-testid={`button-preview-post-${post.id}`}
                                 >
                                   <Eye className="w-4 h-4" />Preview
                                 </DropdownMenuItem>
                               )}
-                              <DropdownMenuSeparator className="bg-gray-700" />
+                              <DropdownMenuSeparator className="bg-muted" />
                               {post.status !== "published" && (
                                 <DropdownMenuItem
-                                  className="cursor-pointer hover:bg-gray-800 focus:bg-gray-800 gap-2"
+                                  className="cursor-pointer hover:bg-muted focus:bg-muted gap-2"
                                   onClick={() => publishMutation.mutate(post.id)}
                                   data-testid={`button-publish-post-${post.id}`}
                                 >
@@ -311,7 +311,7 @@ export default function AdminCmsV2Posts() {
                               )}
                               {post.status === "published" && (
                                 <DropdownMenuItem
-                                  className="cursor-pointer hover:bg-gray-800 focus:bg-gray-800 gap-2"
+                                  className="cursor-pointer hover:bg-muted focus:bg-muted gap-2"
                                   onClick={() => unpublishMutation.mutate(post.id)}
                                   data-testid={`button-unpublish-post-${post.id}`}
                                 >
@@ -320,14 +320,14 @@ export default function AdminCmsV2Posts() {
                               )}
                               {post.status !== "archived" && (
                                 <DropdownMenuItem
-                                  className="cursor-pointer hover:bg-gray-800 focus:bg-gray-800 gap-2"
+                                  className="cursor-pointer hover:bg-muted focus:bg-muted gap-2"
                                   onClick={() => archiveMutation.mutate(post.id)}
                                   data-testid={`button-archive-post-${post.id}`}
                                 >
                                   <Archive className="w-4 h-4" />Archive
                                 </DropdownMenuItem>
                               )}
-                              <DropdownMenuSeparator className="bg-gray-700" />
+                              <DropdownMenuSeparator className="bg-muted" />
                               <DropdownMenuItem
                                 className="cursor-pointer hover:bg-red-900/30 focus:bg-red-900/30 gap-2 text-red-400"
                                 onClick={() => {
@@ -351,25 +351,25 @@ export default function AdminCmsV2Posts() {
 
             {totalPages > 1 && (
               <div className="flex items-center justify-between pt-2">
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   Showing {(page - 1) * pageSize + 1}-{Math.min(page * pageSize, total)} of {total}
                 </p>
                 <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
                     size="sm"
-                    className="border-gray-700 text-gray-400 hover:text-white"
+                    className="border-border text-muted-foreground hover:text-foreground"
                     disabled={page <= 1}
                     onClick={() => setPage(page - 1)}
                     data-testid="button-prev-page"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </Button>
-                  <span className="text-xs text-gray-400">Page {page} of {totalPages}</span>
+                  <span className="text-xs text-muted-foreground">Page {page} of {totalPages}</span>
                   <Button
                     variant="outline"
                     size="sm"
-                    className="border-gray-700 text-gray-400 hover:text-white"
+                    className="border-border text-muted-foreground hover:text-foreground"
                     disabled={page >= totalPages}
                     onClick={() => setPage(page + 1)}
                     data-testid="button-next-page"

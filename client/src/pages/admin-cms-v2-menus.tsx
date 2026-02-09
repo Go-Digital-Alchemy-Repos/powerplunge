@@ -99,7 +99,7 @@ function getItemTypeIcon(type: string) {
     case "post": return <PenLine className="w-3.5 h-3.5 text-green-400" />;
     case "external": return <ExternalLink className="w-3.5 h-3.5 text-orange-400" />;
     case "label": return <Tag className="w-3.5 h-3.5 text-purple-400" />;
-    default: return <Link2 className="w-3.5 h-3.5 text-gray-400" />;
+    default: return <Link2 className="w-3.5 h-3.5 text-muted-foreground" />;
   }
 }
 
@@ -172,14 +172,14 @@ function SortableMenuItem({
   return (
     <div ref={setNodeRef} style={style} className="select-none">
       <div
-        className={`flex items-center gap-2 bg-gray-800/60 border border-gray-700/40 rounded-md p-2 group hover:border-gray-600/60 transition-colors ${
-          isDragging ? "shadow-lg ring-1 ring-cyan-500/30" : ""
+        className={`flex items-center gap-2 bg-muted border border-border/40 rounded-md p-2 group hover:border-border/60 transition-colors ${
+          isDragging ? "shadow-lg ring-1 ring-primary/30" : ""
         }`}
         style={{ marginLeft: `${depth * 28}px` }}
         data-testid={`menu-item-row-${item.id}`}
       >
         <button
-          className="text-gray-600 hover:text-gray-400 cursor-grab active:cursor-grabbing p-0.5 touch-none"
+          className="text-muted-foreground/60 hover:text-muted-foreground cursor-grab active:cursor-grabbing p-0.5 touch-none"
           {...attributes}
           {...listeners}
           data-testid={`drag-handle-${item.id}`}
@@ -190,7 +190,7 @@ function SortableMenuItem({
         {hasChildren ? (
           <button
             onClick={() => onToggleChildren(item.id)}
-            className="text-gray-500 hover:text-gray-300 p-0.5"
+            className="text-muted-foreground hover:text-foreground p-0.5"
             data-testid={`toggle-children-${item.id}`}
           >
             {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
@@ -201,21 +201,21 @@ function SortableMenuItem({
 
         {getItemTypeIcon(item.type)}
 
-        <span className="text-sm text-white font-medium truncate flex-1" data-testid={`menu-item-label-${item.id}`}>
+        <span className="text-sm text-foreground font-medium truncate flex-1" data-testid={`menu-item-label-${item.id}`}>
           {item.label || "(untitled)"}
         </span>
 
         {item.type !== "label" && resolvedHref && (
-          <span className="text-xs text-gray-500 truncate max-w-[150px] hidden md:inline" title={resolvedHref}>
+          <span className="text-xs text-muted-foreground truncate max-w-[150px] hidden md:inline" title={resolvedHref}>
             {resolvedHref}
           </span>
         )}
 
         {item.target === "_blank" && (
-          <ExternalLink className="w-3 h-3 text-gray-600 flex-shrink-0" />
+          <ExternalLink className="w-3 h-3 text-muted-foreground/60 flex-shrink-0" />
         )}
 
-        <Badge variant="secondary" className="bg-gray-700/50 text-gray-400 text-[10px] px-1.5 py-0">
+        <Badge variant="secondary" className="bg-muted/50 text-muted-foreground text-[10px] px-1.5 py-0">
           {getItemTypeLabel(item.type)}
         </Badge>
 
@@ -225,7 +225,7 @@ function SortableMenuItem({
               variant="ghost"
               size="sm"
               onClick={() => onAddChild(item.id)}
-              className="h-6 w-6 p-0 text-gray-500 hover:text-cyan-400"
+              className="h-6 w-6 p-0 text-muted-foreground hover:text-primary"
               title="Add child item"
               data-testid={`add-child-${item.id}`}
             >
@@ -237,7 +237,7 @@ function SortableMenuItem({
               variant="ghost"
               size="sm"
               onClick={() => onMoveToParent(item.id)}
-              className="h-6 w-6 p-0 text-gray-500 hover:text-cyan-400"
+              className="h-6 w-6 p-0 text-muted-foreground hover:text-primary"
               title="Move to parent level"
               data-testid={`move-up-${item.id}`}
             >
@@ -248,7 +248,7 @@ function SortableMenuItem({
             variant="ghost"
             size="sm"
             onClick={() => onEdit(item)}
-            className="h-6 w-6 p-0 text-gray-500 hover:text-white"
+            className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
             data-testid={`edit-item-${item.id}`}
           >
             <Pencil className="w-3 h-3" />
@@ -257,7 +257,7 @@ function SortableMenuItem({
             variant="ghost"
             size="sm"
             onClick={() => onRemove(item.id)}
-            className="h-6 w-6 p-0 text-gray-500 hover:text-red-400"
+            className="h-6 w-6 p-0 text-muted-foreground hover:text-red-400"
             data-testid={`remove-item-${item.id}`}
           >
             <Trash2 className="w-3 h-3" />
@@ -354,16 +354,16 @@ function AddItemModal({
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) { reset(); onClose(); } }}>
-      <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-lg max-h-[85vh] overflow-y-auto">
+      <DialogContent className="bg-card border-border text-foreground max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle data-testid="text-add-item-title">Add Menu Item</DialogTitle>
-          <DialogDescription className="text-gray-400">
+          <DialogDescription className="text-muted-foreground">
             {parentLabel ? `Adding as child of "${parentLabel}"` : "Add a new navigation item"}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2">
           <div>
-            <Label className="text-gray-300 text-sm">Item Type</Label>
+            <Label className="text-foreground/80 text-sm">Item Type</Label>
             <div className="grid grid-cols-4 gap-2 mt-1.5">
               {(["page", "post", "external", "label"] as const).map((t) => (
                 <button
@@ -371,8 +371,8 @@ function AddItemModal({
                   onClick={() => { setType(t); setSearchQuery(""); setSelectedPageId(null); setSelectedPostId(null); }}
                   className={`flex flex-col items-center gap-1.5 p-3 rounded-lg border text-xs transition-all ${
                     type === t
-                      ? "border-cyan-500 bg-cyan-500/10 text-cyan-400"
-                      : "border-gray-700 bg-gray-800/50 text-gray-400 hover:border-gray-600"
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border bg-muted text-muted-foreground hover:border-border"
                   }`}
                   data-testid={`type-button-${t}`}
                 >
@@ -385,20 +385,20 @@ function AddItemModal({
 
           {type === "page" && (
             <div>
-              <Label className="text-gray-300 text-sm">Select Page</Label>
+              <Label className="text-foreground/80 text-sm">Select Page</Label>
               <div className="relative mt-1.5">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   placeholder="Search pages..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="bg-gray-800 border-gray-700 text-white pl-9"
+                  className="bg-muted border-border text-foreground pl-9"
                   data-testid="input-search-pages"
                 />
               </div>
-              <div className="mt-2 max-h-48 overflow-y-auto space-y-1 border border-gray-700/50 rounded-md p-1" data-testid="page-list">
+              <div className="mt-2 max-h-48 overflow-y-auto space-y-1 border border-border rounded-md p-1" data-testid="page-list">
                 {filteredPages.length === 0 ? (
-                  <p className="text-xs text-gray-500 py-3 text-center">No pages found</p>
+                  <p className="text-xs text-muted-foreground py-3 text-center">No pages found</p>
                 ) : (
                   filteredPages.map((page: any) => (
                     <button
@@ -410,13 +410,13 @@ function AddItemModal({
                       }}
                       className={`w-full text-left px-3 py-2 rounded text-sm transition-colors flex items-center justify-between ${
                         selectedPageId === page.id
-                          ? "bg-cyan-500/15 text-cyan-400"
-                          : "text-gray-300 hover:bg-gray-800"
+                          ? "bg-primary/15 text-primary"
+                          : "text-foreground/80 hover:bg-muted"
                       }`}
                       data-testid={`select-page-${page.id}`}
                     >
                       <span className="truncate">{page.title}</span>
-                      <span className="text-xs text-gray-500 ml-2 flex-shrink-0">/{page.slug}</span>
+                      <span className="text-xs text-muted-foreground ml-2 flex-shrink-0">/{page.slug}</span>
                     </button>
                   ))
                 )}
@@ -426,20 +426,20 @@ function AddItemModal({
 
           {type === "post" && (
             <div>
-              <Label className="text-gray-300 text-sm">Select Post</Label>
+              <Label className="text-foreground/80 text-sm">Select Post</Label>
               <div className="relative mt-1.5">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   placeholder="Search posts..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="bg-gray-800 border-gray-700 text-white pl-9"
+                  className="bg-muted border-border text-foreground pl-9"
                   data-testid="input-search-posts"
                 />
               </div>
-              <div className="mt-2 max-h-48 overflow-y-auto space-y-1 border border-gray-700/50 rounded-md p-1" data-testid="post-list">
+              <div className="mt-2 max-h-48 overflow-y-auto space-y-1 border border-border rounded-md p-1" data-testid="post-list">
                 {filteredPosts.length === 0 ? (
-                  <p className="text-xs text-gray-500 py-3 text-center">No posts found</p>
+                  <p className="text-xs text-muted-foreground py-3 text-center">No posts found</p>
                 ) : (
                   filteredPosts.map((post: any) => (
                     <button
@@ -451,13 +451,13 @@ function AddItemModal({
                       }}
                       className={`w-full text-left px-3 py-2 rounded text-sm transition-colors flex items-center justify-between ${
                         selectedPostId === post.id
-                          ? "bg-cyan-500/15 text-cyan-400"
-                          : "text-gray-300 hover:bg-gray-800"
+                          ? "bg-primary/15 text-primary"
+                          : "text-foreground/80 hover:bg-muted"
                       }`}
                       data-testid={`select-post-${post.id}`}
                     >
                       <span className="truncate">{post.title}</span>
-                      <Badge variant="secondary" className="text-[10px] bg-gray-700 text-gray-400 ml-2">
+                      <Badge variant="secondary" className="text-[10px] bg-muted text-muted-foreground ml-2">
                         {post.status || "draft"}
                       </Badge>
                     </button>
@@ -469,36 +469,36 @@ function AddItemModal({
 
           {type === "external" && (
             <div>
-              <Label className="text-gray-300 text-sm">URL</Label>
+              <Label className="text-foreground/80 text-sm">URL</Label>
               <Input
                 value={href}
                 onChange={(e) => setHref(e.target.value)}
                 placeholder="https://example.com"
-                className="bg-gray-800 border-gray-700 text-white mt-1.5"
+                className="bg-muted border-border text-foreground mt-1.5"
                 data-testid="input-external-url"
               />
             </div>
           )}
 
           <div>
-            <Label className="text-gray-300 text-sm">Label *</Label>
+            <Label className="text-foreground/80 text-sm">Label *</Label>
             <Input
               value={label}
               onChange={(e) => setLabel(e.target.value)}
               placeholder="Menu item label"
-              className="bg-gray-800 border-gray-700 text-white mt-1.5"
+              className="bg-muted border-border text-foreground mt-1.5"
               data-testid="input-item-label"
             />
           </div>
 
           {type !== "label" && (
             <div>
-              <Label className="text-gray-300 text-sm">Open in</Label>
+              <Label className="text-foreground/80 text-sm">Open in</Label>
               <Select value={target} onValueChange={(v) => setTarget(v as "_self" | "_blank")}>
-                <SelectTrigger className="bg-gray-800 border-gray-700 text-white mt-1.5" data-testid="select-item-target">
+                <SelectTrigger className="bg-muted border-border text-foreground mt-1.5" data-testid="select-item-target">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-gray-800 border-gray-700 text-white">
+                <SelectContent className="bg-muted border-border text-foreground">
                   <SelectItem value="_self">Same tab</SelectItem>
                   <SelectItem value="_blank">New tab</SelectItem>
                 </SelectContent>
@@ -513,7 +513,7 @@ function AddItemModal({
           <Button
             onClick={handleAdd}
             disabled={!canSave}
-            className="bg-cyan-600 hover:bg-cyan-700"
+            className="bg-primary"
             data-testid="button-confirm-add-item"
           >
             Add Item
@@ -800,7 +800,7 @@ function MenuEditor({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={onBack} className="text-gray-400 hover:text-white" data-testid="button-back-to-menus">
+          <Button variant="ghost" size="sm" onClick={onBack} className="text-muted-foreground hover:text-foreground" data-testid="button-back-to-menus">
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <div>
@@ -808,7 +808,7 @@ function MenuEditor({
               {menu ? "Edit Menu" : "New Menu"}
             </h1>
             {menu && (
-              <p className="text-xs text-gray-500 mt-0.5">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 {locationLabels[menu.location] || menu.location} &middot; {(menu.items || []).length} items
               </p>
             )}
@@ -821,7 +821,7 @@ function MenuEditor({
           <Button
             onClick={() => saveMutation.mutate()}
             disabled={!name || saveMutation.isPending}
-            className="bg-cyan-600 hover:bg-cyan-700 gap-2"
+            className="bg-primary gap-2"
             data-testid="button-save-menu"
           >
             <Save className="w-4 h-4" />
@@ -831,28 +831,28 @@ function MenuEditor({
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="bg-gray-900/60 border-gray-800 lg:col-span-1">
+        <Card className="bg-card border-border lg:col-span-1">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold text-gray-300">Menu Settings</CardTitle>
+            <CardTitle className="text-sm font-semibold text-foreground/80">Menu Settings</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label className="text-gray-400 text-xs">Name *</Label>
+              <Label className="text-muted-foreground text-xs">Name *</Label>
               <Input
                 value={name}
                 onChange={(e) => { setName(e.target.value); setHasChanges(true); }}
                 placeholder="Main Navigation"
-                className="bg-gray-800 border-gray-700 text-white mt-1"
+                className="bg-muted border-border text-foreground mt-1"
                 data-testid="input-menu-name"
               />
             </div>
             <div>
-              <Label className="text-gray-400 text-xs">Location</Label>
+              <Label className="text-muted-foreground text-xs">Location</Label>
               <Select value={location} onValueChange={(v) => { setLocation(v); setHasChanges(true); }}>
-                <SelectTrigger className="bg-gray-800 border-gray-700 text-white mt-1" data-testid="select-menu-location">
+                <SelectTrigger className="bg-muted border-border text-foreground mt-1" data-testid="select-menu-location">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-gray-800 border-gray-700 text-white">
+                <SelectContent className="bg-muted border-border text-foreground">
                   <SelectItem value="main">Main Navigation</SelectItem>
                   <SelectItem value="footer">Footer</SelectItem>
                   <SelectItem value="utility">Utility Bar</SelectItem>
@@ -860,7 +860,7 @@ function MenuEditor({
               </Select>
             </div>
             <div className="flex items-center justify-between pt-2">
-              <Label className="text-gray-400 text-xs">Active</Label>
+              <Label className="text-muted-foreground text-xs">Active</Label>
               <Switch
                 checked={active}
                 onCheckedChange={(v) => { setActive(v); setHasChanges(true); }}
@@ -870,16 +870,16 @@ function MenuEditor({
           </CardContent>
         </Card>
 
-        <Card className="bg-gray-900/60 border-gray-800 lg:col-span-2">
+        <Card className="bg-card border-border lg:col-span-2">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-semibold text-gray-300">
+              <CardTitle className="text-sm font-semibold text-foreground/80">
                 Menu Items ({items.length})
               </CardTitle>
               <Button
                 onClick={() => { setAddParentId(null); setShowAddModal(true); }}
                 size="sm"
-                className="bg-cyan-600 hover:bg-cyan-700 gap-1.5 h-7 text-xs"
+                className="bg-primary gap-1.5 h-7 text-xs"
                 data-testid="button-add-item"
               >
                 <Plus className="w-3.5 h-3.5" />
@@ -889,10 +889,10 @@ function MenuEditor({
           </CardHeader>
           <CardContent>
             {flatItems.length === 0 ? (
-              <div className="text-center py-12 text-gray-500" data-testid="text-no-items">
+              <div className="text-center py-12 text-muted-foreground" data-testid="text-no-items">
                 <Menu className="w-10 h-10 mx-auto mb-3 opacity-30" />
                 <p className="text-sm">No menu items yet</p>
-                <p className="text-xs mt-1 text-gray-600">Click "Add Item" to start building your menu</p>
+                <p className="text-xs mt-1 text-muted-foreground/60">Click "Add Item" to start building your menu</p>
               </div>
             ) : (
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -928,49 +928,49 @@ function MenuEditor({
       />
 
       <Dialog open={!!editingItem} onOpenChange={(o) => { if (!o) setEditingItem(null); }}>
-        <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-md">
+        <DialogContent className="bg-card border-border text-foreground max-w-md">
           <DialogHeader>
             <DialogTitle>Edit Menu Item</DialogTitle>
-            <DialogDescription className="text-gray-400">Update this menu item's properties</DialogDescription>
+            <DialogDescription className="text-muted-foreground">Update this menu item's properties</DialogDescription>
           </DialogHeader>
           {editingItem && (
             <div className="space-y-4 py-2">
               <div>
-                <Label className="text-gray-300 text-sm">Type</Label>
+                <Label className="text-foreground/80 text-sm">Type</Label>
                 <div className="flex items-center gap-2 mt-1.5">
                   {getItemTypeIcon(editingItem.type)}
-                  <span className="text-sm text-gray-300">{getItemTypeLabel(editingItem.type)}</span>
+                  <span className="text-sm text-foreground/80">{getItemTypeLabel(editingItem.type)}</span>
                 </div>
               </div>
               <div>
-                <Label className="text-gray-300 text-sm">Label *</Label>
+                <Label className="text-foreground/80 text-sm">Label *</Label>
                 <Input
                   value={editingItem.label}
                   onChange={(e) => updateEditingItem({ label: e.target.value })}
-                  className="bg-gray-800 border-gray-700 text-white mt-1.5"
+                  className="bg-muted border-border text-foreground mt-1.5"
                   data-testid="input-edit-label"
                 />
               </div>
               {editingItem.type === "external" && (
                 <div>
-                  <Label className="text-gray-300 text-sm">URL</Label>
+                  <Label className="text-foreground/80 text-sm">URL</Label>
                   <Input
                     value={editingItem.href || editingItem.url}
                     onChange={(e) => updateEditingItem({ href: e.target.value, url: e.target.value })}
                     placeholder="https://..."
-                    className="bg-gray-800 border-gray-700 text-white mt-1.5"
+                    className="bg-muted border-border text-foreground mt-1.5"
                     data-testid="input-edit-url"
                   />
                 </div>
               )}
               {editingItem.type !== "label" && (
                 <div>
-                  <Label className="text-gray-300 text-sm">Open in</Label>
+                  <Label className="text-foreground/80 text-sm">Open in</Label>
                   <Select value={editingItem.target} onValueChange={(v) => updateEditingItem({ target: v as "_self" | "_blank" })}>
-                    <SelectTrigger className="bg-gray-800 border-gray-700 text-white mt-1.5" data-testid="select-edit-target">
+                    <SelectTrigger className="bg-muted border-border text-foreground mt-1.5" data-testid="select-edit-target">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-gray-800 border-gray-700 text-white">
+                    <SelectContent className="bg-muted border-border text-foreground">
                       <SelectItem value="_self">Same tab</SelectItem>
                       <SelectItem value="_blank">New tab</SelectItem>
                     </SelectContent>
@@ -983,7 +983,7 @@ function MenuEditor({
             <Button variant="ghost" onClick={() => setEditingItem(null)}>Cancel</Button>
             <Button
               onClick={saveEditingItem}
-              className="bg-cyan-600 hover:bg-cyan-700"
+              className="bg-primary"
               data-testid="button-save-edit-item"
             >
               Save Changes
@@ -1018,7 +1018,7 @@ export default function AdminCmsV2Menus() {
     return (
       <CmsV2Layout activeNav="menus" breadcrumbs={[{ label: "Menus" }]}>
         <div className="flex items-center justify-center py-20">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400" />
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
         </div>
       </CmsV2Layout>
     );
@@ -1027,7 +1027,7 @@ export default function AdminCmsV2Menus() {
   if (!hasFullAccess) {
     return (
       <CmsV2Layout activeNav="menus" breadcrumbs={[{ label: "Menus" }]}>
-        <div className="text-center py-20 text-gray-400" data-testid="text-access-denied">Access Denied</div>
+        <div className="text-center py-20 text-muted-foreground" data-testid="text-access-denied">Access Denied</div>
       </CmsV2Layout>
     );
   }
@@ -1060,11 +1060,11 @@ export default function AdminCmsV2Menus() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold" data-testid="text-menus-title">Navigation Menus</h1>
-            <p className="text-sm text-gray-400 mt-1">Manage your site navigation for main, footer, and utility areas</p>
+            <p className="text-sm text-muted-foreground mt-1">Manage your site navigation for main, footer, and utility areas</p>
           </div>
           <Button
             onClick={() => setEditingMenu("new")}
-            className="bg-cyan-600 hover:bg-cyan-700 gap-2"
+            className="bg-primary gap-2"
             data-testid="button-create-menu"
           >
             <Plus className="w-4 h-4" />
@@ -1073,11 +1073,11 @@ export default function AdminCmsV2Menus() {
         </div>
 
         {menus.length === 0 ? (
-          <div className="text-center py-16 text-gray-500" data-testid="text-no-menus">
+          <div className="text-center py-16 text-muted-foreground" data-testid="text-no-menus">
             <Menu className="w-12 h-12 mx-auto mb-4 opacity-30" />
             <p className="mb-2">No navigation menus yet</p>
-            <p className="text-xs text-gray-600 mb-4">Create a menu to control site navigation</p>
-            <Button onClick={() => setEditingMenu("new")} className="bg-cyan-600 hover:bg-cyan-700 gap-2" data-testid="button-create-first-menu">
+            <p className="text-xs text-muted-foreground/60 mb-4">Create a menu to control site navigation</p>
+            <Button onClick={() => setEditingMenu("new")} className="bg-primary gap-2" data-testid="button-create-first-menu">
               <Plus className="w-4 h-4" />
               Create Your First Menu
             </Button>
@@ -1085,18 +1085,18 @@ export default function AdminCmsV2Menus() {
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {menus.map((menu) => (
-              <Card key={menu.id} className="bg-gray-900/60 border-gray-800 hover:border-gray-700 transition-colors cursor-pointer" data-testid={`card-menu-${menu.id}`}
+              <Card key={menu.id} className="bg-card border-border hover:border-border transition-colors cursor-pointer" data-testid={`card-menu-${menu.id}`}
                 onClick={() => setEditingMenu(menu)}
               >
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-semibold text-white" data-testid={`text-menu-name-${menu.id}`}>
+                    <CardTitle className="text-sm font-semibold text-foreground" data-testid={`text-menu-name-${menu.id}`}>
                       {menu.name}
                     </CardTitle>
                     <div className="flex items-center gap-1">
                       <Badge
                         variant="secondary"
-                        className="bg-gray-800 text-gray-300 text-xs"
+                        className="bg-muted text-foreground/80 text-xs"
                         data-testid={`badge-menu-location-${menu.id}`}
                       >
                         {locationLabels[menu.location] || menu.location}
@@ -1110,22 +1110,22 @@ export default function AdminCmsV2Menus() {
                   </div>
                 </CardHeader>
                 <CardContent className="pt-0">
-                  <div className="text-xs text-gray-500 mb-3">
+                  <div className="text-xs text-muted-foreground mb-3">
                     {(menu.items || []).length} item{(menu.items || []).length !== 1 ? "s" : ""}
                   </div>
                   {(menu.items || []).length > 0 && (
                     <div className="space-y-1 mb-3">
                       {(menu.items as MenuItemData[]).slice(0, 5).map((item, i) => (
-                        <div key={i} className="flex items-center gap-2 text-xs text-gray-400">
+                        <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
                           {getItemTypeIcon(item.type || "external")}
                           <span className="truncate">{item.label}</span>
                           {(item.children || []).length > 0 && (
-                            <span className="text-gray-600">({item.children.length})</span>
+                            <span className="text-muted-foreground/60">({item.children.length})</span>
                           )}
                         </div>
                       ))}
                       {(menu.items as MenuItemData[]).length > 5 && (
-                        <span className="text-xs text-gray-600">+{menu.items.length - 5} more</span>
+                        <span className="text-xs text-muted-foreground/60">+{menu.items.length - 5} more</span>
                       )}
                     </div>
                   )}
@@ -1134,7 +1134,7 @@ export default function AdminCmsV2Menus() {
                       variant="ghost"
                       size="sm"
                       onClick={() => setEditingMenu(menu)}
-                      className="text-gray-400 hover:text-white gap-1 h-7 text-xs"
+                      className="text-muted-foreground hover:text-foreground gap-1 h-7 text-xs"
                       data-testid={`button-edit-menu-${menu.id}`}
                     >
                       <Pencil className="w-3 h-3" />Edit

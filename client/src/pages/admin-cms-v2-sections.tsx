@@ -145,7 +145,7 @@ export default function AdminCmsV2Sections() {
   if (adminLoading || !hasFullAccess) {
     return (
       <CmsV2Layout activeNav="sections" breadcrumbs={[{ label: "Sections" }]}>
-        <div className="p-8 text-center text-gray-400">{adminLoading ? "Loading..." : "Access Denied"}</div>
+        <div className="p-8 text-center text-muted-foreground">{adminLoading ? "Loading..." : "Access Denied"}</div>
       </CmsV2Layout>
     );
   }
@@ -155,9 +155,9 @@ export default function AdminCmsV2Sections() {
       <div className="max-w-5xl mx-auto" data-testid="admin-cms-v2-sections-page">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-xl font-bold text-white flex items-center gap-2">
+            <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
               Sections
-              {!isLoading && sections && <span className="text-sm font-normal text-gray-500">{sections.length} total</span>}
+              {!isLoading && sections && <span className="text-sm font-normal text-muted-foreground">{sections.length} total</span>}
             </h1>
           </div>
           <div className="flex items-center gap-2">
@@ -165,13 +165,13 @@ export default function AdminCmsV2Sections() {
               variant="outline"
               onClick={() => seedKitsMutation.mutate()}
               disabled={seedKitsMutation.isPending}
-              className="border-gray-700 text-gray-300 hover:text-white hover:bg-gray-800 h-8 text-xs"
+              className="border-border text-foreground/80 hover:text-foreground hover:bg-muted h-8 text-xs"
               data-testid="button-load-starter-kits"
             >
               <PackagePlus className="w-3.5 h-3.5 mr-1" />
               {seedKitsMutation.isPending ? "Loading..." : "Load Starter Kits"}
             </Button>
-            <Button onClick={openCreate} className="bg-cyan-600 hover:bg-cyan-700 text-white h-8 text-xs" data-testid="button-create-section">
+            <Button onClick={openCreate} className="bg-primary text-foreground h-8 text-xs" data-testid="button-create-section">
               <Plus className="w-3.5 h-3.5 mr-1" />
               New Section
             </Button>
@@ -180,15 +180,15 @@ export default function AdminCmsV2Sections() {
 
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {[1, 2, 3].map((i) => <div key={i} className="h-28 bg-gray-900/40 rounded-lg animate-pulse" />)}
+            {[1, 2, 3].map((i) => <div key={i} className="h-28 bg-card/40 rounded-lg animate-pulse" />)}
           </div>
         ) : !sections || sections.length === 0 ? (
-          <Card className="bg-gray-900/60 border-gray-800/60">
+          <Card className="bg-card border-border">
             <CardContent className="p-10 text-center">
-              <Layers className="w-10 h-10 text-gray-700 mx-auto mb-3" />
-              <p className="text-gray-400 text-sm mb-2">No saved sections yet.</p>
-              <p className="text-gray-600 text-xs mb-4">Create reusable sections to insert across multiple pages.</p>
-              <Button onClick={openCreate} className="bg-cyan-600 hover:bg-cyan-700 text-white text-xs" data-testid="button-create-first-section">
+              <Layers className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+              <p className="text-muted-foreground text-sm mb-2">No saved sections yet.</p>
+              <p className="text-muted-foreground/60 text-xs mb-4">Create reusable sections to insert across multiple pages.</p>
+              <Button onClick={openCreate} className="bg-primary text-foreground text-xs" data-testid="button-create-first-section">
                 <Plus className="w-3.5 h-3.5 mr-1" />
                 Create First Section
               </Button>
@@ -197,36 +197,36 @@ export default function AdminCmsV2Sections() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {sections.map((section) => (
-              <Card key={section.id} className="bg-gray-900/60 border-gray-800/60 hover:border-gray-700 transition-colors" data-testid={`card-section-${section.id}`}>
+              <Card key={section.id} className="bg-card border-border hover:border-border transition-colors" data-testid={`card-section-${section.id}`}>
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between mb-2">
                     <div className="min-w-0 flex-1">
-                      <h3 className="font-medium text-white text-sm truncate" data-testid={`text-section-name-${section.id}`}>{section.name}</h3>
-                      {section.description && <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{section.description}</p>}
+                      <h3 className="font-medium text-foreground text-sm truncate" data-testid={`text-section-name-${section.id}`}>{section.name}</h3>
+                      {section.description && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{section.description}</p>}
                     </div>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button size="sm" variant="ghost" className="text-gray-500 hover:text-white h-7 w-7 p-0 flex-shrink-0" data-testid={`button-actions-${section.id}`}>
+                        <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-foreground h-7 w-7 p-0 flex-shrink-0" data-testid={`button-actions-${section.id}`}>
                           <MoreHorizontal className="w-3.5 h-3.5" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="bg-gray-900 border-gray-700 text-white">
-                        <DropdownMenuItem className="cursor-pointer hover:bg-gray-800 focus:bg-gray-800 text-xs" onClick={() => openEdit(section)} data-testid={`action-edit-${section.id}`}>
+                      <DropdownMenuContent align="end" className="bg-card border-border text-foreground">
+                        <DropdownMenuItem className="cursor-pointer hover:bg-muted focus:bg-muted text-xs" onClick={() => openEdit(section)} data-testid={`action-edit-${section.id}`}>
                           <Pencil className="w-3.5 h-3.5 mr-2" /> Edit Details
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="cursor-pointer hover:bg-gray-800 focus:bg-gray-800 text-xs" onClick={() => copyId(section.id)} data-testid={`action-copy-id-${section.id}`}>
+                        <DropdownMenuItem className="cursor-pointer hover:bg-muted focus:bg-muted text-xs" onClick={() => copyId(section.id)} data-testid={`action-copy-id-${section.id}`}>
                           <Copy className="w-3.5 h-3.5 mr-2" /> Copy ID
                         </DropdownMenuItem>
-                        <DropdownMenuSeparator className="bg-gray-700" />
-                        <DropdownMenuItem className="cursor-pointer text-red-400 hover:bg-gray-800 focus:bg-gray-800 focus:text-red-400 text-xs" onClick={() => setDeleteSection(section)} data-testid={`action-delete-${section.id}`}>
+                        <DropdownMenuSeparator className="bg-muted" />
+                        <DropdownMenuItem className="cursor-pointer text-red-400 hover:bg-muted focus:bg-muted focus:text-red-400 text-xs" onClick={() => setDeleteSection(section)} data-testid={`action-delete-${section.id}`}>
                           <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
                   <div className="flex items-center gap-2 mt-3">
-                    <Badge variant="outline" className="border-gray-700/60 text-gray-500 text-[10px]">{getCategoryLabel(section.category)}</Badge>
-                    <Badge variant="outline" className="border-gray-700/60 text-gray-600 text-[10px] gap-1">
+                    <Badge variant="outline" className="border-border/60 text-muted-foreground text-[10px]">{getCategoryLabel(section.category)}</Badge>
+                    <Badge variant="outline" className="border-border/60 text-muted-foreground/60 text-[10px] gap-1">
                       <FileText className="w-2.5 h-2.5" />{getBlockCount(section.blocks)} blocks
                     </Badge>
                   </div>
@@ -238,41 +238,41 @@ export default function AdminCmsV2Sections() {
       </div>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="bg-gray-900 border-gray-700 text-white" data-testid="dialog-create-section">
+        <DialogContent className="bg-card border-border text-foreground" data-testid="dialog-create-section">
           <DialogHeader>
-            <DialogTitle className="text-white">Create New Section</DialogTitle>
-            <DialogDescription className="text-gray-400">Create a reusable section for the page builder.</DialogDescription>
+            <DialogTitle className="text-foreground">Create New Section</DialogTitle>
+            <DialogDescription className="text-muted-foreground">Create a reusable section for the page builder.</DialogDescription>
           </DialogHeader>
           <SectionForm name={formName} description={formDescription} category={formCategory} onNameChange={setFormName} onDescriptionChange={setFormDescription} onCategoryChange={setFormCategory} />
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setCreateOpen(false)} className="text-gray-400 hover:text-white" data-testid="button-cancel-create">Cancel</Button>
-            <Button onClick={handleCreate} disabled={!formName.trim() || createMutation.isPending} className="bg-cyan-600 hover:bg-cyan-700 text-white" data-testid="button-confirm-create">{createMutation.isPending ? "Creating..." : "Create Section"}</Button>
+            <Button variant="ghost" onClick={() => setCreateOpen(false)} className="text-muted-foreground hover:text-foreground" data-testid="button-cancel-create">Cancel</Button>
+            <Button onClick={handleCreate} disabled={!formName.trim() || createMutation.isPending} className="bg-primary text-foreground" data-testid="button-confirm-create">{createMutation.isPending ? "Creating..." : "Create Section"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <Dialog open={!!editSection} onOpenChange={() => setEditSection(null)}>
-        <DialogContent className="bg-gray-900 border-gray-700 text-white" data-testid="dialog-edit-section">
+        <DialogContent className="bg-card border-border text-foreground" data-testid="dialog-edit-section">
           <DialogHeader>
-            <DialogTitle className="text-white">Edit Section</DialogTitle>
-            <DialogDescription className="text-gray-400">Update section details.</DialogDescription>
+            <DialogTitle className="text-foreground">Edit Section</DialogTitle>
+            <DialogDescription className="text-muted-foreground">Update section details.</DialogDescription>
           </DialogHeader>
           <SectionForm name={formName} description={formDescription} category={formCategory} onNameChange={setFormName} onDescriptionChange={setFormDescription} onCategoryChange={setFormCategory} />
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setEditSection(null)} className="text-gray-400 hover:text-white" data-testid="button-cancel-edit">Cancel</Button>
-            <Button onClick={handleUpdate} disabled={!formName.trim() || updateMutation.isPending} className="bg-cyan-600 hover:bg-cyan-700 text-white" data-testid="button-confirm-edit">{updateMutation.isPending ? "Saving..." : "Save Changes"}</Button>
+            <Button variant="ghost" onClick={() => setEditSection(null)} className="text-muted-foreground hover:text-foreground" data-testid="button-cancel-edit">Cancel</Button>
+            <Button onClick={handleUpdate} disabled={!formName.trim() || updateMutation.isPending} className="bg-primary text-foreground" data-testid="button-confirm-edit">{updateMutation.isPending ? "Saving..." : "Save Changes"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <Dialog open={!!deleteSection} onOpenChange={() => setDeleteSection(null)}>
-        <DialogContent className="bg-gray-900 border-gray-700 text-white" data-testid="dialog-delete-section">
+        <DialogContent className="bg-card border-border text-foreground" data-testid="dialog-delete-section">
           <DialogHeader>
-            <DialogTitle className="text-white">Delete Section</DialogTitle>
-            <DialogDescription className="text-gray-400">Are you sure you want to delete "{deleteSection?.name}"?</DialogDescription>
+            <DialogTitle className="text-foreground">Delete Section</DialogTitle>
+            <DialogDescription className="text-muted-foreground">Are you sure you want to delete "{deleteSection?.name}"?</DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setDeleteSection(null)} className="text-gray-400 hover:text-white" data-testid="button-cancel-delete">Cancel</Button>
+            <Button variant="ghost" onClick={() => setDeleteSection(null)} className="text-muted-foreground hover:text-foreground" data-testid="button-cancel-delete">Cancel</Button>
             <Button variant="destructive" onClick={() => deleteSection && deleteMutation.mutate(deleteSection.id)} disabled={deleteMutation.isPending} data-testid="button-confirm-delete">{deleteMutation.isPending ? "Deleting..." : "Delete Section"}</Button>
           </DialogFooter>
         </DialogContent>
@@ -287,18 +287,18 @@ function SectionForm({ name, description, category, onNameChange, onDescriptionC
   return (
     <div className="space-y-4 py-2">
       <div className="space-y-2">
-        <Label htmlFor="section-name" className="text-gray-300 text-sm">Name</Label>
-        <Input id="section-name" value={name} onChange={(e) => onNameChange(e.target.value)} placeholder="e.g., Hero with CTA" className="bg-gray-800 border-gray-600 text-white placeholder:text-gray-500" data-testid="input-section-name" />
+        <Label htmlFor="section-name" className="text-foreground/80 text-sm">Name</Label>
+        <Input id="section-name" value={name} onChange={(e) => onNameChange(e.target.value)} placeholder="e.g., Hero with CTA" className="bg-muted border-border text-foreground placeholder:text-muted-foreground" data-testid="input-section-name" />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="section-description" className="text-gray-300 text-sm">Description</Label>
-        <Textarea id="section-description" value={description} onChange={(e) => onDescriptionChange(e.target.value)} placeholder="Optional description" rows={2} className="bg-gray-800 border-gray-600 text-white placeholder:text-gray-500" data-testid="input-section-description" />
+        <Label htmlFor="section-description" className="text-foreground/80 text-sm">Description</Label>
+        <Textarea id="section-description" value={description} onChange={(e) => onDescriptionChange(e.target.value)} placeholder="Optional description" rows={2} className="bg-muted border-border text-foreground placeholder:text-muted-foreground" data-testid="input-section-description" />
       </div>
       <div className="space-y-2">
-        <Label className="text-gray-300 text-sm">Category</Label>
+        <Label className="text-foreground/80 text-sm">Category</Label>
         <Select value={category} onValueChange={onCategoryChange}>
-          <SelectTrigger className="bg-gray-800 border-gray-600 text-white" data-testid="select-section-category"><SelectValue /></SelectTrigger>
-          <SelectContent className="bg-gray-800 border-gray-600 text-white">
+          <SelectTrigger className="bg-muted border-border text-foreground" data-testid="select-section-category"><SelectValue /></SelectTrigger>
+          <SelectContent className="bg-muted border-border text-foreground">
             {SECTION_CATEGORIES.map((cat) => <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>)}
           </SelectContent>
         </Select>

@@ -34,7 +34,7 @@ function PackPageThumbnail({ pack, isActive, isPreviewing }: { pack: ThemePackPr
 
   return (
     <div
-      className={`rounded-lg border overflow-hidden transition-all duration-300 ${isPreviewing ? "ring-2 ring-yellow-500/60 scale-[1.01]" : isActive ? "ring-2 ring-cyan-500/60" : "hover:ring-1 hover:ring-gray-600"}`}
+      className={`rounded-lg border overflow-hidden transition-all duration-300 ${isPreviewing ? "ring-2 ring-yellow-500/60 scale-[1.01]" : isActive ? "ring-2 ring-primary/60" : "hover:ring-1 hover:ring-border"}`}
       style={{ backgroundColor: t["--theme-bg"], borderColor: t["--theme-border"], fontFamily: t["--theme-font"] }}
       data-testid={`thumbnail-${pack.id}`}
     >
@@ -199,7 +199,7 @@ function PackMetaBadges({ pack }: { pack: ThemePackPreset }) {
 
   return (
     <div className="flex flex-wrap gap-1" data-testid={`meta-badges-${pack.id}`}>
-      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-cyan-900/20 text-cyan-400/80 rounded text-[9px] border border-cyan-800/30">
+      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-primary/10 text-primary/80 rounded text-[9px] border border-primary/30/30">
         <Palette className="w-2.5 h-2.5" /> {tokenCount} tokens
       </span>
       <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-purple-900/20 text-purple-400/80 rounded text-[9px] border border-purple-800/30">
@@ -308,7 +308,7 @@ export default function AdminCmsV2Themes() {
   if (adminLoading || !hasFullAccess) {
     return (
       <CmsV2Layout activeNav="themes" breadcrumbs={[{ label: "Themes" }]}>
-        <div className="p-8 text-center text-gray-400">{adminLoading ? "Loading..." : "Access Denied"}</div>
+        <div className="p-8 text-center text-muted-foreground">{adminLoading ? "Loading..." : "Access Denied"}</div>
       </CmsV2Layout>
     );
   }
@@ -318,15 +318,15 @@ export default function AdminCmsV2Themes() {
       <div className="max-w-6xl mx-auto" data-testid="admin-cms-v2-themes-page">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-xl font-bold text-white flex items-center gap-2" data-testid="text-themes-heading">
-              <Palette className="w-5 h-5 text-cyan-400" />
+            <h1 className="text-xl font-bold text-foreground flex items-center gap-2" data-testid="text-themes-heading">
+              <Palette className="w-5 h-5 text-primary" />
               Themes
             </h1>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               {activeThemePack
-                ? <>Active pack: <span className="text-cyan-400 font-medium">{activeThemePack.name}</span></>
+                ? <>Active pack: <span className="text-primary font-medium">{activeThemePack.name}</span></>
                 : activeTheme
-                  ? <>Active theme: <span className="text-cyan-400 font-medium">{activeTheme.name}</span></>
+                  ? <>Active theme: <span className="text-primary font-medium">{activeTheme.name}</span></>
                   : "No theme active"
               }
             </p>
@@ -352,28 +352,28 @@ export default function AdminCmsV2Themes() {
           </div>
         )}
 
-        <div className="flex gap-1 mb-5 border-b border-gray-800/40 pb-3" data-testid="tabs-theme-type">
+        <div className="flex gap-1 mb-5 border-b border-border/40 pb-3" data-testid="tabs-theme-type">
           <Button
             size="sm"
             variant="ghost"
-            className={`h-8 text-xs gap-1.5 rounded-none border-b-2 transition-colors ${activeTab === "packs" ? "border-cyan-500 text-cyan-400 bg-transparent" : "border-transparent text-gray-500 hover:text-gray-300"}`}
+            className={`h-8 text-xs gap-1.5 rounded-none border-b-2 transition-colors ${activeTab === "packs" ? "border-primary text-primary bg-transparent" : "border-transparent text-muted-foreground hover:text-foreground"}`}
             onClick={() => setActiveTab("packs")}
             data-testid="tab-theme-packs"
           >
             <Package className="w-3.5 h-3.5" />
             Theme Packs
-            <Badge variant="outline" className="ml-1 text-[9px] px-1 py-0 h-4 border-gray-700">{themePacks?.length ?? 0}</Badge>
+            <Badge variant="outline" className="ml-1 text-[9px] px-1 py-0 h-4 border-border">{themePacks?.length ?? 0}</Badge>
           </Button>
           <Button
             size="sm"
             variant="ghost"
-            className={`h-8 text-xs gap-1.5 rounded-none border-b-2 transition-colors ${activeTab === "themes" ? "border-cyan-500 text-cyan-400 bg-transparent" : "border-transparent text-gray-500 hover:text-gray-300"}`}
+            className={`h-8 text-xs gap-1.5 rounded-none border-b-2 transition-colors ${activeTab === "themes" ? "border-primary text-primary bg-transparent" : "border-transparent text-muted-foreground hover:text-foreground"}`}
             onClick={() => setActiveTab("themes")}
             data-testid="tab-color-themes"
           >
             <Palette className="w-3.5 h-3.5" />
             Color Themes
-            <Badge variant="outline" className="ml-1 text-[9px] px-1 py-0 h-4 border-gray-700">{themes?.length ?? 0}</Badge>
+            <Badge variant="outline" className="ml-1 text-[9px] px-1 py-0 h-4 border-border">{themes?.length ?? 0}</Badge>
           </Button>
         </div>
 
@@ -386,7 +386,7 @@ export default function AdminCmsV2Themes() {
               return (
                 <Card
                   key={pack.id}
-                  className={`bg-gray-900/60 border-gray-800/60 transition-all duration-200 ${isPreviewing ? "ring-1 ring-yellow-500/40 border-yellow-800/40" : isActive ? "ring-1 ring-cyan-500/40 border-cyan-800/40" : "hover:border-gray-700"}`}
+                  className={`bg-card border-border transition-all duration-200 ${isPreviewing ? "ring-1 ring-yellow-500/40 border-yellow-800/40" : isActive ? "ring-1 ring-primary/40 border-primary/30" : "hover:border-border"}`}
                   data-testid={`card-pack-${pack.id}`}
                 >
                   <CardContent className="p-0">
@@ -398,9 +398,9 @@ export default function AdminCmsV2Themes() {
                       <div className="flex-1 p-4 md:pl-1 flex flex-col justify-between">
                         <div>
                           <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-semibold text-white text-sm" data-testid={`text-pack-name-${pack.id}`}>{pack.name}</h3>
+                            <h3 className="font-semibold text-foreground text-sm" data-testid={`text-pack-name-${pack.id}`}>{pack.name}</h3>
                             {isActive && (
-                              <Badge className="bg-cyan-900/30 text-cyan-400 border-cyan-800/60 text-[9px] px-1.5 gap-0.5" data-testid={`badge-active-${pack.id}`}>
+                              <Badge className="bg-primary/10 text-primary border-primary/30/60 text-[9px] px-1.5 gap-0.5" data-testid={`badge-active-${pack.id}`}>
                                 <Check className="w-2.5 h-2.5" /> Active
                               </Badge>
                             )}
@@ -410,23 +410,23 @@ export default function AdminCmsV2Themes() {
                               </Badge>
                             )}
                           </div>
-                          <p className="text-[11px] text-gray-500 mb-2.5 leading-relaxed" data-testid={`text-pack-desc-${pack.id}`}>{pack.description}</p>
+                          <p className="text-[11px] text-muted-foreground mb-2.5 leading-relaxed" data-testid={`text-pack-desc-${pack.id}`}>{pack.description}</p>
                           <PackMetaBadges pack={pack} />
 
                           <div className="mt-2 flex flex-wrap gap-1">
                             {Object.entries(pack.componentVariants).map(([comp, variant]) => (
-                              <span key={comp} className="px-1.5 py-0.5 bg-gray-800/60 text-gray-400 rounded text-[9px]" data-testid={`tag-variant-${comp}-${variant}`}>
-                                {comp}: <span className="text-gray-300">{variant}</span>
+                              <span key={comp} className="px-1.5 py-0.5 bg-muted text-muted-foreground rounded text-[9px]" data-testid={`tag-variant-${comp}-${variant}`}>
+                                {comp}: <span className="text-foreground/80">{variant}</span>
                               </span>
                             ))}
                           </div>
                         </div>
 
-                        <div className="flex gap-2 mt-3 pt-2 border-t border-gray-800/40">
+                        <div className="flex gap-2 mt-3 pt-2 border-t border-border/40">
                           <Button
                             size="sm"
                             variant="outline"
-                            className={`h-7 text-[11px] gap-1 ${isPreviewing ? "border-yellow-700/60 text-yellow-400 bg-yellow-900/10" : "border-gray-700/60 text-gray-400 hover:text-white hover:border-gray-600"}`}
+                            className={`h-7 text-[11px] gap-1 ${isPreviewing ? "border-yellow-700/60 text-yellow-400 bg-yellow-900/10" : "border-border/60 text-muted-foreground hover:text-foreground hover:border-border"}`}
                             onClick={() => handlePreviewPack(pack)}
                             data-testid={`button-preview-pack-${pack.id}`}
                           >
@@ -436,7 +436,7 @@ export default function AdminCmsV2Themes() {
                           {!isActive && (
                             <Button
                               size="sm"
-                              className="bg-cyan-700 hover:bg-cyan-600 text-white h-7 text-[11px] gap-1"
+                              className="bg-primary text-foreground h-7 text-[11px] gap-1"
                               onClick={() => activatePackMutation.mutate(pack.id)}
                               disabled={activatePackMutation.isPending}
                               data-testid={`button-activate-pack-${pack.id}`}
@@ -446,7 +446,7 @@ export default function AdminCmsV2Themes() {
                             </Button>
                           )}
                           {isActive && (
-                            <span className="inline-flex items-center text-[10px] text-cyan-500/60 gap-1">
+                            <span className="inline-flex items-center text-[10px] text-primary/60 gap-1">
                               <Check className="w-3 h-3" /> Currently live
                             </span>
                           )}
@@ -469,14 +469,14 @@ export default function AdminCmsV2Themes() {
               return (
                 <Card
                   key={theme.id}
-                  className={`bg-gray-900/60 border-gray-800/60 transition-all ${isPreviewing ? "ring-1 ring-yellow-500/50" : isActive ? "ring-1 ring-cyan-500/50" : "hover:border-gray-700"}`}
+                  className={`bg-card border-border transition-all ${isPreviewing ? "ring-1 ring-yellow-500/50" : isActive ? "ring-1 ring-primary/50" : "hover:border-border"}`}
                   data-testid={`card-theme-${theme.id}`}
                 >
                   <CardContent className="p-4 space-y-3">
                     <div className="flex items-center gap-1.5">
-                      <h3 className="font-medium text-white text-sm truncate" data-testid={`text-theme-name-${theme.id}`}>{theme.name}</h3>
+                      <h3 className="font-medium text-foreground text-sm truncate" data-testid={`text-theme-name-${theme.id}`}>{theme.name}</h3>
                       {isActive && (
-                        <Badge className="bg-cyan-900/30 text-cyan-400 border-cyan-800/60 text-[9px] px-1.5 gap-0.5">
+                        <Badge className="bg-primary/10 text-primary border-primary/30/60 text-[9px] px-1.5 gap-0.5">
                           <Check className="w-2.5 h-2.5" /> Active
                         </Badge>
                       )}
@@ -486,7 +486,7 @@ export default function AdminCmsV2Themes() {
                         </Badge>
                       )}
                     </div>
-                    <p className="text-[11px] text-gray-500 line-clamp-1">{theme.description}</p>
+                    <p className="text-[11px] text-muted-foreground line-clamp-1">{theme.description}</p>
 
                     <ThemePreview variables={theme.variables} />
 
@@ -500,7 +500,7 @@ export default function AdminCmsV2Themes() {
                       <Button
                         size="sm"
                         variant="outline"
-                        className={`h-7 text-[11px] ${isPreviewing ? "border-yellow-700/60 text-yellow-400" : "border-gray-700/60 text-gray-500 hover:text-white"}`}
+                        className={`h-7 text-[11px] ${isPreviewing ? "border-yellow-700/60 text-yellow-400" : "border-border/60 text-muted-foreground hover:text-foreground"}`}
                         onClick={() => handlePreviewTheme(theme)}
                         data-testid={`button-preview-${theme.id}`}
                       >
@@ -510,7 +510,7 @@ export default function AdminCmsV2Themes() {
                       {!isActive && (
                         <Button
                           size="sm"
-                          className="bg-cyan-700 hover:bg-cyan-600 text-white h-7 text-[11px]"
+                          className="bg-primary text-foreground h-7 text-[11px]"
                           onClick={() => activateThemeMutation.mutate(theme.id)}
                           disabled={activateThemeMutation.isPending}
                           data-testid={`button-activate-${theme.id}`}

@@ -210,7 +210,7 @@ export default function AdminCmsV2PostEditor() {
     return (
       <CmsV2Layout activeNav="posts" breadcrumbs={[{ label: "Posts", href: "/admin/cms-v2/posts" }, { label: isNew ? "New" : "Edit" }]}>
         <div className="flex items-center justify-center py-20">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400" />
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
         </div>
       </CmsV2Layout>
     );
@@ -219,7 +219,7 @@ export default function AdminCmsV2PostEditor() {
   if (!hasFullAccess) {
     return (
       <CmsV2Layout activeNav="posts" breadcrumbs={[{ label: "Posts" }]}>
-        <div className="text-center py-20 text-gray-400" data-testid="text-access-denied">Access Denied</div>
+        <div className="text-center py-20 text-muted-foreground" data-testid="text-access-denied">Access Denied</div>
       </CmsV2Layout>
     );
   }
@@ -232,7 +232,7 @@ export default function AdminCmsV2PostEditor() {
         <div className="flex items-center justify-between">
           <Button
             variant="ghost"
-            className="text-gray-400 hover:text-white gap-2"
+            className="text-muted-foreground hover:text-foreground gap-2"
             onClick={() => navigate("/admin/cms-v2/posts")}
             data-testid="button-back-to-posts"
           >
@@ -243,7 +243,7 @@ export default function AdminCmsV2PostEditor() {
             {!isNew && (
               <Button
                 variant="outline"
-                className="border-gray-700 text-gray-300 hover:text-white gap-2"
+                className="border-border text-foreground/80 hover:text-foreground gap-2"
                 onClick={() => navigate(`/admin/cms-v2/posts/${postId}/builder`)}
                 data-testid="button-open-builder"
               >
@@ -254,7 +254,7 @@ export default function AdminCmsV2PostEditor() {
             <Button
               onClick={handleSave}
               disabled={!title || createMutation.isPending || updateMutation.isPending}
-              className="bg-cyan-600 hover:bg-cyan-700 gap-2"
+              className="bg-primary gap-2"
               data-testid="button-save-post"
             >
               <Save className="w-4 h-4" />
@@ -265,10 +265,10 @@ export default function AdminCmsV2PostEditor() {
 
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           <div className="xl:col-span-2 space-y-6">
-            <Card className="bg-gray-900/60 border-gray-800">
+            <Card className="bg-card border-border">
               <CardContent className="p-6 space-y-4">
                 <div>
-                  <Label className="text-gray-300">Title</Label>
+                  <Label className="text-foreground/80">Title</Label>
                   <Input
                     value={title}
                     onChange={(e) => {
@@ -277,72 +277,72 @@ export default function AdminCmsV2PostEditor() {
                       if (!slugManual) setSlug(slugify(e.target.value));
                     }}
                     placeholder="Post title"
-                    className="bg-gray-800 border-gray-700 text-white mt-1 text-lg"
+                    className="bg-muted border-border text-foreground mt-1 text-lg"
                     data-testid="input-post-title"
                   />
                 </div>
                 <div>
-                  <Label className="text-gray-300">Slug</Label>
+                  <Label className="text-foreground/80">Slug</Label>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="text-gray-500 text-sm">/blog/</span>
+                    <span className="text-muted-foreground text-sm">/blog/</span>
                     <Input
                       value={slug}
                       onChange={(e) => { setSlug(e.target.value); setSlugManual(true); setDirty(true); }}
                       placeholder="post-slug"
-                      className="bg-gray-800 border-gray-700 text-white flex-1"
+                      className="bg-muted border-border text-foreground flex-1"
                       data-testid="input-post-slug"
                     />
                   </div>
                 </div>
                 <div>
-                  <Label className="text-gray-300">Excerpt</Label>
+                  <Label className="text-foreground/80">Excerpt</Label>
                   <Textarea
                     value={excerpt}
                     onChange={(e) => { setExcerpt(e.target.value); setDirty(true); }}
                     placeholder="Short summary for previews and SEO..."
-                    className="bg-gray-800 border-gray-700 text-white mt-1 min-h-[80px]"
+                    className="bg-muted border-border text-foreground mt-1 min-h-[80px]"
                     data-testid="input-post-excerpt"
                   />
                 </div>
                 <div>
-                  <Label className="text-gray-300">Content (HTML / Markdown)</Label>
+                  <Label className="text-foreground/80">Content (HTML / Markdown)</Label>
                   <Textarea
                     value={legacyHtml}
                     onChange={(e) => { setLegacyHtml(e.target.value); setDirty(true); }}
                     placeholder="Write content or use the Builder for a visual editor..."
-                    className="bg-gray-800 border-gray-700 text-white mt-1 min-h-[200px] font-mono text-sm"
+                    className="bg-muted border-border text-foreground mt-1 min-h-[200px] font-mono text-sm"
                     data-testid="input-post-content"
                   />
-                  <p className="text-xs text-gray-500 mt-1">For rich visual content, use the Puck Builder.</p>
+                  <p className="text-xs text-muted-foreground mt-1">For rich visual content, use the Puck Builder.</p>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-gray-900/60 border-gray-800">
+            <Card className="bg-card border-border">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm text-gray-300 flex items-center gap-2">
-                  <SearchIcon className="w-4 h-4 text-cyan-400" />
+                <CardTitle className="text-sm text-foreground/80 flex items-center gap-2">
+                  <SearchIcon className="w-4 h-4 text-primary" />
                   SEO & Meta
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label className="text-gray-300">Canonical URL</Label>
+                  <Label className="text-foreground/80">Canonical URL</Label>
                   <Input
                     value={canonicalUrl}
                     onChange={(e) => { setCanonicalUrl(e.target.value); setDirty(true); }}
                     placeholder="https://..."
-                    className="bg-gray-800 border-gray-700 text-white mt-1"
+                    className="bg-muted border-border text-foreground mt-1"
                     data-testid="input-post-canonical"
                   />
                 </div>
                 <div>
-                  <Label className="text-gray-300">OG Image ID</Label>
+                  <Label className="text-foreground/80">OG Image ID</Label>
                   <Input
                     value={ogImageId}
                     onChange={(e) => { setOgImageId(e.target.value); setDirty(true); }}
                     placeholder="Image ID for social sharing"
-                    className="bg-gray-800 border-gray-700 text-white mt-1"
+                    className="bg-muted border-border text-foreground mt-1"
                     data-testid="input-post-og-image"
                   />
                 </div>
@@ -353,7 +353,7 @@ export default function AdminCmsV2PostEditor() {
                       onCheckedChange={(v) => { setAllowIndex(v); setDirty(true); }}
                       data-testid="switch-allow-index"
                     />
-                    <Label className="text-gray-300 text-sm">Allow Index</Label>
+                    <Label className="text-foreground/80 text-sm">Allow Index</Label>
                   </div>
                   <div className="flex items-center gap-2">
                     <Switch
@@ -361,7 +361,7 @@ export default function AdminCmsV2PostEditor() {
                       onCheckedChange={(v) => { setAllowFollow(v); setDirty(true); }}
                       data-testid="switch-allow-follow"
                     />
-                    <Label className="text-gray-300 text-sm">Allow Follow</Label>
+                    <Label className="text-foreground/80 text-sm">Allow Follow</Label>
                   </div>
                 </div>
               </CardContent>
@@ -369,14 +369,14 @@ export default function AdminCmsV2PostEditor() {
           </div>
 
           <div className="space-y-6">
-            <Card className="bg-gray-900/60 border-gray-800">
+            <Card className="bg-card border-border">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm text-gray-300">Status</CardTitle>
+                <CardTitle className="text-sm text-foreground/80">Status</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-center gap-2">
                   {status === "published" && <Badge className="bg-green-900/40 text-green-400 border-green-800"><Globe className="w-3 h-3 mr-1" />Published</Badge>}
-                  {status === "draft" && <Badge className="bg-gray-800 text-gray-400 border-gray-700"><GlobeLock className="w-3 h-3 mr-1" />Draft</Badge>}
+                  {status === "draft" && <Badge className="bg-muted text-muted-foreground border-border"><GlobeLock className="w-3 h-3 mr-1" />Draft</Badge>}
                   {status === "scheduled" && <Badge className="bg-blue-900/40 text-blue-400 border-blue-800"><Clock className="w-3 h-3 mr-1" />Scheduled</Badge>}
                   {status === "archived" && <Badge className="bg-orange-900/40 text-orange-400 border-orange-800"><Archive className="w-3 h-3 mr-1" />Archived</Badge>}
                 </div>
@@ -399,7 +399,7 @@ export default function AdminCmsV2PostEditor() {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="border-gray-700 text-gray-300 w-full gap-2"
+                        className="border-border text-foreground/80 w-full gap-2"
                         onClick={() => unpublishMutation.mutate()}
                         disabled={unpublishMutation.isPending}
                         data-testid="button-unpublish-post"
@@ -411,7 +411,7 @@ export default function AdminCmsV2PostEditor() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="border-gray-700 text-gray-300 w-full gap-2"
+                      className="border-border text-foreground/80 w-full gap-2"
                       onClick={() => setShowSchedule(true)}
                       data-testid="button-schedule-post"
                     >
@@ -422,24 +422,24 @@ export default function AdminCmsV2PostEditor() {
                 )}
 
                 {post?.publishedAt && (
-                  <p className="text-xs text-gray-500">Published: {formatDate(post.publishedAt)}</p>
+                  <p className="text-xs text-muted-foreground">Published: {formatDate(post.publishedAt)}</p>
                 )}
                 {post?.scheduledAt && (
-                  <p className="text-xs text-gray-500">Scheduled: {formatDate(post.scheduledAt)}</p>
+                  <p className="text-xs text-muted-foreground">Scheduled: {formatDate(post.scheduledAt)}</p>
                 )}
               </CardContent>
             </Card>
 
-            <Card className="bg-gray-900/60 border-gray-800">
+            <Card className="bg-card border-border">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm text-gray-300">Categories</CardTitle>
+                <CardTitle className="text-sm text-foreground/80">Categories</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 <div className="flex flex-wrap gap-1">
                   {selectedCats.map((cat: any) => (
-                    <Badge key={cat.id} variant="outline" className="border-gray-700 text-gray-300 gap-1">
+                    <Badge key={cat.id} variant="outline" className="border-border text-foreground/80 gap-1">
                       {cat.name}
-                      <button onClick={() => { setSelectedCategoryIds((prev) => prev.filter((id) => id !== cat.id)); setDirty(true); }} className="text-gray-500 hover:text-white">
+                      <button onClick={() => { setSelectedCategoryIds((prev) => prev.filter((id) => id !== cat.id)); setDirty(true); }} className="text-muted-foreground hover:text-foreground">
                         <X className="w-3 h-3" />
                       </button>
                     </Badge>
@@ -447,10 +447,10 @@ export default function AdminCmsV2PostEditor() {
                 </div>
                 {categoryOptions.length > 0 && (
                   <Select onValueChange={(id) => { setSelectedCategoryIds((prev) => [...prev, id]); setDirty(true); }}>
-                    <SelectTrigger className="bg-gray-800 border-gray-700 text-white h-8 text-xs" data-testid="select-add-category">
+                    <SelectTrigger className="bg-muted border-border text-foreground h-8 text-xs" data-testid="select-add-category">
                       <SelectValue placeholder="Add category..." />
                     </SelectTrigger>
-                    <SelectContent className="bg-gray-900 border-gray-700 text-white">
+                    <SelectContent className="bg-card border-border text-foreground">
                       {categoryOptions.map((cat: any) => (
                         <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
                       ))}
@@ -460,16 +460,16 @@ export default function AdminCmsV2PostEditor() {
               </CardContent>
             </Card>
 
-            <Card className="bg-gray-900/60 border-gray-800">
+            <Card className="bg-card border-border">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm text-gray-300">Tags</CardTitle>
+                <CardTitle className="text-sm text-foreground/80">Tags</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 <div className="flex flex-wrap gap-1">
                   {selectedTags.map((tag: any) => (
-                    <Badge key={tag.id} variant="outline" className="border-cyan-900/50 text-cyan-400 gap-1">
+                    <Badge key={tag.id} variant="outline" className="border-primary/30 text-primary gap-1">
                       {tag.name}
-                      <button onClick={() => { setSelectedTagIds((prev) => prev.filter((id) => id !== tag.id)); setDirty(true); }} className="text-gray-500 hover:text-white">
+                      <button onClick={() => { setSelectedTagIds((prev) => prev.filter((id) => id !== tag.id)); setDirty(true); }} className="text-muted-foreground hover:text-foreground">
                         <X className="w-3 h-3" />
                       </button>
                     </Badge>
@@ -477,10 +477,10 @@ export default function AdminCmsV2PostEditor() {
                 </div>
                 {tagOptions.length > 0 && (
                   <Select onValueChange={(id) => { setSelectedTagIds((prev) => [...prev, id]); setDirty(true); }}>
-                    <SelectTrigger className="bg-gray-800 border-gray-700 text-white h-8 text-xs" data-testid="select-add-tag">
+                    <SelectTrigger className="bg-muted border-border text-foreground h-8 text-xs" data-testid="select-add-tag">
                       <SelectValue placeholder="Add existing tag..." />
                     </SelectTrigger>
-                    <SelectContent className="bg-gray-900 border-gray-700 text-white">
+                    <SelectContent className="bg-card border-border text-foreground">
                       {tagOptions.map((tag: any) => (
                         <SelectItem key={tag.id} value={tag.id}>{tag.name}</SelectItem>
                       ))}
@@ -492,14 +492,14 @@ export default function AdminCmsV2PostEditor() {
                     value={newTagName}
                     onChange={(e) => setNewTagName(e.target.value)}
                     placeholder="Create new tag..."
-                    className="bg-gray-800 border-gray-700 text-white h-8 text-xs flex-1"
+                    className="bg-muted border-border text-foreground h-8 text-xs flex-1"
                     onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddNewTag(); } }}
                     data-testid="input-new-tag"
                   />
                   <Button
                     size="sm"
                     variant="outline"
-                    className="border-gray-700 text-gray-300 h-8 px-2"
+                    className="border-border text-foreground/80 h-8 px-2"
                     onClick={handleAddNewTag}
                     disabled={!newTagName.trim() || createTagMutation.isPending}
                     data-testid="button-create-tag"
@@ -510,9 +510,9 @@ export default function AdminCmsV2PostEditor() {
               </CardContent>
             </Card>
 
-            <Card className="bg-gray-900/60 border-gray-800">
+            <Card className="bg-card border-border">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm text-gray-300">Options</CardTitle>
+                <CardTitle className="text-sm text-foreground/80">Options</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-center gap-2">
@@ -521,17 +521,17 @@ export default function AdminCmsV2PostEditor() {
                     onCheckedChange={(v) => { setFeatured(v); setDirty(true); }}
                     data-testid="switch-featured"
                   />
-                  <Label className="text-gray-300 text-sm">Featured Post</Label>
+                  <Label className="text-foreground/80 text-sm">Featured Post</Label>
                 </div>
                 <div>
-                  <Label className="text-gray-300 text-sm">Reading Time (minutes)</Label>
+                  <Label className="text-foreground/80 text-sm">Reading Time (minutes)</Label>
                   <Input
                     type="number"
                     min={1}
                     value={readingTimeMinutes || ""}
                     onChange={(e) => { setReadingTimeMinutes(e.target.value ? parseInt(e.target.value) : null); setDirty(true); }}
                     placeholder="Auto"
-                    className="bg-gray-800 border-gray-700 text-white mt-1 h-8 text-xs"
+                    className="bg-muted border-border text-foreground mt-1 h-8 text-xs"
                     data-testid="input-reading-time"
                   />
                 </div>
@@ -542,7 +542,7 @@ export default function AdminCmsV2PostEditor() {
               <Button
                 variant="outline"
                 size="sm"
-                className="border-gray-700 text-gray-400 w-full gap-2"
+                className="border-border text-muted-foreground w-full gap-2"
                 onClick={() => setShowRevisions(!showRevisions)}
                 data-testid="button-toggle-revisions"
               >
@@ -552,12 +552,12 @@ export default function AdminCmsV2PostEditor() {
             )}
 
             {showRevisions && revisions.length > 0 && (
-              <Card className="bg-gray-900/60 border-gray-800">
+              <Card className="bg-card border-border">
                 <CardContent className="p-3 space-y-2">
                   {revisions.map((rev: any, i: number) => (
-                    <div key={rev.id || i} className="flex items-center justify-between py-1 border-b border-gray-800 last:border-0">
-                      <span className="text-xs text-gray-400">{formatDate(rev.createdAt)}</span>
-                      <Badge variant="outline" className="text-xs border-gray-700 text-gray-500">v{revisions.length - i}</Badge>
+                    <div key={rev.id || i} className="flex items-center justify-between py-1 border-b border-border last:border-0">
+                      <span className="text-xs text-muted-foreground">{formatDate(rev.createdAt)}</span>
+                      <Badge variant="outline" className="text-xs border-border text-muted-foreground">v{revisions.length - i}</Badge>
                     </div>
                   ))}
                 </CardContent>
@@ -568,18 +568,18 @@ export default function AdminCmsV2PostEditor() {
       </div>
 
       <Dialog open={showSchedule} onOpenChange={setShowSchedule}>
-        <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-sm">
+        <DialogContent className="bg-card border-border text-foreground max-w-sm">
           <DialogHeader>
             <DialogTitle>Schedule Post</DialogTitle>
-            <DialogDescription className="text-gray-400">Choose when to publish this post.</DialogDescription>
+            <DialogDescription className="text-muted-foreground">Choose when to publish this post.</DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            <Label className="text-gray-300">Publish Date & Time</Label>
+            <Label className="text-foreground/80">Publish Date & Time</Label>
             <Input
               type="datetime-local"
               value={scheduleDate}
               onChange={(e) => setScheduleDate(e.target.value)}
-              className="bg-gray-800 border-gray-700 text-white mt-1"
+              className="bg-muted border-border text-foreground mt-1"
               data-testid="input-schedule-date"
             />
           </div>

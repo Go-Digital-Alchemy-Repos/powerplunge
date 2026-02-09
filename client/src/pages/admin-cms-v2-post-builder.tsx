@@ -155,7 +155,7 @@ function SaveDraftButton({ postId, postTitle, onDone }: { postId: string; postTi
     <Button
       size="sm"
       variant="outline"
-      className="border-cyan-700 text-cyan-400 hover:bg-cyan-900/30"
+      className="border-primary/30 text-primary hover:bg-primary/10"
       disabled={saving}
       data-testid="button-save-draft"
       onClick={handleSave}
@@ -198,7 +198,7 @@ function PublishButton({ postId, onDone }: { postId: string; onDone: () => void 
   return (
     <Button
       size="sm"
-      className="bg-green-600 hover:bg-green-700 text-white"
+      className="bg-green-600 hover:bg-green-700 text-foreground"
       disabled={publishing}
       data-testid="button-publish"
       onClick={handlePublish}
@@ -226,11 +226,11 @@ function QuickInsertBar() {
       <TooltipProvider delayDuration={200}>
         <Tooltip>
           <TooltipTrigger asChild>
-            <span className="text-gray-500 text-xs mr-1 flex items-center gap-1">
+            <span className="text-muted-foreground text-xs mr-1 flex items-center gap-1">
               <Zap className="w-3 h-3" />Quick:
             </span>
           </TooltipTrigger>
-          <TooltipContent side="bottom" className="bg-gray-800 border-gray-700 text-white text-xs">
+          <TooltipContent side="bottom" className="bg-muted border-border text-foreground text-xs">
             One-click insert common blocks
           </TooltipContent>
         </Tooltip>
@@ -242,7 +242,7 @@ function QuickInsertBar() {
               <Button
                 size="sm"
                 variant="ghost"
-                className="text-gray-400 hover:text-white hover:bg-gray-800 h-7 px-2 text-xs gap-1"
+                className="text-muted-foreground hover:text-foreground hover:bg-muted h-7 px-2 text-xs gap-1"
                 onClick={() => handleQuickInsert(block.type)}
                 data-testid={`quick-insert-${block.type}`}
               >
@@ -250,7 +250,7 @@ function QuickInsertBar() {
                 <span className="hidden sm:inline">{block.label}</span>
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="bottom" className="bg-gray-800 border-gray-700 text-white text-xs">
+            <TooltipContent side="bottom" className="bg-muted border-border text-foreground text-xs">
               Insert {block.label}
             </TooltipContent>
           </Tooltip>
@@ -293,37 +293,37 @@ export default function AdminCmsV2PostBuilder() {
 
   if (adminLoading || postLoading) {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400" />
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
       </div>
     );
   }
 
   if (!hasFullAccess || !post) {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center text-gray-400">
+      <div className="min-h-screen bg-background flex items-center justify-center text-muted-foreground">
         {!hasFullAccess ? "Access Denied" : "Post not found"}
       </div>
     );
   }
 
   return (
-    <div className="puck-builder-container h-screen flex flex-col bg-gray-950" data-testid="post-builder">
+    <div className="puck-builder-container h-screen flex flex-col bg-background" data-testid="post-builder">
       <Puck config={puckConfig} data={initialData}>
-        <div className="flex items-center justify-between h-12 px-4 bg-gray-900 border-b border-gray-800 flex-shrink-0">
+        <div className="flex items-center justify-between h-12 px-4 bg-card border-b border-border flex-shrink-0">
           <div className="flex items-center gap-3">
             <Button
               size="sm"
               variant="ghost"
-              className="text-gray-400 hover:text-white gap-1"
+              className="text-muted-foreground hover:text-foreground gap-1"
               onClick={() => navigate(`/admin/cms-v2/posts/${postId}/edit`)}
               data-testid="button-back-to-editor"
             >
               <ArrowLeft className="w-4 h-4" />
               <span className="hidden sm:inline">Back</span>
             </Button>
-            <div className="h-5 w-px bg-gray-700" />
-            <span className="text-sm font-medium text-white truncate max-w-[200px]" data-testid="text-post-title">
+            <div className="h-5 w-px bg-muted" />
+            <span className="text-sm font-medium text-foreground truncate max-w-[200px]" data-testid="text-post-title">
               {post.title}
             </span>
             <Badge
@@ -331,7 +331,7 @@ export default function AdminCmsV2PostBuilder() {
               className={
                 post.status === "published"
                   ? "bg-green-900/40 text-green-400 border-green-800 text-xs"
-                  : "bg-gray-800 text-gray-400 border-gray-700 text-xs"
+                  : "bg-muted text-muted-foreground border-border text-xs"
               }
               data-testid="badge-post-status"
             >
@@ -341,16 +341,16 @@ export default function AdminCmsV2PostBuilder() {
 
           <div className="flex items-center gap-2">
             <QuickInsertBar />
-            <div className="h-5 w-px bg-gray-700 mx-1" />
+            <div className="h-5 w-px bg-muted mx-1" />
 
             <div className="flex items-center gap-1 mr-2">
-              <Button size="sm" variant="ghost" className={`h-7 w-7 p-0 ${viewportWidth === "100%" ? "text-cyan-400" : "text-gray-500"}`} onClick={() => setViewportWidth("100%")} data-testid="button-viewport-desktop">
+              <Button size="sm" variant="ghost" className={`h-7 w-7 p-0 ${viewportWidth === "100%" ? "text-primary" : "text-muted-foreground"}`} onClick={() => setViewportWidth("100%")} data-testid="button-viewport-desktop">
                 <Monitor className="w-4 h-4" />
               </Button>
-              <Button size="sm" variant="ghost" className={`h-7 w-7 p-0 ${viewportWidth === "768px" ? "text-cyan-400" : "text-gray-500"}`} onClick={() => setViewportWidth("768px")} data-testid="button-viewport-tablet">
+              <Button size="sm" variant="ghost" className={`h-7 w-7 p-0 ${viewportWidth === "768px" ? "text-primary" : "text-muted-foreground"}`} onClick={() => setViewportWidth("768px")} data-testid="button-viewport-tablet">
                 <Tablet className="w-4 h-4" />
               </Button>
-              <Button size="sm" variant="ghost" className={`h-7 w-7 p-0 ${viewportWidth === "375px" ? "text-cyan-400" : "text-gray-500"}`} onClick={() => setViewportWidth("375px")} data-testid="button-viewport-mobile">
+              <Button size="sm" variant="ghost" className={`h-7 w-7 p-0 ${viewportWidth === "375px" ? "text-primary" : "text-muted-foreground"}`} onClick={() => setViewportWidth("375px")} data-testid="button-viewport-mobile">
                 <Smartphone className="w-4 h-4" />
               </Button>
             </div>

@@ -16,7 +16,7 @@ export default function AdminCmsV2Seo() {
   if (adminLoading || !hasFullAccess) {
     return (
       <CmsV2Layout activeNav="seo" breadcrumbs={[{ label: "SEO" }]}>
-        <div className="p-8 text-center text-gray-400">{adminLoading ? "Loading..." : "Access Denied"}</div>
+        <div className="p-8 text-center text-muted-foreground">{adminLoading ? "Loading..." : "Access Denied"}</div>
       </CmsV2Layout>
     );
   }
@@ -36,44 +36,44 @@ export default function AdminCmsV2Seo() {
     <CmsV2Layout activeNav="seo" breadcrumbs={[{ label: "SEO" }]}>
       <div className="max-w-5xl mx-auto" data-testid="admin-cms-v2-seo-page">
         <div className="flex items-center gap-3 mb-6">
-          <h1 className="text-xl font-bold text-white">SEO Overview</h1>
-          <Badge variant="outline" className="border-gray-700 text-gray-500 text-xs">Preview</Badge>
+          <h1 className="text-xl font-bold text-foreground">SEO Overview</h1>
+          <Badge variant="outline" className="border-border text-muted-foreground text-xs">Preview</Badge>
         </div>
 
         {!isLoading && pagesWithScores.length > 0 && (
           <div className="grid grid-cols-3 gap-3 mb-6">
-            <Card className="bg-gray-900/60 border-gray-800/60">
+            <Card className="bg-card border-border">
               <CardContent className="p-4 text-center">
-                <p className="text-2xl font-bold text-white">{pagesWithScores.length}</p>
-                <p className="text-xs text-gray-500">Pages Audited</p>
+                <p className="text-2xl font-bold text-foreground">{pagesWithScores.length}</p>
+                <p className="text-xs text-muted-foreground">Pages Audited</p>
               </CardContent>
             </Card>
-            <Card className="bg-gray-900/60 border-gray-800/60">
+            <Card className="bg-card border-border">
               <CardContent className="p-4 text-center">
-                <p className="text-2xl font-bold text-cyan-400">{avgScore}/3</p>
-                <p className="text-xs text-gray-500">Avg Score</p>
+                <p className="text-2xl font-bold text-primary">{avgScore}/3</p>
+                <p className="text-xs text-muted-foreground">Avg Score</p>
               </CardContent>
             </Card>
-            <Card className="bg-gray-900/60 border-gray-800/60">
+            <Card className="bg-card border-border">
               <CardContent className="p-4 text-center">
                 <p className="text-2xl font-bold text-green-400">{pagesWithScores.filter((p: any) => p.score === 3).length}</p>
-                <p className="text-xs text-gray-500">Fully Optimized</p>
+                <p className="text-xs text-muted-foreground">Fully Optimized</p>
               </CardContent>
             </Card>
           </div>
         )}
 
         {isLoading ? (
-          <p className="text-gray-400 text-sm">Loading...</p>
+          <p className="text-muted-foreground text-sm">Loading...</p>
         ) : pagesWithScores.length === 0 ? (
-          <Card className="bg-gray-900/60 border-gray-800/60">
-            <CardContent className="p-8 text-center text-gray-400 text-sm">No pages to audit.</CardContent>
+          <Card className="bg-card border-border">
+            <CardContent className="p-8 text-center text-muted-foreground text-sm">No pages to audit.</CardContent>
           </Card>
         ) : (
-          <div className="border border-gray-800/60 rounded-lg overflow-hidden">
+          <div className="border border-border rounded-lg overflow-hidden">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-gray-800/60 text-[11px] text-gray-500 uppercase tracking-wider">
+                <tr className="border-b border-border text-[11px] text-muted-foreground uppercase tracking-wider">
                   <th className="text-left px-4 py-2.5 font-medium">Page</th>
                   <th className="text-center px-4 py-2.5 font-medium">Title</th>
                   <th className="text-center px-4 py-2.5 font-medium">Description</th>
@@ -83,11 +83,11 @@ export default function AdminCmsV2Seo() {
               </thead>
               <tbody>
                 {pagesWithScores.map((page: any) => (
-                  <tr key={page.id} className="border-b border-gray-800/30 hover:bg-gray-900/40 transition-colors" data-testid={`card-seo-${page.id}`}>
+                  <tr key={page.id} className="border-b border-border/30 hover:bg-card/40 transition-colors" data-testid={`card-seo-${page.id}`}>
                     <td className="px-4 py-3">
                       <div>
-                        <span className="text-sm text-white font-medium">{page.title}</span>
-                        <p className="text-[11px] text-gray-500 font-mono">/{page.slug}</p>
+                        <span className="text-sm text-foreground font-medium">{page.title}</span>
+                        <p className="text-[11px] text-muted-foreground font-mono">/{page.slug}</p>
                       </div>
                     </td>
                     <td className="px-4 py-3 text-center">

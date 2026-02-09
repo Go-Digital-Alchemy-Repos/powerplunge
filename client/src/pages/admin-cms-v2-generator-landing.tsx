@@ -318,7 +318,7 @@ export default function AdminCmsV2GeneratorLanding() {
   if (adminLoading || !hasFullAccess) {
     return (
       <CmsV2Layout activeNav="generator" breadcrumbs={[{ label: "Generator" }, { label: "Landing Page" }]}>
-        <div className="p-8 text-center text-gray-400">{adminLoading ? "Loading..." : "Access Denied"}</div>
+        <div className="p-8 text-center text-muted-foreground">{adminLoading ? "Loading..." : "Access Denied"}</div>
       </CmsV2Layout>
     );
   }
@@ -328,11 +328,11 @@ export default function AdminCmsV2GeneratorLanding() {
       <div className="max-w-6xl mx-auto" data-testid="generator-landing-page">
         <div className="mb-6 flex items-start justify-between">
           <div>
-            <h1 className="text-xl font-bold text-white flex items-center gap-2">
-              <Wand2 className="w-5 h-5 text-cyan-400" />
+            <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
+              <Wand2 className="w-5 h-5 text-primary" />
               Landing Page Generator
             </h1>
-            <p className="text-sm text-gray-500 mt-1">Build a landing page in 4 steps — choose a template, add products, attach sections, and configure details.</p>
+            <p className="text-sm text-muted-foreground mt-1">Build a landing page in 4 steps — choose a template, add products, attach sections, and configure details.</p>
           </div>
           <div className="flex items-center gap-2">
             {selectedTemplate && (
@@ -341,7 +341,7 @@ export default function AdminCmsV2GeneratorLanding() {
                   variant="outline"
                   size="sm"
                   onClick={handleRegenerate}
-                  className="border-gray-700 text-gray-400 hover:text-white hover:border-gray-600"
+                  className="border-border text-muted-foreground hover:text-foreground hover:border-border"
                   data-testid="button-regenerate"
                 >
                   <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
@@ -351,7 +351,7 @@ export default function AdminCmsV2GeneratorLanding() {
                   variant="outline"
                   size="sm"
                   onClick={() => setShowPreview(!showPreview)}
-                  className={`border-gray-700 ${showPreview ? "text-cyan-400 border-cyan-700/50" : "text-gray-400 hover:text-white hover:border-gray-600"}`}
+                  className={`border-border ${showPreview ? "text-primary border-primary/30" : "text-muted-foreground hover:text-foreground hover:border-border"}`}
                   data-testid="button-toggle-preview"
                 >
                   {showPreview ? <EyeOff className="w-3.5 h-3.5 mr-1.5" /> : <Eye className="w-3.5 h-3.5 mr-1.5" />}
@@ -372,9 +372,9 @@ export default function AdminCmsV2GeneratorLanding() {
                 <button
                   onClick={() => { if (isCompleted) setStep(s.id); }}
                   className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors w-full ${
-                    isActive ? "bg-cyan-600/20 text-cyan-400 border border-cyan-600/40" :
-                    isCompleted ? "bg-gray-800/60 text-green-400 border border-green-800/40 cursor-pointer hover:bg-gray-800" :
-                    "bg-gray-900/40 text-gray-600 border border-gray-800/40"
+                    isActive ? "bg-primary/20 text-primary border border-primary/30" :
+                    isCompleted ? "bg-muted text-green-400 border border-green-800/40 cursor-pointer hover:bg-muted" :
+                    "bg-card/40 text-muted-foreground/60 border border-border/40"
                   }`}
                   data-testid={`step-${s.id}`}
                 >
@@ -382,7 +382,7 @@ export default function AdminCmsV2GeneratorLanding() {
                   <span className="hidden sm:inline">{s.label}</span>
                   <span className="sm:hidden">{s.id}</span>
                 </button>
-                {i < STEPS.length - 1 && <ChevronRight className="w-3 h-3 text-gray-700 shrink-0" />}
+                {i < STEPS.length - 1 && <ChevronRight className="w-3 h-3 text-muted-foreground shrink-0" />}
               </div>
             );
           })}
@@ -447,12 +447,12 @@ export default function AdminCmsV2GeneratorLanding() {
           )}
         </div>
 
-        <div className="flex items-center justify-between mt-8 pt-4 border-t border-gray-800/60">
+        <div className="flex items-center justify-between mt-8 pt-4 border-t border-border">
           <Button
             variant="ghost"
             onClick={back}
             disabled={step === 1}
-            className="text-gray-400 hover:text-white"
+            className="text-muted-foreground hover:text-foreground"
             data-testid="button-back"
           >
             <ChevronLeft className="w-4 h-4 mr-1" /> Back
@@ -462,7 +462,7 @@ export default function AdminCmsV2GeneratorLanding() {
               <Button
                 onClick={next}
                 disabled={!canAdvance()}
-                className="bg-cyan-600 hover:bg-cyan-700 text-white"
+                className="bg-primary text-foreground"
                 data-testid="button-next"
               >
                 Next <ChevronRight className="w-4 h-4 ml-1" />
@@ -471,7 +471,7 @@ export default function AdminCmsV2GeneratorLanding() {
               <Button
                 onClick={handleGenerate}
                 disabled={!canAdvance() || generateMutation.isPending || slugStatus === "checking"}
-                className="bg-green-600 hover:bg-green-700 text-white"
+                className="bg-green-600 hover:bg-green-700 text-foreground"
                 data-testid="button-generate"
               >
                 <Wand2 className="w-4 h-4 mr-1" />
@@ -483,19 +483,19 @@ export default function AdminCmsV2GeneratorLanding() {
       </div>
 
       <AlertDialog open={showPublishConfirm} onOpenChange={setShowPublishConfirm}>
-        <AlertDialogContent className="bg-gray-900 border-gray-700 text-white">
+        <AlertDialogContent className="bg-card border-border text-foreground">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-white">Publish immediately?</AlertDialogTitle>
-            <AlertDialogDescription className="text-gray-400">
+            <AlertDialogTitle className="text-foreground">Publish immediately?</AlertDialogTitle>
+            <AlertDialogDescription className="text-muted-foreground">
               This will generate the page and make it publicly visible right away. You can always unpublish it later from the page builder.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700 hover:text-white" data-testid="button-cancel-publish">
+            <AlertDialogCancel className="bg-muted border-border text-foreground/80 hover:bg-muted hover:text-foreground" data-testid="button-cancel-publish">
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
-              className="bg-green-600 hover:bg-green-700 text-white"
+              className="bg-green-600 hover:bg-green-700 text-foreground"
               onClick={() => generateMutation.mutate()}
               data-testid="button-confirm-publish"
             >
@@ -516,22 +516,22 @@ function PreviewPanel({ result, previewWidth, onWidthChange }: {
   const blocks = result.contentJson.blocks;
 
   return (
-    <div className="border border-gray-800/60 rounded-lg bg-gray-950 overflow-hidden" data-testid="preview-panel">
-      <div className="flex items-center justify-between px-3 py-2 bg-gray-900/80 border-b border-gray-800/60">
-        <span className="text-xs font-medium text-gray-400">
+    <div className="border border-border rounded-lg bg-background overflow-hidden" data-testid="preview-panel">
+      <div className="flex items-center justify-between px-3 py-2 bg-card border-b border-border">
+        <span className="text-xs font-medium text-muted-foreground">
           Preview — {blocks.length} blocks
         </span>
         <div className="flex items-center gap-1">
           <button
             onClick={() => onWidthChange("desktop")}
-            className={`p-1.5 rounded transition-colors ${previewWidth === "desktop" ? "text-cyan-400 bg-cyan-950/30" : "text-gray-500 hover:text-white"}`}
+            className={`p-1.5 rounded transition-colors ${previewWidth === "desktop" ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground"}`}
             data-testid="preview-desktop"
           >
             <Monitor className="w-4 h-4" />
           </button>
           <button
             onClick={() => onWidthChange("mobile")}
-            className={`p-1.5 rounded transition-colors ${previewWidth === "mobile" ? "text-cyan-400 bg-cyan-950/30" : "text-gray-500 hover:text-white"}`}
+            className={`p-1.5 rounded transition-colors ${previewWidth === "mobile" ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground"}`}
             data-testid="preview-mobile"
           >
             <Smartphone className="w-4 h-4" />
@@ -551,16 +551,16 @@ function PreviewPanel({ result, previewWidth, onWidthChange }: {
           </div>
 
           {result.contentJson.themeOverride && (
-            <div className="mt-3 px-2 py-1.5 rounded bg-gray-800/40 border border-gray-800/40">
-              <span className="text-[10px] text-gray-500">Theme override: </span>
-              <span className="text-[10px] text-cyan-400">{result.contentJson.themeOverride}</span>
+            <div className="mt-3 px-2 py-1.5 rounded bg-muted border border-border/40">
+              <span className="text-[10px] text-muted-foreground">Theme override: </span>
+              <span className="text-[10px] text-primary">{result.contentJson.themeOverride}</span>
             </div>
           )}
 
-          <div className="mt-3 px-2 py-1.5 rounded bg-gray-800/40 border border-gray-800/40">
-            <p className="text-[10px] text-gray-500 mb-0.5">SEO</p>
-            <p className="text-[11px] text-white truncate">{result.seo.metaTitle}</p>
-            <p className="text-[10px] text-gray-500 truncate">{result.seo.metaDescription}</p>
+          <div className="mt-3 px-2 py-1.5 rounded bg-muted border border-border/40">
+            <p className="text-[10px] text-muted-foreground mb-0.5">SEO</p>
+            <p className="text-[11px] text-foreground truncate">{result.seo.metaTitle}</p>
+            <p className="text-[10px] text-muted-foreground truncate">{result.seo.metaDescription}</p>
           </div>
         </div>
       </div>
@@ -590,14 +590,14 @@ function PreviewBlock({ block, index }: { block: any; index: number }) {
       className={`flex items-center gap-2 px-2.5 py-2 rounded text-xs border transition-colors ${
         isRef
           ? "border-purple-800/40 bg-purple-950/20"
-          : "border-gray-800/40 bg-gray-900/40"
+          : "border-border/40 bg-card/40"
       }`}
       data-testid={`preview-block-${index}`}
     >
-      <span className="text-gray-600 w-4 text-right shrink-0">{index + 1}</span>
-      <span className={`font-medium shrink-0 ${isRef ? "text-purple-400" : "text-cyan-400"}`}>{label}</span>
-      {detail && <span className="text-gray-500 truncate">{detail}</span>}
-      <span className="ml-auto text-[10px] text-gray-700 shrink-0">v{block.version}</span>
+      <span className="text-muted-foreground/60 w-4 text-right shrink-0">{index + 1}</span>
+      <span className={`font-medium shrink-0 ${isRef ? "text-purple-400" : "text-primary"}`}>{label}</span>
+      {detail && <span className="text-muted-foreground truncate">{detail}</span>}
+      <span className="ml-auto text-[10px] text-muted-foreground shrink-0">v{block.version}</span>
     </div>
   );
 }
@@ -609,8 +609,8 @@ function StepTemplate({ templates, selected, onSelect }: {
 }) {
   return (
     <div>
-      <h2 className="text-sm font-semibold text-white mb-1">Choose a Template</h2>
-      <p className="text-xs text-gray-500 mb-4">Select the base layout for your landing page. You can customize all content after generation.</p>
+      <h2 className="text-sm font-semibold text-foreground mb-1">Choose a Template</h2>
+      <p className="text-xs text-muted-foreground mb-4">Select the base layout for your landing page. You can customize all content after generation.</p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {templates.map((tmpl) => {
           const isSelected = selected?.id === tmpl.id;
@@ -619,26 +619,26 @@ function StepTemplate({ templates, selected, onSelect }: {
               key={tmpl.id}
               className={`cursor-pointer transition-all ${
                 isSelected
-                  ? "border-cyan-500 bg-cyan-950/20 ring-1 ring-cyan-500/30"
-                  : "border-gray-800/60 bg-gray-900/60 hover:border-gray-700"
+                  ? "border-primary bg-primary/10 ring-1 ring-primary/30"
+                  : "border-border bg-card hover:border-border"
               }`}
               onClick={() => onSelect(tmpl)}
               data-testid={`template-card-${tmpl.id}`}
             >
               <CardContent className="p-4">
                 <div className="flex items-start justify-between mb-2">
-                  <h3 className="font-medium text-white text-sm">{tmpl.name}</h3>
-                  {isSelected && <Check className="w-4 h-4 text-cyan-400 shrink-0" />}
+                  <h3 className="font-medium text-foreground text-sm">{tmpl.name}</h3>
+                  {isSelected && <Check className="w-4 h-4 text-primary shrink-0" />}
                 </div>
-                <p className="text-xs text-gray-500 mb-3">{tmpl.description}</p>
+                <p className="text-xs text-muted-foreground mb-3">{tmpl.description}</p>
                 <div className="flex flex-wrap gap-1">
                   {tmpl.tags.map((tag) => (
-                    <Badge key={tag} variant="outline" className="border-gray-700/60 text-gray-500 text-[10px]">{tag}</Badge>
+                    <Badge key={tag} variant="outline" className="border-border/60 text-muted-foreground text-[10px]">{tag}</Badge>
                   ))}
                 </div>
                 <div className="mt-3 flex flex-wrap gap-1">
                   {tmpl.blocks.map((block, i) => (
-                    <span key={i} className="text-[10px] bg-gray-800/60 text-gray-400 px-1.5 py-0.5 rounded">{block.type}</span>
+                    <span key={i} className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded">{block.type}</span>
                   ))}
                 </div>
               </CardContent>
@@ -659,17 +659,17 @@ function StepProducts({ products, primaryProductId, secondaryProductIds, onPrima
 }) {
   return (
     <div>
-      <h2 className="text-sm font-semibold text-white mb-1">Choose Products</h2>
-      <p className="text-xs text-gray-500 mb-4">Select a primary product for the spotlight block, and optionally add secondary products for a product grid.</p>
+      <h2 className="text-sm font-semibold text-foreground mb-1">Choose Products</h2>
+      <p className="text-xs text-muted-foreground mb-4">Select a primary product for the spotlight block, and optionally add secondary products for a product grid.</p>
 
       <div className="space-y-4">
         <div>
-          <Label className="text-gray-300 text-xs mb-2 block">Primary Product</Label>
+          <Label className="text-foreground/80 text-xs mb-2 block">Primary Product</Label>
           <Select value={primaryProductId || "none"} onValueChange={(v) => onPrimaryChange(v === "none" ? "" : v)}>
-            <SelectTrigger className="bg-gray-800 border-gray-600 text-white" data-testid="select-primary-product">
+            <SelectTrigger className="bg-muted border-border text-foreground" data-testid="select-primary-product">
               <SelectValue placeholder="Select a product (optional)" />
             </SelectTrigger>
-            <SelectContent className="bg-gray-800 border-gray-600 text-white">
+            <SelectContent className="bg-muted border-border text-foreground">
               <SelectItem value="none">No primary product</SelectItem>
               {products.map((p) => (
                 <SelectItem key={p.id} value={p.id}>
@@ -681,11 +681,11 @@ function StepProducts({ products, primaryProductId, secondaryProductIds, onPrima
         </div>
 
         <div>
-          <Label className="text-gray-300 text-xs mb-2 block">
-            Secondary Products <span className="text-gray-600">(0–5 for product grid)</span>
+          <Label className="text-foreground/80 text-xs mb-2 block">
+            Secondary Products <span className="text-muted-foreground/60">(0–5 for product grid)</span>
           </Label>
           {products.length === 0 ? (
-            <p className="text-xs text-gray-600">No products available.</p>
+            <p className="text-xs text-muted-foreground/60">No products available.</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {products.filter((p) => p.id !== primaryProductId).map((p) => {
@@ -696,19 +696,19 @@ function StepProducts({ products, primaryProductId, secondaryProductIds, onPrima
                     onClick={() => onToggleSecondary(p.id)}
                     className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
                       isSelected
-                        ? "border-cyan-600/50 bg-cyan-950/20"
-                        : "border-gray-800/60 bg-gray-900/40 hover:border-gray-700"
+                        ? "border-primary/30 bg-primary/10"
+                        : "border-border bg-card/40 hover:border-border"
                     }`}
                     data-testid={`secondary-product-${p.id}`}
                   >
                     <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 ${
-                      isSelected ? "border-cyan-500 bg-cyan-500" : "border-gray-600"
+                      isSelected ? "border-primary bg-primary" : "border-border"
                     }`}>
-                      {isSelected && <Check className="w-3 h-3 text-white" />}
+                      {isSelected && <Check className="w-3 h-3 text-foreground" />}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm text-white truncate">{p.name}</p>
-                      <p className="text-xs text-gray-500">${(p.price / 100).toFixed(2)}</p>
+                      <p className="text-sm text-foreground truncate">{p.name}</p>
+                      <p className="text-xs text-muted-foreground">${(p.price / 100).toFixed(2)}</p>
                     </div>
                   </div>
                 );
@@ -736,18 +736,18 @@ function StepSections({ sections, selectedIds, sectionMode, onToggle, onModeChan
 
   return (
     <div>
-      <h2 className="text-sm font-semibold text-white mb-1">Add Sections / Kits</h2>
-      <p className="text-xs text-gray-500 mb-4">Select saved sections or kits to append to the page. These are added after the template blocks.</p>
+      <h2 className="text-sm font-semibold text-foreground mb-1">Add Sections / Kits</h2>
+      <p className="text-xs text-muted-foreground mb-4">Select saved sections or kits to append to the page. These are added after the template blocks.</p>
 
       <div className="mb-4 flex items-center gap-4">
-        <Label className="text-gray-400 text-xs">Insertion Mode:</Label>
+        <Label className="text-muted-foreground text-xs">Insertion Mode:</Label>
         <div className="flex gap-2">
           <button
             onClick={() => onModeChange("detach")}
             className={`text-xs px-3 py-1.5 rounded-md border transition-colors ${
               sectionMode === "detach"
-                ? "border-cyan-600/50 bg-cyan-950/20 text-cyan-400"
-                : "border-gray-700 text-gray-500 hover:text-white"
+                ? "border-primary/30 bg-primary/10 text-primary"
+                : "border-border text-muted-foreground hover:text-foreground"
             }`}
             data-testid="mode-detach"
           >
@@ -757,8 +757,8 @@ function StepSections({ sections, selectedIds, sectionMode, onToggle, onModeChan
             onClick={() => onModeChange("sectionRef")}
             className={`text-xs px-3 py-1.5 rounded-md border transition-colors ${
               sectionMode === "sectionRef"
-                ? "border-cyan-600/50 bg-cyan-950/20 text-cyan-400"
-                : "border-gray-700 text-gray-500 hover:text-white"
+                ? "border-primary/30 bg-primary/10 text-primary"
+                : "border-border text-muted-foreground hover:text-foreground"
             }`}
             data-testid="mode-sectionRef"
           >
@@ -782,10 +782,10 @@ function StepSections({ sections, selectedIds, sectionMode, onToggle, onModeChan
       )}
 
       {sections.length === 0 ? (
-        <Card className="bg-gray-900/60 border-gray-800/60">
+        <Card className="bg-card border-border">
           <CardContent className="p-8 text-center">
-            <Layers className="w-8 h-8 text-gray-700 mx-auto mb-2" />
-            <p className="text-gray-500 text-xs">No saved sections. You can skip this step or load starter kits from the Sections page.</p>
+            <Layers className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+            <p className="text-muted-foreground text-xs">No saved sections. You can skip this step or load starter kits from the Sections page.</p>
           </CardContent>
         </Card>
       ) : (
@@ -798,24 +798,24 @@ function StepSections({ sections, selectedIds, sectionMode, onToggle, onModeChan
                 onClick={() => onToggle(section.id)}
                 className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
                   isSelected
-                    ? "border-cyan-600/50 bg-cyan-950/20"
-                    : "border-gray-800/60 bg-gray-900/40 hover:border-gray-700"
+                    ? "border-primary/30 bg-primary/10"
+                    : "border-border bg-card/40 hover:border-border"
                 }`}
                 data-testid={`section-card-${section.id}`}
               >
                 <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 mt-0.5 ${
-                  isSelected ? "border-cyan-500 bg-cyan-500" : "border-gray-600"
+                  isSelected ? "border-primary bg-primary" : "border-border"
                 }`}>
-                  {isSelected && <Check className="w-3 h-3 text-white" />}
+                  {isSelected && <Check className="w-3 h-3 text-foreground" />}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm text-white truncate">{section.name}</p>
-                  {section.description && <p className="text-[11px] text-gray-500 line-clamp-2 mt-0.5">{section.description}</p>}
+                  <p className="text-sm text-foreground truncate">{section.name}</p>
+                  {section.description && <p className="text-[11px] text-muted-foreground line-clamp-2 mt-0.5">{section.description}</p>}
                   <div className="flex gap-1.5 mt-1.5">
                     {section.category && (
-                      <Badge variant="outline" className="border-gray-700/60 text-gray-600 text-[10px]">{section.category}</Badge>
+                      <Badge variant="outline" className="border-border/60 text-muted-foreground/60 text-[10px]">{section.category}</Badge>
                     )}
-                    <Badge variant="outline" className="border-gray-700/60 text-gray-600 text-[10px]">
+                    <Badge variant="outline" className="border-border/60 text-muted-foreground/60 text-[10px]">
                       {getBlockCount(section.blocks)} blocks
                     </Badge>
                   </div>
@@ -827,7 +827,7 @@ function StepSections({ sections, selectedIds, sectionMode, onToggle, onModeChan
       )}
 
       {selectedIds.length > 0 && (
-        <p className="text-xs text-gray-500 mt-3">{selectedIds.length} section(s) selected — will be appended in {sectionMode === "detach" ? "detached (copy)" : "linked reference"} mode.</p>
+        <p className="text-xs text-muted-foreground mt-3">{selectedIds.length} section(s) selected — will be appended in {sectionMode === "detach" ? "detached (copy)" : "linked reference"} mode.</p>
       )}
     </div>
   );
@@ -853,43 +853,43 @@ function StepDetails({ pageTitle, pageSlug, metaTitle, metaDescription, ctaDesti
 }) {
   return (
     <div>
-      <h2 className="text-sm font-semibold text-white mb-1">Page Details</h2>
-      <p className="text-xs text-gray-500 mb-4">Set the title, slug, SEO metadata, and publishing options.</p>
+      <h2 className="text-sm font-semibold text-foreground mb-1">Page Details</h2>
+      <p className="text-xs text-muted-foreground mb-4">Set the title, slug, SEO metadata, and publishing options.</p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="gen-title" className="text-gray-300 text-xs">Page Title *</Label>
+            <Label htmlFor="gen-title" className="text-foreground/80 text-xs">Page Title *</Label>
             <Input
               id="gen-title"
               value={pageTitle}
               onChange={(e) => onTitleChange(e.target.value)}
               placeholder="e.g., Cold Plunge Landing Page"
-              className="bg-gray-800 border-gray-600 text-white placeholder:text-gray-500"
+              className="bg-muted border-border text-foreground placeholder:text-muted-foreground"
               data-testid="input-page-title"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="gen-slug" className="text-gray-300 text-xs">Slug *</Label>
+            <Label htmlFor="gen-slug" className="text-foreground/80 text-xs">Slug *</Label>
             <div className="flex items-center gap-2">
-              <span className="text-gray-600 text-xs">/</span>
+              <span className="text-muted-foreground/60 text-xs">/</span>
               <div className="flex-1 relative">
                 <Input
                   id="gen-slug"
                   value={pageSlug}
                   onChange={(e) => onSlugChange(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
                   placeholder="cold-plunge-landing"
-                  className={`bg-gray-800 text-white placeholder:text-gray-500 pr-8 ${
+                  className={`bg-muted text-foreground placeholder:text-muted-foreground pr-8 ${
                     slugStatus === "taken" ? "border-red-500" :
                     slugStatus === "available" ? "border-green-600" :
-                    "border-gray-600"
+                    "border-border"
                   }`}
                   data-testid="input-page-slug"
                 />
                 <div className="absolute right-2 top-1/2 -translate-y-1/2">
                   {slugStatus === "checking" && (
-                    <RefreshCw className="w-3.5 h-3.5 text-gray-500 animate-spin" />
+                    <RefreshCw className="w-3.5 h-3.5 text-muted-foreground animate-spin" />
                   )}
                   {slugStatus === "available" && (
                     <Check className="w-3.5 h-3.5 text-green-500" data-testid="slug-available" />
@@ -909,26 +909,26 @@ function StepDetails({ pageTitle, pageSlug, metaTitle, metaDescription, ctaDesti
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="gen-meta-title" className="text-gray-300 text-xs">Meta Title</Label>
+            <Label htmlFor="gen-meta-title" className="text-foreground/80 text-xs">Meta Title</Label>
             <Input
               id="gen-meta-title"
               value={metaTitle}
               onChange={(e) => onMetaTitleChange(e.target.value)}
               placeholder="Auto-filled from title"
-              className="bg-gray-800 border-gray-600 text-white placeholder:text-gray-500"
+              className="bg-muted border-border text-foreground placeholder:text-muted-foreground"
               data-testid="input-meta-title"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="gen-meta-desc" className="text-gray-300 text-xs">Meta Description</Label>
+            <Label htmlFor="gen-meta-desc" className="text-foreground/80 text-xs">Meta Description</Label>
             <Textarea
               id="gen-meta-desc"
               value={metaDescription}
               onChange={(e) => onMetaDescriptionChange(e.target.value)}
               placeholder="Optional — for search engine results"
               rows={2}
-              className="bg-gray-800 border-gray-600 text-white placeholder:text-gray-500"
+              className="bg-muted border-border text-foreground placeholder:text-muted-foreground"
               data-testid="input-meta-description"
             />
           </div>
@@ -936,12 +936,12 @@ function StepDetails({ pageTitle, pageSlug, metaTitle, metaDescription, ctaDesti
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label className="text-gray-300 text-xs">CTA Destination</Label>
+            <Label className="text-foreground/80 text-xs">CTA Destination</Label>
             <Select value={ctaDestination} onValueChange={(v) => onCtaChange(v as any)}>
-              <SelectTrigger className="bg-gray-800 border-gray-600 text-white" data-testid="select-cta-destination">
+              <SelectTrigger className="bg-muted border-border text-foreground" data-testid="select-cta-destination">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-gray-800 border-gray-600 text-white">
+              <SelectContent className="bg-muted border-border text-foreground">
                 <SelectItem value="shop">Shop Page (/shop)</SelectItem>
                 <SelectItem value="product">Primary Product Page</SelectItem>
                 <SelectItem value="quote">Get a Quote (/contact)</SelectItem>
@@ -950,12 +950,12 @@ function StepDetails({ pageTitle, pageSlug, metaTitle, metaDescription, ctaDesti
           </div>
 
           <div className="space-y-2">
-            <Label className="text-gray-300 text-xs">Theme Override</Label>
+            <Label className="text-foreground/80 text-xs">Theme Override</Label>
             <Select value={themeOverride || "none"} onValueChange={(v) => onThemeChange(v === "none" ? "" : v)}>
-              <SelectTrigger className="bg-gray-800 border-gray-600 text-white" data-testid="select-theme-override">
+              <SelectTrigger className="bg-muted border-border text-foreground" data-testid="select-theme-override">
                 <SelectValue placeholder="Use active theme" />
               </SelectTrigger>
-              <SelectContent className="bg-gray-800 border-gray-600 text-white">
+              <SelectContent className="bg-muted border-border text-foreground">
                 <SelectItem value="none">Use active theme (no override)</SelectItem>
                 {themes.map((theme) => (
                   <SelectItem key={theme.id} value={theme.id}>{theme.name}</SelectItem>
@@ -964,10 +964,10 @@ function StepDetails({ pageTitle, pageSlug, metaTitle, metaDescription, ctaDesti
             </Select>
           </div>
 
-          <div className="flex items-center justify-between p-3 rounded-lg border border-gray-800/60 bg-gray-900/40">
+          <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-card/40">
             <div>
-              <p className="text-sm text-white">Publish immediately</p>
-              <p className="text-[11px] text-gray-500">If off, page will be saved as a draft.</p>
+              <p className="text-sm text-foreground">Publish immediately</p>
+              <p className="text-[11px] text-muted-foreground">If off, page will be saved as a draft.</p>
             </div>
             <Switch
               checked={publishNow}
@@ -976,8 +976,8 @@ function StepDetails({ pageTitle, pageSlug, metaTitle, metaDescription, ctaDesti
             />
           </div>
 
-          <div className="p-3 rounded-lg border border-gray-800/40 bg-gray-900/30">
-            <p className="text-[11px] text-gray-600 leading-relaxed">
+          <div className="p-3 rounded-lg border border-border/40 bg-card/30">
+            <p className="text-[11px] text-muted-foreground/60 leading-relaxed">
               After generating, you'll be redirected to the page builder where you can edit all blocks, reorder sections, and fine-tune content before publishing.
             </p>
           </div>

@@ -28,6 +28,8 @@ import {
   Menu,
   ImageIcon,
 } from "lucide-react";
+import AdminNav from "./AdminNav";
+import { useAdmin } from "@/hooks/use-admin";
 
 interface Breadcrumb {
   label: string;
@@ -76,6 +78,7 @@ export default function CmsV2Layout({ children, breadcrumbs, activeNav }: CmsV2L
   const [location] = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const { role } = useAdmin();
 
   const resolvedActiveNav = activeNav || (() => {
     for (const item of NAV_ITEMS) {
@@ -90,170 +93,174 @@ export default function CmsV2Layout({ children, breadcrumbs, activeNav }: CmsV2L
   })();
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white flex" data-testid="cms-v2-layout">
-      <aside
-        className={cn(
-          "fixed top-0 left-0 h-screen bg-gray-900/80 border-r border-gray-800/60 flex flex-col z-30 transition-all duration-200",
-          collapsed ? "w-16" : "w-56"
-        )}
-        data-testid="cms-v2-sidebar"
-      >
-        <div className={cn("flex items-center gap-2 border-b border-gray-800/60 h-14 px-3", collapsed && "justify-center")}>
-          {!collapsed && (
-            <Link href="/admin/cms-v2">
-              <span className="text-sm font-semibold text-cyan-400 tracking-tight cursor-pointer" data-testid="link-cms-home">CMS</span>
-            </Link>
+    <div className="min-h-screen bg-background text-foreground flex flex-col" data-testid="cms-v2-layout">
+      <AdminNav currentPage="cms-v2" role={role} />
+
+      <div className="flex flex-1">
+        <aside
+          className={cn(
+            "fixed top-[73px] left-0 h-[calc(100vh-73px)] bg-card border-r border-border flex flex-col z-30 transition-all duration-200",
+            collapsed ? "w-16" : "w-56"
           )}
-          <Button
-            variant="ghost"
-            size="sm"
-            className={cn("text-gray-500 hover:text-white h-8 w-8 p-0", !collapsed && "ml-auto")}
-            onClick={() => setCollapsed(!collapsed)}
-            data-testid="button-toggle-sidebar"
-          >
-            {collapsed ? <PanelLeft className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
-          </Button>
-        </div>
+          data-testid="cms-v2-sidebar"
+        >
+          <div className={cn("flex items-center gap-2 border-b border-border h-12 px-3", collapsed && "justify-center")}>
+            {!collapsed && (
+              <Link href="/admin/cms-v2">
+                <span className="text-sm font-semibold text-primary tracking-tight cursor-pointer" data-testid="link-cms-home">CMS</span>
+              </Link>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn("text-muted-foreground hover:text-foreground h-8 w-8 p-0", !collapsed && "ml-auto")}
+              onClick={() => setCollapsed(!collapsed)}
+              data-testid="button-toggle-sidebar"
+            >
+              {collapsed ? <PanelLeft className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
+            </Button>
+          </div>
 
-        <nav className="flex-1 py-2 space-y-0.5 px-2" data-testid="cms-v2-nav">
-          {NAV_ITEMS.map((item) => {
-            const isActive = resolvedActiveNav === item.id;
+          <nav className="flex-1 py-2 space-y-0.5 px-2 overflow-y-auto" data-testid="cms-v2-nav">
+            {NAV_ITEMS.map((item) => {
+              const isActive = resolvedActiveNav === item.id;
 
-            if (item.children && !collapsed) {
-              return (
-                <div key={item.id}>
-                  <Link href={item.href}>
-                    <div
-                      className={cn(
-                        "flex items-center gap-3 px-3 py-2 rounded-md text-sm cursor-pointer transition-colors",
-                        isActive
-                          ? "bg-cyan-900/30 text-cyan-400"
-                          : "text-gray-400 hover:text-white hover:bg-gray-800/60"
-                      )}
-                      data-testid={`nav-${item.id}`}
-                    >
-                      <item.icon className={cn("w-4 h-4 flex-shrink-0", isActive ? "text-cyan-400" : "text-gray-500")} />
-                      <span className="truncate">{item.label}</span>
-                    </div>
-                  </Link>
-                  {isActive && item.children.map((child) => (
-                    <Link key={child.id} href={child.href}>
+              if (item.children && !collapsed) {
+                return (
+                  <div key={item.id}>
+                    <Link href={item.href}>
                       <div
                         className={cn(
-                          "flex items-center gap-2 pl-10 pr-3 py-1.5 rounded-md text-xs cursor-pointer transition-colors",
-                          location.startsWith(child.href)
-                            ? "text-cyan-300"
-                            : "text-gray-500 hover:text-white"
+                          "flex items-center gap-3 px-3 py-2 rounded-md text-sm cursor-pointer transition-colors",
+                          isActive
+                            ? "bg-secondary text-foreground"
+                            : "text-muted-foreground hover:text-foreground hover:bg-muted"
                         )}
-                        data-testid={`nav-${child.id}`}
+                        data-testid={`nav-${item.id}`}
                       >
-                        <span className="truncate">{child.label}</span>
+                        <item.icon className={cn("w-4 h-4 flex-shrink-0", isActive ? "text-primary" : "text-muted-foreground")} />
+                        <span className="truncate">{item.label}</span>
                       </div>
                     </Link>
-                  ))}
-                </div>
+                    {isActive && item.children.map((child) => (
+                      <Link key={child.id} href={child.href}>
+                        <div
+                          className={cn(
+                            "flex items-center gap-2 pl-10 pr-3 py-1.5 rounded-md text-xs cursor-pointer transition-colors",
+                            location.startsWith(child.href)
+                              ? "text-primary"
+                              : "text-muted-foreground hover:text-foreground"
+                          )}
+                          data-testid={`nav-${child.id}`}
+                        >
+                          <span className="truncate">{child.label}</span>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                );
+              }
+
+              return (
+                <Link key={item.id} href={item.children ? item.href : item.href}>
+                  <div
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2 rounded-md text-sm cursor-pointer transition-colors",
+                      isActive
+                        ? "bg-secondary text-foreground"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                    )}
+                    data-testid={`nav-${item.id}`}
+                  >
+                    <item.icon className={cn("w-4 h-4 flex-shrink-0", isActive ? "text-primary" : "text-muted-foreground")} />
+                    {!collapsed && <span className="truncate">{item.label}</span>}
+                  </div>
+                </Link>
               );
-            }
+            })}
+          </nav>
 
-            return (
-              <Link key={item.id} href={item.children ? item.href : item.href}>
-                <div
-                  className={cn(
-                    "flex items-center gap-3 px-3 py-2 rounded-md text-sm cursor-pointer transition-colors",
-                    isActive
-                      ? "bg-cyan-900/30 text-cyan-400"
-                      : "text-gray-400 hover:text-white hover:bg-gray-800/60"
-                  )}
-                  data-testid={`nav-${item.id}`}
-                >
-                  <item.icon className={cn("w-4 h-4 flex-shrink-0", isActive ? "text-cyan-400" : "text-gray-500")} />
-                  {!collapsed && <span className="truncate">{item.label}</span>}
-                </div>
+          {!collapsed && (
+            <div className="px-3 py-3 border-t border-border">
+              <Link href="/admin/dashboard">
+                <Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground hover:text-foreground text-xs gap-2" data-testid="link-back-admin">
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  Back to Admin
+                </Button>
               </Link>
-            );
-          })}
-        </nav>
-
-        {!collapsed && (
-          <div className="px-3 py-3 border-t border-gray-800/60">
-            <Link href="/admin/dashboard">
-              <Button variant="ghost" size="sm" className="w-full justify-start text-gray-500 hover:text-white text-xs gap-2" data-testid="link-back-admin">
-                <ArrowLeft className="w-3.5 h-3.5" />
-                Back to Admin
-              </Button>
-            </Link>
-          </div>
-        )}
-      </aside>
-
-      <div className={cn("flex-1 flex flex-col transition-all duration-200", collapsed ? "ml-16" : "ml-56")}>
-        <header className="sticky top-0 z-20 bg-gray-950/90 backdrop-blur-sm border-b border-gray-800/60 h-14 flex items-center gap-4 px-6" data-testid="cms-v2-topbar">
-          {breadcrumbs && breadcrumbs.length > 0 && (
-            <nav className="flex items-center gap-1 text-sm" data-testid="cms-v2-breadcrumbs">
-              <Link href="/admin/cms-v2">
-                <span className="text-gray-500 hover:text-gray-300 cursor-pointer" data-testid="breadcrumb-cms">CMS</span>
-              </Link>
-              {breadcrumbs.map((crumb, i) => (
-                <span key={i} className="flex items-center gap-1">
-                  <ChevronRight className="w-3 h-3 text-gray-600" />
-                  {crumb.href ? (
-                    <Link href={crumb.href}>
-                      <span className="text-gray-400 hover:text-white cursor-pointer">{crumb.label}</span>
-                    </Link>
-                  ) : (
-                    <span className="text-gray-300">{crumb.label}</span>
-                  )}
-                </span>
-              ))}
-            </nav>
+            </div>
           )}
+        </aside>
 
-          <div className="flex-1" />
+        <div className={cn("flex-1 flex flex-col transition-all duration-200", collapsed ? "ml-16" : "ml-56")}>
+          <header className="sticky top-[73px] z-20 bg-background/90 backdrop-blur-sm border-b border-border h-12 flex items-center gap-4 px-6" data-testid="cms-v2-topbar">
+            {breadcrumbs && breadcrumbs.length > 0 && (
+              <nav className="flex items-center gap-1 text-sm" data-testid="cms-v2-breadcrumbs">
+                <Link href="/admin/cms-v2">
+                  <span className="text-muted-foreground hover:text-foreground cursor-pointer" data-testid="breadcrumb-cms">CMS</span>
+                </Link>
+                {breadcrumbs.map((crumb, i) => (
+                  <span key={i} className="flex items-center gap-1">
+                    <ChevronRight className="w-3 h-3 text-muted-foreground/50" />
+                    {crumb.href ? (
+                      <Link href={crumb.href}>
+                        <span className="text-muted-foreground hover:text-foreground cursor-pointer">{crumb.label}</span>
+                      </Link>
+                    ) : (
+                      <span className="text-foreground">{crumb.label}</span>
+                    )}
+                  </span>
+                ))}
+              </nav>
+            )}
 
-          <div className="relative w-64">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
-            <Input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search pages, sections..."
-              className="h-8 pl-8 bg-gray-900/60 border-gray-800 text-sm text-white placeholder:text-gray-600 focus:border-cyan-800"
-              data-testid="input-global-search"
-            />
-          </div>
+            <div className="flex-1" />
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="sm" className="bg-cyan-600 hover:bg-cyan-700 text-white h-8 gap-1.5 text-xs" data-testid="button-quick-create">
-                <Plus className="w-3.5 h-3.5" />
-                Create
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-gray-900 border-gray-700 text-white">
-              <Link href="/admin/cms-v2/pages">
-                <DropdownMenuItem className="cursor-pointer hover:bg-gray-800 focus:bg-gray-800 gap-2" data-testid="quick-create-page">
-                  <FileText className="w-4 h-4 text-gray-400" />
-                  New Page
-                </DropdownMenuItem>
-              </Link>
-              <Link href="/admin/cms-v2/sections">
-                <DropdownMenuItem className="cursor-pointer hover:bg-gray-800 focus:bg-gray-800 gap-2" data-testid="quick-create-section">
-                  <Layers className="w-4 h-4 text-gray-400" />
-                  New Section
-                </DropdownMenuItem>
-              </Link>
-              <Link href="/admin/cms-v2/templates">
-                <DropdownMenuItem className="cursor-pointer hover:bg-gray-800 focus:bg-gray-800 gap-2" data-testid="quick-create-template">
-                  <BookTemplate className="w-4 h-4 text-gray-400" />
-                  New Template
-                </DropdownMenuItem>
-              </Link>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </header>
+            <div className="relative w-64">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+              <Input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search pages, sections..."
+                className="h-8 pl-8 bg-muted border-border text-sm placeholder:text-muted-foreground focus:border-ring"
+                data-testid="input-global-search"
+              />
+            </div>
 
-        <main className="flex-1 p-6" data-testid="cms-v2-main">
-          {children}
-        </main>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" className="h-8 gap-1.5 text-xs" data-testid="button-quick-create">
+                  <Plus className="w-3.5 h-3.5" />
+                  Create
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <Link href="/admin/cms-v2/pages">
+                  <DropdownMenuItem className="cursor-pointer gap-2" data-testid="quick-create-page">
+                    <FileText className="w-4 h-4 text-muted-foreground" />
+                    New Page
+                  </DropdownMenuItem>
+                </Link>
+                <Link href="/admin/cms-v2/sections">
+                  <DropdownMenuItem className="cursor-pointer gap-2" data-testid="quick-create-section">
+                    <Layers className="w-4 h-4 text-muted-foreground" />
+                    New Section
+                  </DropdownMenuItem>
+                </Link>
+                <Link href="/admin/cms-v2/templates">
+                  <DropdownMenuItem className="cursor-pointer gap-2" data-testid="quick-create-template">
+                    <BookTemplate className="w-4 h-4 text-muted-foreground" />
+                    New Template
+                  </DropdownMenuItem>
+                </Link>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </header>
+
+          <main className="flex-1 p-6" data-testid="cms-v2-main">
+            {children}
+          </main>
+        </div>
       </div>
     </div>
   );

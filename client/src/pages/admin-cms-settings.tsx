@@ -67,7 +67,7 @@ export default function AdminCmsSettings() {
   if (adminLoading || !hasFullAccess) {
     return (
       <CmsV2Layout activeNav="settings" breadcrumbs={[{ label: "Settings" }]}>
-        <div className="p-8 text-center text-gray-400">
+        <div className="p-8 text-center text-muted-foreground">
           {adminLoading ? "Loading..." : "Access Denied"}
         </div>
       </CmsV2Layout>
@@ -79,29 +79,29 @@ export default function AdminCmsSettings() {
   return (
     <CmsV2Layout activeNav="settings" breadcrumbs={[{ label: "Settings" }]}>
       <div className="max-w-3xl mx-auto" data-testid="admin-cms-settings-page">
-        <h1 className="text-xl font-bold text-white mb-6">CMS Settings</h1>
+        <h1 className="text-xl font-bold text-foreground mb-6">CMS Settings</h1>
 
         <div className="space-y-6">
-          <Card className="bg-gray-900/50 border-gray-800/60">
+          <Card>
             <CardContent className="p-6">
               <div className="flex items-start gap-3 mb-5">
-                <Home className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
+                <Home className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
                 <div className="flex-1">
-                  <h2 className="text-lg font-semibold text-white mb-1">Home Page</h2>
-                  <p className="text-sm text-gray-400">
+                  <h2 className="text-lg font-semibold text-foreground mb-1">Home Page</h2>
+                  <p className="text-sm text-muted-foreground">
                     Choose which CMS page serves as your site's main landing page. Visitors arriving at your root URL will see this page.
                   </p>
                 </div>
               </div>
 
               {currentHomePage && (
-                <div className="mb-5 p-3 rounded-lg bg-gray-800/40 border border-gray-700/50 flex items-center gap-3">
+                <div className="mb-5 p-3 rounded-lg bg-muted border border-border flex items-center gap-3">
                   <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-300">
-                      Current home page: <span className="font-medium text-white">{currentHomePage.title}</span>
+                    <p className="text-sm text-foreground/80">
+                      Current home page: <span className="font-medium text-foreground">{currentHomePage.title}</span>
                     </p>
-                    <p className="text-xs text-gray-500 mt-0.5">/{currentHomePage.slug}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">/{currentHomePage.slug}</p>
                   </div>
                   <Badge
                     className={
@@ -126,7 +126,7 @@ export default function AdminCmsSettings() {
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2" htmlFor="home-page-select">
+                  <label className="block text-sm font-medium text-foreground/80 mb-2" htmlFor="home-page-select">
                     Select Home Page
                   </label>
                   <Select
@@ -135,25 +135,24 @@ export default function AdminCmsSettings() {
                     disabled={pagesLoading}
                   >
                     <SelectTrigger
-                      className="bg-gray-800 border-gray-700 text-white w-full"
+                      className="bg-muted border-border text-foreground w-full"
                       id="home-page-select"
                       data-testid="select-home-page"
                     >
                       <SelectValue placeholder={pagesLoading ? "Loading pages..." : "Choose a page"} />
                     </SelectTrigger>
-                    <SelectContent className="bg-gray-800 border-gray-700">
+                    <SelectContent>
                       {pages.map((page) => (
                         <SelectItem
                           key={page.id}
                           value={page.id}
-                          className="text-gray-200 focus:bg-gray-700 focus:text-white"
                           data-testid={`option-page-${page.id}`}
                         >
                           <span className="flex items-center gap-2">
                             {page.title}
-                            <span className="text-gray-500 text-xs">/{page.slug}</span>
+                            <span className="text-muted-foreground text-xs">/{page.slug}</span>
                             {page.isHome && (
-                              <Badge className="bg-cyan-900/30 text-cyan-400 border-none text-[10px] px-1.5 py-0">
+                              <Badge className="bg-primary/10 text-primary border-none text-[10px] px-1.5 py-0">
                                 current
                               </Badge>
                             )}
@@ -182,7 +181,7 @@ export default function AdminCmsSettings() {
                   <Button
                     onClick={handleSave}
                     disabled={!hasUnsavedChanges || setHomeMutation.isPending}
-                    className="bg-cyan-600 hover:bg-cyan-500 text-white gap-2"
+                    className="gap-2"
                     data-testid="button-save-home-page"
                   >
                     {setHomeMutation.isPending ? (

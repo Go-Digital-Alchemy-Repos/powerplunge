@@ -28,8 +28,8 @@ function getBlockMeta(type: string) {
 function TemplateThumbnail({ template }: { template: CmsTemplate }) {
   if (template.blocks.length === 0) {
     return (
-      <div className="w-full h-full flex items-center justify-center bg-gray-800/30">
-        <div className="flex flex-col items-center gap-2 text-gray-600">
+      <div className="w-full h-full flex items-center justify-center bg-muted/30">
+        <div className="flex flex-col items-center gap-2 text-muted-foreground/60">
           <FileText className="w-8 h-8" />
           <span className="text-[10px] font-medium uppercase tracking-wider">Blank</span>
         </div>
@@ -38,7 +38,7 @@ function TemplateThumbnail({ template }: { template: CmsTemplate }) {
   }
 
   return (
-    <div className="w-full h-full flex flex-col gap-[2px] p-2.5 bg-gray-900/80">
+    <div className="w-full h-full flex flex-col gap-[2px] p-2.5 bg-card">
       {template.blocks.map((block, i) => {
         const meta = getBlockMeta(block.type);
         const isHero = block.type === "hero";
@@ -67,12 +67,12 @@ function TemplateCard({ template, onUse }: { template: CmsTemplate; onUse: () =>
   const isBlank = template.id === "blank";
   return (
     <div
-      className="group rounded-xl border border-gray-800/60 bg-gray-900/60 overflow-hidden hover:border-cyan-800/50 transition-all hover:shadow-lg hover:shadow-cyan-950/20"
+      className="group rounded-xl border border-border bg-card overflow-hidden hover:border-primary/30 transition-all hover:shadow-lg hover:shadow-primary/10"
       data-testid={`card-template-${template.id}`}
     >
-      <div className="h-40 border-b border-gray-800/40 overflow-hidden relative">
+      <div className="h-40 border-b border-border/40 overflow-hidden relative">
         <TemplateThumbnail template={template} />
-        <div className="absolute inset-0 bg-gradient-to-t from-gray-900/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+        <div className="absolute inset-0 bg-gradient-to-t from-card/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
       </div>
 
       <div className="p-4 space-y-3">
@@ -80,13 +80,13 @@ function TemplateCard({ template, onUse }: { template: CmsTemplate; onUse: () =>
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 mb-0.5">
               {isBlank ? (
-                <FileText className="w-3.5 h-3.5 text-gray-500 shrink-0" />
+                <FileText className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
               ) : (
-                <Sparkles className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                <Sparkles className="w-3.5 h-3.5 text-primary shrink-0" />
               )}
-              <h3 className="font-semibold text-white text-sm truncate">{template.name}</h3>
+              <h3 className="font-semibold text-foreground text-sm truncate">{template.name}</h3>
             </div>
-            <div className="flex items-center gap-1 text-gray-600">
+            <div className="flex items-center gap-1 text-muted-foreground/60">
               <Layers className="w-3 h-3 shrink-0" />
               <span className="text-[10px]">
                 {template.blocks.length === 0 ? "Empty canvas" : `${template.blocks.length} blocks`}
@@ -95,7 +95,7 @@ function TemplateCard({ template, onUse }: { template: CmsTemplate; onUse: () =>
           </div>
         </div>
 
-        <p className="text-xs text-gray-500 leading-relaxed line-clamp-2">{template.description}</p>
+        <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{template.description}</p>
 
         {template.tags.length > 0 && (
           <div className="flex items-center gap-1 flex-wrap">
@@ -103,7 +103,7 @@ function TemplateCard({ template, onUse }: { template: CmsTemplate; onUse: () =>
               <Badge
                 key={tag}
                 variant="outline"
-                className="border-gray-700/60 text-gray-500 text-[10px] py-0 px-1.5"
+                className="border-border/60 text-muted-foreground text-[10px] py-0 px-1.5"
                 data-testid={`tag-${template.id}-${tag}`}
               >
                 {tag}
@@ -115,7 +115,7 @@ function TemplateCard({ template, onUse }: { template: CmsTemplate; onUse: () =>
         <Button
           onClick={onUse}
           size="sm"
-          className="w-full bg-cyan-600/90 hover:bg-cyan-600 text-white text-xs h-8"
+          className="w-full bg-primary/90 hover:bg-primary text-foreground text-xs h-8"
           data-testid={`button-use-template-${template.id}`}
         >
           <Plus className="w-3.5 h-3.5 mr-1" />
@@ -133,7 +133,7 @@ export default function AdminCmsV2Templates() {
   if (adminLoading || !hasFullAccess) {
     return (
       <CmsV2Layout activeNav="templates" breadcrumbs={[{ label: "Templates" }]}>
-        <div className="p-8 text-center text-gray-400">{adminLoading ? "Loading..." : "Access Denied"}</div>
+        <div className="p-8 text-center text-muted-foreground">{adminLoading ? "Loading..." : "Access Denied"}</div>
       </CmsV2Layout>
     );
   }
@@ -146,8 +146,8 @@ export default function AdminCmsV2Templates() {
     <CmsV2Layout activeNav="templates" breadcrumbs={[{ label: "Templates" }]}>
       <div className="max-w-6xl mx-auto" data-testid="admin-cms-v2-templates-page">
         <div className="mb-8">
-          <h1 className="text-xl font-bold text-white">Templates</h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <h1 className="text-xl font-bold text-foreground">Templates</h1>
+          <p className="text-sm text-muted-foreground mt-1">
             Pre-built page layouts to get started quickly. Pick a template and start editing.
           </p>
         </div>

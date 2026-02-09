@@ -130,13 +130,13 @@ function buildPuckConfig(): Config {
       sectionName: { type: "text", label: "Section Name" },
     },
     render: ({ puck: _puck, sectionId, sectionName, ...rest }: any) => (
-      <div className="border-2 border-dashed border-cyan-700/50 rounded-lg p-4 my-2 bg-cyan-900/10">
-        <div className="flex items-center gap-2 text-cyan-400 text-sm">
+      <div className="border-2 border-dashed border-primary/30 rounded-lg p-4 my-2 bg-primary/10">
+        <div className="flex items-center gap-2 text-primary text-sm">
           <Layers className="w-4 h-4" />
           <span className="font-medium">Section: {sectionName || sectionId || "Not set"}</span>
         </div>
         {!sectionId && (
-          <p className="text-gray-500 text-xs mt-1">Use "Insert Section" to link a saved section.</p>
+          <p className="text-muted-foreground text-xs mt-1">Use "Insert Section" to link a saved section.</p>
         )}
       </div>
     ),
@@ -165,7 +165,7 @@ function buildPuckConfig(): Config {
         title: { type: "text", label: "Page Title" },
       },
       render: ({ children }: any) => (
-        <div className="page-renderer bg-gray-950 text-white min-h-screen">{children}</div>
+        <div className="page-renderer bg-background text-foreground min-h-screen">{children}</div>
       ),
     },
   };
@@ -234,61 +234,61 @@ function SeoPanel({ open, onOpenChange, seo, onSeoChange }: {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="bg-gray-900 border-gray-700 text-white w-[420px] sm:max-w-[420px] overflow-y-auto" data-testid="panel-seo">
+      <SheetContent side="right" className="bg-card border-border text-foreground w-[420px] sm:max-w-[420px] overflow-y-auto" data-testid="panel-seo">
         <SheetHeader>
-          <SheetTitle className="text-white flex items-center gap-2">
-            <Search className="w-5 h-5 text-cyan-400" />
+          <SheetTitle className="text-foreground flex items-center gap-2">
+            <Search className="w-5 h-5 text-primary" />
             SEO Settings
           </SheetTitle>
         </SheetHeader>
 
         <div className="space-y-6 mt-6">
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-cyan-400 uppercase tracking-wider">Basic</h3>
+            <h3 className="text-sm font-semibold text-primary uppercase tracking-wider">Basic</h3>
 
             <div className="space-y-2">
-              <Label className="text-gray-300">Meta Title</Label>
+              <Label className="text-foreground/80">Meta Title</Label>
               <Input
                 value={seo.metaTitle}
                 onChange={(e) => update("metaTitle", e.target.value)}
                 placeholder="Page title for search engines"
-                className="bg-gray-800 border-gray-700 text-white"
+                className="bg-muted border-border text-foreground"
                 data-testid="input-seo-meta-title"
               />
-              <p className="text-xs text-gray-500">{seo.metaTitle.length}/60 characters</p>
+              <p className="text-xs text-muted-foreground">{seo.metaTitle.length}/60 characters</p>
             </div>
 
             <div className="space-y-2">
-              <Label className="text-gray-300">Meta Description</Label>
+              <Label className="text-foreground/80">Meta Description</Label>
               <Textarea
                 value={seo.metaDescription}
                 onChange={(e) => update("metaDescription", e.target.value)}
                 placeholder="Brief description for search results"
-                className="bg-gray-800 border-gray-700 text-white"
+                className="bg-muted border-border text-foreground"
                 rows={3}
                 data-testid="input-seo-meta-description"
               />
-              <p className="text-xs text-gray-500">{seo.metaDescription.length}/160 characters</p>
+              <p className="text-xs text-muted-foreground">{seo.metaDescription.length}/160 characters</p>
             </div>
 
             <div className="space-y-2">
-              <Label className="text-gray-300">Canonical URL</Label>
+              <Label className="text-foreground/80">Canonical URL</Label>
               <Input
                 value={seo.canonicalUrl}
                 onChange={(e) => update("canonicalUrl", e.target.value)}
                 placeholder="https://example.com/page"
-                className="bg-gray-800 border-gray-700 text-white"
+                className="bg-muted border-border text-foreground"
                 data-testid="input-seo-canonical"
               />
             </div>
 
             <div className="space-y-2">
-              <Label className="text-gray-300">Robots</Label>
+              <Label className="text-foreground/80">Robots</Label>
               <Select value={seo.robots || "index, follow"} onValueChange={(val) => update("robots", val)}>
-                <SelectTrigger className="bg-gray-800 border-gray-700 text-white" data-testid="select-seo-robots">
+                <SelectTrigger className="bg-muted border-border text-foreground" data-testid="select-seo-robots">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-gray-800 border-gray-700 text-white">
+                <SelectContent className="bg-muted border-border text-foreground">
                   <SelectItem value="index, follow">index, follow</SelectItem>
                   <SelectItem value="noindex, follow">noindex, follow</SelectItem>
                   <SelectItem value="index, nofollow">index, nofollow</SelectItem>
@@ -299,53 +299,53 @@ function SeoPanel({ open, onOpenChange, seo, onSeoChange }: {
           </div>
 
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-cyan-400 uppercase tracking-wider">Open Graph</h3>
+            <h3 className="text-sm font-semibold text-primary uppercase tracking-wider">Open Graph</h3>
 
             <div className="space-y-2">
-              <Label className="text-gray-300">OG Title</Label>
+              <Label className="text-foreground/80">OG Title</Label>
               <Input
                 value={seo.ogTitle}
                 onChange={(e) => update("ogTitle", e.target.value)}
                 placeholder="Title for social sharing (defaults to meta title)"
-                className="bg-gray-800 border-gray-700 text-white"
+                className="bg-muted border-border text-foreground"
                 data-testid="input-seo-og-title"
               />
             </div>
 
             <div className="space-y-2">
-              <Label className="text-gray-300">OG Description</Label>
+              <Label className="text-foreground/80">OG Description</Label>
               <Textarea
                 value={seo.ogDescription}
                 onChange={(e) => update("ogDescription", e.target.value)}
                 placeholder="Description for social sharing"
-                className="bg-gray-800 border-gray-700 text-white"
+                className="bg-muted border-border text-foreground"
                 rows={2}
                 data-testid="input-seo-og-description"
               />
             </div>
 
             <div className="space-y-2">
-              <Label className="text-gray-300">OG Image URL</Label>
+              <Label className="text-foreground/80">OG Image URL</Label>
               <Input
                 value={seo.ogImage}
                 onChange={(e) => update("ogImage", e.target.value)}
                 placeholder="https://example.com/image.jpg"
-                className="bg-gray-800 border-gray-700 text-white"
+                className="bg-muted border-border text-foreground"
                 data-testid="input-seo-og-image"
               />
             </div>
           </div>
 
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-cyan-400 uppercase tracking-wider">Twitter Card</h3>
+            <h3 className="text-sm font-semibold text-primary uppercase tracking-wider">Twitter Card</h3>
 
             <div className="space-y-2">
-              <Label className="text-gray-300">Card Type</Label>
+              <Label className="text-foreground/80">Card Type</Label>
               <Select value={seo.twitterCard || "summary_large_image"} onValueChange={(val) => update("twitterCard", val)}>
-                <SelectTrigger className="bg-gray-800 border-gray-700 text-white" data-testid="select-seo-twitter-card">
+                <SelectTrigger className="bg-muted border-border text-foreground" data-testid="select-seo-twitter-card">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-gray-800 border-gray-700 text-white">
+                <SelectContent className="bg-muted border-border text-foreground">
                   <SelectItem value="summary">summary</SelectItem>
                   <SelectItem value="summary_large_image">summary_large_image</SelectItem>
                 </SelectContent>
@@ -353,49 +353,49 @@ function SeoPanel({ open, onOpenChange, seo, onSeoChange }: {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-gray-300">Twitter Title</Label>
+              <Label className="text-foreground/80">Twitter Title</Label>
               <Input
                 value={seo.twitterTitle}
                 onChange={(e) => update("twitterTitle", e.target.value)}
                 placeholder="Defaults to OG title"
-                className="bg-gray-800 border-gray-700 text-white"
+                className="bg-muted border-border text-foreground"
                 data-testid="input-seo-twitter-title"
               />
             </div>
 
             <div className="space-y-2">
-              <Label className="text-gray-300">Twitter Description</Label>
+              <Label className="text-foreground/80">Twitter Description</Label>
               <Input
                 value={seo.twitterDescription}
                 onChange={(e) => update("twitterDescription", e.target.value)}
                 placeholder="Defaults to OG description"
-                className="bg-gray-800 border-gray-700 text-white"
+                className="bg-muted border-border text-foreground"
                 data-testid="input-seo-twitter-desc"
               />
             </div>
 
             <div className="space-y-2">
-              <Label className="text-gray-300">Twitter Image URL</Label>
+              <Label className="text-foreground/80">Twitter Image URL</Label>
               <Input
                 value={seo.twitterImage}
                 onChange={(e) => update("twitterImage", e.target.value)}
                 placeholder="Defaults to OG image"
-                className="bg-gray-800 border-gray-700 text-white"
+                className="bg-muted border-border text-foreground"
                 data-testid="input-seo-twitter-image"
               />
             </div>
           </div>
 
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-cyan-400 uppercase tracking-wider">Structured Data</h3>
+            <h3 className="text-sm font-semibold text-primary uppercase tracking-wider">Structured Data</h3>
 
             <div className="space-y-2">
-              <Label className="text-gray-300">JSON-LD</Label>
+              <Label className="text-foreground/80">JSON-LD</Label>
               <Textarea
                 value={seo.jsonLd}
                 onChange={(e) => update("jsonLd", e.target.value)}
                 placeholder={'{\n  "@context": "https://schema.org",\n  "@type": "WebPage",\n  "name": "..."\n}'}
-                className="bg-gray-800 border-gray-700 text-white font-mono text-xs"
+                className="bg-muted border-border text-foreground font-mono text-xs"
                 rows={8}
                 data-testid="input-seo-json-ld"
               />
@@ -406,15 +406,15 @@ function SeoPanel({ open, onOpenChange, seo, onSeoChange }: {
             </div>
           </div>
 
-          <div className="rounded-lg border border-gray-700 bg-gray-800/50 p-4 space-y-2">
-            <h3 className="text-sm font-semibold text-white">Preview</h3>
+          <div className="rounded-lg border border-border bg-muted p-4 space-y-2">
+            <h3 className="text-sm font-semibold text-foreground">Preview</h3>
             <div className="text-blue-400 text-sm truncate" data-testid="text-seo-preview-title">
               {seo.metaTitle || seo.ogTitle || "Page Title"}
             </div>
             <div className="text-green-400 text-xs truncate">
               {seo.canonicalUrl || "https://example.com/page"}
             </div>
-            <div className="text-gray-400 text-xs line-clamp-2" data-testid="text-seo-preview-desc">
+            <div className="text-muted-foreground text-xs line-clamp-2" data-testid="text-seo-preview-desc">
               {seo.metaDescription || seo.ogDescription || "Page description will appear here..."}
             </div>
           </div>
@@ -436,7 +436,7 @@ function InsertSectionButton({ onInsert }: { onInsert: (section: SavedSection) =
       <Button
         size="sm"
         variant="outline"
-        className="border-cyan-700 text-cyan-400 hover:bg-cyan-900/30"
+        className="border-primary/30 text-primary hover:bg-primary/10"
         onClick={() => setOpen(true)}
         data-testid="button-insert-section"
       >
@@ -445,36 +445,36 @@ function InsertSectionButton({ onInsert }: { onInsert: (section: SavedSection) =
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-lg" data-testid="dialog-insert-section">
+        <DialogContent className="bg-card border-border text-foreground max-w-lg" data-testid="dialog-insert-section">
           <DialogHeader>
-            <DialogTitle className="text-white">Insert Saved Section</DialogTitle>
-            <DialogDescription className="text-gray-400">
+            <DialogTitle className="text-foreground">Insert Saved Section</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
               Choose a section to insert. It will be linked — changes to the section update all pages using it.
             </DialogDescription>
           </DialogHeader>
 
           <div className="max-h-80 overflow-y-auto space-y-2 py-2">
             {!sections || sections.length === 0 ? (
-              <p className="text-gray-500 text-sm text-center py-4">
+              <p className="text-muted-foreground text-sm text-center py-4">
                 No saved sections. Create sections in the Sections library first.
               </p>
             ) : (
               sections.map((section) => (
                 <Card
                   key={section.id}
-                  className="bg-gray-800 border-gray-700 hover:border-cyan-700 cursor-pointer transition-colors"
+                  className="bg-muted border-border hover:border-primary/30 cursor-pointer transition-colors"
                   onClick={() => { onInsert(section); setOpen(false); }}
                   data-testid={`section-option-${section.id}`}
                 >
                   <CardContent className="p-3">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-medium text-white text-sm">{section.name}</p>
+                        <p className="font-medium text-foreground text-sm">{section.name}</p>
                         {section.description && (
-                          <p className="text-xs text-gray-500 mt-0.5">{section.description}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{section.description}</p>
                         )}
                       </div>
-                      <Badge variant="outline" className="border-gray-600 text-gray-400 text-xs">
+                      <Badge variant="outline" className="border-border text-muted-foreground text-xs">
                         {Array.isArray(section.blocks) ? section.blocks.length : 0} blocks
                       </Badge>
                     </div>
@@ -617,7 +617,7 @@ function SaveDraftButton({ pageId, pageTitle, seoData, onDone }: { pageId: strin
     <Button
       size="sm"
       variant="outline"
-      className="border-cyan-700 text-cyan-400 hover:bg-cyan-900/30"
+      className="border-primary/30 text-primary hover:bg-primary/10"
       disabled={saving}
       data-testid="button-save-draft"
       onClick={handleSave}
@@ -676,7 +676,7 @@ function PublishButton({ pageId, pageTitle, seoData, onDone }: { pageId: string;
   return (
     <Button
       size="sm"
-      className="bg-green-600 hover:bg-green-700 text-white"
+      className="bg-green-600 hover:bg-green-700 text-foreground"
       disabled={publishing}
       data-testid="button-publish"
       onClick={handlePublish}
@@ -704,12 +704,12 @@ function QuickInsertBar() {
       <TooltipProvider delayDuration={200}>
         <Tooltip>
           <TooltipTrigger asChild>
-            <span className="text-gray-500 text-xs mr-1 flex items-center gap-1">
+            <span className="text-muted-foreground text-xs mr-1 flex items-center gap-1">
               <Zap className="w-3 h-3" />
               Quick:
             </span>
           </TooltipTrigger>
-          <TooltipContent side="bottom" className="bg-gray-800 border-gray-700 text-white text-xs">
+          <TooltipContent side="bottom" className="bg-muted border-border text-foreground text-xs">
             One-click insert common blocks
           </TooltipContent>
         </Tooltip>
@@ -721,7 +721,7 @@ function QuickInsertBar() {
               <Button
                 size="sm"
                 variant="ghost"
-                className="text-gray-400 hover:text-white hover:bg-gray-800 h-7 px-2 text-xs gap-1"
+                className="text-muted-foreground hover:text-foreground hover:bg-muted h-7 px-2 text-xs gap-1"
                 onClick={() => handleQuickInsert(block.type)}
                 data-testid={`quick-insert-${block.type}`}
               >
@@ -729,7 +729,7 @@ function QuickInsertBar() {
                 <span className="hidden sm:inline">{block.label}</span>
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="bottom" className="bg-gray-800 border-gray-700 text-white text-xs">
+            <TooltipContent side="bottom" className="bg-muted border-border text-foreground text-xs">
               Insert {block.label}
             </TooltipContent>
           </Tooltip>
@@ -824,22 +824,22 @@ function EnhancedBlockPicker() {
 
   return (
     <div className="flex flex-col h-full" data-testid="enhanced-block-picker">
-      <div className="p-3 border-b border-gray-700/50">
+      <div className="p-3 border-b border-border">
         <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
           <input
             ref={searchRef}
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder='Search blocks... (press "/")'
-            className="w-full h-8 pl-8 pr-8 text-xs bg-gray-800 border border-gray-700 rounded-md text-white placeholder:text-gray-500 focus:outline-none focus:border-cyan-600 focus:ring-1 focus:ring-cyan-600/30"
+            className="w-full h-8 pl-8 pr-8 text-xs bg-muted border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-ring focus:ring-1 focus:ring-ring/30"
             data-testid="input-block-search"
           />
           {search && (
             <button
               onClick={() => setSearch("")}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               data-testid="button-clear-search"
             >
               <X className="w-3.5 h-3.5" />
@@ -856,8 +856,8 @@ function EnhancedBlockPicker() {
               onClick={() => setActiveTab(tab.id)}
               className={`px-2 py-1 rounded text-[11px] font-medium transition-colors ${
                 activeTab === tab.id
-                  ? "bg-cyan-600 text-white"
-                  : "bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700"
+                  ? "bg-primary text-foreground"
+                  : "bg-muted text-muted-foreground hover:text-foreground hover:bg-muted"
               }`}
               data-testid={`tab-category-${tab.id}`}
             >
@@ -870,25 +870,25 @@ function EnhancedBlockPicker() {
 
       {activeTab !== "all" && activeTab !== "most-used" && (
         <div className="px-3 py-1">
-          <p className="text-[10px] text-gray-500">
+          <p className="text-[10px] text-muted-foreground">
             {CATEGORY_MAP[activeTab]?.description}
           </p>
         </div>
       )}
       {activeTab === "most-used" && (
         <div className="px-3 py-1">
-          <p className="text-[10px] text-gray-500">Frequently used blocks for quick access</p>
+          <p className="text-[10px] text-muted-foreground">Frequently used blocks for quick access</p>
         </div>
       )}
 
       <div className="flex-1 overflow-y-auto px-3 py-2" data-testid="block-picker-list">
         {filtered.length === 0 ? (
           <div className="text-center py-6">
-            <p className="text-gray-500 text-xs">No blocks found</p>
+            <p className="text-muted-foreground text-xs">No blocks found</p>
             {search && (
               <button
                 onClick={() => { setSearch(""); setActiveTab("all"); }}
-                className="text-cyan-400 text-xs mt-1 hover:underline"
+                className="text-primary text-xs mt-1 hover:underline"
                 data-testid="button-clear-filters"
               >
                 Clear filters
@@ -901,16 +901,16 @@ function EnhancedBlockPicker() {
               <button
                 key={entry.type}
                 onClick={() => handleInsert(entry.type)}
-                className="w-full text-left group rounded-lg border border-gray-700/50 bg-gray-800/40 hover:border-cyan-700/50 hover:bg-gray-800 p-2.5 transition-all"
+                className="w-full text-left group rounded-lg border border-border bg-muted hover:border-primary/30 hover:bg-muted p-2.5 transition-all"
                 data-testid={`block-insert-${entry.type}`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-white group-hover:text-cyan-300 transition-colors">
+                  <span className="text-xs font-medium text-foreground group-hover:text-primary transition-colors">
                     {entry.label}
                   </span>
-                  <Plus className="w-3.5 h-3.5 text-gray-600 group-hover:text-cyan-400 transition-colors" />
+                  <Plus className="w-3.5 h-3.5 text-muted-foreground/60 group-hover:text-primary transition-colors" />
                 </div>
-                <p className="text-[10px] text-gray-500 mt-0.5 leading-relaxed">
+                <p className="text-[10px] text-muted-foreground mt-0.5 leading-relaxed">
                   {entry.description}
                 </p>
               </button>
@@ -919,14 +919,14 @@ function EnhancedBlockPicker() {
         )}
       </div>
 
-      <div className="p-3 border-t border-gray-700/50">
-        <p className="text-[10px] text-gray-600 mb-1.5 font-medium uppercase tracking-wider">Quick Insert</p>
+      <div className="p-3 border-t border-border">
+        <p className="text-[10px] text-muted-foreground/60 mb-1.5 font-medium uppercase tracking-wider">Quick Insert</p>
         <div className="flex flex-wrap gap-1">
           {QUICK_INSERT_BLOCKS.map((block) => (
             <button
               key={block.type}
               onClick={() => handleInsert(block.type)}
-              className="flex items-center gap-1 px-2 py-1 rounded bg-gray-800 border border-gray-700/50 text-[11px] text-gray-400 hover:text-white hover:border-cyan-700/50 hover:bg-gray-800/80 transition-all"
+              className="flex items-center gap-1 px-2 py-1 rounded bg-muted border border-border text-[11px] text-muted-foreground hover:text-foreground hover:border-primary/30 hover:bg-muted/80 transition-all"
               data-testid={`quick-insert-panel-${block.type}`}
             >
               <span>{block.icon}</span>
@@ -948,7 +948,7 @@ const VIEWPORTS: Record<ViewportMode, { width: string; label: string; icon: type
 
 function ViewportSwitcher({ mode, onChange }: { mode: ViewportMode; onChange: (mode: ViewportMode) => void }) {
   return (
-    <div className="flex items-center gap-0.5 bg-gray-800/60 rounded-md p-0.5" data-testid="viewport-switcher">
+    <div className="flex items-center gap-0.5 bg-muted rounded-md p-0.5" data-testid="viewport-switcher">
       {(Object.entries(VIEWPORTS) as [ViewportMode, typeof VIEWPORTS["desktop"]][]).map(([key, vp]) => {
         const Icon = vp.icon;
         return (
@@ -958,14 +958,14 @@ function ViewportSwitcher({ mode, onChange }: { mode: ViewportMode; onChange: (m
                 <Button
                   size="sm"
                   variant={mode === key ? "default" : "ghost"}
-                  className={`h-7 w-7 p-0 ${mode === key ? "bg-gray-700 text-white" : "text-gray-500 hover:text-white"}`}
+                  className={`h-7 w-7 p-0 ${mode === key ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"}`}
                   onClick={() => onChange(key)}
                   data-testid={`viewport-${key}`}
                 >
                   <Icon className="w-3.5 h-3.5" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent side="bottom" className="bg-gray-800 border-gray-700 text-white text-xs">
+              <TooltipContent side="bottom" className="bg-muted border-border text-foreground text-xs">
                 {vp.label} ({vp.width})
               </TooltipContent>
             </Tooltip>
@@ -1068,9 +1068,9 @@ export default function AdminCmsV2Builder() {
 
   if (adminLoading || !hasFullAccess) {
     return (
-      <div className="min-h-screen bg-gray-950 text-white">
+      <div className="min-h-screen bg-background text-foreground">
         <AdminNav currentPage="cms-v2" />
-        <div className="p-8 text-center text-gray-400">
+        <div className="p-8 text-center text-muted-foreground">
           {adminLoading ? "Loading..." : "Access Denied"}
         </div>
       </div>
@@ -1079,9 +1079,9 @@ export default function AdminCmsV2Builder() {
 
   if (isLoading || !initialData) {
     return (
-      <div className="min-h-screen bg-gray-950 text-white">
+      <div className="min-h-screen bg-background text-foreground">
         <AdminNav currentPage="cms-v2" />
-        <div className="p-8 text-center text-gray-400">Loading page...</div>
+        <div className="p-8 text-center text-muted-foreground">Loading page...</div>
       </div>
     );
   }
@@ -1089,21 +1089,21 @@ export default function AdminCmsV2Builder() {
   const viewportWidth = VIEWPORTS[viewportMode].width;
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white" data-testid="admin-cms-v2-builder-page">
-      <div className="border-b border-gray-800 bg-gray-950/95 backdrop-blur sticky top-0 z-50">
+    <div className="min-h-screen bg-background text-foreground" data-testid="admin-cms-v2-builder-page">
+      <div className="border-b border-border bg-background/95 backdrop-blur sticky top-0 z-50">
         <div className="max-w-full mx-auto px-4 py-2 flex items-center justify-between gap-2">
           <div className="flex items-center gap-3">
             <Button
               variant="ghost"
               size="sm"
-              className="text-gray-400 hover:text-white"
+              className="text-muted-foreground hover:text-foreground"
               onClick={() => navigate("/admin/cms-v2/pages")}
               data-testid="link-back-pages"
             >
               <ArrowLeft className="w-4 h-4 mr-1" />
               Back
             </Button>
-            <span className="text-sm font-semibold text-white truncate max-w-[200px]" data-testid="text-page-title">{page?.title}</span>
+            <span className="text-sm font-semibold text-foreground truncate max-w-[200px]" data-testid="text-page-title">{page?.title}</span>
             <Badge variant="outline" className={
               page?.status === "published" ? "border-green-700 text-green-400 text-[10px]" : "border-yellow-700 text-yellow-400 text-[10px]"
             } data-testid="badge-page-status">
@@ -1113,13 +1113,13 @@ export default function AdminCmsV2Builder() {
 
           <div className="flex items-center gap-2">
             <QuickInsertBar />
-            <div className="w-px h-5 bg-gray-700" />
+            <div className="w-px h-5 bg-muted" />
             <ViewportSwitcher mode={viewportMode} onChange={setViewportMode} />
-            <div className="w-px h-5 bg-gray-700" />
+            <div className="w-px h-5 bg-muted" />
             <Button
               size="sm"
               variant="outline"
-              className="border-cyan-700 text-cyan-400 hover:bg-cyan-900/30 h-7 text-xs"
+              className="border-primary/30 text-primary hover:bg-primary/10 h-7 text-xs"
               onClick={() => setSeoOpen(true)}
               data-testid="button-open-seo"
             >

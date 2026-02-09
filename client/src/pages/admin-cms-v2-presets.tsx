@@ -99,7 +99,7 @@ function PresetMiniPreview({ config }: { config: PresetConfig }) {
 
   return (
     <div
-      className="rounded-md overflow-hidden border border-gray-700/50"
+      className="rounded-md overflow-hidden border border-border"
       style={{ backgroundColor: colors.bg, height: 120 }}
       data-testid="preset-mini-preview"
     >
@@ -147,7 +147,7 @@ function HistoryPanel() {
   return (
     <div className="mt-6" data-testid="apply-history-panel">
       <button
-        className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors mb-3"
+        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-3"
         onClick={() => setExpanded(!expanded)}
         data-testid="button-toggle-history"
       >
@@ -158,14 +158,14 @@ function HistoryPanel() {
       {expanded && (
         <div className="space-y-2">
           {history.slice(0, 10).map((entry) => (
-            <div key={entry.id} className="flex items-center gap-3 px-3 py-2 bg-gray-900/60 rounded-md border border-gray-800/60 text-xs" data-testid={`history-entry-${entry.id}`}>
-              <Badge variant="outline" className={`text-[10px] ${entry.action === "rollback" ? "border-yellow-500/50 text-yellow-400" : "border-cyan-500/50 text-cyan-400"}`}>
+            <div key={entry.id} className="flex items-center gap-3 px-3 py-2 bg-card rounded-md border border-border text-xs" data-testid={`history-entry-${entry.id}`}>
+              <Badge variant="outline" className={`text-[10px] ${entry.action === "rollback" ? "border-yellow-500/50 text-yellow-400" : "border-primary/50 text-primary"}`}>
                 {entry.action}
               </Badge>
-              <span className="text-gray-300">{entry.presetName}</span>
-              <span className="text-gray-600 ml-auto">{entry.adminEmail}</span>
-              <span className="text-gray-600">{new Date(entry.createdAt).toLocaleString()}</span>
-              {entry.notes && <span className="text-gray-500 italic truncate max-w-[150px]">{entry.notes}</span>}
+              <span className="text-foreground/80">{entry.presetName}</span>
+              <span className="text-muted-foreground/60 ml-auto">{entry.adminEmail}</span>
+              <span className="text-muted-foreground/60">{new Date(entry.createdAt).toLocaleString()}</span>
+              {entry.notes && <span className="text-muted-foreground italic truncate max-w-[150px]">{entry.notes}</span>}
             </div>
           ))}
         </div>
@@ -232,17 +232,17 @@ function ImportModal({ open, onClose }: { open: boolean; onClose: () => void }) 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" data-testid="import-modal">
-      <div className="bg-gray-900 border border-gray-700 rounded-lg p-6 w-full max-w-lg mx-4">
+      <div className="bg-card border border-border rounded-lg p-6 w-full max-w-lg mx-4">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-white">Import Site Preset</h3>
-          <Button variant="ghost" size="sm" onClick={onClose} className="text-gray-400 hover:text-white" data-testid="button-close-import">
+          <h3 className="text-lg font-semibold text-foreground">Import Site Preset</h3>
+          <Button variant="ghost" size="sm" onClick={onClose} className="text-muted-foreground hover:text-foreground" data-testid="button-close-import">
             <X className="w-4 h-4" />
           </Button>
         </div>
 
         <div className="space-y-4">
           <div>
-            <label className="text-sm text-gray-400 mb-1 block">Upload JSON file</label>
+            <label className="text-sm text-muted-foreground mb-1 block">Upload JSON file</label>
             <input
               ref={fileInputRef}
               type="file"
@@ -254,7 +254,7 @@ function ImportModal({ open, onClose }: { open: boolean; onClose: () => void }) 
               variant="outline"
               size="sm"
               onClick={() => fileInputRef.current?.click()}
-              className="w-full border-gray-700 text-gray-300 hover:bg-gray-800"
+              className="w-full border-border text-foreground/80 hover:bg-muted"
               data-testid="button-upload-file"
             >
               <Upload className="w-4 h-4 mr-2" />
@@ -263,12 +263,12 @@ function ImportModal({ open, onClose }: { open: boolean; onClose: () => void }) 
           </div>
 
           <div>
-            <label className="text-sm text-gray-400 mb-1 block">Or paste JSON</label>
+            <label className="text-sm text-muted-foreground mb-1 block">Or paste JSON</label>
             <Textarea
               value={jsonText}
               onChange={(e) => { setJsonText(e.target.value); setError(null); }}
               placeholder='{"version": 1, "preset": {...}}'
-              className="h-40 bg-gray-800/60 border-gray-700 text-white font-mono text-xs"
+              className="h-40 bg-muted border-border text-foreground font-mono text-xs"
               data-testid="textarea-import-json"
             />
           </div>
@@ -281,14 +281,14 @@ function ImportModal({ open, onClose }: { open: boolean; onClose: () => void }) 
           )}
 
           <div className="flex justify-end gap-2">
-            <Button variant="ghost" size="sm" onClick={onClose} className="text-gray-400" data-testid="button-cancel-import">
+            <Button variant="ghost" size="sm" onClick={onClose} className="text-muted-foreground" data-testid="button-cancel-import">
               Cancel
             </Button>
             <Button
               size="sm"
               onClick={handleImport}
               disabled={!jsonText.trim() || importMutation.isPending}
-              className="bg-cyan-600 hover:bg-cyan-700 text-white"
+              className="bg-primary text-foreground"
               data-testid="button-confirm-import"
             >
               {importMutation.isPending ? "Importing..." : "Import Preset"}
@@ -433,7 +433,7 @@ export default function AdminCmsV2Presets() {
   if (adminLoading) {
     return (
       <CmsV2Layout breadcrumbs={[{ label: "Presets" }]} activeNav="presets">
-        <div className="flex items-center justify-center h-64 text-gray-500" data-testid="loading-state">Loading...</div>
+        <div className="flex items-center justify-center h-64 text-muted-foreground" data-testid="loading-state">Loading...</div>
       </CmsV2Layout>
     );
   }
@@ -441,7 +441,7 @@ export default function AdminCmsV2Presets() {
   if (!isAuthenticated) {
     return (
       <CmsV2Layout breadcrumbs={[{ label: "Presets" }]} activeNav="presets">
-        <div className="flex items-center justify-center h-64 text-gray-500" data-testid="unauthenticated-state">Please log in as admin.</div>
+        <div className="flex items-center justify-center h-64 text-muted-foreground" data-testid="unauthenticated-state">Please log in as admin.</div>
       </CmsV2Layout>
     );
   }
@@ -451,8 +451,8 @@ export default function AdminCmsV2Presets() {
       <div className="max-w-6xl mx-auto" data-testid="presets-page">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-white" data-testid="heading-presets">Site Presets</h1>
-            <p className="text-sm text-gray-400 mt-1">Pre-configured site personalities. Preview and activate to instantly change your storefront.</p>
+            <h1 className="text-2xl font-bold text-foreground" data-testid="heading-presets">Site Presets</h1>
+            <p className="text-sm text-muted-foreground mt-1">Pre-configured site personalities. Preview and activate to instantly change your storefront.</p>
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -470,7 +470,7 @@ export default function AdminCmsV2Presets() {
               variant="outline"
               size="sm"
               onClick={() => setImportOpen(true)}
-              className="border-gray-700 text-gray-300 hover:bg-gray-800 gap-1.5"
+              className="border-border text-foreground/80 hover:bg-muted gap-1.5"
               data-testid="button-import"
             >
               <Upload className="w-3.5 h-3.5" />
@@ -480,7 +480,7 @@ export default function AdminCmsV2Presets() {
               size="sm"
               onClick={() => seedMutation.mutate()}
               disabled={seedMutation.isPending}
-              className="bg-cyan-600 hover:bg-cyan-700 text-white gap-1.5"
+              className="bg-primary text-foreground gap-1.5"
               data-testid="button-seed-presets"
             >
               <Sparkles className="w-3.5 h-3.5" />
@@ -507,20 +507,20 @@ export default function AdminCmsV2Presets() {
         )}
 
         {isLoading ? (
-          <div className="flex items-center justify-center h-48 text-gray-500">Loading presets...</div>
+          <div className="flex items-center justify-center h-48 text-muted-foreground">Loading presets...</div>
         ) : presets.length === 0 ? (
-          <Card className="bg-gray-900/40 border-gray-800/60">
+          <Card className="bg-card/40 border-border">
             <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-              <Package className="w-12 h-12 text-gray-600 mb-4" />
-              <h3 className="text-lg font-semibold text-gray-300 mb-2">No Presets Yet</h3>
-              <p className="text-sm text-gray-500 mb-6 max-w-md">
+              <Package className="w-12 h-12 text-muted-foreground/60 mb-4" />
+              <h3 className="text-lg font-semibold text-foreground/80 mb-2">No Presets Yet</h3>
+              <p className="text-sm text-muted-foreground mb-6 max-w-md">
                 Click "Seed Starter Presets" to generate 6 pre-configured site personalities, or import a preset from a JSON file.
               </p>
               <Button
                 size="sm"
                 onClick={() => seedMutation.mutate()}
                 disabled={seedMutation.isPending}
-                className="bg-cyan-600 hover:bg-cyan-700 text-white gap-2"
+                className="bg-primary text-foreground gap-2"
                 data-testid="button-seed-empty"
               >
                 <Sparkles className="w-4 h-4" />
@@ -541,8 +541,8 @@ export default function AdminCmsV2Presets() {
               return (
                 <Card
                   key={preset.id}
-                  className={`bg-gray-900/60 border transition-all duration-200 ${
-                    isPreviewing ? "border-yellow-500/60 ring-1 ring-yellow-500/30" : "border-gray-800/60 hover:border-gray-700"
+                  className={`bg-card border transition-all duration-200 ${
+                    isPreviewing ? "border-yellow-500/60 ring-1 ring-yellow-500/30" : "border-border hover:border-border"
                   }`}
                   data-testid={`preset-card-${preset.id}`}
                 >
@@ -551,7 +551,7 @@ export default function AdminCmsV2Presets() {
 
                     <div className="mt-3">
                       <div className="flex items-start justify-between gap-2">
-                        <h3 className="font-semibold text-white text-sm leading-tight" data-testid={`text-preset-name-${preset.id}`}>
+                        <h3 className="font-semibold text-foreground text-sm leading-tight" data-testid={`text-preset-name-${preset.id}`}>
                           {preset.name}
                         </h3>
                         {isPreviewing && (
@@ -561,22 +561,22 @@ export default function AdminCmsV2Presets() {
                         )}
                       </div>
                       {preset.description && (
-                        <p className="text-xs text-gray-500 mt-1 line-clamp-2">{preset.description}</p>
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{preset.description}</p>
                       )}
                     </div>
 
                     <div className="mt-3 flex flex-wrap gap-1">
-                      <Badge variant="outline" className="text-[10px] border-cyan-800/60 text-cyan-400">
+                      <Badge variant="outline" className="text-[10px] border-primary/30/60 text-primary">
                         {themeLabel}
                       </Badge>
-                      <Badge variant="outline" className="text-[10px] border-gray-700 text-gray-400">
+                      <Badge variant="outline" className="text-[10px] border-border text-muted-foreground">
                         {templateLabel}
                       </Badge>
-                      <Badge variant="outline" className="text-[10px] border-gray-700 text-gray-500">
+                      <Badge variant="outline" className="text-[10px] border-border text-muted-foreground">
                         Nav: {navStyle}
                       </Badge>
                       {kitCount > 0 && (
-                        <Badge variant="outline" className="text-[10px] border-gray-700 text-gray-500">
+                        <Badge variant="outline" className="text-[10px] border-border text-muted-foreground">
                           {kitCount} kit{kitCount !== 1 ? "s" : ""}
                         </Badge>
                       )}
@@ -585,7 +585,7 @@ export default function AdminCmsV2Presets() {
                     {preset.tags && preset.tags.length > 0 && (
                       <div className="mt-2 flex flex-wrap gap-1">
                         {(preset.tags as string[]).map((tag) => (
-                          <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded bg-gray-800/80 text-gray-500">
+                          <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded bg-muted/80 text-muted-foreground">
                             {tag}
                           </span>
                         ))}
@@ -600,7 +600,7 @@ export default function AdminCmsV2Presets() {
                         className={`h-7 text-xs gap-1 flex-1 ${
                           isPreviewing
                             ? "border-yellow-600/50 text-yellow-400 hover:bg-yellow-900/20"
-                            : "bg-gray-800 hover:bg-gray-700 text-gray-200"
+                            : "bg-muted hover:bg-muted text-foreground"
                         }`}
                         data-testid={`button-preview-${preset.id}`}
                       >
@@ -611,7 +611,7 @@ export default function AdminCmsV2Presets() {
                         size="sm"
                         onClick={() => activateMutation.mutate(preset.id)}
                         disabled={activateMutation.isPending}
-                        className="h-7 text-xs gap-1 flex-1 bg-cyan-600 hover:bg-cyan-700 text-white"
+                        className="h-7 text-xs gap-1 flex-1 bg-primary text-foreground"
                         data-testid={`button-activate-${preset.id}`}
                       >
                         <Zap className="w-3 h-3" />
@@ -624,7 +624,7 @@ export default function AdminCmsV2Presets() {
                         variant="ghost"
                         size="sm"
                         onClick={() => handleExport(preset)}
-                        className="h-6 text-[10px] text-gray-500 hover:text-white gap-1 flex-1"
+                        className="h-6 text-[10px] text-muted-foreground hover:text-foreground gap-1 flex-1"
                         data-testid={`button-export-${preset.id}`}
                       >
                         <Download className="w-3 h-3" />
@@ -635,7 +635,7 @@ export default function AdminCmsV2Presets() {
                         size="sm"
                         onClick={() => duplicateMutation.mutate(preset.id)}
                         disabled={duplicateMutation.isPending}
-                        className="h-6 text-[10px] text-gray-500 hover:text-white gap-1 flex-1"
+                        className="h-6 text-[10px] text-muted-foreground hover:text-foreground gap-1 flex-1"
                         data-testid={`button-duplicate-${preset.id}`}
                       >
                         <Copy className="w-3 h-3" />
@@ -658,7 +658,7 @@ export default function AdminCmsV2Presets() {
                             variant="ghost"
                             size="sm"
                             onClick={() => setConfirmDeleteId(null)}
-                            className="h-6 text-[10px] text-gray-500 hover:text-white"
+                            className="h-6 text-[10px] text-muted-foreground hover:text-foreground"
                             data-testid={`button-cancel-delete-${preset.id}`}
                           >
                             <X className="w-3 h-3" />
@@ -669,7 +669,7 @@ export default function AdminCmsV2Presets() {
                           variant="ghost"
                           size="sm"
                           onClick={() => setConfirmDeleteId(preset.id)}
-                          className="h-6 text-[10px] text-gray-500 hover:text-red-400 gap-1 flex-1"
+                          className="h-6 text-[10px] text-muted-foreground hover:text-red-400 gap-1 flex-1"
                           data-testid={`button-delete-${preset.id}`}
                         >
                           <Trash2 className="w-3 h-3" />
