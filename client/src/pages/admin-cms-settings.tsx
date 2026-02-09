@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAdmin } from "@/hooks/use-admin";
-import AdminNav from "@/components/admin/AdminNav";
+import CmsV2Layout from "@/components/admin/CmsV2Layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Settings, Home, Save, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { Home, Save, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 
 interface CmsPage {
@@ -21,12 +21,12 @@ interface CmsPage {
 }
 
 export default function AdminCmsSettings() {
-  const { admin, hasFullAccess, isLoading: adminLoading } = useAdmin();
+  const { hasFullAccess, isLoading: adminLoading } = useAdmin();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const { data: pages = [], isLoading: pagesLoading } = useQuery<CmsPage[]>({
-    queryKey: ["/api/admin/pages"],
+    queryKey: ["/api/admin/cms-v2/pages"],
     enabled: hasFullAccess,
   });
 
@@ -37,11 +37,11 @@ export default function AdminCmsSettings() {
 
   const setHomeMutation = useMutation({
     mutationFn: async (pageId: string) => {
-      const res = await apiRequest("POST", `/api/admin/pages/${pageId}/set-home`);
+      const res = await apiRequest("POST", `/api/admin/cms-v2/pages/${pageId}/set-home`);
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/pages"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/cms-v2/pages"] });
       queryClient.invalidateQueries({ queryKey: ["/api/pages/home"] });
       setSelectedHomePageId(null);
       toast({
@@ -64,35 +64,22 @@ export default function AdminCmsSettings() {
     }
   };
 
-  if (adminLoading) {
+  if (adminLoading || !hasFullAccess) {
     return (
-      <div className="min-h-screen bg-background">
-        <AdminNav currentPage="cms-settings" role={admin?.role} />
-        <div className="p-8 text-center text-gray-400">Loading...</div>
-      </div>
-    );
-  }
-
-  if (!hasFullAccess) {
-    return (
-      <div className="min-h-screen bg-background">
-        <AdminNav currentPage="cms-settings" role={admin?.role} />
-        <div className="p-8 text-center text-gray-400">Access Denied</div>
-      </div>
+      <CmsV2Layout activeNav="settings" breadcrumbs={[{ label: "Settings" }]}>
+        <div className="p-8 text-center text-gray-400">
+          {adminLoading ? "Loading..." : "Access Denied"}
+        </div>
+      </CmsV2Layout>
     );
   }
 
   const selectedPage = pages.find((p) => p.id === resolvedSelection);
 
   return (
-    <div className="min-h-screen bg-gray-950" data-testid="admin-cms-settings-page">
-      <AdminNav currentPage="cms-settings" role={admin?.role} />
-
-      <div className="max-w-3xl mx-auto px-6 py-8">
-        <div className="flex items-center gap-3 mb-8">
-          <Settings className="w-6 h-6 text-cyan-400" />
-          <h1 className="text-2xl font-bold text-white">CMS Settings</h1>
-        </div>
+    <CmsV2Layout activeNav="settings" breadcrumbs={[{ label: "Settings" }]}>
+      <div className="max-w-3xl mx-auto" data-testid="admin-cms-settings-page">
+        <h1 className="text-xl font-bold text-white mb-6">CMS Settings</h1>
 
         <div className="space-y-6">
           <Card className="bg-gray-900/50 border-gray-800/60">
@@ -214,6 +201,6 @@ export default function AdminCmsSettings() {
           </Card>
         </div>
       </div>
-    </div>
+    </CmsV2Layout>
   );
 }

@@ -128,7 +128,7 @@ export default function AdminCmsV2() {
             <h1 className="text-2xl font-bold text-white" data-testid="text-dashboard-title">Dashboard</h1>
             <p className="text-gray-500 text-sm mt-0.5">Content management overview</p>
           </div>
-          <Badge variant="outline" className="border-cyan-700 text-cyan-400 text-xs" data-testid="badge-preview">CMS v2 Preview</Badge>
+          <Badge variant="outline" className="border-cyan-700 text-cyan-400 text-xs" data-testid="badge-cms">Content Management</Badge>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8" data-testid="cms-v2-stats">

@@ -26,6 +26,7 @@ import {
   Globe,
   PenLine,
   Menu,
+  ImageIcon,
 } from "lucide-react";
 
 interface Breadcrumb {
@@ -54,6 +55,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: "menus", label: "Menus", icon: Menu, href: "/admin/cms-v2/menus" },
   { id: "sections", label: "Sections", icon: Layers, href: "/admin/cms-v2/sections" },
   { id: "templates", label: "Templates", icon: BookTemplate, href: "/admin/cms-v2/templates" },
+  { id: "media", label: "Media Library", icon: ImageIcon, href: "/admin/media" },
   {
     id: "generators",
     label: "Generators",
@@ -99,7 +101,7 @@ export default function CmsV2Layout({ children, breadcrumbs, activeNav }: CmsV2L
         <div className={cn("flex items-center gap-2 border-b border-gray-800/60 h-14 px-3", collapsed && "justify-center")}>
           {!collapsed && (
             <Link href="/admin/cms-v2">
-              <span className="text-sm font-semibold text-cyan-400 tracking-tight cursor-pointer" data-testid="link-cms-v2-home">CMS v2</span>
+              <span className="text-sm font-semibold text-cyan-400 tracking-tight cursor-pointer" data-testid="link-cms-home">CMS</span>
             </Link>
           )}
           <Button
@@ -189,7 +191,7 @@ export default function CmsV2Layout({ children, breadcrumbs, activeNav }: CmsV2L
           {breadcrumbs && breadcrumbs.length > 0 && (
             <nav className="flex items-center gap-1 text-sm" data-testid="cms-v2-breadcrumbs">
               <Link href="/admin/cms-v2">
-                <span className="text-gray-500 hover:text-gray-300 cursor-pointer">CMS</span>
+                <span className="text-gray-500 hover:text-gray-300 cursor-pointer" data-testid="breadcrumb-cms">CMS</span>
               </Link>
               {breadcrumbs.map((crumb, i) => (
                 <span key={i} className="flex items-center gap-1">

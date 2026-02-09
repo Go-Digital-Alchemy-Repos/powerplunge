@@ -9,7 +9,6 @@ import { registerR2Routes, isR2Configured } from "./src/integrations/cloudflare-
 import { requireAdmin, errorHandler, requireFullAccess, requireOrderAccess } from "./src/middleware";
 import { registerBetterAuthRoutes } from "./src/auth/betterAuthRoutes";
 import { affiliateTrackLimiter } from "./src/middleware/rate-limiter";
-import { isCmsV2Enabled } from "./src/config/env";
 
 // Previously-migrated route modules
 import publicProductsRoutes from "./src/routes/public/products.routes";
@@ -36,10 +35,6 @@ import alertsRoutes from "./src/routes/admin/alerts.routes";
 import orderTrackingRoutes from "./src/routes/customer/order-tracking.routes";
 import customerAuthRoutes from "./src/routes/customer/auth.routes";
 import publicOrderStatusRoutes from "./src/routes/public/order-status.routes";
-import adminCmsPagesRoutes from "./src/routes/admin/cms-pages.routes";
-import adminCmsSectionsRoutes from "./src/routes/admin/cms-sections.routes";
-import adminCmsTemplatesRoutes from "./src/routes/admin/cms-templates.routes";
-import adminCmsThemeRoutes from "./src/routes/admin/cms-theme.routes";
 import publicCmsPagesRoutes from "./src/routes/public/cms-pages.routes";
 import publicCmsThemeRoutes from "./src/routes/public/cms-theme.routes";
 import publicCmsSettingsRoutes from "./src/routes/public/cms-settings.routes";
@@ -112,11 +107,7 @@ export async function registerRoutes(
   app.use("/api/customer/auth", customerAuthRoutes);
   app.use("/api/orders", publicOrderStatusRoutes);
 
-  // CMS routes
-  app.use("/api/admin/pages", requireFullAccess, adminCmsPagesRoutes);
-  app.use("/api/admin/saved-sections", requireFullAccess, adminCmsSectionsRoutes);
-  app.use("/api/admin/page-templates", requireFullAccess, adminCmsTemplatesRoutes);
-  app.use("/api/admin/theme", requireFullAccess, adminCmsThemeRoutes);
+  // CMS routes (public)
   app.use("/api/pages", publicCmsPagesRoutes);
   app.use("/api/theme", publicCmsThemeRoutes);
   app.use("/api/site-settings", publicCmsSettingsRoutes);
@@ -127,7 +118,7 @@ export async function registerRoutes(
   app.use("/api/menus", publicMenuRoutes);
 
   app.get("/api/health/config", (req, res) => {
-    res.json({ cmsV2Enabled: isCmsV2Enabled() });
+    res.json({ cmsV2Enabled: true });
   });
 
   if (process.env.NODE_ENV !== "production") {

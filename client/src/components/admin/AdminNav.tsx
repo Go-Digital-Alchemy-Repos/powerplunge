@@ -1,5 +1,4 @@
 import { Link, useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -24,11 +23,7 @@ import {
   BarChart3,
   Headset,
   LayoutGrid,
-  FileEdit,
-  Palette,
-  Layers,
   ImageIcon,
-  FlaskConical,
 } from "lucide-react";
 
 interface AdminNavProps {
@@ -39,16 +34,6 @@ interface AdminNavProps {
 export default function AdminNav({ currentPage, role = "admin" }: AdminNavProps) {
   const [, navigate] = useLocation();
 
-  const { data: healthConfig } = useQuery<{ cmsV2Enabled: boolean }>({
-    queryKey: ["/api/health/config"],
-    queryFn: async () => {
-      const res = await fetch("/api/health/config");
-      if (!res.ok) return { cmsV2Enabled: false };
-      return res.json();
-    },
-    staleTime: 60000,
-  });
-
   const handleLogout = async () => {
     await fetch("/api/admin/logout", { method: "POST" });
     navigate("/admin/login");
@@ -56,7 +41,7 @@ export default function AdminNav({ currentPage, role = "admin" }: AdminNavProps)
 
   const isActive = (page: string) => currentPage === page;
   const isClientManagement = currentPage === "customers" || currentPage === "affiliates" || currentPage === "support" || currentPage === "affiliate-invite-sender";
-  const isCms = currentPage === "pages" || currentPage === "page-builder" || currentPage === "theme" || currentPage === "sections" || currentPage === "media" || currentPage === "cms-settings" || currentPage?.startsWith("cms-v2");
+  const isCms = currentPage === "media" || currentPage === "cms-settings" || currentPage?.startsWith("cms-v2");
   const isSettings = currentPage === "settings" || currentPage === "team" || currentPage === "email-templates" || currentPage === "integrations" || currentPage === "docs";
 
   const hasFullAccess = role === "admin" || role === "store_manager";
@@ -104,64 +89,17 @@ export default function AdminNav({ currentPage, role = "admin" }: AdminNavProps)
             )}
 
             {hasFullAccess && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant={isCms ? "secondary" : "ghost"}
-                    size="sm"
-                    className="gap-2"
-                    data-testid="dropdown-cms"
-                  >
-                    <LayoutGrid className="w-4 h-4" />
-                    CMS
-                    <ChevronDown className="w-3 h-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
-                  <DropdownMenuItem asChild>
-                    <Link href="/admin/pages" className="flex items-center gap-2 cursor-pointer">
-                      <FileEdit className="w-4 h-4" />
-                      Pages
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/admin/sections" className="flex items-center gap-2 cursor-pointer">
-                      <Layers className="w-4 h-4" />
-                      Saved Sections
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/admin/media" className="flex items-center gap-2 cursor-pointer">
-                      <ImageIcon className="w-4 h-4" />
-                      Media Library
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/admin/theme" className="flex items-center gap-2 cursor-pointer">
-                      <Palette className="w-4 h-4" />
-                      Theme
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href="/admin/cms-settings" className="flex items-center gap-2 cursor-pointer" data-testid="link-cms-settings">
-                      <Settings className="w-4 h-4" />
-                      CMS Settings
-                    </Link>
-                  </DropdownMenuItem>
-                  {healthConfig?.cmsV2Enabled && (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem asChild>
-                        <Link href="/admin/cms-v2" className="flex items-center gap-2 cursor-pointer" data-testid="link-cms-v2">
-                          <FlaskConical className="w-4 h-4" />
-                          CMS v2 (Preview)
-                        </Link>
-                      </DropdownMenuItem>
-                    </>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <Link href="/admin/cms-v2">
+                <Button
+                  variant={isCms ? "secondary" : "ghost"}
+                  size="sm"
+                  className="gap-2"
+                  data-testid="link-cms"
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                  CMS
+                </Button>
+              </Link>
             )}
 
             {hasFullAccess && (
