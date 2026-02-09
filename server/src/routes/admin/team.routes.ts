@@ -13,6 +13,7 @@ router.get("/", async (req: Request, res: Response) => {
       firstName: a.firstName || "",
       lastName: a.lastName || "",
       name: a.name, 
+      phone: a.phone || "",
       role: a.role 
     })));
   } catch (error) {
@@ -22,7 +23,7 @@ router.get("/", async (req: Request, res: Response) => {
 
 router.post("/", async (req: Request, res: Response) => {
   try {
-    const { email, password, firstName, lastName, name, role = "admin" } = req.body;
+    const { email, password, firstName, lastName, name, phone, role = "admin" } = req.body;
 
     const resolvedFirstName = firstName || (name ? name.split(" ")[0] : "");
     const resolvedLastName = lastName || (name ? name.split(" ").slice(1).join(" ") : "");
@@ -49,6 +50,7 @@ router.post("/", async (req: Request, res: Response) => {
       firstName: resolvedFirstName,
       lastName: resolvedLastName,
       name: fullName,
+      phone: phone || "",
       role,
     });
 
@@ -58,6 +60,7 @@ router.post("/", async (req: Request, res: Response) => {
       firstName: admin.firstName,
       lastName: admin.lastName,
       name: admin.name, 
+      phone: admin.phone || "",
       role: admin.role 
     });
   } catch (error) {
@@ -67,7 +70,7 @@ router.post("/", async (req: Request, res: Response) => {
 
 router.patch("/:id", async (req: Request, res: Response) => {
   try {
-    const { firstName, lastName, name, password, role } = req.body;
+    const { firstName, lastName, name, email, phone, password, role } = req.body;
     const updateData: any = {};
     
     if (firstName !== undefined) updateData.firstName = firstName;
@@ -82,6 +85,19 @@ router.patch("/:id", async (req: Request, res: Response) => {
       updateData.firstName = name.split(" ")[0];
       updateData.lastName = name.split(" ").slice(1).join(" ");
     }
+
+    if (email !== undefined) {
+      const currentAdmin = await storage.getAdminUser(req.params.id);
+      if (email !== currentAdmin?.email) {
+        const existingAdmin = await storage.getAdminUserByEmail(email);
+        if (existingAdmin) {
+          return res.status(400).json({ message: "Another team member already uses this email" });
+        }
+      }
+      updateData.email = email;
+    }
+
+    if (phone !== undefined) updateData.phone = phone;
     
     if (password) updateData.password = await bcrypt.hash(password, 10);
     if (role) {
@@ -89,7 +105,7 @@ router.patch("/:id", async (req: Request, res: Response) => {
       if (!validRoles.includes(role)) {
         return res.status(400).json({ message: "Invalid role. Must be admin, store_manager, or fulfillment" });
       }
-      const currentAdmin = await storage.getAdminUser(req.params.id);
+      const currentAdmin = updateData.email ? await storage.getAdminUser(req.params.id) : await storage.getAdminUser(req.params.id);
       if (currentAdmin?.role === "admin" && role !== "admin") {
         const allAdmins = await storage.getAdminUsers();
         const adminCount = allAdmins.filter(a => a.role === "admin").length;
@@ -111,6 +127,7 @@ router.patch("/:id", async (req: Request, res: Response) => {
       firstName: admin.firstName,
       lastName: admin.lastName,
       name: admin.name, 
+      phone: admin.phone || "",
       role: admin.role 
     });
   } catch (error) {

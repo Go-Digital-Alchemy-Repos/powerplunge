@@ -18,6 +18,7 @@ export const adminUsers = pgTable("admin_users", {
   firstName: text("first_name").notNull().default(""),
   lastName: text("last_name").notNull().default(""),
   name: text("name").notNull(), // Legacy field: stores "firstName lastName" for backwards compatibility
+  phone: text("phone").default(""),
   role: text("role").notNull().default("admin"), // admin, store_manager, fulfillment
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

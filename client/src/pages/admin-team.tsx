@@ -11,15 +11,16 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAdmin } from "@/hooks/use-admin";
-import { Trash2, Mail, User, UserPlus, Users, Shield, Package, Edit } from "lucide-react";
+import { Trash2, Mail, Phone, UserPlus, Users, Shield, Package, Edit } from "lucide-react";
 import AdminNav from "@/components/admin/AdminNav";
 
 interface TeamMember {
   id: string;
   firstName: string;
   lastName: string;
-  name: string; // Legacy: "firstName lastName"
+  name: string;
   email: string;
+  phone: string;
   role: "admin" | "store_manager" | "fulfillment";
 }
 
@@ -29,16 +30,19 @@ const ROLE_LABELS = {
   fulfillment: { label: "Fulfillment", description: "View & manage orders only", icon: Package, color: "bg-green-500/20 text-green-400" },
 };
 
+type PanelMode = "add" | "edit";
+
 export default function AdminTeam() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { role, hasFullAccess, isLoading: adminLoading } = useAdmin();
   const [isPanelOpen, setIsPanelOpen] = useState(false);
-  const [newMember, setNewMember] = useState({ firstName: "", lastName: "", email: "", password: "", role: "admin" as "admin" | "store_manager" | "fulfillment" });
+  const [panelMode, setPanelMode] = useState<PanelMode>("add");
+  const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
+  const [formData, setFormData] = useState({ firstName: "", lastName: "", email: "", phone: "", password: "", role: "admin" as "admin" | "store_manager" | "fulfillment" });
   const [isDirty, setIsDirty] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<TeamMember | null>(null);
-  const [editingRoleMemberId, setEditingRoleMemberId] = useState<string | null>(null);
 
   const { data: team, isLoading } = useQuery<TeamMember[]>({
     queryKey: ["/api/admin/team"],
@@ -54,7 +58,7 @@ export default function AdminTeam() {
   });
 
   const addMemberMutation = useMutation({
-    mutationFn: async (data: { firstName: string; lastName: string; email: string; password: string; role: string }) => {
+    mutationFn: async (data: typeof formData) => {
       const res = await fetch("/api/admin/team", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -69,6 +73,29 @@ export default function AdminTeam() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/team"] });
       toast({ title: "Team member added" });
+      closePanel();
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const updateMemberMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Partial<typeof formData> }) => {
+      const res = await fetch(`/api/admin/team/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Failed to update team member");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/team"] });
+      toast({ title: "Team member updated" });
       closePanel();
     },
     onError: (error: Error) => {
@@ -96,44 +123,55 @@ export default function AdminTeam() {
     },
   });
 
-  const updateRoleMutation = useMutation({
-    mutationFn: async ({ id, role }: { id: string; role: string }) => {
-      const res = await fetch(`/api/admin/team/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ role }),
-      });
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to update role");
-      }
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/team"] });
-      toast({ title: "Role updated" });
-      setEditingRoleMemberId(null);
-    },
-    onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    },
-  });
+  const openAddPanel = () => {
+    setPanelMode("add");
+    setEditingMemberId(null);
+    setFormData({ firstName: "", lastName: "", email: "", phone: "", password: "", role: "admin" });
+    setIsDirty(false);
+    setIsPanelOpen(true);
+  };
 
-  const openPanel = () => {
-    setNewMember({ firstName: "", lastName: "", email: "", password: "", role: "admin" });
+  const openEditPanel = (member: TeamMember) => {
+    setPanelMode("edit");
+    setEditingMemberId(member.id);
+    setFormData({
+      firstName: member.firstName || "",
+      lastName: member.lastName || "",
+      email: member.email,
+      phone: member.phone || "",
+      password: "",
+      role: member.role,
+    });
     setIsDirty(false);
     setIsPanelOpen(true);
   };
 
   const closePanel = () => {
     setIsPanelOpen(false);
-    setNewMember({ firstName: "", lastName: "", email: "", password: "", role: "admin" });
+    setEditingMemberId(null);
+    setFormData({ firstName: "", lastName: "", email: "", phone: "", password: "", role: "admin" });
     setIsDirty(false);
   };
 
   const handleSave = () => {
-    addMemberMutation.mutate(newMember);
+    if (panelMode === "add") {
+      addMemberMutation.mutate(formData);
+    } else if (editingMemberId) {
+      const updatePayload: any = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        phone: formData.phone,
+        role: formData.role,
+      };
+      if (formData.password) {
+        updatePayload.password = formData.password;
+      }
+      updateMemberMutation.mutate({ id: editingMemberId, data: updatePayload });
+    }
   };
+
+  const isSaving = addMemberMutation.isPending || updateMemberMutation.isPending;
 
   if (!adminLoading && !hasFullAccess) {
     return (
@@ -161,7 +199,7 @@ export default function AdminTeam() {
             <h2 className="font-display text-2xl font-bold">Team Management</h2>
             <p className="text-muted-foreground">Add and manage team members who can access the admin dashboard.</p>
           </div>
-          <Button className="gap-2" onClick={openPanel} data-testid="button-add-member">
+          <Button className="gap-2" onClick={openAddPanel} data-testid="button-add-member">
             <UserPlus className="w-4 h-4" />
             Add Team Member
           </Button>
@@ -176,7 +214,6 @@ export default function AdminTeam() {
             {team?.map((member) => {
               const roleInfo = ROLE_LABELS[member.role] || ROLE_LABELS.admin;
               const RoleIcon = roleInfo.icon;
-              const isEditingRole = editingRoleMemberId === member.id;
               return (
                 <Card key={member.id} data-testid={`card-member-${member.id}`}>
                   <CardContent className="flex items-center justify-between py-4">
@@ -186,32 +223,22 @@ export default function AdminTeam() {
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <p className="font-medium">{member.firstName && member.lastName ? `${member.firstName} ${member.lastName}` : member.name}</p>
-                          {isEditingRole ? (
-                            <Select
-                              defaultValue={member.role}
-                              onValueChange={(value: "admin" | "store_manager" | "fulfillment") => {
-                                updateRoleMutation.mutate({ id: member.id, role: value });
-                              }}
-                            >
-                              <SelectTrigger className="h-7 w-40 text-xs" data-testid={`select-role-${member.id}`}>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="admin">Admin</SelectItem>
-                                <SelectItem value="store_manager">Store Manager</SelectItem>
-                                <SelectItem value="fulfillment">Fulfillment</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          ) : (
-                            <Badge variant="outline" className="text-xs">
-                              {roleInfo.label}
-                            </Badge>
-                          )}
+                          <p className="font-medium" data-testid={`text-name-${member.id}`}>{member.firstName && member.lastName ? `${member.firstName} ${member.lastName}` : member.name}</p>
+                          <Badge variant="outline" className="text-xs" data-testid={`badge-role-${member.id}`}>
+                            {roleInfo.label}
+                          </Badge>
                         </div>
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                          <Mail className="w-3 h-3" />
-                          {member.email}
+                        <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                          <span className="flex items-center gap-1" data-testid={`text-email-${member.id}`}>
+                            <Mail className="w-3 h-3" />
+                            {member.email}
+                          </span>
+                          {member.phone && (
+                            <span className="flex items-center gap-1" data-testid={`text-phone-${member.id}`}>
+                              <Phone className="w-3 h-3" />
+                              {member.phone}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -219,8 +246,8 @@ export default function AdminTeam() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => setEditingRoleMemberId(isEditingRole ? null : member.id)}
-                        data-testid={`button-edit-role-${member.id}`}
+                        onClick={() => openEditPanel(member)}
+                        data-testid={`button-edit-${member.id}`}
                       >
                         <Edit className="w-4 h-4" />
                       </Button>
@@ -254,15 +281,15 @@ export default function AdminTeam() {
       <SlideOutPanel
         open={isPanelOpen}
         onClose={closePanel}
-        title="Add Team Member"
+        title={panelMode === "add" ? "Add Team Member" : "Edit Team Member"}
         isDirty={isDirty}
         width="md"
         footer={
           <PanelFooter
             onCancel={closePanel}
             onSave={handleSave}
-            isSaving={addMemberMutation.isPending}
-            saveLabel="Add Team Member"
+            isSaving={isSaving}
+            saveLabel={panelMode === "add" ? "Add Team Member" : "Save Changes"}
           />
         }
       >
@@ -272,9 +299,9 @@ export default function AdminTeam() {
               <Label htmlFor="firstName">First Name</Label>
               <Input
                 id="firstName"
-                value={newMember.firstName}
+                value={formData.firstName}
                 onChange={(e) => {
-                  setNewMember({ ...newMember, firstName: e.target.value });
+                  setFormData({ ...formData, firstName: e.target.value });
                   setIsDirty(true);
                 }}
                 placeholder="First name"
@@ -286,9 +313,9 @@ export default function AdminTeam() {
               <Label htmlFor="lastName">Last Name</Label>
               <Input
                 id="lastName"
-                value={newMember.lastName}
+                value={formData.lastName}
                 onChange={(e) => {
-                  setNewMember({ ...newMember, lastName: e.target.value });
+                  setFormData({ ...formData, lastName: e.target.value });
                   setIsDirty(true);
                 }}
                 placeholder="Last name"
@@ -302,9 +329,9 @@ export default function AdminTeam() {
             <Input
               id="email"
               type="email"
-              value={newMember.email}
+              value={formData.email}
               onChange={(e) => {
-                setNewMember({ ...newMember, email: e.target.value });
+                setFormData({ ...formData, email: e.target.value });
                 setIsDirty(true);
               }}
               placeholder="email@example.com"
@@ -313,26 +340,45 @@ export default function AdminTeam() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="phone">Phone Number</Label>
+            <Input
+              id="phone"
+              type="tel"
+              value={formData.phone}
+              onChange={(e) => {
+                setFormData({ ...formData, phone: e.target.value });
+                setIsDirty(true);
+              }}
+              placeholder="(555) 123-4567"
+              data-testid="input-phone"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="password">
+              {panelMode === "add" ? "Password" : "New Password"}
+            </Label>
             <Input
               id="password"
               type="password"
-              value={newMember.password}
+              value={formData.password}
               onChange={(e) => {
-                setNewMember({ ...newMember, password: e.target.value });
+                setFormData({ ...formData, password: e.target.value });
                 setIsDirty(true);
               }}
-              placeholder="Initial password"
-              required
+              placeholder={panelMode === "add" ? "Initial password" : "Leave blank to keep current"}
+              required={panelMode === "add"}
               data-testid="input-password"
             />
+            {panelMode === "edit" && (
+              <p className="text-xs text-muted-foreground">Leave blank to keep the current password.</p>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="role">Role</Label>
             <Select
-              value={newMember.role}
+              value={formData.role}
               onValueChange={(value: "admin" | "store_manager" | "fulfillment") => {
-                setNewMember({ ...newMember, role: value });
+                setFormData({ ...formData, role: value });
                 setIsDirty(true);
               }}
             >
