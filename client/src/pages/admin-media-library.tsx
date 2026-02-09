@@ -31,7 +31,7 @@ import {
   Sparkles,
   Loader2,
 } from "lucide-react";
-import AdminNav from "@/components/admin/AdminNav";
+import CmsV2Layout from "@/components/admin/CmsV2Layout";
 
 interface MediaItem {
   id: string;
@@ -296,8 +296,7 @@ export default function AdminMediaLibrary() {
 
   if (!isAdminLoading && !hasFullAccess) {
     return (
-      <div className="min-h-screen bg-gray-950">
-        <AdminNav role={role} />
+      <CmsV2Layout activeNav="media" breadcrumbs={[{ label: "Media Library" }]}>
         <div className="max-w-2xl mx-auto p-8 text-center">
           <Card className="bg-gray-900 border-gray-800">
             <CardContent className="p-8">
@@ -306,15 +305,13 @@ export default function AdminMediaLibrary() {
             </CardContent>
           </Card>
         </div>
-      </div>
+      </CmsV2Layout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-950">
-      <AdminNav role={role} />
-
-      <main className="container mx-auto px-4 py-8">
+    <CmsV2Layout activeNav="media" breadcrumbs={[{ label: "Media Library" }]}>
+      <div>
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-white flex items-center gap-3">
@@ -565,7 +562,6 @@ export default function AdminMediaLibrary() {
             </div>
           </Card>
         )}
-      </main>
 
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
         <DialogContent className="bg-gray-900 border-gray-800 max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -754,6 +750,7 @@ export default function AdminMediaLibrary() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </CmsV2Layout>
   );
 }
