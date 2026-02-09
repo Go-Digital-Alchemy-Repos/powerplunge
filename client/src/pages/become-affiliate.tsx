@@ -15,7 +15,7 @@ import {
   CreditCard, Code, Sparkles, ExternalLink, SkipForward, RefreshCw,
   AlertCircle, Copy,
 } from "lucide-react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import logoImage from "@assets/powerplungelogo_1767907611722.png";
 
 type WizardStep = "welcome" | "account" | "agreement" | "payout" | "code" | "complete";
@@ -45,6 +45,7 @@ interface SignupInfo {
     isEmailLocked: boolean;
     requiresPhoneVerification: boolean;
     phoneLastFour: string | null;
+    sessionEmailMatch: boolean | null;
   } | null;
 }
 
@@ -81,7 +82,8 @@ export default function BecomeAffiliate() {
   const [, setLocation] = useLocation();
   const searchString = useSearch();
   const { toast } = useToast();
-  const { isAuthenticated, isLoading: authLoading, login, customer: authCustomer } = useCustomerAuth();
+  const queryClient = useQueryClient();
+  const { isAuthenticated, isLoading: authLoading, login, logout, customer: authCustomer, getAuthHeader } = useCustomerAuth();
 
   const params = new URLSearchParams(searchString);
   const inviteCode = params.get("code") || "";
@@ -115,27 +117,23 @@ export default function BecomeAffiliate() {
   const [phoneVerifyError, setPhoneVerifyError] = useState<string | null>(null);
 
   const { data: signupInfo, isLoading: infoLoading } = useQuery<SignupInfo>({
-    queryKey: ["/api/affiliate-signup", inviteCode],
+    queryKey: ["/api/affiliate-signup", inviteCode, isAuthenticated],
     queryFn: async () => {
       const url = inviteCode
         ? `/api/affiliate-signup?code=${encodeURIComponent(inviteCode)}`
         : "/api/affiliate-signup";
-      const res = await fetch(url);
+      const headers: Record<string, string> = getAuthHeader();
+      const res = await fetch(url, { headers });
       if (!res.ok) throw new Error("Failed to load signup information");
       return res.json();
     },
   });
 
-  const getAuthHeaders = useCallback((): Record<string, string> => {
-    const token = sessionToken || localStorage.getItem("customerSessionToken");
-    return token ? { Authorization: `Bearer ${token}` } : {};
-  }, [sessionToken]);
-
   const { data: connectStatus, refetch: refetchConnectStatus } = useQuery<ConnectStatus>({
     queryKey: ["/api/customer/affiliate-portal/connect/status"],
     queryFn: async () => {
       const res = await fetch("/api/customer/affiliate-portal/connect/status", {
-        headers: getAuthHeaders(),
+        headers: getAuthHeader(),
       });
       if (!res.ok) throw new Error("Failed to fetch connect status");
       return res.json();
@@ -150,8 +148,17 @@ export default function BecomeAffiliate() {
     }
   }, [signupInfo]);
 
+  const [sessionMismatch, setSessionMismatch] = useState(false);
+
   useEffect(() => {
-    if (!authLoading && isAuthenticated && authCustomer && !accountCreated && !connectReturn) {
+    if (!authLoading && isAuthenticated && authCustomer && !accountCreated && !connectReturn && signupInfo) {
+      if (signupInfo.invite?.isEmailLocked) {
+        if (signupInfo.invite.sessionEmailMatch !== true) {
+          setSessionMismatch(true);
+          setCurrentStep("account");
+          return;
+        }
+      }
       setFormData(prev => ({
         ...prev,
         name: prev.name || authCustomer.name || "",
@@ -159,7 +166,7 @@ export default function BecomeAffiliate() {
       }));
       setCurrentStep("agreement");
     }
-  }, [authLoading, isAuthenticated, authCustomer, accountCreated, connectReturn]);
+  }, [authLoading, isAuthenticated, authCustomer, accountCreated, connectReturn, signupInfo]);
 
   useEffect(() => {
     if (!authLoading && isAuthenticated && connectReturn) {
@@ -269,7 +276,7 @@ export default function BecomeAffiliate() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...getAuthHeaders(),
+          ...getAuthHeader(),
         },
         body: JSON.stringify({ returnPath }),
       });
@@ -298,7 +305,7 @@ export default function BecomeAffiliate() {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          ...getAuthHeaders(),
+          ...getAuthHeader(),
         },
         body: JSON.stringify({ code }),
       });
@@ -351,6 +358,11 @@ export default function BecomeAffiliate() {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (sessionMismatch) {
+      toast({ title: "Account mismatch", description: "Please log out and sign up with the correct email address.", variant: "destructive" });
+      return;
+    }
+
     if (!agreedToTerms) {
       toast({ title: "Agreement required", description: "Please agree to the affiliate program terms.", variant: "destructive" });
       return;
@@ -383,6 +395,7 @@ export default function BecomeAffiliate() {
       case "welcome":
         return true;
       case "account":
+        if (sessionMismatch) return false;
         return !!(formData.name && formData.email && formData.password && formData.confirmPassword && formData.password === formData.confirmPassword && formData.password.length >= 8);
       case "agreement":
         return agreedToTerms && !!formData.signatureName.trim();
@@ -804,6 +817,35 @@ export default function BecomeAffiliate() {
         <CardDescription>Enter your details to get started</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {sessionMismatch && (
+          <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg space-y-3" data-testid="session-mismatch-warning">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-amber-500">Different account detected</p>
+                <p className="text-xs text-muted-foreground">
+                  You're currently logged in as <strong>{authCustomer?.email}</strong>, but this invite was sent to <strong>{signupInfo?.invite?.emailMasked}</strong>. Please log out and sign up with the correct email address.
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full border-amber-500/30 text-amber-500 hover:bg-amber-500/10"
+              onClick={() => {
+                logout();
+                setSessionMismatch(false);
+                setFormData(prev => ({ ...prev, name: "", email: "", password: "", confirmPassword: "" }));
+                setCurrentStep("welcome");
+                queryClient.invalidateQueries({ queryKey: ["/api/affiliate-signup"] });
+              }}
+              data-testid="button-logout-switch"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Log out and start fresh
+            </Button>
+          </div>
+        )}
         <div className="space-y-2">
           <Label htmlFor="name">Full name</Label>
           <div className="relative">

@@ -41,6 +41,24 @@ router.get("/", async (req: Request, res: Response) => {
       ? invite.targetEmail.replace(/^(.)(.*)(@.*)$/, (_, first, middle, domain) => first + middle.replace(/./g, "*") + domain)
       : null;
 
+    let sessionEmailMatch: boolean | null = null;
+    if (invite?.targetEmail) {
+      const authHeader = req.headers.authorization;
+      if (authHeader?.startsWith("Bearer ")) {
+        try {
+          const token = authHeader.substring(7);
+          const payload = verifySessionToken(token);
+          if (payload?.customerId) {
+            const customers = await storage.getCustomersByIds([payload.customerId]);
+            const customer = customers[0];
+            if (customer?.email) {
+              sessionEmailMatch = customer.email.toLowerCase() === invite.targetEmail.toLowerCase();
+            }
+          }
+        } catch {}
+      }
+    }
+
     res.json({
       agreementText,
       inviteRequired: true,
@@ -53,6 +71,7 @@ router.get("/", async (req: Request, res: Response) => {
         isEmailLocked: !!invite.targetEmail,
         requiresPhoneVerification: !!invite.targetPhone && !invite.phoneVerified,
         phoneLastFour: invite.targetPhone ? invite.targetPhone.slice(-4) : null,
+        sessionEmailMatch,
       } : null,
       inviteError: inviteError,
       programEnabled: settings?.programActive ?? true,
