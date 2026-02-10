@@ -220,11 +220,7 @@ export default function AdminAffiliateSettings() {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <Card>
-            <CardHeader>
-              <CardTitle>Program Active</CardTitle>
-              <CardDescription>Enable or disable the affiliate program</CardDescription>
-            </CardHeader>
-            <CardContent>
+            <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
                   <Label>Program Active</Label>
