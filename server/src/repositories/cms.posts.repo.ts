@@ -8,6 +8,7 @@ import {
   postRevisions,
   postSettings,
   adminUsers,
+  mediaLibrary,
 } from "@shared/schema";
 import { eq, desc, asc, and, or, ilike, inArray, sql, count } from "drizzle-orm";
 
@@ -117,6 +118,7 @@ class PostsRepository {
         scheduledAt: posts.scheduledAt,
         authorId: posts.authorId,
         coverImageId: posts.coverImageId,
+        coverImageUrl: mediaLibrary.publicUrl,
         ogImageId: posts.ogImageId,
         readingTimeMinutes: posts.readingTimeMinutes,
         canonicalUrl: posts.canonicalUrl,
@@ -129,6 +131,7 @@ class PostsRepository {
         legacyHtml: posts.legacyHtml,
       })
       .from(posts)
+      .leftJoin(mediaLibrary, eq(posts.coverImageId, mediaLibrary.id))
       .where(whereClause)
       .orderBy(orderFn(sortColumn))
       .limit(pageSize)
@@ -143,8 +146,16 @@ class PostsRepository {
   }
 
   async findById(id: string) {
-    const [post] = await db.select().from(posts).where(eq(posts.id, id));
-    return post || undefined;
+    const [result] = await db
+      .select({
+        post: posts,
+        coverImageUrl: mediaLibrary.publicUrl,
+      })
+      .from(posts)
+      .leftJoin(mediaLibrary, eq(posts.coverImageId, mediaLibrary.id))
+      .where(eq(posts.id, id));
+    if (!result) return undefined;
+    return { ...result.post, coverImageUrl: result.coverImageUrl };
   }
 
   async findBySlug(slug: string) {

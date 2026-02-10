@@ -226,9 +226,9 @@ export default function AdminCmsPosts() {
                       >
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-3">
-                            {post.coverImageId && (
+                            {post.coverImageUrl && (
                               <div className="w-10 h-10 rounded bg-muted flex-shrink-0 overflow-hidden">
-                                <div className="w-full h-full bg-muted" />
+                                <img src={post.coverImageUrl} alt="" className="w-full h-full object-cover" />
                               </div>
                             )}
                             <div className="min-w-0">

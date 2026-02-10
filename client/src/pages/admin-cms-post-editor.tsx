@@ -103,14 +103,7 @@ export default function AdminCmsPostEditor() {
       setCanonicalUrl(post.canonicalUrl || "");
       setOgImageId(post.ogImageId || "");
       setCoverImageId(post.coverImageId || "");
-      if (post.coverImageId) {
-        fetch(`/api/admin/media/${post.coverImageId}`)
-          .then(r => r.ok ? r.json() : null)
-          .then(media => { if (media?.publicUrl) setCoverImageUrl(media.publicUrl); })
-          .catch(() => {});
-      } else {
-        setCoverImageUrl("");
-      }
+      setCoverImageUrl(post.coverImageUrl || "");
       setAllowIndex(post.allowIndex ?? true);
       setAllowFollow(post.allowFollow ?? true);
       setFeatured(post.featured ?? false);

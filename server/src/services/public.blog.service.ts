@@ -6,6 +6,7 @@ import {
   postCategoryMap,
   postTagMap,
   postSettings,
+  mediaLibrary,
 } from "@shared/schema";
 import { eq, and, desc, or, ilike, inArray, count, lte } from "drizzle-orm";
 
@@ -83,6 +84,7 @@ class PublicBlogService {
         excerpt: posts.excerpt,
         publishedAt: posts.publishedAt,
         coverImageId: posts.coverImageId,
+        coverImageUrl: mediaLibrary.publicUrl,
         ogImageId: posts.ogImageId,
         readingTimeMinutes: posts.readingTimeMinutes,
         featured: posts.featured,
@@ -90,6 +92,7 @@ class PublicBlogService {
         allowFollow: posts.allowFollow,
       })
       .from(posts)
+      .leftJoin(mediaLibrary, eq(posts.coverImageId, mediaLibrary.id))
       .where(whereClause)
       .orderBy(desc(posts.publishedAt))
       .limit(pageSize)
@@ -114,9 +117,13 @@ class PublicBlogService {
   }
 
   async getPublishedBySlug(slug: string) {
-    const [post] = await db
-      .select()
+    const [result] = await db
+      .select({
+        post: posts,
+        coverImageUrl: mediaLibrary.publicUrl,
+      })
       .from(posts)
+      .leftJoin(mediaLibrary, eq(posts.coverImageId, mediaLibrary.id))
       .where(
         and(
           eq(posts.slug, slug),
@@ -125,8 +132,9 @@ class PublicBlogService {
         )
       );
 
-    if (!post) return undefined;
+    if (!result) return undefined;
 
+    const post = { ...result.post, coverImageUrl: result.coverImageUrl };
     const [categories, tags] = await Promise.all([
       this.getCategoriesForPost(post.id),
       this.getTagsForPost(post.id),
