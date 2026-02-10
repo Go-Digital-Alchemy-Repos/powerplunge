@@ -756,7 +756,15 @@ export default function MyAccount() {
 
           {/* Account Details Tab */}
           <TabsContent value="account">
-            <h1 className="font-display text-3xl font-bold mb-8" data-testid="text-account-title">Account Details</h1>
+            <div className="flex items-center justify-between mb-8">
+              <h1 className="font-display text-3xl font-bold" data-testid="text-account-title">Account Details</h1>
+              {authCustomer?.id && (
+                <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-muted/50 border" data-testid="text-customer-client-id">
+                  <span className="text-sm text-muted-foreground">Client ID:</span>
+                  <span className="font-mono font-semibold text-primary">{authCustomer.id.slice(0, 8).toUpperCase()}</span>
+                </div>
+              )}
+            </div>
 
             {profileLoading ? (
               <div className="text-center py-12">

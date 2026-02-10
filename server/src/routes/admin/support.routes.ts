@@ -2,7 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { db } from "../../../db";
 import { supportTickets, customers, orders, adminUsers } from "@shared/schema";
-import { eq, desc, and, sql } from "drizzle-orm";
+import { eq, desc, and, sql, or, ilike } from "drizzle-orm";
 import { requireAdmin } from "../../middleware";
 
 const router = Router();
@@ -229,6 +229,87 @@ adminSupportRouter.patch("/:id", requireAdmin, async (req, res, next) => {
       .returning();
 
     res.json({ ticket: updated });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminSupportRouter.get("/customers/search", requireAdmin, async (req, res, next) => {
+  try {
+    const query = (req.query.q as string || "").trim();
+    if (!query || query.length < 2) {
+      return res.json({ customers: [] });
+    }
+
+    const searchPattern = `%${query}%`;
+    const results = await db.select({
+      id: customers.id,
+      name: customers.name,
+      email: customers.email,
+      phone: customers.phone,
+    })
+    .from(customers)
+    .where(
+      or(
+        ilike(customers.name, searchPattern),
+        ilike(customers.email, searchPattern),
+        ilike(customers.phone, searchPattern)
+      )
+    )
+    .limit(20);
+
+    res.json({ customers: results });
+  } catch (error) {
+    next(error);
+  }
+});
+
+const adminCreateTicketSchema = z.object({
+  customerId: z.string().min(1, "Customer is required"),
+  subject: z.string().min(1, "Subject is required").max(200),
+  message: z.string().min(1, "Message is required").max(5000),
+  type: z.enum(["general", "return", "refund", "shipping", "technical"]).default("general"),
+  priority: z.enum(["low", "normal", "high", "urgent"]).default("normal"),
+  orderId: z.string().optional(),
+});
+
+adminSupportRouter.post("/", requireAdmin, async (req, res, next) => {
+  try {
+    const parsed = adminCreateTicketSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: parsed.error.errors[0].message });
+    }
+
+    const customer = await db.query.customers.findFirst({
+      where: eq(customers.id, parsed.data.customerId),
+    });
+
+    if (!customer) {
+      return res.status(404).json({ message: "Customer not found" });
+    }
+
+    if (parsed.data.orderId) {
+      const order = await db.query.orders.findFirst({
+        where: and(
+          eq(orders.id, parsed.data.orderId),
+          eq(orders.customerId, customer.id)
+        ),
+      });
+      if (!order) {
+        return res.status(400).json({ message: "Order not found or does not belong to this customer" });
+      }
+    }
+
+    const [ticket] = await db.insert(supportTickets).values({
+      customerId: parsed.data.customerId,
+      orderId: parsed.data.orderId || null,
+      subject: parsed.data.subject,
+      message: parsed.data.message,
+      type: parsed.data.type,
+      priority: parsed.data.priority,
+    }).returning();
+
+    res.status(201).json({ ticket });
   } catch (error) {
     next(error);
   }

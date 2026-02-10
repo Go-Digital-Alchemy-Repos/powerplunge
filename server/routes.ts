@@ -98,7 +98,7 @@ export async function registerRoutes(
   app.use("/api/recovery", requireFullAccess, recoveryRoutes);
   app.use("/api/alerts", requireFullAccess, alertsRoutes);
   app.use("/api/customer/support", isAuthenticated, supportRoutes);
-  app.use("/api/admin/support", requireFullAccess, adminSupportRouter);
+  app.use("/api/admin/support", requireAdmin, adminSupportRouter);
   app.use("/api/admin/docs", requireFullAccess, docsRouter);
   app.use("/api/admin/cms", requireFullAccess, cmsPostsRouter);
   app.use("/api/admin/cms", requireFullAccess, cmsRouter);

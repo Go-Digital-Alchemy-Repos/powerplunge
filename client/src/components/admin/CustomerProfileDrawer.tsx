@@ -463,6 +463,11 @@ export function CustomerProfileDrawer({
                   <Mail className="w-4 h-4" />
                   {profile?.customer.email}
                 </SheetDescription>
+                {profile?.customer.id && (
+                  <p className="text-xs font-mono text-cyan-500 mt-1" data-testid="text-client-id">
+                    Client ID: {profile.customer.id.slice(0, 8).toUpperCase()}
+                  </p>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-2">
