@@ -63,12 +63,14 @@ function SplitImage({ src, side }: { src: string; side: "left" | "right" }) {
 }
 
 export default function HeroBlock({ data, settings }: BlockRenderProps) {
+  const badge = data?.badge || "";
+  const titleHighlight = data?.titleHighlight || "";
   const headline = data?.headline || data?.title || "Welcome";
   const subheadline = data?.subheadline || data?.subtitle || "";
   const ctaText = data?.ctaText || data?.primaryButtonText || "";
   const ctaHref = data?.ctaHref || data?.primaryButtonLink || "#";
-  const secondaryCtaText = data?.secondaryCtaText || "";
-  const secondaryCtaHref = data?.secondaryCtaHref || "";
+  const secondaryCtaText = data?.secondaryCtaText || data?.secondaryButtonText || "";
+  const secondaryCtaHref = data?.secondaryCtaHref || data?.secondaryButtonLink || "";
   const backgroundImage = data?.backgroundImage || "";
   const heroImage = data?.heroImage || "";
   const align = data?.align || "center";
@@ -141,6 +143,12 @@ export default function HeroBlock({ data, settings }: BlockRenderProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
+            {badge && (
+              <div className="inline-block bg-primary/10 border border-primary/20 rounded-full px-4 py-1.5 mb-6">
+                <span className="text-primary text-sm font-medium">{badge}</span>
+              </div>
+            )}
+
             <Heading
               level={1}
               className={cn(
@@ -149,7 +157,14 @@ export default function HeroBlock({ data, settings }: BlockRenderProps) {
               )}
               gradient={themeVariant === "ice"}
             >
-              {headline}
+              {titleHighlight ? (
+                <>
+                  {headline.replace(titleHighlight, "")}
+                  <span className="text-gradient-ice">{titleHighlight}</span>
+                </>
+              ) : (
+                headline
+              )}
             </Heading>
 
             {subheadline && (

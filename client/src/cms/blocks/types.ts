@@ -47,7 +47,8 @@ export type BlockCategory =
   | "ecommerce"
   | "trust"
   | "media"
-  | "utility";
+  | "utility"
+  | "powerplunge";
 
 export interface PageBlock {
   id: string;

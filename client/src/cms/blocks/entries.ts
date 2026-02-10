@@ -34,6 +34,11 @@ import ObjectionBustersBlock from "./ObjectionBustersBlock";
 import BeforeAfterExpectationsBlock from "./BeforeAfterExpectationsBlock";
 import PressMentionsBlock from "./PressMentionsBlock";
 import SocialProofStatsBlock from "./SocialProofStatsBlock";
+import StatsBarBlock from "./StatsBarBlock";
+import FeatureGridBlock from "./FeatureGridBlock";
+import FeaturedProductBlock from "./FeaturedProductBlock";
+import IconGridBlock from "./IconGridBlock";
+import CTABlock from "./CTABlock";
 
 export function registerCmsV1Blocks() {
   registerBlock({
@@ -44,12 +49,23 @@ export function registerCmsV1Blocks() {
     description: "Full-width hero section with headline, subheadline, and CTA",
     renderComponent: HeroBlock,
     defaultProps: {
-      headline: "Welcome to Power Plunge",
-      subheadline: "Experience the ultimate cold therapy for peak recovery and performance.",
-      ctaText: "Shop Now",
-      ctaHref: "/shop",
-      secondaryCtaText: "Learn More",
-      secondaryCtaHref: "#features",
+      badge: "",
+      title: "Welcome to Power Plunge",
+      titleHighlight: "",
+      subtitle: "Experience the ultimate cold therapy for peak recovery and performance.",
+      headline: "",
+      subheadline: "",
+      primaryButtonText: "Shop Now",
+      primaryButtonLink: "/shop",
+      primaryButtonIcon: "",
+      primaryButtonAction: "link",
+      ctaText: "",
+      ctaHref: "",
+      secondaryButtonText: "Learn More",
+      secondaryButtonLink: "#features",
+      secondaryCtaText: "",
+      secondaryCtaHref: "",
+      productId: "",
       backgroundImage: "",
       heroImage: "",
       align: "center",
@@ -60,12 +76,20 @@ export function registerCmsV1Blocks() {
       themeVariant: "ice",
     },
     puckFields: {
-      headline: textField("Headline"),
-      subheadline: textareaField("Subheadline"),
-      ctaText: textField("Primary CTA Text"),
-      ctaHref: textField("Primary CTA Link"),
-      secondaryCtaText: textField("Secondary CTA Text"),
-      secondaryCtaHref: textField("Secondary CTA Link"),
+      badge: textField("Badge Text"),
+      title: textField("Title"),
+      titleHighlight: textField("Title Highlight (gradient text)"),
+      subtitle: textareaField("Subtitle"),
+      primaryButtonText: textField("Primary Button Text"),
+      primaryButtonLink: textField("Primary Button Link"),
+      primaryButtonIcon: textField("Primary Button Icon (Lucide name)"),
+      primaryButtonAction: selectField("Primary Button Action", [
+        { label: "Navigate to Link", value: "link" },
+        { label: "Add to Cart", value: "addToCart" },
+      ]),
+      secondaryButtonText: textField("Secondary Button Text"),
+      secondaryButtonLink: textField("Secondary Button Link"),
+      productId: textField("Product ID (for Add to Cart action)"),
       backgroundImage: imageField("Background Image"),
       heroImage: imageField("Split Image (for split layouts)"),
       layout: selectField("Layout", [
@@ -808,6 +832,189 @@ export function registerCmsV1Blocks() {
       featuredOnly: checkboxField("Featured Posts Only"),
       categorySlug: textField("Filter by Category Slug (optional)"),
       tagSlug: textField("Filter by Tag Slug (optional)"),
+    },
+  });
+
+  registerBlock({
+    type: "statsBar",
+    label: "Stats Bar",
+    category: "powerplunge",
+    version: 1,
+    description: "A row of key statistics with icons, values, and labels",
+    renderComponent: StatsBarBlock,
+    defaultProps: {
+      stats: [
+        { icon: "Award", label: "Units Sold", value: "10,000+" },
+        { icon: "Thermometer", label: "Temp Range", value: "39°F" },
+        { icon: "Star", label: "Customer Rating", value: "4.9/5" },
+        { icon: "Shield", label: "Warranty", value: "2 Year" },
+      ],
+    },
+    puckFields: {
+      stats: arrayField("Stats", {
+        icon: textField("Icon (Lucide name)"),
+        value: textField("Value"),
+        label: textField("Label"),
+      }),
+    },
+  });
+
+  registerBlock({
+    type: "featureGrid",
+    label: "Feature Grid",
+    category: "powerplunge",
+    version: 1,
+    description: "Grid of feature cards with icons, titles, and descriptions",
+    renderComponent: FeatureGridBlock,
+    defaultProps: {
+      title: "Why Choose",
+      titleHighlight: "Power Plunge",
+      titleSuffix: "?",
+      subtitle: "Built with premium materials and cutting-edge technology.",
+      sectionId: "features",
+      columns: 3,
+      features: [
+        { icon: "Thermometer", title: "Rapid Cooling", description: "Reaches 39°F in minutes with our advanced chilling system." },
+        { icon: "Shield", title: "Built to Last", description: "Premium insulation and medical-grade stainless steel construction." },
+        { icon: "Zap", title: "Easy Setup", description: "Self-contained system. No plumbing required, plug and plunge." },
+      ],
+    },
+    puckFields: {
+      title: textField("Title"),
+      titleHighlight: textField("Title Highlight (gradient text)"),
+      titleSuffix: textField("Title Suffix"),
+      subtitle: textareaField("Subtitle"),
+      sectionId: textField("Section ID (for anchor links)"),
+      columns: selectField("Columns", [
+        { label: "2 Columns", value: "2" },
+        { label: "3 Columns", value: "3" },
+        { label: "4 Columns", value: "4" },
+      ]),
+      features: arrayField("Features", {
+        icon: textField("Icon (Lucide name)"),
+        title: textField("Title"),
+        description: textareaField("Description"),
+      }),
+    },
+  });
+
+  registerBlock({
+    type: "featuredProduct",
+    label: "Featured Product",
+    category: "powerplunge",
+    version: 1,
+    description: "Showcase the featured product with pricing, features, and add-to-cart functionality",
+    renderComponent: FeaturedProductBlock,
+    defaultProps: {
+      title: "The Complete System",
+      titleHighlight: "System",
+      subtitle: "Everything you need for professional-grade cold therapy at home.",
+      sectionId: "product",
+      productLabel: "Complete Cold Plunge System",
+      showKeyFeatures: true,
+      showWhatsIncluded: true,
+      keyFeatures: [
+        { icon: "Thermometer", text: "Reaches 39°F in under 1 hour" },
+        { icon: "Shield", text: "Full-body 304 stainless steel tub" },
+        { icon: "Wifi", text: "WiFi-enabled smart controls" },
+        { icon: "Zap", text: "Energy-efficient operation" },
+      ],
+      whatsIncluded: [
+        "Cold Plunge Tub",
+        "Chilling Unit",
+        "Insulated Cover",
+        "Filtration System",
+        "Quick-Start Guide",
+      ],
+    },
+    puckFields: {
+      title: textField("Title"),
+      titleHighlight: textField("Title Highlight (gradient text)"),
+      subtitle: textareaField("Subtitle"),
+      sectionId: textField("Section ID (for anchor links)"),
+      productLabel: textField("Product Label"),
+      showKeyFeatures: checkboxField("Show Key Features"),
+      showWhatsIncluded: checkboxField("Show What's Included"),
+      keyFeatures: arrayField("Key Features", {
+        icon: textField("Icon (Lucide name)"),
+        text: textField("Feature Text"),
+      }),
+      whatsIncluded: arrayField("What's Included", {
+        text: textField("Item"),
+      }),
+    },
+  });
+
+  registerBlock({
+    type: "iconGrid",
+    label: "Icon Grid",
+    category: "powerplunge",
+    version: 1,
+    description: "Grid of icon cards with titles for quick feature highlights",
+    renderComponent: IconGridBlock,
+    defaultProps: {
+      title: "Why",
+      titleHighlight: "Athletes",
+      items: [
+        { icon: "Zap", title: "Faster Recovery" },
+        { icon: "Brain", title: "Mental Clarity" },
+        { icon: "Heart", title: "Better Sleep" },
+        { icon: "Shield", title: "Immune Boost" },
+        { icon: "Flame", title: "Fat Burning" },
+      ],
+      columns: 5,
+      sectionId: "",
+    },
+    puckFields: {
+      title: textField("Title"),
+      titleHighlight: textField("Title Highlight (gradient text)"),
+      sectionId: textField("Section ID (for anchor links)"),
+      columns: selectField("Columns", [
+        { label: "2 Columns", value: "2" },
+        { label: "3 Columns", value: "3" },
+        { label: "4 Columns", value: "4" },
+        { label: "5 Columns", value: "5" },
+      ]),
+      items: arrayField("Items", {
+        icon: textField("Icon (Lucide name)"),
+        title: textField("Title"),
+      }),
+    },
+  });
+
+  registerBlock({
+    type: "cta",
+    label: "Call to Action",
+    category: "powerplunge",
+    version: 1,
+    description: "Call-to-action section with title, subtitle, and action button",
+    renderComponent: CTABlock,
+    defaultProps: {
+      title: "Ready to Transform Your Recovery?",
+      titleHighlight: "Recovery",
+      subtitle: "Join thousands of athletes who have upgraded their recovery routine.",
+      buttonText: "Order Now",
+      buttonLink: "/shop",
+      buttonIcon: "Zap",
+      buttonAction: "navigate",
+      productId: "",
+      secondaryButton: "",
+      secondaryLink: "",
+    },
+    puckFields: {
+      title: textField("Title"),
+      titleHighlight: textField("Title Highlight (gradient text)"),
+      subtitle: textareaField("Subtitle"),
+      buttonText: textField("Button Text"),
+      buttonLink: textField("Button Link"),
+      buttonIcon: textField("Button Icon (Lucide name)"),
+      buttonAction: selectField("Button Action", [
+        { label: "Navigate to Link", value: "navigate" },
+        { label: "Add to Cart", value: "addToCart" },
+      ]),
+      productId: textField("Product ID (for Add to Cart action)"),
+      secondaryButton: textField("Secondary Button Text"),
+      secondaryLink: textField("Secondary Button Link"),
     },
   });
 }
