@@ -3,11 +3,12 @@ import { useAdmin } from "@/hooks/use-admin";
 import { useLocation, useSearch } from "wouter";
 import CmsLayout from "@/components/admin/CmsLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, Sparkles, Layers, Plus, BookTemplate } from "lucide-react";
+import { FileText, Sparkles, Layers, Plus, BookTemplate, PanelRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CMS_TEMPLATES, type CmsTemplate } from "@/cms/templates/templateLibrary";
 import { SectionsContent } from "./admin-cms-sections";
+import { SidebarsContent } from "./admin-cms-sidebars";
 
 const BLOCK_ICONS: Record<string, { label: string; color: string }> = {
   hero: { label: "Hero", color: "#67e8f9" },
@@ -157,13 +158,15 @@ export default function AdminCmsTemplates() {
   const searchString = useSearch();
   const params = new URLSearchParams(searchString);
   const tabParam = params.get("tab");
-  const [activeTab, setActiveTab] = useState(tabParam === "sections" ? "sections" : "pages");
+  const validTabs = ["pages", "sections", "widgets"];
+  const initialTab = tabParam && validTabs.includes(tabParam) ? tabParam : "pages";
+  const [activeTab, setActiveTab] = useState(initialTab);
 
   useEffect(() => {
     const newParams = new URLSearchParams(searchString);
     const newTab = newParams.get("tab");
-    if (newTab === "sections") {
-      setActiveTab("sections");
+    if (newTab && validTabs.includes(newTab)) {
+      setActiveTab(newTab);
     } else {
       setActiveTab("pages");
     }
@@ -183,9 +186,9 @@ export default function AdminCmsTemplates() {
 
   function handleTabChange(value: string) {
     setActiveTab(value);
-    const newUrl = value === "sections"
-      ? "/admin/cms/templates?tab=sections"
-      : "/admin/cms/templates";
+    const newUrl = value === "pages"
+      ? "/admin/cms/templates"
+      : `/admin/cms/templates?tab=${value}`;
     window.history.replaceState(null, "", newUrl);
   }
 
@@ -198,7 +201,7 @@ export default function AdminCmsTemplates() {
             Templates
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Page templates and reusable section templates for the CMS page builder.
+            Page templates, section templates, and widget templates for the CMS.
           </p>
         </div>
 
@@ -212,12 +215,19 @@ export default function AdminCmsTemplates() {
               <Layers className="w-3.5 h-3.5" />
               Section Templates
             </TabsTrigger>
+            <TabsTrigger value="widgets" className="flex items-center gap-2" data-testid="tab-widget-templates">
+              <PanelRight className="w-3.5 h-3.5" />
+              Widget Templates
+            </TabsTrigger>
           </TabsList>
           <TabsContent value="pages" data-testid="panel-page-templates">
             <PageTemplatesContent onUseTemplate={handleUseTemplate} />
           </TabsContent>
           <TabsContent value="sections" data-testid="panel-section-templates">
             <SectionsContent embedded />
+          </TabsContent>
+          <TabsContent value="widgets" data-testid="panel-widget-templates">
+            <SidebarsContent embedded />
           </TabsContent>
         </Tabs>
       </div>

@@ -575,8 +575,8 @@ function SidebarDetail({
   );
 }
 
-export default function AdminCmsSidebars() {
-  const { hasFullAccess, isLoading: adminLoading } = useAdmin();
+export function SidebarsContent({ embedded = false }: { embedded?: boolean }) {
+  const { hasFullAccess } = useAdmin();
   const qc = useQueryClient();
   const { toast } = useToast();
   const [selectedSidebarId, setSelectedSidebarId] = useState<string | null>(null);
@@ -601,6 +601,127 @@ export default function AdminCmsSidebars() {
     },
   });
 
+  const selectedSidebar = sidebarList.find((s) => s.id === selectedSidebarId);
+
+  return (
+    <div className={embedded ? "" : "max-w-4xl mx-auto"} data-testid="admin-cms-sidebars-page">
+      {selectedSidebar ? (
+        <SidebarDetail
+          sidebar={selectedSidebar}
+          templates={widgetTemplates}
+          onBack={() => setSelectedSidebarId(null)}
+        />
+      ) : (
+        <>
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              {!embedded && <h1 className="text-2xl font-bold text-foreground" data-testid="text-page-title">Sidebars & Widgets</h1>}
+              <p className="text-sm text-muted-foreground mt-0.5">Create and manage sidebars with reusable widget templates</p>
+            </div>
+            <Button size="sm" onClick={() => setShowCreateForm(!showCreateForm)} data-testid="button-toggle-create-form">
+              <Plus className="w-4 h-4 mr-1" /> New Sidebar
+            </Button>
+          </div>
+
+          {showCreateForm && (
+            <div className="mb-6">
+              <CreateSidebarForm
+                onCreated={() => {
+                  qc.invalidateQueries({ queryKey: ["/api/admin/cms/sidebars"] });
+                  setShowCreateForm(false);
+                }}
+              />
+            </div>
+          )}
+
+          <div className="mb-8">
+            <h2 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+              <PanelRight className="w-4 h-4" /> Your Sidebars
+            </h2>
+            {sidebarsLoading && (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full" />
+              </div>
+            )}
+            {!sidebarsLoading && sidebarList.length === 0 && (
+              <div className="text-center py-10 border border-dashed border-border rounded-lg" data-testid="text-no-sidebars">
+                <PanelRight className="w-8 h-8 mx-auto mb-2 text-muted-foreground/40" />
+                <p className="text-sm text-muted-foreground">No sidebars yet. Create one to get started.</p>
+              </div>
+            )}
+            <div className="space-y-2" data-testid="sidebar-list">
+              {sidebarList.map((sb) => (
+                <div
+                  key={sb.id}
+                  className="flex items-center gap-4 p-4 border border-border rounded-lg bg-card hover:border-border cursor-pointer transition-colors group"
+                  onClick={() => setSelectedSidebarId(sb.id)}
+                  data-testid={`sidebar-item-${sb.id}`}
+                >
+                  <div className="p-2 rounded-lg bg-muted group-hover:bg-primary/10 transition-colors">
+                    <PanelRight className="w-5 h-5 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground" data-testid={`text-sidebar-name-${sb.id}`}>{sb.name}</p>
+                    <p className="text-xs text-muted-foreground truncate">{sb.description || sb.slug}</p>
+                  </div>
+                  <Badge variant={sb.isActive ? "default" : "secondary"} className="text-xs" data-testid={`badge-sidebar-status-${sb.id}`}>
+                    {sb.isActive ? "Active" : "Inactive"}
+                  </Badge>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 text-destructive hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (confirm("Delete this sidebar and all its widgets?")) {
+                        deleteSidebarMutation.mutate(sb.id);
+                      }
+                    }}
+                    data-testid={`button-delete-sidebar-${sb.id}`}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h2 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+              <Package className="w-4 h-4" /> Available Widget Templates
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3" data-testid="widget-templates-section">
+              {widgetTemplates.map((tmpl) => {
+                const Icon = getWidgetIcon(tmpl.icon);
+                return (
+                  <Card key={tmpl.type} className="bg-card border-border" data-testid={`widget-template-preview-${tmpl.type}`}>
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="p-2 rounded-lg bg-muted">
+                          <Icon className="w-4 h-4 text-primary" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{tmpl.label}</p>
+                          <Badge variant="outline" className="text-[10px]">{tmpl.category}</Badge>
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground">{tmpl.description}</p>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+export default function AdminCmsSidebars() {
+  const { hasFullAccess, isLoading: adminLoading } = useAdmin();
+
   if (adminLoading || !hasFullAccess) {
     return (
       <CmsLayout activeNav="sidebars" breadcrumbs={[{ label: "Sidebars & Widgets" }]}>
@@ -609,122 +730,9 @@ export default function AdminCmsSidebars() {
     );
   }
 
-  const selectedSidebar = sidebarList.find((s) => s.id === selectedSidebarId);
-
   return (
     <CmsLayout activeNav="sidebars" breadcrumbs={[{ label: "Sidebars & Widgets" }]}>
-      <div className="max-w-4xl mx-auto" data-testid="admin-cms-sidebars-page">
-        {selectedSidebar ? (
-          <SidebarDetail
-            sidebar={selectedSidebar}
-            templates={widgetTemplates}
-            onBack={() => setSelectedSidebarId(null)}
-          />
-        ) : (
-          <>
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h1 className="text-2xl font-bold text-foreground" data-testid="text-page-title">Sidebars & Widgets</h1>
-                <p className="text-sm text-muted-foreground mt-0.5">Create and manage sidebars with reusable widget templates</p>
-              </div>
-              <Button size="sm" onClick={() => setShowCreateForm(!showCreateForm)} data-testid="button-toggle-create-form">
-                <Plus className="w-4 h-4 mr-1" /> New Sidebar
-              </Button>
-            </div>
-
-            {showCreateForm && (
-              <div className="mb-6">
-                <CreateSidebarForm
-                  onCreated={() => {
-                    qc.invalidateQueries({ queryKey: ["/api/admin/cms/sidebars"] });
-                    setShowCreateForm(false);
-                  }}
-                />
-              </div>
-            )}
-
-            <div className="mb-8">
-              <h2 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
-                <PanelRight className="w-4 h-4" /> Your Sidebars
-              </h2>
-              {sidebarsLoading && (
-                <div className="flex items-center justify-center py-8">
-                  <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full" />
-                </div>
-              )}
-              {!sidebarsLoading && sidebarList.length === 0 && (
-                <div className="text-center py-10 border border-dashed border-border rounded-lg" data-testid="text-no-sidebars">
-                  <PanelRight className="w-8 h-8 mx-auto mb-2 text-muted-foreground/40" />
-                  <p className="text-sm text-muted-foreground">No sidebars yet. Create one to get started.</p>
-                </div>
-              )}
-              <div className="space-y-2" data-testid="sidebar-list">
-                {sidebarList.map((sb) => (
-                  <div
-                    key={sb.id}
-                    className="flex items-center gap-4 p-4 border border-border rounded-lg bg-card hover:border-border cursor-pointer transition-colors group"
-                    onClick={() => setSelectedSidebarId(sb.id)}
-                    data-testid={`sidebar-item-${sb.id}`}
-                  >
-                    <div className="p-2 rounded-lg bg-muted group-hover:bg-primary/10 transition-colors">
-                      <PanelRight className="w-5 h-5 text-primary" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground" data-testid={`text-sidebar-name-${sb.id}`}>{sb.name}</p>
-                      <p className="text-xs text-muted-foreground truncate">{sb.description || sb.slug}</p>
-                    </div>
-                    <Badge variant={sb.isActive ? "default" : "secondary"} className="text-xs" data-testid={`badge-sidebar-status-${sb.id}`}>
-                      {sb.isActive ? "Active" : "Inactive"}
-                    </Badge>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0 text-destructive hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (confirm("Delete this sidebar and all its widgets?")) {
-                          deleteSidebarMutation.mutate(sb.id);
-                        }
-                      }}
-                      data-testid={`button-delete-sidebar-${sb.id}`}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <h2 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
-                <Package className="w-4 h-4" /> Available Widget Templates
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3" data-testid="widget-templates-section">
-                {widgetTemplates.map((tmpl) => {
-                  const Icon = getWidgetIcon(tmpl.icon);
-                  return (
-                    <Card key={tmpl.type} className="bg-card border-border" data-testid={`widget-template-preview-${tmpl.type}`}>
-                      <CardContent className="p-4">
-                        <div className="flex items-center gap-3 mb-2">
-                          <div className="p-2 rounded-lg bg-muted">
-                            <Icon className="w-4 h-4 text-primary" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-foreground">{tmpl.label}</p>
-                            <Badge variant="outline" className="text-[10px]">{tmpl.category}</Badge>
-                          </div>
-                        </div>
-                        <p className="text-xs text-muted-foreground">{tmpl.description}</p>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            </div>
-          </>
-        )}
-      </div>
+      <SidebarsContent />
     </CmsLayout>
   );
 }
