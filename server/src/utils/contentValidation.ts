@@ -36,6 +36,8 @@ const KNOWN_BLOCK_TYPES = new Set([
   "pressMentions",
   "socialProofStats",
   "sectionRef",
+  "blogFeaturedPost",
+  "blogPostFeed",
   "spacer",
   "divider",
   "header",
