@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -49,6 +49,7 @@ export function MediaPickerDialog({
 }: MediaPickerDialogProps) {
   const { toast } = useToast();
   const { uploadFile, isUploading } = useUpload();
+  const queryClient = useQueryClient();
 
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchQuery, setSearchQuery] = useState("");
@@ -114,8 +115,9 @@ export function MediaPickerDialog({
       }
     }
 
+    queryClient.invalidateQueries({ queryKey: ["/api/admin/media"] });
     event.target.value = "";
-  }, [uploadFile, toast]);
+  }, [uploadFile, toast, queryClient]);
 
   const handleSelect = () => {
     if (selectedItem) {
