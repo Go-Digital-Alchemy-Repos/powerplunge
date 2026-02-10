@@ -185,7 +185,7 @@ function Router() {
         <Route path="/admin/cms/pages/:id/builder">{() => <CmsErrorBoundary><AdminCmsBuilder /></CmsErrorBoundary>}</Route>
         <Route path="/admin/cms/pages/:id/edit">{() => <CmsErrorBoundary><AdminCmsPageEdit /></CmsErrorBoundary>}</Route>
         <Route path="/admin/cms/pages">{() => <CmsErrorBoundary><AdminCmsPages /></CmsErrorBoundary>}</Route>
-        <Route path="/admin/cms/sections">{() => <CmsErrorBoundary><AdminCmsSections /></CmsErrorBoundary>}</Route>
+        <Route path="/admin/cms/sections">{() => { window.location.replace("/admin/cms/templates?tab=sections"); return null; }}</Route>
         <Route path="/admin/cms/templates">{() => <CmsErrorBoundary><AdminCmsTemplates /></CmsErrorBoundary>}</Route>
         <Route path="/admin/cms/themes">{() => <CmsErrorBoundary><AdminCmsThemes /></CmsErrorBoundary>}</Route>
         <Route path="/admin/cms/seo">{() => <CmsErrorBoundary><AdminCmsSeo /></CmsErrorBoundary>}</Route>

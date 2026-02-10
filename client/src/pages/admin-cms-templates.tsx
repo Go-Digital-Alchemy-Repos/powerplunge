@@ -1,10 +1,13 @@
+import { useState, useEffect } from "react";
 import { useAdmin } from "@/hooks/use-admin";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import CmsLayout from "@/components/admin/CmsLayout";
-import { FileText, Sparkles, Layers, Plus } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FileText, Sparkles, Layers, Plus, BookTemplate } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CMS_TEMPLATES, type CmsTemplate } from "@/cms/templates/templateLibrary";
+import { SectionsContent } from "./admin-cms-sections";
 
 const BLOCK_ICONS: Record<string, { label: string; color: string }> = {
   hero: { label: "Hero", color: "#67e8f9" },
@@ -126,9 +129,45 @@ function TemplateCard({ template, onUse }: { template: CmsTemplate; onUse: () =>
   );
 }
 
+function PageTemplatesContent({ onUseTemplate }: { onUseTemplate: (id: string) => void }) {
+  return (
+    <div className="max-w-6xl mx-auto" data-testid="admin-cms-templates-page">
+      <div className="mb-6">
+        <p className="text-sm text-muted-foreground">
+          Pre-built page layouts to get started quickly. Pick a template and start editing.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+        {CMS_TEMPLATES.map((tmpl) => (
+          <TemplateCard
+            key={tmpl.id}
+            template={tmpl}
+            onUse={() => onUseTemplate(tmpl.id)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function AdminCmsTemplates() {
   const { hasFullAccess, isLoading: adminLoading } = useAdmin();
   const [, navigate] = useLocation();
+  const searchString = useSearch();
+  const params = new URLSearchParams(searchString);
+  const tabParam = params.get("tab");
+  const [activeTab, setActiveTab] = useState(tabParam === "sections" ? "sections" : "pages");
+
+  useEffect(() => {
+    const newParams = new URLSearchParams(searchString);
+    const newTab = newParams.get("tab");
+    if (newTab === "sections") {
+      setActiveTab("sections");
+    } else {
+      setActiveTab("pages");
+    }
+  }, [searchString]);
 
   if (adminLoading || !hasFullAccess) {
     return (
@@ -142,25 +181,45 @@ export default function AdminCmsTemplates() {
     navigate(`/admin/cms/pages?template=${templateId}`);
   }
 
+  function handleTabChange(value: string) {
+    setActiveTab(value);
+    const newUrl = value === "sections"
+      ? "/admin/cms/templates?tab=sections"
+      : "/admin/cms/templates";
+    window.history.replaceState(null, "", newUrl);
+  }
+
   return (
     <CmsLayout activeNav="templates" breadcrumbs={[{ label: "Templates" }]}>
-      <div className="max-w-6xl mx-auto" data-testid="admin-cms-templates-page">
-        <div className="mb-8">
-          <h1 className="text-xl font-bold text-foreground">Templates</h1>
+      <div className="max-w-6xl mx-auto" data-testid="admin-cms-templates-consolidated">
+        <div className="mb-6">
+          <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
+            <BookTemplate className="w-5 h-5" />
+            Templates
+          </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Pre-built page layouts to get started quickly. Pick a template and start editing.
+            Page templates and reusable section templates for the CMS page builder.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-          {CMS_TEMPLATES.map((tmpl) => (
-            <TemplateCard
-              key={tmpl.id}
-              template={tmpl}
-              onUse={() => handleUseTemplate(tmpl.id)}
-            />
-          ))}
-        </div>
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+          <TabsList className="mb-6" data-testid="templates-tab-list">
+            <TabsTrigger value="pages" className="flex items-center gap-2" data-testid="tab-page-templates">
+              <FileText className="w-3.5 h-3.5" />
+              Page Templates
+            </TabsTrigger>
+            <TabsTrigger value="sections" className="flex items-center gap-2" data-testid="tab-section-templates">
+              <Layers className="w-3.5 h-3.5" />
+              Section Templates
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="pages" data-testid="panel-page-templates">
+            <PageTemplatesContent onUseTemplate={handleUseTemplate} />
+          </TabsContent>
+          <TabsContent value="sections" data-testid="panel-section-templates">
+            <SectionsContent embedded />
+          </TabsContent>
+        </Tabs>
       </div>
     </CmsLayout>
   );

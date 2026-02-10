@@ -56,7 +56,6 @@ const NAV_ITEMS: NavItem[] = [
   { id: "pages", label: "Pages", icon: FileText, href: "/admin/cms/pages" },
   { id: "posts", label: "Posts", icon: PenLine, href: "/admin/cms/posts" },
   { id: "menus", label: "Menus", icon: Menu, href: "/admin/cms/menus" },
-  { id: "sections", label: "Sections", icon: Layers, href: "/admin/cms/sections" },
   { id: "templates", label: "Templates", icon: BookTemplate, href: "/admin/cms/templates" },
   { id: "media", label: "Media Library", icon: ImageIcon, href: "/admin/media" },
   { id: "sidebars", label: "Sidebars & Widgets", icon: PanelRight, href: "/admin/cms/sidebars" },

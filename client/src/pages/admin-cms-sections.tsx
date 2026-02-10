@@ -50,7 +50,7 @@ function getBlockCount(blocks: any): number {
   return 0;
 }
 
-export default function AdminCmsSections() {
+export function SectionsContent({ embedded = false }: { embedded?: boolean }) {
   const { hasFullAccess, isLoading: adminLoading } = useAdmin();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -143,15 +143,18 @@ export default function AdminCmsSections() {
   function copyId(id: string) { navigator.clipboard.writeText(id); toast({ title: "Section ID copied" }); }
 
   if (adminLoading || !hasFullAccess) {
+    if (embedded) {
+      return <div className="p-8 text-center text-muted-foreground">{adminLoading ? "Loading..." : "Access Denied"}</div>;
+    }
     return (
-      <CmsLayout activeNav="sections" breadcrumbs={[{ label: "Sections" }]}>
+      <CmsLayout activeNav="templates" breadcrumbs={[{ label: "Templates" }, { label: "Section Templates" }]}>
         <div className="p-8 text-center text-muted-foreground">{adminLoading ? "Loading..." : "Access Denied"}</div>
       </CmsLayout>
     );
   }
 
-  return (
-    <CmsLayout activeNav="sections" breadcrumbs={[{ label: "Sections" }]}>
+  const content = (
+    <>
       <div className="max-w-5xl mx-auto" data-testid="admin-cms-sections-page">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -277,8 +280,20 @@ export default function AdminCmsSections() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </>
+  );
+
+  if (embedded) return content;
+
+  return (
+    <CmsLayout activeNav="templates" breadcrumbs={[{ label: "Templates" }, { label: "Section Templates" }]}>
+      {content}
     </CmsLayout>
   );
+}
+
+export default function AdminCmsSections() {
+  return <SectionsContent embedded={false} />;
 }
 
 function SectionForm({ name, description, category, onNameChange, onDescriptionChange, onCategoryChange }: {
