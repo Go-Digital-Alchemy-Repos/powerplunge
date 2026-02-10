@@ -43,7 +43,7 @@ The Power Plunge e-commerce platform utilizes a modern full-stack architecture.
 **Key Features:**
 - **Admin CMS:** Comprehensive dashboards for order, product, team, customer, and affiliate management, including a Customer Profile Drawer, manual order creation, and searchable customer list.
 - **Role-Based Access Control:** Three admin roles (admin, store_manager, fulfillment) with enforced permissions at both API and UI levels.
-- **Affiliate Program:** Invite-only signup with a 5-step onboarding wizard (Welcome, Account, Agreement, Payout, Complete) including Stripe Connect setup. Affiliate code viewing and customization is available post-signup in the affiliate portal. Features include configurable commission rates, minimum payout thresholds, cookie-based referral tracking, admin payout management, and fraud/compliance guardrails.
+- **Affiliate Program:** Invite-only signup with a 5-step onboarding wizard (Welcome, Account, Agreement, Payout, Complete) including Stripe Connect setup. Affiliate code viewing and customization is available post-signup in the affiliate portal. Features include configurable commission rates, customer discount percentage (applied at checkout when affiliate code is used, tax calculated on post-discount amount, commissions on pre-discount subtotal), minimum payout thresholds, cookie-based referral tracking, admin payout management, and fraud/compliance guardrails.
 - **PWA Support:** Web app manifest and Apple mobile meta tags.
 - **Upsell/Cross-sell System:** Product relationships, cart upsells, one-click post-purchase offers, and analytics tracking.
 - **Revenue-Aware Coupons:** Performance analytics, affiliate overlap detection, stacking rules, and auto-expiration.
