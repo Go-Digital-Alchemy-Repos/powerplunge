@@ -37,6 +37,7 @@ class PostsService {
     featured?: boolean;
     allowIndex?: boolean;
     allowFollow?: boolean;
+    sidebarId?: string | null;
     categoryIds?: string[];
     tagIds?: string[];
   }) {
@@ -88,6 +89,7 @@ class PostsService {
       featured?: boolean;
       allowIndex?: boolean;
       allowFollow?: boolean;
+      sidebarId?: string | null;
       categoryIds?: string[];
       tagIds?: string[];
     }

@@ -6,7 +6,7 @@ import { useRoute, useLocation } from "wouter";
 import CmsLayout from "@/components/admin/CmsLayout";
 import {
   ArrowLeft, Save, Globe, GlobeLock, Clock, Blocks, Calendar, History,
-  Plus, X, Search as SearchIcon, Archive, ImageIcon, Trash2,
+  Plus, X, Search as SearchIcon, Archive, ImageIcon, Trash2, PanelRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -65,6 +65,8 @@ export default function AdminCmsPostEditor() {
   const [showSchedule, setShowSchedule] = useState(false);
   const [scheduleDate, setScheduleDate] = useState("");
   const [showRevisions, setShowRevisions] = useState(false);
+  const [sidebarId, setSidebarId] = useState<string | null>(null);
+  const [sidebarInitialized, setSidebarInitialized] = useState(false);
   const [dirty, setDirty] = useState(false);
 
   const { data: post, isLoading: postLoading } = useQuery<any>({
@@ -81,6 +83,11 @@ export default function AdminCmsPostEditor() {
   const { data: tags = [] } = useQuery<any[]>({
     queryKey: ["/api/admin/cms/post-tags"],
     queryFn: () => apiRequest("GET", "/api/admin/cms/post-tags").then((r) => r.json()),
+  });
+
+  const { data: sidebarsList = [] } = useQuery<any[]>({
+    queryKey: ["/api/admin/cms/sidebars"],
+    queryFn: () => apiRequest("GET", "/api/admin/cms/sidebars").then((r) => r.json()),
   });
 
   const { data: revisions = [] } = useQuery<any[]>({
@@ -110,8 +117,20 @@ export default function AdminCmsPostEditor() {
       setReadingTimeMinutes(post.readingTimeMinutes || null);
       setSelectedCategoryIds((post.categories || []).map((c: any) => c.id));
       setSelectedTagIds((post.tags || []).map((t: any) => t.id));
+      setSidebarId(post.sidebarId ?? null);
+      setSidebarInitialized(true);
     }
   }, [post]);
+
+  useEffect(() => {
+    if (isNew && !sidebarInitialized && sidebarsList.length > 0) {
+      const blogSidebar = sidebarsList.find((s: any) => s.slug === "blog-sidebar");
+      if (blogSidebar) {
+        setSidebarId(blogSidebar.id);
+      }
+      setSidebarInitialized(true);
+    }
+  }, [isNew, sidebarInitialized, sidebarsList]);
 
   const createMutation = useMutation({
     mutationFn: (data: any) => apiRequest("POST", "/api/admin/cms/posts", data).then((r) => r.json()),
@@ -196,6 +215,7 @@ export default function AdminCmsPostEditor() {
       allowFollow,
       featured,
       readingTimeMinutes: readingTimeMinutes || null,
+      sidebarId: sidebarId || null,
       categoryIds: selectedCategoryIds,
       tagIds: selectedTagIds,
     };
@@ -603,6 +623,32 @@ export default function AdminCmsPostEditor() {
                     <Plus className="w-3 h-3" />
                   </Button>
                 </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-card border-border">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm text-foreground/80 flex items-center gap-2">
+                  <PanelRight className="w-3.5 h-3.5" />
+                  Sidebar
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <Select
+                  value={sidebarId || "__none__"}
+                  onValueChange={(v) => { setSidebarId(v === "__none__" ? null : v); setDirty(true); }}
+                >
+                  <SelectTrigger className="bg-muted border-border text-foreground h-8 text-xs" data-testid="select-sidebar">
+                    <SelectValue placeholder="Select sidebar..." />
+                  </SelectTrigger>
+                  <SelectContent className="bg-card border-border text-foreground">
+                    <SelectItem value="__none__">None</SelectItem>
+                    {sidebarsList.filter((s: any) => s.isActive).map((s: any) => (
+                      <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-[10px] text-muted-foreground">Choose a sidebar to display alongside this post, or select "None" for a full-width layout.</p>
               </CardContent>
             </Card>
 

@@ -1693,6 +1693,7 @@ export const posts = pgTable("posts", {
   featured: boolean("featured").notNull().default(false),
   allowIndex: boolean("allow_index").notNull().default(true),
   allowFollow: boolean("allow_follow").notNull().default(true),
+  sidebarId: varchar("sidebar_id").references(() => sidebars.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
