@@ -182,7 +182,7 @@ export default function AdminNav({ currentPage, role = "admin" }: AdminNavProps)
                   <DropdownMenuItem asChild>
                     <Link href="/admin/settings" className="flex items-center gap-2 cursor-pointer">
                       <Building2 className="w-4 h-4" />
-                      Company Profile
+                      Site Settings
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
