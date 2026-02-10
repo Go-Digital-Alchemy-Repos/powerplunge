@@ -3,7 +3,7 @@ import { useAdmin } from "@/hooks/use-admin";
 import { useRoute, useLocation } from "wouter";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import AdminNav from "@/components/admin/AdminNav";
-import { ArrowLeft, Save, Globe, Layers, Unlink, Search, X, Monitor, Tablet, Smartphone, ChevronUp, ChevronDown, Copy, Zap, Star, Plus } from "lucide-react";
+import { ArrowLeft, Save, Globe, Layers, Unlink, Search, X, Monitor, Tablet, Smartphone, ChevronUp, ChevronDown, Copy, Zap, Star, Plus, Mountain, Megaphone, ShoppingCart as CartIcon, HelpCircle, MessageSquare } from "lucide-react";
 
 function safeUUID(): string {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
@@ -65,11 +65,11 @@ const CATEGORY_MAP: Record<string, { label: string; description: string }> = Obj
 );
 
 const QUICK_INSERT_BLOCKS = [
-  { type: "hero", label: "Hero", icon: "🏔" },
-  { type: "callToAction", label: "CTA", icon: "📢" },
-  { type: "productGrid", label: "Products", icon: "🛒" },
-  { type: "faq", label: "FAQ", icon: "❓" },
-  { type: "testimonials", label: "Reviews", icon: "⭐" },
+  { type: "hero", label: "Hero", icon: <Mountain className="w-3.5 h-3.5" /> },
+  { type: "callToAction", label: "CTA", icon: <Megaphone className="w-3.5 h-3.5" /> },
+  { type: "productGrid", label: "Products", icon: <CartIcon className="w-3.5 h-3.5" /> },
+  { type: "faq", label: "FAQ", icon: <HelpCircle className="w-3.5 h-3.5" /> },
+  { type: "testimonials", label: "Reviews", icon: <MessageSquare className="w-3.5 h-3.5" /> },
 ];
 
 function buildPuckConfig(): Config {
