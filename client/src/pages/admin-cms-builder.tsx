@@ -22,6 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Puck, usePuck, createUsePuck, type Config, type Data } from "@puckeditor/core";
 import "@puckeditor/core/dist/index.css";
+import "@/styles/puck-dark-theme.css";
 import { registerAllBlocks } from "@/lib/blockRegistryEntries";
 import { getAllBlocks } from "@/lib/blockRegistry";
 import { getAllBlocks as getCmsBlocks, BLOCK_CATEGORIES } from "@/cms/blocks";

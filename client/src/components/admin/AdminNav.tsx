@@ -24,7 +24,10 @@ import {
   Headset,
   LayoutGrid,
   ImageIcon,
+  Sun,
+  Moon,
 } from "lucide-react";
+import { useAdminTheme } from "@/hooks/use-admin-theme";
 
 interface AdminNavProps {
   currentPage?: string;
@@ -33,6 +36,7 @@ interface AdminNavProps {
 
 export default function AdminNav({ currentPage, role = "admin" }: AdminNavProps) {
   const [, navigate] = useLocation();
+  const { theme, toggleTheme } = useAdminTheme();
 
   const handleLogout = async () => {
     await fetch("/api/admin/logout", { method: "POST" });
@@ -221,6 +225,19 @@ export default function AdminNav({ currentPage, role = "admin" }: AdminNavProps)
               Fulfillment
             </span>
           )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={toggleTheme}
+            className="h-8 w-8 p-0"
+            data-testid="button-theme-toggle"
+          >
+            {theme === "dark" ? (
+              <Sun className="w-4 h-4" />
+            ) : (
+              <Moon className="w-4 h-4" />
+            )}
+          </Button>
           <Button variant="ghost" size="sm" onClick={handleLogout} data-testid="button-logout">
             <LogOut className="w-4 h-4 mr-2" />
             Logout

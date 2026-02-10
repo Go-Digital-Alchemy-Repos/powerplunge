@@ -1,17 +1,17 @@
 .puck-builder-container {
-  --puck-color-grey-01: #f0f0f0;
-  --puck-color-grey-02: #d4d4d4;
-  --puck-color-grey-03: #b0b0b0;
-  --puck-color-grey-04: #8a8a8a;
-  --puck-color-grey-05: #6b6b6b;
-  --puck-color-grey-06: #525252;
-  --puck-color-grey-07: #404040;
-  --puck-color-grey-08: #2e2e2e;
-  --puck-color-grey-09: #222228;
-  --puck-color-grey-10: #1a1a20;
-  --puck-color-grey-11: #131318;
-  --puck-color-grey-12: #0d0d12;
-  --puck-color-white: #0d0d12;
+  --puck-color-grey-01: #e2e8f0;
+  --puck-color-grey-02: #cbd5e1;
+  --puck-color-grey-03: #94a3b8;
+  --puck-color-grey-04: #64748b;
+  --puck-color-grey-05: #475569;
+  --puck-color-grey-06: #334155;
+  --puck-color-grey-07: #1e293b;
+  --puck-color-grey-08: #1a1a28;
+  --puck-color-grey-09: #131320;
+  --puck-color-grey-10: #0f0f1a;
+  --puck-color-grey-11: #0d0d14;
+  --puck-color-grey-12: #0a0a10;
+  --puck-color-white: #0a0a10;
 
   --puck-color-azure-01: #67e8f9;
   --puck-color-azure-02: #67e8f9;
@@ -26,10 +26,44 @@
   --puck-color-azure-11: #111825;
   --puck-color-azure-12: #0d1520;
 
+  --puck-color-rose-01: #fda4af;
+  --puck-color-rose-02: #fb7185;
+  --puck-color-rose-03: #f43f5e;
+  --puck-color-rose-04: #e11d48;
+  --puck-color-rose-05: #be123c;
+  --puck-color-rose-06: #9f1239;
+  --puck-color-rose-07: #881337;
+  --puck-color-rose-08: #4c0519;
   --puck-color-rose-09: #2a1a22;
   --puck-color-rose-10: #1f1218;
   --puck-color-rose-11: #180e13;
   --puck-color-rose-12: #120a0e;
+
+  --puck-color-green-01: #86efac;
+  --puck-color-green-02: #4ade80;
+  --puck-color-green-03: #22c55e;
+  --puck-color-green-04: #16a34a;
+  --puck-color-green-05: #15803d;
+  --puck-color-green-06: #166534;
+  --puck-color-green-07: #14532d;
+  --puck-color-green-08: #052e16;
+  --puck-color-green-09: #0a1f12;
+  --puck-color-green-10: #071510;
+  --puck-color-green-11: #050f0a;
+  --puck-color-green-12: #030a06;
+
+  --puck-color-yellow-01: #fde68a;
+  --puck-color-yellow-02: #fcd34d;
+  --puck-color-yellow-03: #fbbf24;
+  --puck-color-yellow-04: #f59e0b;
+  --puck-color-yellow-05: #d97706;
+  --puck-color-yellow-06: #b45309;
+  --puck-color-yellow-07: #92400e;
+  --puck-color-yellow-08: #78350f;
+  --puck-color-yellow-09: #3d2008;
+  --puck-color-yellow-10: #2a1605;
+  --puck-color-yellow-11: #1a0e03;
+  --puck-color-yellow-12: #100902;
 }
 
 .puck-builder-container [class*="_Puck_"],
@@ -480,6 +514,143 @@
   background-color: rgba(148, 163, 184, 0.08);
 }
 
+/* Catch-all for any remaining white backgrounds in Puck internals */
+.puck-builder-container [class*="_Modal"],
+.puck-builder-container [class*="_Overlay"] {
+  background-color: rgba(10, 10, 16, 0.8);
+}
+
+.puck-builder-container [class*="_Modal-inner"],
+.puck-builder-container [class*="_ModalContent"],
+.puck-builder-container [class*="_Dialog"] {
+  background-color: #0d0d14;
+  color: #e2e8f0;
+  border-color: rgba(148, 163, 184, 0.15);
+}
+
+.puck-builder-container [class*="_Tooltip"],
+.puck-builder-container [class*="_Popover"] {
+  background-color: #131320;
+  color: #e2e8f0;
+  border-color: rgba(148, 163, 184, 0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.puck-builder-container [class*="_Checkbox"],
+.puck-builder-container [class*="_Radio"] {
+  border-color: rgba(148, 163, 184, 0.3);
+}
+
+.puck-builder-container [class*="_Checkbox"]:checked,
+.puck-builder-container [class*="_Radio"]:checked {
+  background-color: #06b6d4;
+  border-color: #06b6d4;
+}
+
+.puck-builder-container [class*="_FieldLabel"] {
+  color: #94a3b8;
+}
+
+.puck-builder-container [class*="_FieldInput"] {
+  background-color: #131320;
+  border-color: rgba(148, 163, 184, 0.15);
+  color: #e2e8f0;
+}
+
+.puck-builder-container [class*="_ObjectField"],
+.puck-builder-container [class*="_ObjectField-fieldset"] {
+  background-color: rgba(13, 13, 20, 0.5);
+  border-color: rgba(148, 163, 184, 0.1);
+}
+
+.puck-builder-container [class*="_InputWrapper"] {
+  background-color: #131320;
+  border-color: rgba(148, 163, 184, 0.15);
+  color: #e2e8f0;
+}
+
+.puck-builder-container [class*="_InputWrapper"]:focus-within {
+  border-color: rgba(103, 232, 249, 0.4);
+  box-shadow: 0 0 0 2px rgba(103, 232, 249, 0.1);
+}
+
+.puck-builder-container [class*="_NumberInput"],
+.puck-builder-container [class*="_TextInput"],
+.puck-builder-container [class*="_TextareaInput"] {
+  background-color: #131320;
+  color: #e2e8f0;
+  border-color: rgba(148, 163, 184, 0.15);
+}
+
+.puck-builder-container [class*="_Heading"] {
+  color: #e2e8f0;
+}
+
+.puck-builder-container [class*="_IconButton"] {
+  color: #94a3b8;
+}
+
+.puck-builder-container [class*="_IconButton"]:hover {
+  color: #e2e8f0;
+  background-color: rgba(148, 163, 184, 0.08);
+}
+
+.puck-builder-container [class*="_LayerTree"],
+.puck-builder-container [class*="_LayerTree-zoneContent"] {
+  background-color: #0d0d14;
+  color: #e2e8f0;
+}
+
+.puck-builder-container [class*="_Layer"] {
+  color: #e2e8f0;
+}
+
+.puck-builder-container [class*="_Layer"]:hover {
+  background-color: rgba(148, 163, 184, 0.06);
+}
+
+.puck-builder-container [class*="_Layer--isSelected"] {
+  background-color: rgba(103, 232, 249, 0.08);
+}
+
+.puck-builder-container [class*="_Layer-name"] {
+  color: #e2e8f0;
+}
+
+.puck-builder-container [class*="_Layer-icon"] {
+  color: #94a3b8;
+}
+
+.puck-builder-container [class*="_EmptySlot"],
+.puck-builder-container [class*="_DropZone-emptyContent"] {
+  background-color: rgba(13, 13, 20, 0.6);
+  border-color: rgba(148, 163, 184, 0.12);
+  color: #94a3b8;
+}
+
+.puck-builder-container [class*="_AutoField-input"] {
+  background-color: #131320;
+  color: #e2e8f0;
+}
+
+.puck-builder-container [class*="_AutoField-label"] {
+  color: #94a3b8;
+}
+
+.puck-builder-container [class*="_Puck"] button:not([class*="bg-"]) {
+  color: inherit;
+}
+
+.puck-builder-container [class*="_Toggle"],
+.puck-builder-container [class*="_Switch"] {
+  background-color: rgba(148, 163, 184, 0.2);
+}
+
+.puck-builder-container [class*="_Toggle--checked"],
+.puck-builder-container [class*="_Switch--checked"] {
+  background-color: #06b6d4;
+}
+
 .puck-builder-container * {
   scrollbar-width: thin;
   scrollbar-color: rgba(148, 163, 184, 0.15) transparent;
@@ -500,4 +671,166 @@
 
 .puck-builder-container *::-webkit-scrollbar-thumb:hover {
   background-color: rgba(148, 163, 184, 0.25);
+}
+
+/* =============================================
+   LIGHT MODE OVERRIDES
+   Applied when .admin-light is set on :root
+   ============================================= */
+
+.admin-light .puck-builder-container {
+  --puck-color-grey-01: #1a1a2e;
+  --puck-color-grey-02: #334155;
+  --puck-color-grey-03: #475569;
+  --puck-color-grey-04: #64748b;
+  --puck-color-grey-05: #94a3b8;
+  --puck-color-grey-06: #cbd5e1;
+  --puck-color-grey-07: #e2e8f0;
+  --puck-color-grey-08: #eef2f7;
+  --puck-color-grey-09: #f1f5f9;
+  --puck-color-grey-10: #f8fafc;
+  --puck-color-grey-11: #fafbfd;
+  --puck-color-grey-12: #ffffff;
+  --puck-color-white: #ffffff;
+
+  --puck-color-azure-01: #0c4a6e;
+  --puck-color-azure-02: #075985;
+  --puck-color-azure-03: #0369a1;
+  --puck-color-azure-04: #0284c7;
+  --puck-color-azure-05: #0ea5e9;
+  --puck-color-azure-06: #38bdf8;
+  --puck-color-azure-07: #7dd3fc;
+  --puck-color-azure-08: #bae6fd;
+  --puck-color-azure-09: #e0f2fe;
+  --puck-color-azure-10: #f0f9ff;
+  --puck-color-azure-11: #f5fbff;
+  --puck-color-azure-12: #fafeff;
+}
+
+.admin-light .puck-builder-container [class*="_Puck_"],
+.admin-light .puck-builder-container [class*="_PuckLayout"] {
+  background-color: #f8fafc;
+  color: #1e293b;
+}
+
+.admin-light .puck-builder-container [class*="_PuckLayout-inner"] {
+  background-color: #f8fafc;
+}
+
+.admin-light .puck-builder-container [class*="_PuckHeader"] {
+  background-color: #ffffff;
+  border-bottom-color: #e2e8f0;
+}
+
+.admin-light .puck-builder-container [class*="_PuckHeader"] button {
+  color: #334155;
+}
+
+.admin-light .puck-builder-container [class*="_PuckHeader"] button:hover {
+  background-color: #f1f5f9;
+}
+
+.admin-light .puck-builder-container [class*="_PuckSidebar"],
+.admin-light .puck-builder-container [class*="_LeftSidebar"],
+.admin-light .puck-builder-container [class*="_RightSidebar"] {
+  background-color: #ffffff;
+  border-color: #e2e8f0;
+}
+
+.admin-light .puck-builder-container [class*="_ComponentList"] {
+  background-color: #ffffff;
+}
+
+.admin-light .puck-builder-container [class*="_ComponentListItem"],
+.admin-light .puck-builder-container [class*="_ComponentList-item"] {
+  background-color: #f8fafc;
+  border-color: #e2e8f0;
+  color: #334155;
+}
+
+.admin-light .puck-builder-container [class*="_ComponentListItem"]:hover,
+.admin-light .puck-builder-container [class*="_ComponentList-item"]:hover {
+  background-color: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.admin-light .puck-builder-container [class*="_Field"],
+.admin-light .puck-builder-container [class*="_FieldLabel"] {
+  color: #334155;
+}
+
+.admin-light .puck-builder-container input,
+.admin-light .puck-builder-container textarea,
+.admin-light .puck-builder-container select {
+  background-color: #ffffff;
+  border-color: #e2e8f0;
+  color: #1e293b;
+}
+
+.admin-light .puck-builder-container input:focus,
+.admin-light .puck-builder-container textarea:focus,
+.admin-light .puck-builder-container select:focus {
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.15);
+}
+
+.admin-light .puck-builder-container [class*="_Drawer"],
+.admin-light .puck-builder-container [class*="_DrawerItem"] {
+  background-color: #ffffff;
+  color: #334155;
+}
+
+.admin-light .puck-builder-container [class*="_DrawerItem"]:hover {
+  background-color: #f1f5f9;
+}
+
+.admin-light .puck-builder-container [class*="_Modal"],
+.admin-light .puck-builder-container [class*="_modal"] {
+  background-color: #ffffff;
+  color: #1e293b;
+  border-color: #e2e8f0;
+}
+
+.admin-light .puck-builder-container [class*="_Tooltip"],
+.admin-light .puck-builder-container [class*="_tooltip"] {
+  background-color: #1e293b;
+  color: #f8fafc;
+}
+
+.admin-light .puck-builder-container [class*="_ActionBar"],
+.admin-light .puck-builder-container [class*="_DraggableComponent-overlay"] {
+  background-color: #ffffff;
+  border-color: #e2e8f0;
+}
+
+.admin-light .puck-builder-container [class*="_ActionBar"] button {
+  color: #334155;
+}
+
+.admin-light .puck-builder-container [class*="_ActionBar"] button:hover {
+  background-color: #f1f5f9;
+}
+
+.admin-light .puck-builder-container [class*="_ArrayField"],
+.admin-light .puck-builder-container [class*="_ArrayFieldItem"] {
+  background-color: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+.admin-light .puck-builder-container [class*="_ArrayFieldItem"]:hover {
+  background-color: #f1f5f9;
+}
+
+.admin-light .puck-builder-container [class*="_ExternalInput"] {
+  background-color: #ffffff;
+  border-color: #e2e8f0;
+  color: #334155;
+}
+
+.admin-light .puck-builder-container *::-webkit-scrollbar-thumb {
+  background-color: rgba(51, 65, 85, 0.15);
+}
+
+.admin-light .puck-builder-container *::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(51, 65, 85, 0.25);
 }
