@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation, Link } from "wouter";
 import { loadStripe } from "@stripe/stripe-js";
+import type { StripeAddressElementChangeEvent } from "@stripe/stripe-js";
 import {
   Elements,
+  AddressElement,
   PaymentElement,
   ExpressCheckoutElement,
   useStripe,
@@ -16,7 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, ArrowRight, CreditCard, Loader2, ShoppingBag, Lock, Shield, CheckCircle, XCircle, Users } from "lucide-react";
 import { AddressForm, emptyAddress, type AddressFormData } from "@/components/checkout/AddressForm";
-import { validateEmail, validatePhone, validateAddress, validateRequired, validateState, validateZip } from "@shared/validation";
+import { validateEmail, validatePhone, validateRequired } from "@shared/validation";
 import { trackCheckoutEvent } from "@/lib/checkout-analytics";
 import logoImage from "@assets/powerplungelogo_1767907611722.png";
 
@@ -97,8 +99,6 @@ function CheckoutForm({ clientSecret, orderId, cartTotal, totalWithTax, billingD
       }
 
       if (paymentIntent) {
-        console.log("Payment intent status:", paymentIntent.status);
-        
         if (paymentIntent.status === "succeeded") {
           trackCheckoutEvent("payment_succeeded", { cartValue: totalWithTax });
 
@@ -156,8 +156,6 @@ function CheckoutForm({ clientSecret, orderId, cartTotal, totalWithTax, billingD
             variant: "destructive",
           });
         }
-      } else if (!error) {
-        console.log("No payment intent returned - likely redirected for authentication");
       }
     } catch (error: any) {
       trackCheckoutEvent("payment_failed", { error: error.message });
@@ -282,6 +280,70 @@ function CheckoutForm({ clientSecret, orderId, cartTotal, totalWithTax, billingD
   );
 }
 
+interface ShippingAddressData {
+  name: string;
+  line1: string;
+  line2: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+}
+
+function ShippingAddressCapture({
+  onAddressChange,
+  defaultValues,
+}: {
+  onAddressChange: (address: ShippingAddressData | null, complete: boolean) => void;
+  defaultValues?: ShippingAddressData;
+}) {
+  const handleChange = useCallback((event: StripeAddressElementChangeEvent) => {
+    if (event.complete) {
+      const v = event.value;
+      onAddressChange({
+        name: v.name || "",
+        line1: v.address.line1 || "",
+        line2: v.address.line2 || "",
+        city: v.address.city || "",
+        state: v.address.state || "",
+        postalCode: v.address.postal_code || "",
+        country: v.address.country || "US",
+      }, true);
+    } else {
+      onAddressChange(null, false);
+    }
+  }, [onAddressChange]);
+
+  const elementDefaultValues = defaultValues ? {
+    name: defaultValues.name,
+    address: {
+      line1: defaultValues.line1,
+      line2: defaultValues.line2,
+      city: defaultValues.city,
+      state: defaultValues.state,
+      postal_code: defaultValues.postalCode,
+      country: defaultValues.country || "US",
+    },
+  } : undefined;
+
+  return (
+    <AddressElement
+      options={{
+        mode: "shipping",
+        allowedCountries: ["US"],
+        fields: {
+          phone: "never",
+        },
+        display: {
+          name: "full",
+        },
+        defaultValues: elementDefaultValues,
+      }}
+      onChange={handleChange}
+    />
+  );
+}
+
 export default function Checkout() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -291,7 +353,6 @@ export default function Checkout() {
   const [orderId, setOrderId] = useState<string | null>(null);
   const [stripePromise, setStripePromise] = useState<ReturnType<typeof loadStripe> | null>(null);
   const [taxInfo, setTaxInfo] = useState<{ subtotal: number; taxAmount: number; total: number } | null>(null);
-  const formRef = useRef<HTMLFormElement>(null);
 
   const [contactData, setContactData] = useState(() => {
     const defaults = { email: "", phone: "" };
@@ -305,28 +366,22 @@ export default function Checkout() {
     return defaults;
   });
 
-  const [shippingAddress, setShippingAddress] = useState<AddressFormData>(() => {
+  const [stripeShippingAddress, setStripeShippingAddress] = useState<ShippingAddressData | null>(() => {
     const saved = sessionStorage.getItem("checkoutShippingAddress");
     if (saved) {
-      try { return { ...emptyAddress, ...JSON.parse(saved) }; } catch {}
+      try { return JSON.parse(saved); } catch {}
     }
-    const oldSaved = sessionStorage.getItem("checkoutFormData");
-    if (oldSaved) {
-      try {
-        const old = JSON.parse(oldSaved);
-        return {
-          ...emptyAddress,
-          name: old.name || "",
-          line1: old.address || "",
-          line2: old.address2 || "",
-          city: old.city || "",
-          state: old.state || "",
-          postalCode: old.zipCode || "",
-        };
-      } catch {}
-    }
-    return emptyAddress;
+    return null;
   });
+  const [stripeAddressComplete, setStripeAddressComplete] = useState(false);
+
+  const handleAddressChange = useCallback((address: ShippingAddressData | null, complete: boolean) => {
+    setStripeShippingAddress(address);
+    setStripeAddressComplete(complete);
+    if (address) {
+      sessionStorage.setItem("checkoutShippingAddress", JSON.stringify(address));
+    }
+  }, []);
 
   const [billingSameAsShipping, setBillingSameAsShipping] = useState(true);
   const [billingHasBeenEdited, setBillingHasBeenEdited] = useState(false);
@@ -335,59 +390,38 @@ export default function Checkout() {
     if (saved) {
       try { return { ...emptyAddress, ...JSON.parse(saved) }; } catch {}
     }
-    const oldSaved = sessionStorage.getItem("checkoutBillingData");
-    if (oldSaved) {
-      try {
-        const old = JSON.parse(oldSaved);
-        return {
-          ...emptyAddress,
-          name: old.name || "",
-          line1: old.address || "",
-          line2: old.address2 || "",
-          city: old.city || "",
-          state: old.state || "",
-          postalCode: old.zipCode || "",
-        };
-      } catch {}
-    }
     return emptyAddress;
   });
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    sessionStorage.setItem("checkoutShippingAddress", JSON.stringify(shippingAddress));
     sessionStorage.setItem("checkoutFormData", JSON.stringify({
-      name: shippingAddress.name,
       email: contactData.email,
       phone: contactData.phone,
-      address: shippingAddress.line1,
-      address2: shippingAddress.line2,
-      city: shippingAddress.city,
-      state: shippingAddress.state,
-      zipCode: shippingAddress.postalCode,
     }));
-  }, [shippingAddress, contactData]);
+  }, [contactData]);
 
   useEffect(() => {
     sessionStorage.setItem("checkoutBillingAddress", JSON.stringify(billingAddress));
-    sessionStorage.setItem("checkoutBillingData", JSON.stringify({
-      name: billingAddress.name,
-      address: billingAddress.line1,
-      address2: billingAddress.line2,
-      city: billingAddress.city,
-      state: billingAddress.state,
-      zipCode: billingAddress.postalCode,
-    }));
   }, [billingAddress]);
 
   const handleBillingSameToggle = useCallback((checked: boolean) => {
     setBillingSameAsShipping(checked);
-    if (!checked && !billingHasBeenEdited) {
-      setBillingAddress({ ...shippingAddress });
+    if (!checked && !billingHasBeenEdited && stripeShippingAddress) {
+      setBillingAddress({
+        name: stripeShippingAddress.name,
+        company: "",
+        line1: stripeShippingAddress.line1,
+        line2: stripeShippingAddress.line2,
+        city: stripeShippingAddress.city,
+        state: stripeShippingAddress.state,
+        postalCode: stripeShippingAddress.postalCode,
+        country: "US",
+      });
       setBillingHasBeenEdited(true);
     }
-  }, [shippingAddress, billingHasBeenEdited]);
+  }, [stripeShippingAddress, billingHasBeenEdited]);
 
   const clearError = useCallback((field: string) => {
     setFieldErrors(prev => {
@@ -399,32 +433,21 @@ export default function Checkout() {
 
   const handleBlurValidate = useCallback((field: string, value: string) => {
     let error: string | null = null;
-    const baseField = field.replace(/^billing/, "").replace(/^[A-Z]/, c => c.toLowerCase());
-
-    switch (baseField) {
-      case "name":
-        error = validateRequired(value, field, "Full name")?.message || null;
-        break;
-      case "line1":
-        error = validateRequired(value, field, "Street address", 3)?.message || null;
-        break;
-      case "city":
-        error = validateRequired(value, field, "City")?.message || null;
-        break;
-      case "state":
-        error = validateState(value)?.message || null;
-        break;
-      case "postalCode":
-        error = validateZip(value)?.message || null;
-        break;
+    switch (field) {
       case "email":
         error = validateEmail(value)?.message || null;
         break;
       case "phone":
         error = validatePhone(value)?.message || null;
         break;
+      default: {
+        const baseField = field.replace(/^billing/, "").replace(/^[A-Z]/, c => c.toLowerCase());
+        if (baseField === "name") error = validateRequired(value, field, "Full name")?.message || null;
+        else if (baseField === "line1") error = validateRequired(value, field, "Street address", 3)?.message || null;
+        else if (baseField === "city") error = validateRequired(value, field, "City")?.message || null;
+        break;
+      }
     }
-
     setFieldErrors(prev => {
       if (error) return { ...prev, [field]: error };
       const next = { ...prev };
@@ -432,57 +455,6 @@ export default function Checkout() {
       return next;
     });
   }, []);
-
-  const validateForm = (): boolean => {
-    const errors: Record<string, string> = {};
-
-    const emailErr = validateEmail(contactData.email);
-    if (emailErr) errors.email = emailErr.message;
-
-    const phoneErr = validatePhone(contactData.phone);
-    if (phoneErr) errors.phone = phoneErr.message;
-
-    const shippingErrors = validateAddress({
-      name: shippingAddress.name,
-      line1: shippingAddress.line1,
-      city: shippingAddress.city,
-      state: shippingAddress.state,
-      postalCode: shippingAddress.postalCode,
-    });
-    for (const err of shippingErrors) {
-      errors[err.field] = err.message;
-    }
-
-    if (!billingSameAsShipping) {
-      const billingErrors = validateAddress({
-        name: billingAddress.name,
-        line1: billingAddress.line1,
-        city: billingAddress.city,
-        state: billingAddress.state,
-        postalCode: billingAddress.postalCode,
-      }, "billing");
-      for (const err of billingErrors) {
-        errors[err.field] = err.message;
-      }
-    }
-
-    setFieldErrors(errors);
-
-    if (Object.keys(errors).length > 0) {
-      const firstErrorKey = Object.keys(errors)[0];
-      trackCheckoutEvent("validation_error", { field: firstErrorKey, code: "client_validation" });
-      setTimeout(() => {
-        const el = document.getElementById(firstErrorKey);
-        if (el) {
-          el.scrollIntoView({ behavior: "smooth", block: "center" });
-          el.focus();
-        }
-      }, 100);
-      return false;
-    }
-
-    return true;
-  };
 
   const [referralCode, setReferralCode] = useState("");
   const [referralStatus, setReferralStatus] = useState<"idle" | "checking" | "valid" | "invalid">("idle");
@@ -579,33 +551,23 @@ export default function Checkout() {
     return () => clearInterval(interval);
   }, [cart.length, cartTotal, contactData.email]);
 
-  const handleShippingSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
+  const buildCustomerPayload = useCallback(() => {
+    if (!stripeShippingAddress) return null;
+    return {
+      name: stripeShippingAddress.name,
+      email: contactData.email.trim(),
+      phone: contactData.phone.trim(),
+      address: stripeShippingAddress.line1,
+      line2: stripeShippingAddress.line2 || undefined,
+      city: stripeShippingAddress.city,
+      state: stripeShippingAddress.state,
+      zipCode: stripeShippingAddress.postalCode,
+    };
+  }, [stripeShippingAddress, contactData]);
 
-    if (!validateForm()) {
-      setIsLoading(false);
-      return;
-    }
-
-    trackCheckoutEvent("shipping_step_completed", {
-      cartValue: cartTotal,
-      itemCount: cart.length,
-      billingSameAsShipping,
-    });
-
-    let affiliateCode: string | null = null;
-    if (referralStatus === "valid" && referralCode) {
-      affiliateCode = referralCode;
-    } else {
-      const storedCode = localStorage.getItem("affiliateCode");
-      const codeExpiry = localStorage.getItem("affiliateCodeExpiry");
-      if (storedCode && codeExpiry && Date.now() < parseInt(codeExpiry)) {
-        affiliateCode = storedCode;
-      }
-    }
-
-    const billingForSubmit = billingSameAsShipping ? null : {
+  const buildBillingPayload = useCallback(() => {
+    if (billingSameAsShipping) return null;
+    return {
       name: billingAddress.name.trim(),
       company: billingAddress.company.trim() || undefined,
       address: billingAddress.line1.trim(),
@@ -614,31 +576,88 @@ export default function Checkout() {
       state: billingAddress.state,
       zipCode: billingAddress.postalCode.trim(),
     };
+  }, [billingSameAsShipping, billingAddress]);
+
+  const getAffiliateCode = useCallback(() => {
+    if (referralStatus === "valid" && referralCode) return referralCode;
+    const storedCode = localStorage.getItem("affiliateCode");
+    const codeExpiry = localStorage.getItem("affiliateCodeExpiry");
+    if (storedCode && codeExpiry && Date.now() < parseInt(codeExpiry)) return storedCode;
+    return null;
+  }, [referralStatus, referralCode]);
+
+  const handleShippingSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    const errors: Record<string, string> = {};
+    const emailErr = validateEmail(contactData.email);
+    if (emailErr) errors.email = emailErr.message;
+    const phoneErr = validatePhone(contactData.phone);
+    if (phoneErr) errors.phone = phoneErr.message;
+
+    if (!stripeAddressComplete || !stripeShippingAddress) {
+      errors.shippingAddress = "Please complete your shipping address";
+    }
+
+    if (!billingSameAsShipping) {
+      if (!billingAddress.name.trim()) errors.billingName = "Full name is required";
+      if (!billingAddress.line1.trim() || billingAddress.line1.trim().length < 3) errors.billingLine1 = "Street address is required (min 3 characters)";
+      if (!billingAddress.city.trim()) errors.billingCity = "City is required";
+      if (!billingAddress.state.trim()) errors.billingState = "Please select a state";
+      if (!billingAddress.postalCode.trim()) errors.billingPostalCode = "ZIP code is required";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      const firstErrorKey = Object.keys(errors)[0];
+      trackCheckoutEvent("validation_error", { field: firstErrorKey, code: "client_validation" });
+      setTimeout(() => {
+        const el = document.getElementById(firstErrorKey);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          el.focus();
+        }
+      }, 100);
+      setIsLoading(false);
+      return;
+    }
+
+    setFieldErrors({});
+
+    trackCheckoutEvent("shipping_step_completed", {
+      cartValue: cartTotal,
+      itemCount: cart.length,
+      billingSameAsShipping,
+    });
+
+    const customerPayload = buildCustomerPayload();
+    const billingPayload = buildBillingPayload();
+    const affiliateCode = getAffiliateCode();
+
+    const isReprice = !!orderId && !!clientSecret;
+    const endpoint = isReprice ? "/api/reprice-payment-intent" : "/api/create-payment-intent";
 
     try {
-      const response = await fetch("/api/create-payment-intent", {
+      const body: any = {
+        items: cart.map((item) => ({
+          productId: item.id,
+          quantity: item.quantity,
+        })),
+        customer: customerPayload,
+        billingAddress: billingPayload,
+        billingSameAsShipping,
+        affiliateCode,
+      };
+
+      if (isReprice) {
+        body.orderId = orderId;
+      }
+
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          items: cart.map((item) => ({
-            productId: item.id,
-            quantity: item.quantity,
-          })),
-          customer: {
-            name: shippingAddress.name.trim(),
-            email: contactData.email.trim(),
-            phone: contactData.phone.trim(),
-            address: shippingAddress.line1.trim(),
-            company: shippingAddress.company.trim() || undefined,
-            line2: shippingAddress.line2.trim() || undefined,
-            city: shippingAddress.city.trim(),
-            state: shippingAddress.state,
-            zipCode: shippingAddress.postalCode.trim(),
-          },
-          billingAddress: billingForSubmit,
-          billingSameAsShipping,
-          affiliateCode,
-        }),
+        body: JSON.stringify(body),
       });
 
       const data = await response.json();
@@ -666,26 +685,8 @@ export default function Checkout() {
         }
 
         if (data.field) {
-          const fieldMap: Record<string, string> = {
-            state: "state",
-            zipCode: "postalCode",
-            address: "line1",
-            billingName: "billingName",
-            billingAddress: "billingLine1",
-            billingCity: "billingCity",
-            billingState: "billingState",
-            billingZip: "billingPostalCode",
-          };
-          const mappedField = fieldMap[data.field] || data.field;
-          setFieldErrors(prev => ({ ...prev, [mappedField]: data.message }));
-          trackCheckoutEvent("validation_error", { field: mappedField, code: "server_validation" });
-          setTimeout(() => {
-            const el = document.getElementById(mappedField);
-            if (el) {
-              el.scrollIntoView({ behavior: "smooth", block: "center" });
-              el.focus();
-            }
-          }, 100);
+          setFieldErrors(prev => ({ ...prev, [data.field]: data.message }));
+          trackCheckoutEvent("validation_error", { field: data.field, code: "server_validation" });
           setIsLoading(false);
           return;
         }
@@ -726,7 +727,30 @@ export default function Checkout() {
     );
   }
 
-  const activeBilling = billingSameAsShipping ? shippingAddress : billingAddress;
+  const activeBilling = billingSameAsShipping
+    ? (stripeShippingAddress ? {
+        name: stripeShippingAddress.name,
+        company: "",
+        line1: stripeShippingAddress.line1,
+        line2: stripeShippingAddress.line2,
+        city: stripeShippingAddress.city,
+        state: stripeShippingAddress.state,
+        postalCode: stripeShippingAddress.postalCode,
+        country: "US",
+      } : emptyAddress)
+    : billingAddress;
+
+  const stripeAppearance = {
+    theme: "night" as const,
+    variables: {
+      colorPrimary: "#22d3ee",
+      colorBackground: "#1e293b",
+      colorText: "#f1f5f9",
+      colorDanger: "#ef4444",
+      fontFamily: "system-ui, sans-serif",
+      borderRadius: "8px",
+    },
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -774,7 +798,7 @@ export default function Checkout() {
                   <CardTitle>Shipping Information</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <form ref={formRef} onSubmit={handleShippingSubmit} className="space-y-4">
+                  <form onSubmit={handleShippingSubmit} className="space-y-4">
                     <div className="grid sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="email">Email</Label>
@@ -811,14 +835,24 @@ export default function Checkout() {
 
                     <div className="pt-2">
                       <h4 className="font-medium text-sm mb-3">Shipping Address</h4>
-                      <AddressForm
-                        data={shippingAddress}
-                        onChange={setShippingAddress}
-                        errors={fieldErrors}
-                        onClearError={clearError}
-                        onBlurValidate={handleBlurValidate}
-                        autoCompletePrefix="shipping"
-                      />
+                      {stripePromise ? (
+                        <Elements
+                          stripe={stripePromise}
+                          options={{ appearance: stripeAppearance }}
+                        >
+                          <ShippingAddressCapture
+                            onAddressChange={handleAddressChange}
+                            defaultValues={stripeShippingAddress || undefined}
+                          />
+                        </Elements>
+                      ) : (
+                        <div className="flex items-center justify-center py-8">
+                          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                        </div>
+                      )}
+                      {fieldErrors.shippingAddress && (
+                        <p className="text-xs text-red-500 mt-2" id="shippingAddress" data-testid="error-shipping-address">{fieldErrors.shippingAddress}</p>
+                      )}
                     </div>
 
                     <div className="pt-4 border-t border-border">
@@ -941,15 +975,16 @@ export default function Checkout() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="bg-muted/30 rounded-lg p-4 mb-6">
-                    <p className="text-sm text-muted-foreground mb-1">Shipping to:</p>
-                    <p className="font-medium">{shippingAddress.name}</p>
-                    {shippingAddress.company && <p className="text-sm text-muted-foreground">{shippingAddress.company}</p>}
-                    <p className="text-sm text-muted-foreground">
-                      {shippingAddress.line1}{shippingAddress.line2 ? `, ${shippingAddress.line2}` : ""}, {shippingAddress.city}, {shippingAddress.state} {shippingAddress.postalCode}
-                    </p>
-                    <p className="text-sm text-muted-foreground">{contactData.email}</p>
-                  </div>
+                  {stripeShippingAddress && (
+                    <div className="bg-muted/30 rounded-lg p-4 mb-6">
+                      <p className="text-sm text-muted-foreground mb-1">Shipping to:</p>
+                      <p className="font-medium">{stripeShippingAddress.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {stripeShippingAddress.line1}{stripeShippingAddress.line2 ? `, ${stripeShippingAddress.line2}` : ""}, {stripeShippingAddress.city}, {stripeShippingAddress.state} {stripeShippingAddress.postalCode}
+                      </p>
+                      <p className="text-sm text-muted-foreground">{contactData.email}</p>
+                    </div>
+                  )}
 
                   {!billingSameAsShipping && (
                     <div className="bg-muted/30 rounded-lg p-4 mb-6">
@@ -964,20 +999,11 @@ export default function Checkout() {
 
                   {stripePromise && clientSecret ? (
                     <Elements
+                      key={clientSecret}
                       stripe={stripePromise}
                       options={{
                         clientSecret,
-                        appearance: {
-                          theme: "night",
-                          variables: {
-                            colorPrimary: "#22d3ee",
-                            colorBackground: "#1e293b",
-                            colorText: "#f1f5f9",
-                            colorDanger: "#ef4444",
-                            fontFamily: "system-ui, sans-serif",
-                            borderRadius: "8px",
-                          },
-                        },
+                        appearance: stripeAppearance,
                       }}
                     >
                       <CheckoutForm
@@ -1014,7 +1040,7 @@ export default function Checkout() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {cart.map((item) => (
-                  <div key={item.id} className="flex justify-between py-2 border-b border-border">
+                  <div key={item.id} className="flex justify-between py-2 border-b border-border" data-testid={`cart-item-${item.id}`}>
                     <div>
                       <p className="font-medium text-sm">{item.name}</p>
                       <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
@@ -1023,17 +1049,17 @@ export default function Checkout() {
                   </div>
                 ))}
                 <div className="space-y-2 pt-4 border-t border-border">
-                  <div className="flex justify-between">
+                  <div className="flex justify-between" data-testid="text-subtotal">
                     <p className="text-muted-foreground">Subtotal</p>
                     <p>${((taxInfo?.subtotal ?? cartTotal) / 100).toLocaleString()}</p>
                   </div>
                   {taxInfo && taxInfo.taxAmount > 0 && (
-                    <div className="flex justify-between">
+                    <div className="flex justify-between" data-testid="text-tax">
                       <p className="text-muted-foreground">Sales Tax</p>
                       <p>${(taxInfo.taxAmount / 100).toFixed(2)}</p>
                     </div>
                   )}
-                  <div className="flex justify-between pt-2">
+                  <div className="flex justify-between pt-2" data-testid="text-total">
                     <p className="font-semibold">Total</p>
                     <p className="font-display font-bold text-xl text-primary">
                       ${((taxInfo?.total ?? cartTotal) / 100).toLocaleString()}

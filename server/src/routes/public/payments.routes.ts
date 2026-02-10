@@ -281,6 +281,266 @@ router.post("/create-payment-intent", paymentLimiter, async (req: any, res) => {
   }
 });
 
+router.post("/reprice-payment-intent", paymentLimiter, async (req: any, res) => {
+  try {
+    const { orderId, items, customer, billingAddress: billingInput, billingSameAsShipping: billingSame, affiliateCode } = req.body;
+    const isBillingSame = billingSame !== false;
+
+    if (!orderId) {
+      return res.status(400).json({ message: "Missing orderId" });
+    }
+
+    const stripeClient = await stripeService.getClient();
+    if (!stripeClient) {
+      return res.status(400).json({ message: "Stripe is not configured" });
+    }
+
+    const order = await storage.getOrder(orderId);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+    if (order.status !== "pending") {
+      return res.status(400).json({ message: "Order already finalized" });
+    }
+    if (!order.stripePaymentIntentId) {
+      return res.status(400).json({ message: "Order has no payment intent" });
+    }
+
+    const parsedCustomer = insertCustomerSchema.parse(customer);
+    const customerData = { ...parsedCustomer, email: normalizeEmail(parsedCustomer.email) };
+
+    const allErrors: ValidationError[] = [];
+
+    const emailErr = validateEmail(customerData.email);
+    if (emailErr) allErrors.push(emailErr);
+
+    const phoneErr = validatePhone(customerData.phone || "");
+    if (phoneErr) allErrors.push(phoneErr);
+
+    const shippingAddr = {
+      name: customerData.name || "",
+      company: (customer.company || "").trim(),
+      line1: customerData.address || "",
+      line2: (customer.line2 || "").trim(),
+      city: customerData.city || "",
+      state: customerData.state || "",
+      postalCode: customerData.zipCode || "",
+      country: "US",
+    };
+    const shippingErrors = validateAddress(shippingAddr);
+    allErrors.push(...shippingErrors);
+
+    const normalizedShipping = normalizeAddress(shippingAddr);
+    customerData.state = normalizedShipping.state;
+    customerData.zipCode = normalizedShipping.postalCode;
+
+    let validatedBilling: { name: string; company?: string; address: string; line2?: string; city: string; state: string; zipCode: string } | null = null;
+    if (!isBillingSame && billingInput) {
+      const billingAddr = {
+        name: billingInput.name || "",
+        company: (billingInput.company || "").trim(),
+        line1: billingInput.address || "",
+        line2: (billingInput.line2 || "").trim(),
+        city: billingInput.city || "",
+        state: billingInput.state || "",
+        postalCode: billingInput.zipCode || "",
+        country: "US",
+      };
+      const billingErrors = validateAddress(billingAddr, "billing");
+      allErrors.push(...billingErrors);
+
+      const normalizedBilling = normalizeAddress(billingAddr);
+      validatedBilling = {
+        name: normalizedBilling.name,
+        company: normalizedBilling.company,
+        address: normalizedBilling.line1,
+        line2: normalizedBilling.line2,
+        city: normalizedBilling.city,
+        state: normalizedBilling.state,
+        zipCode: normalizedBilling.postalCode,
+      };
+    }
+
+    if (allErrors.length > 0) {
+      return res.status(400).json({ errors: allErrors });
+    }
+
+    let affiliateSessionId: string | null = null;
+    let cookieAffiliateId: string | null = null;
+    const affiliateCookie = req.cookies?.affiliate;
+    if (affiliateCookie) {
+      try {
+        const decoded = Buffer.from(affiliateCookie, "base64").toString("utf8");
+        const cookieData = JSON.parse(decoded);
+        if (cookieData.affiliateId && cookieData.sessionId && cookieData.expiresAt > Date.now()) {
+          affiliateSessionId = cookieData.sessionId;
+          cookieAffiliateId = cookieData.affiliateId;
+        }
+      } catch {}
+    }
+
+    let affiliate = null;
+    if (affiliateCode) {
+      affiliate = await storage.getAffiliateByCode(affiliateCode);
+    } else if (cookieAffiliateId) {
+      affiliate = await storage.getAffiliate(cookieAffiliateId);
+    }
+
+    if (affiliate && affiliate.status === "active") {
+      const affiliateCustomer = await storage.getCustomer(affiliate.customerId);
+      if (affiliateCustomer && normalizeEmail(affiliateCustomer.email) === customerData.email) {
+        affiliate = null;
+      }
+    }
+
+    let existingCustomer = await storage.getCustomerByEmail(customerData.email);
+    const userId = req.user?.claims?.sub;
+    if (existingCustomer) {
+      if (affiliate && affiliate.status === "active" && existingCustomer.id === affiliate.customerId) {
+        affiliate = null;
+      }
+      const updated = await storage.updateCustomer(existingCustomer.id, {
+        ...customerData,
+        userId: existingCustomer.userId || userId,
+      });
+      if (updated) existingCustomer = updated;
+    }
+
+    let subtotalAmount = 0;
+    const orderItems: Array<{
+      productId: string;
+      productName: string;
+      quantity: number;
+      unitPrice: number;
+    }> = [];
+
+    for (const item of items) {
+      const product = await storage.getProduct(item.productId);
+      if (!product) {
+        return res.status(400).json({ message: `Product ${item.productId} not found` });
+      }
+      subtotalAmount += product.price * item.quantity;
+      orderItems.push({
+        productId: product.id,
+        productName: product.name,
+        quantity: item.quantity,
+        unitPrice: product.price,
+      });
+    }
+
+    let taxAmount = 0;
+    let taxCalculationId: string | null = null;
+
+    try {
+      const taxLineItems = orderItems.map((item) => ({
+        amount: item.unitPrice * item.quantity,
+        reference: item.productId,
+        tax_behavior: "exclusive" as const,
+        tax_code: "txcd_99999999",
+      }));
+
+      const taxCalculation = await stripeClient.tax.calculations.create({
+        currency: "usd",
+        line_items: taxLineItems,
+        customer_details: {
+          address: {
+            line1: customerData.address || "",
+            city: customerData.city || "",
+            state: normalizedShipping.state,
+            postal_code: customerData.zipCode,
+            country: "US",
+          },
+          address_source: "shipping",
+        },
+      });
+
+      taxAmount = taxCalculation.tax_amount_exclusive;
+      taxCalculationId = taxCalculation.id;
+      console.log(`[TAX] Repriced: $${(taxAmount / 100).toFixed(2)} for ${normalizedShipping.state} ${customerData.zipCode}`);
+    } catch (taxError: any) {
+      console.error(`[TAX] Reprice calculation failed for ${normalizedShipping.state} ${customerData.zipCode}:`, taxError.message);
+      return res.status(422).json({
+        message: "Unable to calculate tax. Please verify your shipping state and ZIP code.",
+        field: "address",
+      });
+    }
+
+    const totalAmount = subtotalAmount + taxAmount;
+
+    await storage.updateOrder(orderId, {
+      subtotalAmount,
+      taxAmount: taxAmount > 0 ? taxAmount : null,
+      totalAmount,
+      stripeTaxCalculationId: taxCalculationId,
+      affiliateCode: affiliate?.affiliateCode || null,
+      shippingName: customerData.name,
+      shippingCompany: shippingAddr.company || null,
+      shippingAddress: customerData.address,
+      shippingLine2: shippingAddr.line2 || null,
+      shippingCity: customerData.city,
+      shippingState: normalizedShipping.state,
+      shippingZip: customerData.zipCode,
+      shippingCountry: "US",
+      billingSameAsShipping: isBillingSame,
+      billingName: validatedBilling?.name || null,
+      billingCompany: validatedBilling?.company || null,
+      billingAddress: validatedBilling?.address || null,
+      billingLine2: validatedBilling?.line2 || null,
+      billingCity: validatedBilling?.city || null,
+      billingState: validatedBilling?.state || null,
+      billingZip: validatedBilling?.zipCode || null,
+      billingCountry: validatedBilling ? "US" : null,
+    });
+
+    let clientSecret: string;
+    try {
+      const updatedIntent = await stripeClient.paymentIntents.update(order.stripePaymentIntentId, {
+        amount: totalAmount,
+        metadata: {
+          orderId: order.id,
+          customerId: order.customerId,
+          affiliateCode: affiliate?.affiliateCode || "",
+          affiliateId: affiliate?.id || "",
+          affiliateSessionId: affiliateSessionId || "",
+          attributionType: affiliateCode ? "coupon" : (affiliateSessionId ? "cookie" : "direct"),
+          taxAmount: taxAmount.toString(),
+          taxCalculationId: taxCalculationId || "",
+        },
+      });
+      clientSecret = updatedIntent.client_secret!;
+    } catch (updateErr: any) {
+      console.log(`[REPRICE] PaymentIntent update failed, recreating: ${updateErr.message}`);
+      const newIntent = await stripeClient.paymentIntents.create({
+        amount: totalAmount,
+        currency: "usd",
+        metadata: {
+          orderId: order.id,
+          customerId: order.customerId,
+          affiliateCode: affiliate?.affiliateCode || "",
+          affiliateId: affiliate?.id || "",
+          affiliateSessionId: affiliateSessionId || "",
+          attributionType: affiliateCode ? "coupon" : (affiliateSessionId ? "cookie" : "direct"),
+          taxAmount: taxAmount.toString(),
+          taxCalculationId: taxCalculationId || "",
+        },
+      });
+      await storage.updateOrder(orderId, { stripePaymentIntentId: newIntent.id });
+      clientSecret = newIntent.client_secret!;
+    }
+
+    res.json({
+      clientSecret,
+      orderId: order.id,
+      subtotal: subtotalAmount,
+      taxAmount,
+      total: totalAmount,
+    });
+  } catch (error: any) {
+    console.error("Reprice payment intent error:", error);
+    res.status(500).json({ message: error.message || "Failed to reprice payment intent" });
+  }
+});
+
 router.post("/confirm-payment", paymentLimiter, async (req: any, res) => {
   try {
     const { orderId, paymentIntentId } = req.body;
