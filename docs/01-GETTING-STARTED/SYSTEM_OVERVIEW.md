@@ -62,7 +62,7 @@ client/src/components/CmsErrorBoundary.tsx  -- Error boundary for admin routes
 
 ### Affiliate Program
 
-- Invite-only signup with 6-step onboarding wizard
+- Invite-only signup with 5-step onboarding wizard (Welcome, Account, Agreement, Payout, Complete)
 - Stripe Connect payout integration
 - Cookie-based referral tracking
 - Commission management with auto-approval
