@@ -133,6 +133,17 @@ function CheckoutForm({ clientSecret, orderId, cartTotal, totalWithTax, billingD
             }).catch(() => {});
           }
 
+          trackPurchase({
+            transactionId: orderId,
+            value: totalWithTax / 100,
+            items: cart.map((i) => ({
+              id: i.id,
+              name: i.name,
+              price: i.price / 100,
+              quantity: i.quantity,
+            })),
+          });
+
           localStorage.removeItem("cart");
           localStorage.removeItem("checkoutSessionId");
           sessionStorage.removeItem("checkoutFormData");

@@ -69,7 +69,18 @@ The Power Plunge e-commerce platform utilizes a modern full-stack architecture.
 - **Idempotent Confirm**: `POST /api/confirm-payment` safely finalizes orders exactly once via pending-status guard.
 - **Checkout Analytics**: `client/src/lib/checkout-analytics.ts` tracks checkout funnel events (checkout_started, shipping_step_completed, payment_step_started, validation_error, payment_submitted, payment_succeeded, payment_failed) via beacon to `/api/analytics/checkout-event`.
 
+### Google Analytics Integration (Feb 2026)
+- **GA4 Setup**: `client/src/lib/analytics.ts` initializes GA via gtag.js with measurement ID from `VITE_GA_MEASUREMENT_ID` env var.
+- **Page View Tracking**: `client/src/hooks/use-analytics.ts` tracks page views on route changes via wouter's `useLocation`.
+- **E-commerce Events**: GA4 e-commerce events tracked across the funnel:
+  - `view_item_list` on Shop page load
+  - `add_to_cart` on Home and Shop product add
+  - `begin_checkout` on Checkout page mount
+  - `purchase` on successful payment (inline flow in checkout.tsx, Stripe redirect flow in order-success.tsx)
+- **No Double-Fire**: Inline payment fires purchase in checkout before redirect with `order_id`; Stripe redirect fires purchase in order-success via `session_id` fetch. Each path is mutually exclusive.
+
 ## External Dependencies
+- **Google Analytics 4:** For product performance and customer behavior analytics.
 - **Stripe:** For payment processing.
 - **Mailgun:** For email services.
 - **Replit Auth:** For customer authentication.
