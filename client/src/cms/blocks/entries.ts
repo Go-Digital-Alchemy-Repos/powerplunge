@@ -91,7 +91,6 @@ export function registerCmsV1Blocks() {
       secondaryButtonText: textField("Secondary Button Text"),
       secondaryButtonLink: textField("Secondary Button Link"),
       productId: textField("Product ID (for Add to Cart action)"),
-      backgroundImage: imageField("Background Image"),
       heroImage: imageField("Split Image (for split layouts)"),
       layout: selectField("Layout", [
         { label: "Stacked (centered)", value: "stacked" },
