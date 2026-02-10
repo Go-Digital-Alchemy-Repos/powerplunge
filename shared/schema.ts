@@ -1505,7 +1505,7 @@ export const supportTickets = pgTable("support_tickets", {
   type: text("type").notNull().default("general"), // general, return, refund, shipping, technical
   status: text("status").notNull().default("open"), // open, in_progress, resolved, closed
   priority: text("priority").notNull().default("normal"), // low, normal, high, urgent
-  adminNotes: text("admin_notes"),
+  adminNotes: jsonb("admin_notes").$type<Array<{ text: string; adminId: string; adminName: string; createdAt: string }>>().default([]),
   resolvedBy: varchar("resolved_by").references(() => adminUsers.id),
   resolvedAt: timestamp("resolved_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
