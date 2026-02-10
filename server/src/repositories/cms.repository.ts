@@ -81,6 +81,10 @@ export class CmsRepository {
       return updated;
     });
   }
+
+  async delete(id: string) {
+    await db.delete(pages).where(eq(pages.id, id));
+  }
 }
 
 export const cmsRepository = new CmsRepository();

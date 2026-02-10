@@ -61,6 +61,13 @@ export class CmsService {
     if (!existing) return undefined;
     return cmsRepository.setShop(id);
   }
+
+  async deletePage(id: string) {
+    const existing = await cmsRepository.findById(id);
+    if (!existing) return false;
+    await cmsRepository.delete(id);
+    return true;
+  }
 }
 
 export const cmsService = new CmsService();
