@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import PageRenderer from "@/components/PageRenderer";
 import DynamicNav from "@/components/DynamicNav";
 import { useCustomerAuth } from "@/hooks/use-customer-auth";
+import { trackAddToCart, trackViewItemList } from "@/lib/analytics";
 
 interface Product {
   id: string;
@@ -72,10 +73,26 @@ export default function Shop() {
     queryKey: ["/api/site-settings"],
   });
 
+  useEffect(() => {
+    if (products.length > 0) {
+      trackViewItemList(
+        "Shop Page",
+        products.map((p) => ({ id: p.id, name: p.name, price: p.price / 100 })),
+      );
+    }
+  }, [products]);
+
   const handleAddToCart = (productId: string, quantity: number = 1) => {
     const product = products.find(p => p.id === productId);
     if (!product) return;
-    
+
+    trackAddToCart({
+      id: product.id,
+      name: product.name,
+      price: (product.salePrice || product.price) / 100,
+      quantity,
+    });
+
     setCart(prevCart => {
       const existingItem = prevCart.find(item => item.id === productId);
       if (existingItem) {

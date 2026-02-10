@@ -6,6 +6,7 @@ import { CheckCircle, Package, ArrowRight, Loader2, User, Gift, History } from "
 import PostPurchaseOffer from "@/components/PostPurchaseOffer";
 import logoImage from "@assets/powerplungelogo_1767907611722.png";
 import { useCustomerAuth } from "@/hooks/use-customer-auth";
+import { trackPurchase } from "@/lib/analytics";
 
 interface OrderData {
   order: {
@@ -56,6 +57,17 @@ export default function OrderSuccess() {
               customerId: data.customer?.id,
               sessionId,
             }));
+
+            trackPurchase({
+              transactionId: data.order.id,
+              value: data.order.totalAmount / 100,
+              items: (data.items || []).map((item: any) => ({
+                id: item.productId || item.productName,
+                name: item.productName,
+                price: item.unitPrice / 100,
+                quantity: item.quantity,
+              })),
+            });
           }
         }
         if (data?.order) {

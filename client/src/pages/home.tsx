@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useCustomerAuth } from "@/hooks/use-customer-auth";
 import { useAdmin } from "@/hooks/use-admin";
+import { trackAddToCart, trackViewItem, trackViewItemList } from "@/lib/analytics";
 import chillerImage from "@assets/power_plunge_1hp_chiller_mockup_1767902865789.png";
 import tubImage from "@assets/power_plunge_portable_tub_mockup_1767902865790.png";
 import logoImage from "@assets/powerplungelogo_1767907611722.png";
@@ -200,6 +201,12 @@ export default function Home() {
 
   const addToCart = () => {
     if (!product.id) return;
+    trackAddToCart({
+      id: product.id,
+      name: product.name,
+      price: (product.salePrice || product.price) / 100,
+      quantity,
+    });
     setCart((prev) => {
       const existing = prev.find((item) => item.id === product.id);
       if (existing) {

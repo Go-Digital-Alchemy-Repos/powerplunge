@@ -20,6 +20,7 @@ import { ArrowLeft, ArrowRight, CreditCard, Loader2, ShoppingBag, Lock, Shield, 
 import { AddressForm, emptyAddress, type AddressFormData } from "@/components/checkout/AddressForm";
 import { validateEmail, validatePhone, validateRequired } from "@shared/validation";
 import { trackCheckoutEvent } from "@/lib/checkout-analytics";
+import { trackBeginCheckout, trackPurchase } from "@/lib/analytics";
 import logoImage from "@assets/powerplungelogo_1767907611722.png";
 
 interface CartItem {
@@ -503,6 +504,10 @@ export default function Checkout() {
   useEffect(() => {
     if (cart.length > 0) {
       trackCheckoutEvent("checkout_started", { cartValue: cartTotal, itemCount: cart.length });
+      trackBeginCheckout(
+        cart.map((i) => ({ id: i.id, name: i.name, price: i.price / 100, quantity: i.quantity })),
+        cartTotal / 100,
+      );
     }
   }, []);
 
