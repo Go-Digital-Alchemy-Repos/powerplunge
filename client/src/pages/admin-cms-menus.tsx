@@ -179,9 +179,15 @@ function SortableMenuItem({
 
   const hasChildren = item.children?.length > 0;
   const isExpanded = expandedIds.has(item.id);
-  const resolvedHref = item.type === "page" ? `/${item.pageSlug || ""}` :
-                       item.type === "post" ? `/blog/${item.postSlug || ""}` :
-                       item.href || item.url || "";
+  const SLUG_TO_ROUTE: Record<string, string> = {
+    "home": "/", "shop": "/shop", "blog": "/blog", "my-account": "/my-account",
+    "track-order": "/track-order", "checkout": "/checkout", "login": "/login",
+    "register": "/register", "become-affiliate": "/become-affiliate", "affiliate-portal": "/affiliate-portal",
+  };
+  const resolvedHref = item.type === "page" && item.pageSlug
+    ? (SLUG_TO_ROUTE[item.pageSlug] || `/page/${item.pageSlug}`)
+    : item.type === "post" ? `/blog/${item.postSlug || ""}` :
+      item.href || item.url || "";
 
   return (
     <div ref={setNodeRef} style={style} className="select-none">
@@ -352,8 +358,8 @@ function AddItemModal({
       id: generateId(),
       type,
       label: label || "(untitled)",
-      href: type === "external" ? href : isSystemPage ? (systemPage?.path || "/") : type === "page" ? `/${selectedPageSlug || ""}` : type === "post" ? `/blog/${selectedPostSlug || ""}` : "",
-      url: type === "external" ? href : isSystemPage ? (systemPage?.path || "/") : "",
+      href: type === "external" ? href : isSystemPage ? (systemPage?.path || "/") : type === "page" ? `/page/${selectedPageSlug || ""}` : type === "post" ? `/blog/${selectedPostSlug || ""}` : "",
+      url: type === "external" ? href : isSystemPage ? (systemPage?.path || "/") : type === "page" ? `/page/${selectedPageSlug || ""}` : "",
       pageId: type === "page" && !isSystemPage ? selectedPageId || undefined : undefined,
       pageSlug: type === "page" ? selectedPageSlug || undefined : undefined,
       postId: type === "post" ? selectedPostId || undefined : undefined,
@@ -1026,7 +1032,9 @@ function MenuEditor({
                 <div>
                   <Label className="text-foreground/80 text-sm">Destination</Label>
                   <p className="text-sm text-muted-foreground mt-1.5 bg-muted rounded px-3 py-2 border border-border">
-                    {editingItem.href || `/${editingItem.pageSlug || ""}`}
+                    {editingItem.pageSlug
+                      ? ({"home": "/", "shop": "/shop", "blog": "/blog", "my-account": "/my-account", "track-order": "/track-order", "checkout": "/checkout", "login": "/login", "register": "/register", "become-affiliate": "/become-affiliate", "affiliate-portal": "/affiliate-portal"}[editingItem.pageSlug] || `/page/${editingItem.pageSlug}`)
+                      : (editingItem.href || "/")}
                   </p>
                 </div>
               )}

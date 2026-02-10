@@ -23,10 +23,26 @@ interface MenuData {
   active: boolean;
 }
 
+const SLUG_TO_ROUTE: Record<string, string> = {
+  "home": "/",
+  "shop": "/shop",
+  "blog": "/blog",
+  "my-account": "/my-account",
+  "track-order": "/track-order",
+  "checkout": "/checkout",
+  "login": "/login",
+  "register": "/register",
+  "become-affiliate": "/become-affiliate",
+  "affiliate-portal": "/affiliate-portal",
+};
+
 function resolveHref(item: NavMenuItem): string {
-  if (item.type === "page" && item.pageSlug) return `/${item.pageSlug}`;
-  if (item.type === "post" && item.postSlug) return `/blog/${item.postSlug}`;
   if (item.type === "external") return item.href || item.url || "#";
+  if (item.type === "post" && item.postSlug) return `/blog/${item.postSlug}`;
+  if (item.type === "page" && item.pageSlug) {
+    if (SLUG_TO_ROUTE[item.pageSlug]) return SLUG_TO_ROUTE[item.pageSlug];
+    return `/page/${item.pageSlug}`;
+  }
   return item.href || item.url || "#";
 }
 
