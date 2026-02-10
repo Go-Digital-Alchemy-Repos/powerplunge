@@ -5,6 +5,7 @@ export interface CmsTemplate {
   tags: string[];
   blocks: CmsTemplateBlock[];
   thumbnail?: string;
+  sidebarId?: string;
 }
 
 export interface CmsTemplateBlock {

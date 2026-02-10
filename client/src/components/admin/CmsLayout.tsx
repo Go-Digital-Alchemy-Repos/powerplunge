@@ -27,6 +27,7 @@ import {
   PenLine,
   Menu,
   ImageIcon,
+  PanelRight,
 } from "lucide-react";
 import AdminNav from "./AdminNav";
 import { useAdmin } from "@/hooks/use-admin";
@@ -58,6 +59,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: "sections", label: "Sections", icon: Layers, href: "/admin/cms/sections" },
   { id: "templates", label: "Templates", icon: BookTemplate, href: "/admin/cms/templates" },
   { id: "media", label: "Media Library", icon: ImageIcon, href: "/admin/media" },
+  { id: "sidebars", label: "Sidebars & Widgets", icon: PanelRight, href: "/admin/cms/sidebars" },
   {
     id: "generators",
     label: "Generators",

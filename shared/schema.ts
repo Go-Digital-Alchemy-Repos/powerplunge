@@ -1724,3 +1724,34 @@ export const postSettings = pgTable("post_settings", {
 export const insertPostSettingsSchema = createInsertSchema(postSettings).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertPostSettings = z.infer<typeof insertPostSettingsSchema>;
 export type PostSettings = typeof postSettings.$inferSelect;
+
+// Sidebars & Widgets
+export const sidebars = pgTable("sidebars", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  slug: text("slug").notNull().unique(),
+  description: text("description"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertSidebarSchema = createInsertSchema(sidebars).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertSidebar = z.infer<typeof insertSidebarSchema>;
+export type Sidebar = typeof sidebars.$inferSelect;
+
+export const sidebarWidgets = pgTable("sidebar_widgets", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  sidebarId: varchar("sidebar_id").notNull().references(() => sidebars.id, { onDelete: "cascade" }),
+  widgetType: text("widget_type").notNull(),
+  title: text("title").notNull(),
+  settings: jsonb("settings").notNull().default({}),
+  sortOrder: integer("sort_order").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertSidebarWidgetSchema = createInsertSchema(sidebarWidgets).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertSidebarWidget = z.infer<typeof insertSidebarWidgetSchema>;
+export type SidebarWidget = typeof sidebarWidgets.$inferSelect;

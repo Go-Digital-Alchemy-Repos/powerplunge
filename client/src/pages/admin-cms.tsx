@@ -1,7 +1,7 @@
 import { useAdmin } from "@/hooks/use-admin";
 import { Link } from "wouter";
 import CmsLayout from "@/components/admin/CmsLayout";
-import { FileText, Layers, BookTemplate, Palette, Search, Globe, Plus, ArrowRight, Clock, Settings, Wand2, Package } from "lucide-react";
+import { FileText, Layers, BookTemplate, Palette, Search, Globe, Plus, ArrowRight, Clock, Settings, Wand2, Package, PanelRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
@@ -54,6 +54,14 @@ const dashboardCards = [
     href: "/admin/cms/presets",
     action: "Manage Presets",
     testId: "card-cms-presets",
+  },
+  {
+    title: "Sidebars & Widgets",
+    description: "Manage sidebar areas and reusable widgets",
+    icon: PanelRight,
+    href: "/admin/cms/sidebars",
+    action: "Manage Sidebars",
+    testId: "card-cms-sidebars",
   },
   {
     title: "SEO Toolkit",

@@ -73,6 +73,7 @@ const AdminCmsPosts = lazy(() => import("@/pages/admin-cms-posts"));
 const AdminCmsPostEditor = lazy(() => import("@/pages/admin-cms-post-editor"));
 const AdminCmsPostBuilder = lazy(() => import("@/pages/admin-cms-post-builder"));
 const AdminCmsMenus = lazy(() => import("@/pages/admin-cms-menus"));
+const AdminCmsSidebars = lazy(() => import("@/pages/admin-cms-sidebars"));
 
 function AdminRedirect() {
   const [, setLocation] = useLocation();
@@ -171,6 +172,7 @@ function Router() {
         <Route path="/admin/cms/posts/:id/builder">{() => <CmsErrorBoundary><AdminCmsPostBuilder /></CmsErrorBoundary>}</Route>
         <Route path="/admin/cms/posts">{() => <CmsErrorBoundary><AdminCmsPosts /></CmsErrorBoundary>}</Route>
         <Route path="/admin/cms/menus">{() => <CmsErrorBoundary><AdminCmsMenus /></CmsErrorBoundary>}</Route>
+        <Route path="/admin/cms/sidebars">{() => <CmsErrorBoundary><AdminCmsSidebars /></CmsErrorBoundary>}</Route>
         <Route path="/admin/cms/presets">{() => <CmsErrorBoundary><AdminCmsPresets /></CmsErrorBoundary>}</Route>
         <Route path="/admin/cms/generator/campaigns">{() => <CmsErrorBoundary><AdminCmsGeneratorCampaigns /></CmsErrorBoundary>}</Route>
         <Route path="/admin/cms/generator/landing">{() => <CmsErrorBoundary><AdminCmsGeneratorLanding /></CmsErrorBoundary>}</Route>
