@@ -21,6 +21,7 @@ interface BlogPost {
   title: string;
   excerpt: string | null;
   body: string | null;
+  legacyHtml: string | null;
   contentJson: { version: number; blocks: any[] } | null;
   publishedAt: string | null;
   coverImageId: string | null;
@@ -188,11 +189,11 @@ export default function BlogPostPage() {
 
         <div data-testid="blog-post-content">
           {hasBlocks ? (
-            <PageRenderer contentJson={post.contentJson} legacyContent={post.body} />
-          ) : post.body ? (
+            <PageRenderer contentJson={post.contentJson} legacyContent={post.legacyHtml || post.body} />
+          ) : (post.legacyHtml || post.body) ? (
             <div
               className="prose prose-invert prose-lg max-w-none prose-headings:text-foreground prose-p:text-muted-foreground prose-a:text-primary prose-strong:text-foreground prose-li:text-muted-foreground"
-              dangerouslySetInnerHTML={{ __html: post.body }}
+              dangerouslySetInnerHTML={{ __html: (post.legacyHtml || post.body)! }}
             />
           ) : (
             <div className="text-center py-12 text-muted-foreground">
