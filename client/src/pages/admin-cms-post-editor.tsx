@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useAdmin } from "@/hooks/use-admin";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -6,7 +6,7 @@ import { useRoute, useLocation } from "wouter";
 import CmsLayout from "@/components/admin/CmsLayout";
 import {
   ArrowLeft, Save, Globe, GlobeLock, Clock, Blocks, Calendar, History,
-  Plus, X, Search as SearchIcon, Archive, ImageIcon, Trash2, PanelRight,
+  Plus, X, Search as SearchIcon, Archive, ImageIcon, Trash2, PanelRight, ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,10 +34,89 @@ function formatDate(dateStr: string | null): string {
   return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
+const COLLAPSE_STORAGE_KEY = "cms-post-editor-collapsed";
+
+function getCollapsedState(): Record<string, boolean> {
+  try {
+    const raw = localStorage.getItem(COLLAPSE_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function setCollapsedState(key: string, collapsed: boolean) {
+  const state = getCollapsedState();
+  state[key] = collapsed;
+  localStorage.setItem(COLLAPSE_STORAGE_KEY, JSON.stringify(state));
+}
+
+function useCollapsibleCards() {
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>(() => getCollapsedState());
+
+  const toggle = useCallback((key: string) => {
+    setCollapsed((prev) => {
+      const next = { ...prev, [key]: !prev[key] };
+      setCollapsedState(key, next[key]);
+      return next;
+    });
+  }, []);
+
+  const isCollapsed = useCallback((key: string) => !!collapsed[key], [collapsed]);
+
+  return { toggle, isCollapsed };
+}
+
+function CollapsibleCard({
+  sectionKey,
+  title,
+  icon,
+  isCollapsed,
+  onToggle,
+  children,
+  className,
+  "data-testid": testId,
+}: {
+  sectionKey: string;
+  title: string;
+  icon?: React.ReactNode;
+  isCollapsed: boolean;
+  onToggle: (key: string) => void;
+  children: React.ReactNode;
+  className?: string;
+  "data-testid"?: string;
+}) {
+  return (
+    <Card className={`bg-card border-border ${className || ""}`} data-testid={testId}>
+      <CardHeader
+        className="pb-3 cursor-pointer select-none"
+        onClick={() => onToggle(sectionKey)}
+        data-testid={`collapse-toggle-${sectionKey}`}
+      >
+        <CardTitle className="text-sm text-foreground/80 flex items-center justify-between">
+          <span className="flex items-center gap-2">
+            {icon}
+            {title}
+          </span>
+          <ChevronDown
+            className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${isCollapsed ? "-rotate-90" : ""}`}
+          />
+        </CardTitle>
+      </CardHeader>
+      {!isCollapsed && (
+        <CardContent className="space-y-3">
+          {children}
+        </CardContent>
+      )}
+    </Card>
+  );
+}
+
 export default function AdminCmsPostEditor() {
   const { hasFullAccess, isLoading: adminLoading } = useAdmin();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { toggle, isCollapsed } = useCollapsibleCards();
   const [, navigate] = useLocation();
   const [matchEdit, paramsEdit] = useRoute("/admin/cms/posts/:id/edit");
   const [matchNew] = useRoute("/admin/cms/posts/new");
@@ -363,14 +442,14 @@ export default function AdminCmsPostEditor() {
               </CardContent>
             </Card>
 
-            <Card className="bg-card border-border">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm text-foreground/80 flex items-center gap-2">
-                  <SearchIcon className="w-4 h-4 text-primary" />
-                  SEO & Meta
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+            <CollapsibleCard
+              sectionKey="seo"
+              title="SEO & Meta"
+              icon={<SearchIcon className="w-4 h-4 text-primary" />}
+              isCollapsed={isCollapsed("seo")}
+              onToggle={toggle}
+            >
+              <div className="space-y-4">
                 <div>
                   <Label className="text-foreground/80">Canonical URL</Label>
                   <Input
@@ -409,128 +488,130 @@ export default function AdminCmsPostEditor() {
                     <Label className="text-foreground/80 text-sm">Allow Follow</Label>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </CollapsibleCard>
           </div>
 
           <div className="space-y-6">
-            <Card className="bg-card border-border">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm text-foreground/80">Status</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center gap-2">
-                  {status === "published" && <Badge className="bg-green-900/40 text-green-400 border-green-800"><Globe className="w-3 h-3 mr-1" />Published</Badge>}
-                  {status === "draft" && <Badge className="bg-muted text-muted-foreground border-border"><GlobeLock className="w-3 h-3 mr-1" />Draft</Badge>}
-                  {status === "scheduled" && <Badge className="bg-blue-900/40 text-blue-400 border-blue-800"><Clock className="w-3 h-3 mr-1" />Scheduled</Badge>}
-                  {status === "archived" && <Badge className="bg-orange-900/40 text-orange-400 border-orange-800"><Archive className="w-3 h-3 mr-1" />Archived</Badge>}
-                </div>
+            <CollapsibleCard
+              sectionKey="status"
+              title="Status"
+              isCollapsed={isCollapsed("status")}
+              onToggle={toggle}
+            >
+              <div className="flex items-center gap-2">
+                {status === "published" && <Badge className="bg-green-900/40 text-green-400 border-green-800"><Globe className="w-3 h-3 mr-1" />Published</Badge>}
+                {status === "draft" && <Badge className="bg-muted text-muted-foreground border-border"><GlobeLock className="w-3 h-3 mr-1" />Draft</Badge>}
+                {status === "scheduled" && <Badge className="bg-blue-900/40 text-blue-400 border-blue-800"><Clock className="w-3 h-3 mr-1" />Scheduled</Badge>}
+                {status === "archived" && <Badge className="bg-orange-900/40 text-orange-400 border-orange-800"><Archive className="w-3 h-3 mr-1" />Archived</Badge>}
+              </div>
 
-                {!isNew && (
-                  <div className="flex flex-col gap-2">
-                    {status !== "published" && (
-                      <Button
-                        size="sm"
-                        className="bg-green-600 hover:bg-green-700 w-full gap-2"
-                        onClick={() => publishMutation.mutate()}
-                        disabled={publishMutation.isPending}
-                        data-testid="button-publish-post"
-                      >
-                        <Globe className="w-4 h-4" />
-                        {publishMutation.isPending ? "Publishing..." : "Publish Now"}
-                      </Button>
-                    )}
-                    {status === "published" && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="border-border text-foreground/80 w-full gap-2"
-                        onClick={() => unpublishMutation.mutate()}
-                        disabled={unpublishMutation.isPending}
-                        data-testid="button-unpublish-post"
-                      >
-                        <GlobeLock className="w-4 h-4" />
-                        Unpublish
-                      </Button>
-                    )}
+              {!isNew && (
+                <div className="flex flex-col gap-2">
+                  {status !== "published" && (
+                    <Button
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700 w-full gap-2"
+                      onClick={() => publishMutation.mutate()}
+                      disabled={publishMutation.isPending}
+                      data-testid="button-publish-post"
+                    >
+                      <Globe className="w-4 h-4" />
+                      {publishMutation.isPending ? "Publishing..." : "Publish Now"}
+                    </Button>
+                  )}
+                  {status === "published" && (
                     <Button
                       size="sm"
                       variant="outline"
                       className="border-border text-foreground/80 w-full gap-2"
-                      onClick={() => setShowSchedule(true)}
-                      data-testid="button-schedule-post"
+                      onClick={() => unpublishMutation.mutate()}
+                      disabled={unpublishMutation.isPending}
+                      data-testid="button-unpublish-post"
                     >
-                      <Calendar className="w-4 h-4" />
-                      Schedule
+                      <GlobeLock className="w-4 h-4" />
+                      Unpublish
+                    </Button>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-border text-foreground/80 w-full gap-2"
+                    onClick={() => setShowSchedule(true)}
+                    data-testid="button-schedule-post"
+                  >
+                    <Calendar className="w-4 h-4" />
+                    Schedule
+                  </Button>
+                </div>
+              )}
+
+              {post?.publishedAt && (
+                <p className="text-xs text-muted-foreground">Published: {formatDate(post.publishedAt)}</p>
+              )}
+              {post?.scheduledAt && (
+                <p className="text-xs text-muted-foreground">Scheduled: {formatDate(post.scheduledAt)}</p>
+              )}
+            </CollapsibleCard>
+
+            <CollapsibleCard
+              sectionKey="featured-image"
+              title="Featured Image"
+              isCollapsed={isCollapsed("featured-image")}
+              onToggle={toggle}
+            >
+              {coverImageId && coverImageUrl ? (
+                <div className="relative group">
+                  <div className="aspect-video rounded-lg overflow-hidden bg-muted border border-border">
+                    <img
+                      src={coverImageUrl}
+                      alt="Featured image"
+                      className="w-full h-full object-cover"
+                      data-testid="img-cover-preview"
+                    />
+                  </div>
+                  <div className="flex gap-1 mt-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-border text-foreground/80 flex-1 h-8 text-xs"
+                      onClick={() => setShowMediaPicker(true)}
+                      data-testid="button-change-cover"
+                    >
+                      <ImageIcon className="w-3 h-3 mr-1" />
+                      Change
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-border text-destructive hover:text-destructive h-8 px-2"
+                      onClick={() => { setCoverImageId(""); setCoverImageUrl(""); setDirty(true); }}
+                      data-testid="button-remove-cover"
+                    >
+                      <Trash2 className="w-3 h-3" />
                     </Button>
                   </div>
-                )}
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowMediaPicker(true)}
+                  className="w-full aspect-video rounded-lg border-2 border-dashed border-border hover:border-primary/50 bg-muted/50 flex flex-col items-center justify-center gap-2 transition-colors cursor-pointer"
+                  data-testid="button-add-cover"
+                >
+                  <ImageIcon className="w-8 h-8 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">Click to add featured image</span>
+                </button>
+              )}
+            </CollapsibleCard>
 
-                {post?.publishedAt && (
-                  <p className="text-xs text-muted-foreground">Published: {formatDate(post.publishedAt)}</p>
-                )}
-                {post?.scheduledAt && (
-                  <p className="text-xs text-muted-foreground">Scheduled: {formatDate(post.scheduledAt)}</p>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card className="bg-card border-border">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm text-foreground/80">Featured Image</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {coverImageId && coverImageUrl ? (
-                  <div className="relative group">
-                    <div className="aspect-video rounded-lg overflow-hidden bg-muted border border-border">
-                      <img
-                        src={coverImageUrl}
-                        alt="Featured image"
-                        className="w-full h-full object-cover"
-                        data-testid="img-cover-preview"
-                      />
-                    </div>
-                    <div className="flex gap-1 mt-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="border-border text-foreground/80 flex-1 h-8 text-xs"
-                        onClick={() => setShowMediaPicker(true)}
-                        data-testid="button-change-cover"
-                      >
-                        <ImageIcon className="w-3 h-3 mr-1" />
-                        Change
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="border-border text-destructive hover:text-destructive h-8 px-2"
-                        onClick={() => { setCoverImageId(""); setCoverImageUrl(""); setDirty(true); }}
-                        data-testid="button-remove-cover"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setShowMediaPicker(true)}
-                    className="w-full aspect-video rounded-lg border-2 border-dashed border-border hover:border-primary/50 bg-muted/50 flex flex-col items-center justify-center gap-2 transition-colors cursor-pointer"
-                    data-testid="button-add-cover"
-                  >
-                    <ImageIcon className="w-8 h-8 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground">Click to add featured image</span>
-                  </button>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card className="bg-card border-border">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm text-foreground/80">Categories</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
+            <CollapsibleCard
+              sectionKey="categories"
+              title="Categories"
+              isCollapsed={isCollapsed("categories")}
+              onToggle={toggle}
+            >
+              <div className="space-y-2">
                 <div className="flex flex-wrap gap-1">
                   {selectedCats.map((cat: any) => (
                     <Badge key={cat.id} variant="outline" className="border-border text-foreground/80 gap-1">
@@ -573,14 +654,16 @@ export default function AdminCmsPostEditor() {
                     <Plus className="w-3 h-3" />
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </CollapsibleCard>
 
-            <Card className="bg-card border-border">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm text-foreground/80">Tags</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
+            <CollapsibleCard
+              sectionKey="tags"
+              title="Tags"
+              isCollapsed={isCollapsed("tags")}
+              onToggle={toggle}
+            >
+              <div className="space-y-2">
                 <div className="flex flex-wrap gap-1">
                   {selectedTags.map((tag: any) => (
                     <Badge key={tag.id} variant="outline" className="border-primary/30 text-primary gap-1">
@@ -623,17 +706,17 @@ export default function AdminCmsPostEditor() {
                     <Plus className="w-3 h-3" />
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </CollapsibleCard>
 
-            <Card className="bg-card border-border">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm text-foreground/80 flex items-center gap-2">
-                  <PanelRight className="w-3.5 h-3.5" />
-                  Sidebar
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
+            <CollapsibleCard
+              sectionKey="sidebar"
+              title="Sidebar"
+              icon={<PanelRight className="w-3.5 h-3.5" />}
+              isCollapsed={isCollapsed("sidebar")}
+              onToggle={toggle}
+            >
+              <div className="space-y-2">
                 <Select
                   value={sidebarId || "__none__"}
                   onValueChange={(v) => { setSidebarId(v === "__none__" ? null : v); setDirty(true); }}
@@ -649,36 +732,36 @@ export default function AdminCmsPostEditor() {
                   </SelectContent>
                 </Select>
                 <p className="text-[10px] text-muted-foreground">Choose a sidebar to display alongside this post, or select "None" for a full-width layout.</p>
-              </CardContent>
-            </Card>
+              </div>
+            </CollapsibleCard>
 
-            <Card className="bg-card border-border">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm text-foreground/80">Options</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <Switch
-                    checked={featured}
-                    onCheckedChange={(v) => { setFeatured(v); setDirty(true); }}
-                    data-testid="switch-featured"
-                  />
-                  <Label className="text-foreground/80 text-sm">Featured Post</Label>
-                </div>
-                <div>
-                  <Label className="text-foreground/80 text-sm">Reading Time (minutes)</Label>
-                  <Input
-                    type="number"
-                    min={1}
-                    value={readingTimeMinutes || ""}
-                    onChange={(e) => { setReadingTimeMinutes(e.target.value ? parseInt(e.target.value) : null); setDirty(true); }}
-                    placeholder="Auto"
-                    className="bg-muted border-border text-foreground mt-1 h-8 text-xs"
-                    data-testid="input-reading-time"
-                  />
-                </div>
-              </CardContent>
-            </Card>
+            <CollapsibleCard
+              sectionKey="options"
+              title="Options"
+              isCollapsed={isCollapsed("options")}
+              onToggle={toggle}
+            >
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={featured}
+                  onCheckedChange={(v) => { setFeatured(v); setDirty(true); }}
+                  data-testid="switch-featured"
+                />
+                <Label className="text-foreground/80 text-sm">Featured Post</Label>
+              </div>
+              <div>
+                <Label className="text-foreground/80 text-sm">Reading Time (minutes)</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={readingTimeMinutes || ""}
+                  onChange={(e) => { setReadingTimeMinutes(e.target.value ? parseInt(e.target.value) : null); setDirty(true); }}
+                  placeholder="Auto"
+                  className="bg-muted border-border text-foreground mt-1 h-8 text-xs"
+                  data-testid="input-reading-time"
+                />
+              </div>
+            </CollapsibleCard>
 
             {!isNew && (
               <Button
