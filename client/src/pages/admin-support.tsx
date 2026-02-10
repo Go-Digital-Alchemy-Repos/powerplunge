@@ -14,6 +14,13 @@ import { useAdmin } from "@/hooks/use-admin";
 import AdminNav from "@/components/admin/AdminNav";
 import { Headset, MessageSquare, CheckCircle, Clock, AlertCircle, Eye, Search, Filter, RefreshCw, Plus, User } from "lucide-react";
 
+interface AdminNote {
+  text: string;
+  adminId: string;
+  adminName: string;
+  createdAt: string;
+}
+
 interface SupportTicket {
   id: string;
   subject: string;
@@ -22,7 +29,7 @@ interface SupportTicket {
   status: string;
   priority: string;
   orderId: string | null;
-  adminNotes: string | null;
+  adminNotes: AdminNote[] | null;
   customerId: string;
   customerName: string | null;
   customerEmail: string | null;
@@ -73,7 +80,7 @@ export default function AdminSupport() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
-  const [adminNotes, setAdminNotes] = useState("");
+  const [newNoteText, setNewNoteText] = useState("");
   const [newStatus, setNewStatus] = useState("");
   const [newPriority, setNewPriority] = useState("");
 
@@ -102,7 +109,7 @@ export default function AdminSupport() {
   });
 
   const updateTicketMutation = useMutation({
-    mutationFn: async (data: { id: string; status?: string; priority?: string; adminNotes?: string }) => {
+    mutationFn: async (data: { id: string; status?: string; priority?: string; noteText?: string }) => {
       const { id, ...body } = data;
       const res = await fetch(`/api/admin/support/${id}`, {
         method: "PATCH",
@@ -205,7 +212,7 @@ export default function AdminSupport() {
 
   const openTicketModal = (ticket: SupportTicket) => {
     setSelectedTicket(ticket);
-    setAdminNotes(ticket.adminNotes || "");
+    setNewNoteText("");
     setNewStatus(ticket.status);
     setNewPriority(ticket.priority);
   };
@@ -216,7 +223,7 @@ export default function AdminSupport() {
       id: selectedTicket.id,
       status: newStatus !== selectedTicket.status ? newStatus : undefined,
       priority: newPriority !== selectedTicket.priority ? newPriority : undefined,
-      adminNotes: adminNotes !== selectedTicket.adminNotes ? adminNotes : undefined,
+      noteText: newNoteText.trim() || undefined,
     });
   };
 
@@ -514,15 +521,37 @@ export default function AdminSupport() {
                 </div>
               </div>
 
-              <div>
-                <Label>Admin Notes</Label>
+              <div className="space-y-3">
+                <Label>Add Note</Label>
                 <Textarea
-                  value={adminNotes}
-                  onChange={(e) => setAdminNotes(e.target.value)}
-                  placeholder="Add internal notes about this ticket..."
-                  rows={4}
+                  value={newNoteText}
+                  onChange={(e) => setNewNoteText(e.target.value)}
+                  placeholder="Add an internal note about this ticket..."
+                  rows={3}
                   data-testid="input-admin-notes"
                 />
+
+                {selectedTicket.adminNotes && selectedTicket.adminNotes.length > 0 && (
+                  <div className="space-y-2" data-testid="notes-history">
+                    <Label className="text-xs text-muted-foreground uppercase tracking-wider">Note History</Label>
+                    <div className="space-y-2 max-h-60 overflow-y-auto">
+                      {[...selectedTicket.adminNotes].reverse().map((note, idx) => (
+                        <div
+                          key={idx}
+                          className="p-3 rounded-lg bg-muted/30 border text-sm space-y-1"
+                          data-testid={`note-entry-${idx}`}
+                        >
+                          <p className="whitespace-pre-wrap">{note.text}</p>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1 border-t border-border/50">
+                            <span className="font-medium">{note.adminName}</span>
+                            <span>·</span>
+                            <span>{new Date(note.createdAt).toLocaleString()}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="text-xs text-muted-foreground space-y-1">

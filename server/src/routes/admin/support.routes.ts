@@ -182,7 +182,7 @@ adminSupportRouter.get("/:id", requireAdmin, async (req, res, next) => {
 const updateTicketSchema = z.object({
   status: z.enum(["open", "in_progress", "resolved", "closed"]).optional(),
   priority: z.enum(["low", "normal", "high", "urgent"]).optional(),
-  adminNotes: z.string().max(5000).optional(),
+  noteText: z.string().min(1).max(5000).optional(),
 });
 
 adminSupportRouter.patch("/:id", requireAdmin, async (req, res, next) => {
@@ -219,8 +219,22 @@ adminSupportRouter.patch("/:id", requireAdmin, async (req, res, next) => {
       updateData.priority = parsed.data.priority;
     }
 
-    if (parsed.data.adminNotes !== undefined) {
-      updateData.adminNotes = parsed.data.adminNotes;
+    if (parsed.data.noteText) {
+      const admin = await db.query.adminUsers.findFirst({
+        where: eq(adminUsers.id, adminId),
+      });
+      const adminName = admin ? `${admin.firstName} ${admin.lastName}`.trim() || admin.name : "Unknown";
+
+      const existingNotes = Array.isArray(existing.adminNotes) ? existing.adminNotes : [];
+      updateData.adminNotes = [
+        ...existingNotes,
+        {
+          text: parsed.data.noteText,
+          adminId,
+          adminName,
+          createdAt: new Date().toISOString(),
+        },
+      ];
     }
 
     const [updated] = await db.update(supportTickets)
