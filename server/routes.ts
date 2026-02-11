@@ -1,8 +1,6 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { db } from "./db";
-import { sql } from "drizzle-orm";
 
 // Canonical imports from server/src/
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./src/integrations/replit/auth";
@@ -123,47 +121,6 @@ export async function registerRoutes(
 
   app.get("/api/health/config", (req, res) => {
     res.json({ cmsEnabled: true });
-  });
-
-  // TEMPORARY: One-time cleanup endpoint for removing all test orders and customers
-  app.post("/api/admin/cleanup-test-data", async (req, res) => {
-    const cleanupKey = req.headers["x-cleanup-key"];
-    if (cleanupKey !== "7ad5a9616c0471dd3c9802301fd4fd12") {
-      return res.status(403).json({ message: "Invalid cleanup key" });
-    }
-    try {
-      await db.execute(sql`DELETE FROM order_items`);
-      await db.execute(sql`DELETE FROM affiliate_referrals`);
-      await db.execute(sql`DELETE FROM shipments`);
-      await db.execute(sql`DELETE FROM refunds`);
-      await db.execute(sql`DELETE FROM coupon_redemptions`);
-      await db.execute(sql`DELETE FROM email_events WHERE order_id IS NOT NULL`);
-      await db.execute(sql`DELETE FROM inventory_ledger WHERE order_id IS NOT NULL`);
-      await db.execute(sql`DELETE FROM post_purchase_offers`);
-      await db.execute(sql`DELETE FROM upsell_events`);
-      await db.execute(sql`DELETE FROM vip_activity_log`);
-      await db.execute(sql`DELETE FROM abandoned_carts`);
-      await db.execute(sql`DELETE FROM failed_payments`);
-      await db.execute(sql`DELETE FROM recovery_events`);
-      await db.execute(sql`DELETE FROM support_tickets`);
-      await db.execute(sql`DELETE FROM orders`);
-      await db.execute(sql`DELETE FROM affiliate_agreements`);
-      await db.execute(sql`DELETE FROM affiliate_payouts`);
-      await db.execute(sql`DELETE FROM affiliate_clicks`);
-      await db.execute(sql`DELETE FROM affiliate_payout_accounts`);
-      await db.execute(sql`DELETE FROM affiliate_invite_usages`);
-      await db.execute(sql`DELETE FROM affiliate_invites`);
-      await db.execute(sql`DELETE FROM customer_notes`);
-      await db.execute(sql`DELETE FROM customer_tags`);
-      await db.execute(sql`DELETE FROM vip_customers`);
-      await db.execute(sql`DELETE FROM customer_magic_link_tokens`);
-      await db.execute(sql`DELETE FROM affiliates`);
-      await db.execute(sql`DELETE FROM customers`);
-      res.json({ success: true, message: "All test orders and customers deleted" });
-    } catch (error: any) {
-      console.error("[CLEANUP] Error:", error);
-      res.status(500).json({ success: false, error: error.message });
-    }
   });
 
   if (process.env.NODE_ENV !== "production") {
