@@ -57,6 +57,14 @@ The Power Plunge e-commerce platform utilizes a modern full-stack architecture.
 
 ## Recent Changes
 
+### Twilio SMS Integration Settings (Feb 11, 2026)
+- **Admin UI**: Added Twilio SMS card in Admin > Settings > Integrations with configure dialog (enable toggle, Account SID, Auth Token, From Phone Number, Test SMS).
+- **Encrypted Storage**: Auth token stored encrypted via AES-256-GCM (`APP_SECRETS_ENCRYPTION_KEY`). Never returned via API — only `authTokenSet: boolean`.
+- **DB + Env Fallback**: SMS service (`server/src/services/sms.service.ts`) loads DB Twilio settings first (if enabled). Falls back to env vars `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER`.
+- **Cache Busting**: `smsService.clearCache()` called after admin updates settings to pick up new credentials immediately.
+- **API Endpoints**: `GET/PUT /api/admin/settings/twilio`, `POST /api/admin/settings/twilio/test-sms`.
+- **Schema**: Added `twilio_enabled`, `twilio_account_sid`, `twilio_auth_token_encrypted`, `twilio_phone_number` to `integration_settings` table.
+
 ### Admin Settings & Branding (Feb 10, 2026)
 - **Themes Moved to Settings**: Themes page moved from CMS sidebar to main admin Settings dropdown. Route changed from `/admin/cms/themes` to `/admin/settings/themes`. Old route redirects automatically.
 - **Logo Branding**: Added `logoUrl` column to `site_settings`. Company Profile settings page now includes a Branding card with logo upload, preview, and remove functionality. Logos uploaded via R2 storage (with Object Storage fallback).
@@ -99,4 +107,5 @@ The Power Plunge e-commerce platform utilizes a modern full-stack architecture.
 - **Replit Object Storage:** For file uploads and storage.
 - **PostgreSQL:** Primary database.
 - **Drizzle ORM:** Used for database interaction.
+- **Twilio:** For SMS verification in affiliate invite flows.
 - **Better Auth:** Feature-flagged authentication system being integrated.
