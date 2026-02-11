@@ -29,6 +29,8 @@ import {
   Search,
   ChevronDown,
   ChevronUp,
+  Sparkles,
+  Loader2,
 } from "lucide-react";
 
 function slugify(text: string): string {
@@ -36,6 +38,32 @@ function slugify(text: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
+}
+
+function extractBlockText(contentJson: any): string {
+  if (!contentJson?.content) return "";
+  const parts: string[] = [];
+  for (const item of contentJson.content) {
+    if (!item?.props) continue;
+    const props = item.props;
+    for (const val of Object.values(props)) {
+      if (typeof val === "string" && val.trim()) {
+        parts.push(val.replace(/<[^>]*>/g, " ").trim());
+      }
+      if (Array.isArray(val)) {
+        for (const child of val) {
+          if (typeof child === "object" && child) {
+            for (const cv of Object.values(child)) {
+              if (typeof cv === "string" && cv.trim()) {
+                parts.push(cv.replace(/<[^>]*>/g, " ").trim());
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  return parts.filter(Boolean).join(" ").slice(0, 2000);
 }
 
 export default function AdminCmsPageEdit() {
@@ -47,6 +75,7 @@ export default function AdminCmsPageEdit() {
   const pageId = params?.id;
 
   const [seoOpen, setSeoOpen] = useState(false);
+  const [generatingSeo, setGeneratingSeo] = useState(false);
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [slugTouched, setSlugTouched] = useState(false);
 
@@ -117,6 +146,38 @@ export default function AdminCmsPageEdit() {
 
   function updateField(key: string, value: any) {
     setFormData((prev) => ({ ...prev, [key]: value }));
+  }
+
+  async function handleGenerateSeo() {
+    if (!formData.title) {
+      toast({ title: "Page title is required", description: "Add a title before generating SEO metadata.", variant: "destructive" });
+      return;
+    }
+    setGeneratingSeo(true);
+    try {
+      const blockText = extractBlockText(page?.contentJson);
+      const combinedContent = [formData.content || "", blockText].filter(Boolean).join(" ");
+      const res = await apiRequest("POST", "/api/admin/cms/pages/generate-seo", {
+        title: formData.title,
+        content: combinedContent,
+        pageType: page?.pageType || "page",
+      });
+      const data = await res.json();
+      setFormData((prev) => ({
+        ...prev,
+        metaTitle: data.metaTitle || prev.metaTitle,
+        metaDescription: data.metaDescription || prev.metaDescription,
+        metaKeywords: data.metaKeywords || prev.metaKeywords,
+        ogTitle: data.ogTitle || prev.ogTitle,
+        ogDescription: data.ogDescription || prev.ogDescription,
+      }));
+      toast({ title: "SEO metadata generated", description: "Review the suggestions and save when ready." });
+    } catch (err: any) {
+      const msg = err?.message || "Failed to generate SEO metadata";
+      toast({ title: "AI generation failed", description: msg, variant: "destructive" });
+    } finally {
+      setGeneratingSeo(false);
+    }
   }
 
   if (adminLoading || !hasFullAccess) {
