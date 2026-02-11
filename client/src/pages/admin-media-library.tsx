@@ -126,7 +126,6 @@ export default function AdminMediaLibrary() {
   const updateMutation = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<MediaItem> }) => {
       const res = await fetch(`/api/admin/media/${id}`, {
-        credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updates),
@@ -183,7 +182,6 @@ export default function AdminMediaLibrary() {
         };
 
         await fetch("/api/admin/media", {
-        credentials: "include",
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(mediaData),
@@ -230,7 +228,6 @@ export default function AdminMediaLibrary() {
     setIsGeneratingSeo(true);
     try {
       const res = await fetch(`/api/admin/media/${selectedItem.id}/generate-seo`, {
-        credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),

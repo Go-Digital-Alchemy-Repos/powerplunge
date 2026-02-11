@@ -731,7 +731,6 @@ function MailgunConfigDialog({ open, onOpenChange, onSuccess }: {
     setSaving(true);
     try {
       const res = await fetch("/api/admin/settings/email", {
-        credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -762,7 +761,6 @@ function MailgunConfigDialog({ open, onOpenChange, onSuccess }: {
     setTesting(true);
     try {
       const res = await fetch("/api/admin/settings/email/test", {
-        credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ to: testEmail }),
@@ -948,7 +946,6 @@ function StripeEnvPanel({ env, stripeSettings, onSaved }: {
     setValidating(true);
     try {
       const res = await fetch("/api/admin/settings/stripe/validate", {
-        credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ publishableKey, secretKey }),
@@ -989,7 +986,6 @@ function StripeEnvPanel({ env, stripeSettings, onSaved }: {
       if (webhookSecret) body.webhookSecret = webhookSecret;
 
       const res = await fetch("/api/admin/settings/stripe", {
-        credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -1179,7 +1175,6 @@ function StripeConfigDialog({ open, onOpenChange, onSuccess }: {
     setTogglingMode(true);
     try {
       const res = await fetch("/api/admin/settings/stripe", {
-        credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ activeMode: newMode }),
@@ -1204,7 +1199,6 @@ function StripeConfigDialog({ open, onOpenChange, onSuccess }: {
     setSavingConnect(true);
     try {
       const res = await fetch("/api/admin/settings/stripe", {
-        credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ connectWebhookSecret }),
@@ -1459,7 +1453,6 @@ function R2ConfigDialog({ open, onOpenChange, onSuccess }: {
     setSaving(true);
     try {
       const res = await fetch("/api/admin/settings/r2", {
-        credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -1633,7 +1626,6 @@ function OpenAIConfigDialog({ open, onOpenChange, onSuccess }: {
     setSaving(true);
     try {
       const res = await fetch("/api/admin/settings/openai", {
-        credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ apiKey }),
@@ -1798,7 +1790,6 @@ function TikTokShopConfigDialog({ open, onOpenChange, onSuccess }: {
     setSaving(true);
     try {
       const res = await fetch("/api/admin/settings/tiktok-shop", {
-        credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -2030,7 +2021,6 @@ function InstagramShopConfigDialog({ open, onOpenChange, onSuccess }: {
     setSaving(true);
     try {
       const res = await fetch("/api/admin/settings/instagram-shop", {
-        credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -2240,7 +2230,6 @@ function PinterestShoppingConfigDialog({ open, onOpenChange, onSuccess }: {
     setSaving(true);
     try {
       const res = await fetch("/api/admin/settings/pinterest-shopping", {
-        credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -2522,7 +2511,6 @@ function YouTubeShoppingConfigDialog({ open, onOpenChange, onSuccess }: {
     setSaving(true);
     try {
       const res = await fetch("/api/admin/settings/youtube-shopping", {
-        credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -2804,7 +2792,6 @@ function SnapchatShoppingConfigDialog({ open, onOpenChange, onSuccess }: {
     setSaving(true);
     try {
       const res = await fetch("/api/admin/settings/snapchat-shopping", {
-        credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -3086,7 +3073,6 @@ function XShoppingConfigDialog({ open, onOpenChange, onSuccess }: {
     setSaving(true);
     try {
       const res = await fetch("/api/admin/settings/x-shopping", {
-        credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -3357,7 +3343,6 @@ function MailchimpConfigDialog({ open, onOpenChange, onSuccess }: {
     setSaving(true);
     try {
       const res = await fetch("/api/admin/settings/mailchimp", {
-        credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -3566,7 +3551,6 @@ function GooglePlacesConfigDialog({ open, onOpenChange, onSuccess }: {
       const body: any = { placeId };
       if (apiKey) body.apiKey = apiKey;
       const res = await fetch("/api/admin/integrations/settings/google-places", {
-        credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),

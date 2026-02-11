@@ -98,14 +98,6 @@ async function getR2Client(): Promise<{ client: S3Client; bucketName: string; pu
     throw new Error("Cloudflare R2 is not configured. Please configure it in the admin Integrations page or set environment variables.");
   }
 
-  console.log("[R2-DEBUG] Creating client with:", {
-    endpoint: `https://${creds.accountId}.r2.cloudflarestorage.com`,
-    keyStarts: creds.accessKeyId?.substring(0, 8),
-    secretStarts: creds.secretAccessKey?.substring(0, 8),
-    secretLength: creds.secretAccessKey?.length,
-    bucket: creds.bucketName,
-  });
-
   const client = new S3Client({
     region: "auto",
     endpoint: `https://${creds.accountId}.r2.cloudflarestorage.com`,
