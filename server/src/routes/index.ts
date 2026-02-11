@@ -32,14 +32,9 @@ export async function registerLayeredRoutes(app: Express): Promise<void> {
   await setupAuth(app);
   registerAuthRoutes(app);
   
-  // Register Cloudflare R2 routes if configured, otherwise use Replit object storage
-  if (isR2Configured()) {
-    registerR2Routes(app);
-    console.log("[STORAGE] Using Cloudflare R2 for file uploads");
-  } else {
-    registerObjectStorageRoutes(app);
-    console.log("[STORAGE] Using Replit Object Storage for file uploads");
-  }
+  // Register both R2 and Object Storage routes; R2 checks credentials per-request
+  registerR2Routes(app);
+  registerObjectStorageRoutes(app);
 
   // Mount layered route modules
   app.use("/api", publicRoutes);

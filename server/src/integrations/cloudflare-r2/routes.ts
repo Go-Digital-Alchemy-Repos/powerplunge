@@ -1,8 +1,7 @@
 import type { Express, Response, Request } from "express";
 import multer from "multer";
-import { R2StorageService, isR2Configured } from "./r2Storage";
+import { R2StorageService, isR2ConfiguredAsync } from "./r2Storage";
 
-// Configure multer for memory storage (files stored in buffer)
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
@@ -10,36 +9,17 @@ const upload = multer({
   },
 });
 
-/**
- * Register Cloudflare R2 storage routes for file uploads.
- * 
- * These routes provide the presigned URL upload flow:
- * 1. POST /api/uploads/request-url - Get a presigned URL for uploading to R2
- * 2. The client uploads directly to the presigned URL
- * 3. GET /r2/:objectKey(*) - Redirect to presigned download URL
- */
 export function registerR2Routes(app: Express): void {
-  if (!isR2Configured()) {
-    console.log("[R2] Cloudflare R2 not configured - R2 routes disabled");
-    return;
-  }
+  console.log("[R2] Registering R2 upload routes (credentials checked per-request)");
 
-  const r2Service = new R2StorageService();
-  console.log("[R2] Cloudflare R2 configured - registering R2 routes");
-
-  /**
-   * Request a presigned URL for file upload to R2.
-   * 
-   * Request body (JSON):
-   * {
-   *   "name": "filename.jpg",
-   *   "size": 12345,
-   *   "contentType": "image/jpeg",
-   *   "folder": "uploads" (optional)
-   * }
-   */
   app.post("/api/r2/request-upload-url", async (req, res) => {
     try {
+      const configured = await isR2ConfiguredAsync();
+      if (!configured) {
+        return res.status(503).json({ error: "Cloudflare R2 is not configured. Please configure it in Admin > Integrations." });
+      }
+
+      const r2Service = new R2StorageService();
       const { name, size, contentType, folder = "uploads" } = req.body;
 
       if (!name) {
@@ -64,15 +44,14 @@ export function registerR2Routes(app: Express): void {
     }
   });
 
-  /**
-   * Proxy upload endpoint - uploads file through server to R2.
-   * This bypasses CORS issues with direct browser-to-R2 uploads.
-   * 
-   * Request: multipart/form-data with 'file' field
-   * Response: { objectPath, objectKey, metadata }
-   */
   app.post("/api/r2/upload", upload.single("file"), async (req: Request, res: Response) => {
     try {
+      const configured = await isR2ConfiguredAsync();
+      if (!configured) {
+        return res.status(503).json({ error: "Cloudflare R2 is not configured. Please configure it in Admin > Integrations." });
+      }
+
+      const r2Service = new R2StorageService();
       const file = req.file;
       if (!file) {
         return res.status(400).json({ error: "No file provided" });
@@ -102,12 +81,14 @@ export function registerR2Routes(app: Express): void {
     }
   });
 
-  /**
-   * Serve files from R2 via presigned download URLs.
-   * Redirects to a temporary presigned URL for the object.
-   */
   app.get("/r2/*", async (req, res) => {
     try {
+      const configured = await isR2ConfiguredAsync();
+      if (!configured) {
+        return res.status(503).json({ error: "Cloudflare R2 is not configured" });
+      }
+
+      const r2Service = new R2StorageService();
       const objectKey = req.path.substring(4); // Remove /r2/ prefix
       
       if (!objectKey) {

@@ -14,10 +14,11 @@ integrationsStatusRoutes.get("/", async (req: any, res) => {
   const emailSettings = await storage.getEmailSettings();
   
   const cloudflareR2Configured = !!(
-    process.env.CLOUDFLARE_ACCOUNT_ID &&
+    (process.env.CLOUDFLARE_ACCOUNT_ID &&
     process.env.CLOUDFLARE_R2_ACCESS_KEY_ID &&
     process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY &&
-    process.env.CLOUDFLARE_R2_BUCKET_NAME
+    process.env.CLOUDFLARE_R2_BUCKET_NAME) ||
+    (intSettings?.r2Configured && intSettings?.r2AccountId && intSettings?.r2AccessKeyIdEncrypted && intSettings?.r2SecretAccessKeyEncrypted && intSettings?.r2BucketName)
   );
 
   const activeMode = (intSettings?.stripeActiveMode as "test" | "live") || "test";
@@ -365,6 +366,144 @@ router.post("/stripe/validate", async (req: any, res) => {
     res.json(result);
   } catch (error: any) {
     res.status(500).json({ valid: false, error: error.message || "Failed to validate keys" });
+  }
+});
+
+router.get("/r2", async (req: any, res) => {
+  try {
+    const settings = await storage.getIntegrationSettings();
+    res.json({
+      configured: settings?.r2Configured || false,
+      accountId: settings?.r2AccountId || "",
+      bucketName: settings?.r2BucketName || "",
+      publicUrl: settings?.r2PublicUrl || "",
+      hasAccessKey: !!settings?.r2AccessKeyIdEncrypted,
+      hasSecretKey: !!settings?.r2SecretAccessKeyEncrypted,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch R2 settings" });
+  }
+});
+
+router.patch("/r2", async (req: any, res) => {
+  try {
+    const { encrypt } = await import("../../utils/encryption");
+    const { accountId, accessKeyId, secretAccessKey, bucketName, publicUrl } = req.body;
+
+    if (!accountId || !bucketName) {
+      return res.status(400).json({ message: "Account ID and Bucket Name are required" });
+    }
+
+    const updateData: any = {
+      r2AccountId: accountId,
+      r2BucketName: bucketName,
+      r2PublicUrl: publicUrl || null,
+      r2Configured: true,
+    };
+
+    if (accessKeyId) {
+      updateData.r2AccessKeyIdEncrypted = encrypt(accessKeyId);
+    }
+    if (secretAccessKey) {
+      updateData.r2SecretAccessKeyEncrypted = encrypt(secretAccessKey);
+    }
+
+    const existingSettings = await storage.getIntegrationSettings();
+    if (!accessKeyId && !existingSettings?.r2AccessKeyIdEncrypted) {
+      return res.status(400).json({ message: "Access Key ID is required" });
+    }
+    if (!secretAccessKey && !existingSettings?.r2SecretAccessKeyEncrypted) {
+      return res.status(400).json({ message: "Secret Access Key is required" });
+    }
+
+    const settings = await storage.updateIntegrationSettings(updateData);
+
+    const { clearR2CredentialsCache } = await import("../../integrations/cloudflare-r2/r2Storage");
+    clearR2CredentialsCache();
+
+    const adminId = (req as any).adminUser?.id;
+    if (adminId) {
+      try {
+        await storage.createAdminAuditLog({
+          adminId,
+          action: "update_r2_settings",
+          targetType: "settings",
+          targetId: "r2",
+          details: { accountId, bucketName, hasAccessKey: !!accessKeyId, hasSecretKey: !!secretAccessKey },
+          ipAddress: req.ip || null,
+        });
+      } catch (auditErr) {
+        console.error("Failed to create audit log for R2 settings update:", auditErr);
+      }
+    }
+
+    res.json({
+      success: true,
+      configured: true,
+      accountId: settings.r2AccountId,
+      bucketName: settings.r2BucketName,
+      publicUrl: settings.r2PublicUrl,
+      hasAccessKey: !!settings.r2AccessKeyIdEncrypted,
+      hasSecretKey: !!settings.r2SecretAccessKeyEncrypted,
+    });
+  } catch (error: any) {
+    console.error("R2 settings update error:", error);
+    res.status(500).json({ message: error.message || "Failed to update R2 settings" });
+  }
+});
+
+router.post("/r2/test", async (req: any, res) => {
+  try {
+    const { accountId, accessKeyId, secretAccessKey, bucketName } = req.body;
+
+    if (!accountId || !bucketName) {
+      return res.status(400).json({ success: false, error: "Account ID and Bucket Name are required" });
+    }
+
+    let testAccessKey = accessKeyId;
+    let testSecretKey = secretAccessKey;
+
+    if (!testAccessKey || !testSecretKey) {
+      const { decrypt } = await import("../../utils/encryption");
+      const settings = await storage.getIntegrationSettings();
+      if (!testAccessKey && settings?.r2AccessKeyIdEncrypted) {
+        testAccessKey = decrypt(settings.r2AccessKeyIdEncrypted);
+      }
+      if (!testSecretKey && settings?.r2SecretAccessKeyEncrypted) {
+        testSecretKey = decrypt(settings.r2SecretAccessKeyEncrypted);
+      }
+    }
+
+    if (!testAccessKey || !testSecretKey) {
+      return res.status(400).json({ success: false, error: "Access Key ID and Secret Access Key are required" });
+    }
+
+    const { S3Client, HeadBucketCommand } = await import("@aws-sdk/client-s3");
+    const client = new S3Client({
+      region: "auto",
+      endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+      credentials: {
+        accessKeyId: testAccessKey,
+        secretAccessKey: testSecretKey,
+      },
+      forcePathStyle: true,
+      requestChecksumCalculation: "WHEN_REQUIRED" as any,
+      responseChecksumValidation: "WHEN_REQUIRED" as any,
+    });
+
+    await client.send(new HeadBucketCommand({ Bucket: bucketName }));
+    res.json({ success: true, message: "Connection successful" });
+  } catch (error: any) {
+    const code = error.Code || error.name || "Unknown";
+    let message = "Connection failed";
+    if (code === "SignatureDoesNotMatch") {
+      message = "Invalid credentials - the Access Key ID or Secret Access Key is incorrect";
+    } else if (code === "AccessDenied") {
+      message = "Access denied - the API token may not have permission for this bucket";
+    } else if (code === "NoSuchBucket") {
+      message = "Bucket not found - check the bucket name";
+    }
+    res.json({ success: false, error: message, code });
   }
 });
 

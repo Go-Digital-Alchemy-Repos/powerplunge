@@ -73,14 +73,12 @@ export async function registerRoutes(
   // Register Better Auth routes (feature-flagged)
   registerBetterAuthRoutes(app);
   
-  // Register file storage routes - prioritize Cloudflare R2 if configured
-  if (isR2Configured()) {
-    registerR2Routes(app);
-    console.log("[STORAGE] Using Cloudflare R2 for file uploads");
-  } else {
-    registerObjectStorageRoutes(app);
-    console.log("[STORAGE] Using Replit Object Storage for file uploads");
-  }
+  // Register file storage routes
+  // R2 routes always registered; credentials checked per-request (supports env vars or database config)
+  registerR2Routes(app);
+  // Also register Object Storage routes as fallback
+  registerObjectStorageRoutes(app);
+  console.log("[STORAGE] R2 and Object Storage routes registered (R2 credentials checked per-request)");
 
   // ==================== LAYERED ROUTES (previously migrated) ====================
   app.use("/api/products", publicProductsRoutes);
