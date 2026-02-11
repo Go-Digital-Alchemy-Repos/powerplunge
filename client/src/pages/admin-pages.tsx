@@ -63,7 +63,6 @@ export default function AdminPages() {
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
       const res = await fetch("/api/admin/pages", {
-        credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -86,7 +85,6 @@ export default function AdminPages() {
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: any }) => {
       const res = await fetch(`/api/admin/pages/${id}`, {
-        credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -128,7 +126,6 @@ export default function AdminPages() {
   const importMutation = useMutation({
     mutationFn: async ({ exportData, mode }: { exportData: any; mode: 'create' | 'update' }) => {
       const res = await fetch("/api/admin/pages/import", {
-        credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

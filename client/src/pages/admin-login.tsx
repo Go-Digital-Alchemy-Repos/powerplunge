@@ -36,7 +36,6 @@ export default function AdminLogin() {
 
     try {
       const response = await fetch("/api/admin/login", {
-        credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

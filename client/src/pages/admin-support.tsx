@@ -112,7 +112,6 @@ export default function AdminSupport() {
     mutationFn: async (data: { id: string; status?: string; priority?: string; noteText?: string }) => {
       const { id, ...body } = data;
       const res = await fetch(`/api/admin/support/${id}`, {
-        credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -137,7 +136,6 @@ export default function AdminSupport() {
   const createTicketMutation = useMutation({
     mutationFn: async (data: { customerId: string; subject: string; message: string; type: string; priority: string }) => {
       const res = await fetch("/api/admin/support", {
-        credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),

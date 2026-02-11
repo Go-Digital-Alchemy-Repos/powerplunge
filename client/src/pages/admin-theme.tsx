@@ -124,7 +124,6 @@ export default function AdminTheme() {
   const saveMutation = useMutation({
     mutationFn: async (data: Partial<ThemeSettings>) => {
       const res = await fetch("/api/admin/theme", {
-        credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

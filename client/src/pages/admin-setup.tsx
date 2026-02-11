@@ -88,7 +88,6 @@ export default function AdminSetup() {
     setIsLoading(true);
     try {
       const response = await fetch("/api/admin/setup", {
-        credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

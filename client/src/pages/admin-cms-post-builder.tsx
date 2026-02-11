@@ -179,7 +179,6 @@ function PublishButton({ postId, onDone }: { postId: string; onDone: () => void 
       await fetch(`/api/admin/cms/posts/${postId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({ contentJson }),
       });
       const pubRes = await fetch(`/api/admin/cms/posts/${postId}/publish`, {

@@ -179,7 +179,6 @@ export default function AdminCoupons() {
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
       const res = await fetch("/api/admin/coupons", {
-        credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -206,7 +205,6 @@ export default function AdminCoupons() {
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: any }) => {
       const res = await fetch(`/api/admin/coupons/${id}`, {
-        credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
