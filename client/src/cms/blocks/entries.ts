@@ -7,6 +7,7 @@ import {
   checkboxField,
   arrayField,
   imageField,
+  iconField,
 } from "./helpers";
 
 import BlogPostFeedBlock from "./BlogPostFeedBlock";
@@ -83,7 +84,7 @@ export function registerCmsV1Blocks() {
       subtitle: textareaField("Subtitle"),
       primaryButtonText: textField("Primary Button Text"),
       primaryButtonLink: textField("Primary Button Link"),
-      primaryButtonIcon: textField("Primary Button Icon (Lucide name)"),
+      primaryButtonIcon: iconField("Primary Button Icon"),
       primaryButtonAction: selectField("Primary Button Action", [
         { label: "Navigate to Link", value: "link" },
         { label: "Add to Cart", value: "addToCart" },
@@ -220,7 +221,7 @@ export function registerCmsV1Blocks() {
       title: textField("Section Title"),
       columns: numberField("Columns", 1, 3),
       items: arrayField("Features", {
-        icon: textField("Icon (Lucide name)"),
+        icon: iconField("Icon"),
         title: textField("Title"),
         description: textareaField("Description"),
       }),
@@ -393,7 +394,7 @@ export function registerCmsV1Blocks() {
         { label: "Wrap Grid", value: "wrap" },
       ]),
       items: arrayField("Trust Items", {
-        icon: textField("Icon (Lucide name)"),
+        icon: iconField("Icon"),
         label: textField("Label"),
         sublabel: textField("Sublabel"),
       }),
@@ -461,7 +462,7 @@ export function registerCmsV1Blocks() {
       items: arrayField("Benefits", {
         headline: textField("Headline"),
         description: textareaField("Description"),
-        icon: textField("Icon (Lucide name)"),
+        icon: iconField("Icon"),
         emphasis: checkboxField("Emphasize"),
       }),
     },
@@ -869,7 +870,7 @@ export function registerCmsV1Blocks() {
     },
     puckFields: {
       stats: arrayField("Stats", {
-        icon: textField("Icon (Lucide name)"),
+        icon: iconField("Icon"),
         value: textField("Value"),
         label: textField("Label"),
       }),
@@ -908,7 +909,7 @@ export function registerCmsV1Blocks() {
         { label: "4 Columns", value: "4" },
       ]),
       features: arrayField("Features", {
-        icon: textField("Icon (Lucide name)"),
+        icon: iconField("Icon"),
         title: textField("Title"),
         description: textareaField("Description"),
       }),
@@ -953,7 +954,7 @@ export function registerCmsV1Blocks() {
       showKeyFeatures: checkboxField("Show Key Features"),
       showWhatsIncluded: checkboxField("Show What's Included"),
       keyFeatures: arrayField("Key Features", {
-        icon: textField("Icon (Lucide name)"),
+        icon: iconField("Icon"),
         text: textField("Feature Text"),
       }),
       whatsIncluded: arrayField("What's Included", {
@@ -993,7 +994,7 @@ export function registerCmsV1Blocks() {
         { label: "5 Columns", value: "5" },
       ]),
       items: arrayField("Items", {
-        icon: textField("Icon (Lucide name)"),
+        icon: iconField("Icon"),
         title: textField("Title"),
       }),
     },
@@ -1024,7 +1025,7 @@ export function registerCmsV1Blocks() {
       subtitle: textareaField("Subtitle"),
       buttonText: textField("Button Text"),
       buttonLink: textField("Button Link"),
-      buttonIcon: textField("Button Icon (Lucide name)"),
+      buttonIcon: iconField("Button Icon"),
       buttonAction: selectField("Button Action", [
         { label: "Navigate to Link", value: "navigate" },
         { label: "Add to Cart", value: "addToCart" },

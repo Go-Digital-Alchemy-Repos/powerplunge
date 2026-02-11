@@ -28,6 +28,7 @@ import { getAllBlocks } from "@/lib/blockRegistry";
 import { getAllBlocks as getCmsBlocks, BLOCK_CATEGORIES } from "@/cms/blocks";
 import { ensureBlocksRegistered } from "@/cms/blocks/init";
 import { ImageFieldRenderer } from "@/cms/blocks/ImageFieldRenderer";
+import { IconPicker } from "@/components/ui/IconPicker";
 import { getCategoriesOrdered } from "@/cms/blocks/blockCategories";
 import {
   Dialog,
@@ -93,6 +94,19 @@ function buildPuckConfig(): Config {
           label: field.label || key,
           render: ({ value, onChange }: { value: string; onChange: (val: string) => void }) => {
             return <ImageFieldRenderer value={value || ""} onChange={onChange} label={field.label || key} />;
+          },
+        };
+      } else if (field.type === "text" && field.isIconField) {
+        return {
+          type: "custom",
+          label: field.label || key,
+          render: ({ value, onChange }: { value: string; onChange: (val: string) => void }) => {
+            return (
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">{field.label || key}</label>
+                <IconPicker value={value || ""} onChange={onChange} placeholder="Select icon..." />
+              </div>
+            );
           },
         };
       } else if (field.type === "text") {

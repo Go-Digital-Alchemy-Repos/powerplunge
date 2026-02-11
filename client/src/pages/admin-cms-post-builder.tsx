@@ -14,6 +14,7 @@ import { registerAllBlocks } from "@/lib/blockRegistryEntries";
 import { getAllBlocks } from "@/lib/blockRegistry";
 import { getAllBlocks as getCmsBlocks, BLOCK_CATEGORIES } from "@/cms/blocks";
 import { ensureBlocksRegistered } from "@/cms/blocks/init";
+import { IconPicker } from "@/components/ui/IconPicker";
 import { getCategoriesOrdered } from "@/cms/blocks/blockCategories";
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
@@ -45,6 +46,20 @@ function buildPuckConfig(): Config {
 
     const puckFields: Record<string, any> = {};
     const convertField = (field: any, key: string): any => {
+      if (field.type === "text" && field.isIconField) {
+        return {
+          type: "custom",
+          label: field.label || key,
+          render: ({ value, onChange }: { value: string; onChange: (val: string) => void }) => {
+            return (
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">{field.label || key}</label>
+                <IconPicker value={value || ""} onChange={onChange} placeholder="Select icon..." />
+              </div>
+            );
+          },
+        };
+      }
       if (field.type === "text") return { type: "text", label: field.label || key };
       if (field.type === "textarea") return { type: "textarea", label: field.label || key };
       if (field.type === "number") return { type: "number", label: field.label || key, min: field.min, max: field.max };
