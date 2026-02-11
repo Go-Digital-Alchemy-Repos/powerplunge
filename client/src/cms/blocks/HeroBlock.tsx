@@ -49,6 +49,7 @@ function SplitImage({ src, side }: { src: string; side: "left" | "right" }) {
         src={src}
         alt=""
         className="absolute inset-0 w-full h-full object-cover"
+        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
       />
       <div
         className={cn(
@@ -104,6 +105,7 @@ export default function HeroBlock({ data, settings }: BlockRenderProps) {
             alt=""
             className="w-full h-full object-cover"
             data-testid="img-hero-background"
+            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
           />
           <OverlayGradient opacity={overlayOpacity} align={align} />
         </div>

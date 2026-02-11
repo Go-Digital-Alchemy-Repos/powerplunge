@@ -77,13 +77,20 @@ export function useUpload(options: UseUploadOptions = {}) {
         formData.append("file", file);
         formData.append("folder", "uploads");
 
-        // Try R2 proxy endpoint first (avoids CORS issues)
-        let response = await fetch("/api/r2/upload", {
-          method: "POST",
-          body: formData,
-        });
+        let response: Response;
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 8000);
+          response = await fetch("/api/r2/upload", {
+            method: "POST",
+            body: formData,
+            signal: controller.signal,
+          });
+          clearTimeout(timeoutId);
+        } catch {
+          response = new Response(null, { status: 503 });
+        }
 
-        // Check if R2 endpoint failed (404, 500 due to TLS, or 503 not configured)
         if (response.status === 404 || response.status === 500 || response.status === 503) {
           // Fall back to Replit object storage proxy endpoint (avoids CORS)
           const fallbackFormData = new FormData();

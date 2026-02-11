@@ -89,7 +89,7 @@ export function registerR2Routes(app: Express): void {
     try {
       const configured = await isR2ConfiguredAsync();
       if (!configured) {
-        return res.status(503).json({ error: "Cloudflare R2 is not configured" });
+        return res.status(404).json({ error: "Image not available - storage not configured" });
       }
 
       const r2Service = new R2StorageService();
@@ -101,9 +101,13 @@ export function registerR2Routes(app: Express): void {
 
       const downloadUrl = await r2Service.getDownloadPresignedUrl(objectKey);
       res.redirect(downloadUrl);
-    } catch (error) {
-      console.error("[R2] Error serving object:", error);
-      res.status(500).json({ error: "Failed to serve object" });
+    } catch (error: any) {
+      const code = error?.Code || error?.name || "";
+      console.error("[R2] Error serving object:", code, error?.message || error);
+      if (code === "SignatureDoesNotMatch" || code === "InvalidAccessKeyId") {
+        return res.status(502).json({ error: "Storage credentials need to be updated in Admin > Settings > Integrations" });
+      }
+      res.status(404).json({ error: "Image not available" });
     }
   });
 }

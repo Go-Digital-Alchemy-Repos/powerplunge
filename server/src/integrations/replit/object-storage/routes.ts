@@ -102,10 +102,13 @@ export function registerObjectStorageRoutes(app: Express): void {
       const bucket = objectStorageClient.bucket(bucketName);
       const gcsFile = bucket.file(objectName);
 
-      await gcsFile.save(file.buffer, {
-        contentType: file.mimetype || "application/octet-stream",
-        resumable: false,
-      });
+      await Promise.race([
+        gcsFile.save(file.buffer, {
+          contentType: file.mimetype || "application/octet-stream",
+          resumable: false,
+        }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("Object Storage upload timeout (3s)")), 3000))
+      ]);
 
       const objectPath = `/objects/uploads/${uniqueFilename}`;
       console.log("[Object Storage] File uploaded successfully:", objectPath);
@@ -120,7 +123,8 @@ export function registerObjectStorageRoutes(app: Express): void {
         },
       });
     } catch (objStorageError) {
-      console.warn("[Object Storage] Cloud upload failed, using local filesystem fallback:", (objStorageError as Error).message);
+      const errMsg = (objStorageError as Error).message;
+      console.warn("[Object Storage] Cloud upload failed, using local filesystem fallback:", errMsg);
     }
 
     try {
