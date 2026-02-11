@@ -436,14 +436,21 @@ export default function AdminProducts() {
                 <Card key={product.id} className={!product.active ? "opacity-60" : ""} data-testid={`product-card-${product.id}`}>
                   <div className="aspect-video w-full overflow-hidden rounded-t-lg bg-muted relative">
                     {displayImage ? (
-                      <img
-                        src={getImageSrc(displayImage)}
-                        alt={product.name}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = "none";
-                        }}
-                      />
+                      <>
+                        <img
+                          src={getImageSrc(displayImage)}
+                          alt={product.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = "none";
+                            const fallback = (e.target as HTMLImageElement).nextElementSibling;
+                            if (fallback) (fallback as HTMLElement).style.display = "flex";
+                          }}
+                        />
+                        <div className="w-full h-full items-center justify-center text-muted-foreground" style={{ display: "none" }}>
+                          <ImageIcon className="w-12 h-12" />
+                        </div>
+                      </>
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-muted-foreground">
                         <ImageIcon className="w-12 h-12" />
