@@ -47,7 +47,7 @@ export default function AdminAffiliateSettings() {
   const { data: settings, isLoading } = useQuery<AffiliateSettings>({
     queryKey: ["/api/admin/affiliate-settings"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/affiliate-settings");
+      const res = await fetch("/api/admin/affiliate-settings", { credentials: "include" });
       if (res.status === 401) {
         setLocation("/admin/login");
         return null;
@@ -73,6 +73,7 @@ export default function AdminAffiliateSettings() {
   const updateMutation = useMutation({
     mutationFn: async (data: Partial<AffiliateSettings>) => {
       const res = await fetch("/api/admin/affiliate-settings", {
+        credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -90,7 +91,8 @@ export default function AdminAffiliateSettings() {
   });
 
   const handleLogout = async () => {
-    await fetch("/api/admin/logout", { method: "POST" });
+    await fetch("/api/admin/logout", {
+        credentials: "include", method: "POST" });
     setLocation("/admin/login");
   };
 

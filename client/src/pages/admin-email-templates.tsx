@@ -58,7 +58,7 @@ export default function AdminEmailTemplates() {
   const { data: templates, isLoading } = useQuery<EmailTemplate[]>({
     queryKey: ["/api/admin/email-templates"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/email-templates");
+      const res = await fetch("/api/admin/email-templates", { credentials: "include" });
       if (res.status === 401) {
         setLocation("/admin/login");
         return [];
@@ -82,6 +82,7 @@ export default function AdminEmailTemplates() {
   const updateMutation = useMutation({
     mutationFn: async ({ id, ...data }: { id: string } & Partial<EmailTemplate>) => {
       const res = await fetch(`/api/admin/email-templates/${id}`, {
+        credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -101,6 +102,7 @@ export default function AdminEmailTemplates() {
   const toggleMutation = useMutation({
     mutationFn: async ({ id, isEnabled }: { id: string; isEnabled: boolean }) => {
       const res = await fetch(`/api/admin/email-templates/${id}`, {
+        credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isEnabled }),

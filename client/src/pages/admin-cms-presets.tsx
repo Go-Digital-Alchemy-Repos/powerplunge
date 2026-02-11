@@ -184,6 +184,7 @@ function ImportModal({ open, onClose }: { open: boolean; onClose: () => void }) 
   const importMutation = useMutation({
     mutationFn: async (payload: unknown) => {
       const res = await fetch("/api/admin/cms/site-presets/import", {
+        credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

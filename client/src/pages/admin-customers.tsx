@@ -81,7 +81,7 @@ export default function AdminCustomers() {
   const { data: customers, isLoading } = useQuery<Customer[]>({
     queryKey: ["/api/admin/customers"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/customers");
+      const res = await fetch("/api/admin/customers", { credentials: "include" });
       if (res.status === 401) {
         setLocation("/admin/login");
         return [];
@@ -94,7 +94,7 @@ export default function AdminCustomers() {
   const { data: customerDetail, isLoading: isLoadingDetail } = useQuery<CustomerDetail>({
     queryKey: ["/api/admin/customers", selectedCustomerId],
     queryFn: async () => {
-      const res = await fetch(`/api/admin/customers/${selectedCustomerId}`);
+      const res = await fetch(`/api/admin/customers/${selectedCustomerId}`, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch customer");
       return res.json();
     },
@@ -104,7 +104,7 @@ export default function AdminCustomers() {
   const { data: products } = useQuery<Product[]>({
     queryKey: ["/api/admin/products"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/products");
+      const res = await fetch("/api/admin/products", { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch products");
       return res.json();
     },
@@ -113,6 +113,7 @@ export default function AdminCustomers() {
   const createCustomerMutation = useMutation({
     mutationFn: async (data: typeof newCustomer) => {
       const res = await fetch("/api/admin/customers", {
+        credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -137,6 +138,7 @@ export default function AdminCustomers() {
   const createOrderMutation = useMutation({
     mutationFn: async (data: { customerId: string; items: typeof orderItems }) => {
       const res = await fetch("/api/admin/orders", {
+        credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),

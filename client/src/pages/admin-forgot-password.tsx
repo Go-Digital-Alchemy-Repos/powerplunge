@@ -20,6 +20,7 @@ export default function AdminForgotPassword() {
 
     try {
       const response = await fetch("/api/admin/forgot-password", {
+        credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),

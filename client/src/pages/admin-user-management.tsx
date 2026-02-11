@@ -73,7 +73,7 @@ export default function AdminUserManagement() {
   const { data: customers = [], isLoading: customersLoading } = useQuery<Customer[]>({
     queryKey: ["/api/admin/customers"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/customers");
+      const res = await fetch("/api/admin/customers", { credentials: "include" });
       if (res.status === 401) { setLocation("/admin/login"); return []; }
       if (!res.ok) throw new Error("Failed to fetch customers");
       return res.json();
@@ -83,7 +83,7 @@ export default function AdminUserManagement() {
   const { data: admins = [], isLoading: adminsLoading } = useQuery<AdminUser[]>({
     queryKey: ["/api/admin/team"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/team");
+      const res = await fetch("/api/admin/team", { credentials: "include" });
       if (res.status === 401) { setLocation("/admin/login"); return []; }
       if (!res.ok) throw new Error("Failed to fetch admins");
       return res.json();
@@ -93,7 +93,7 @@ export default function AdminUserManagement() {
   const { data: products = [] } = useQuery<Product[]>({
     queryKey: ["/api/admin/products"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/products");
+      const res = await fetch("/api/admin/products", { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch products");
       return res.json();
     },
@@ -102,6 +102,7 @@ export default function AdminUserManagement() {
   const createCustomerMutation = useMutation({
     mutationFn: async (data: typeof customerForm) => {
       const res = await fetch("/api/admin/customers", {
+        credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -121,6 +122,7 @@ export default function AdminUserManagement() {
   const updateCustomerMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: typeof customerForm }) => {
       const res = await fetch(`/api/admin/customers/${id}`, {
+        credentials: "include",
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -139,7 +141,8 @@ export default function AdminUserManagement() {
 
   const deleteCustomerMutation = useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`/api/admin/customers/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/customers/${id}`, {
+        credentials: "include", method: "DELETE" });
       if (!res.ok) throw new Error((await res.json()).message || "Failed to delete customer");
       return res.json();
     },
@@ -157,6 +160,7 @@ export default function AdminUserManagement() {
   const createAdminMutation = useMutation({
     mutationFn: async (data: typeof adminForm) => {
       const res = await fetch("/api/admin/team", {
+        credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -176,6 +180,7 @@ export default function AdminUserManagement() {
   const updateAdminMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<typeof adminForm> }) => {
       const res = await fetch(`/api/admin/team/${id}`, {
+        credentials: "include",
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -195,7 +200,8 @@ export default function AdminUserManagement() {
 
   const deleteAdminMutation = useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`/api/admin/team/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/team/${id}`, {
+        credentials: "include", method: "DELETE" });
       if (!res.ok) throw new Error((await res.json()).message || "Failed to delete admin");
       return res.json();
     },
@@ -213,6 +219,7 @@ export default function AdminUserManagement() {
   const createManualOrderMutation = useMutation({
     mutationFn: async (data: typeof orderForm) => {
       const res = await fetch("/api/admin/manual-order", {
+        credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -229,7 +236,8 @@ export default function AdminUserManagement() {
   });
 
   const handleLogout = async () => {
-    await fetch("/api/admin/logout", { method: "POST" });
+    await fetch("/api/admin/logout", {
+        credentials: "include", method: "POST" });
     setLocation("/admin/login");
   };
 

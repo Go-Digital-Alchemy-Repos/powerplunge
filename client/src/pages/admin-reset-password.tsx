@@ -26,7 +26,7 @@ export default function AdminResetPassword() {
       return;
     }
 
-    fetch(`/api/admin/validate-reset-token?token=${token}`)
+    fetch(`/api/admin/validate-reset-token?token=${token}`, { credentials: "include" })
       .then((res) => res.json())
       .then((data) => {
         setTokenValid(data.valid);
@@ -63,6 +63,7 @@ export default function AdminResetPassword() {
 
     try {
       const response = await fetch("/api/admin/reset-password", {
+        credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token, password }),

@@ -78,7 +78,7 @@ function useSlugCheck(slug: string) {
 
     timerRef.current = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/admin/cms/pages/check-slug?slug=${encodeURIComponent(slug)}`);
+        const res = await fetch(`/api/admin/cms/pages/check-slug?slug=${encodeURIComponent(slug)}`, { credentials: "include" });
         const data = await res.json();
         lastChecked.current = slug;
         setStatus(data.available ? "available" : "taken");

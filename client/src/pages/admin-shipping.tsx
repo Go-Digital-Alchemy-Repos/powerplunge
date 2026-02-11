@@ -62,6 +62,7 @@ export default function AdminShipping() {
   const createZoneMutation = useMutation({
     mutationFn: async (data: any) => {
       const res = await fetch("/api/admin/shipping/zones", {
+        credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -81,6 +82,7 @@ export default function AdminShipping() {
   const updateZoneMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: any }) => {
       const res = await fetch(`/api/admin/shipping/zones/${id}`, {
+        credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -111,6 +113,7 @@ export default function AdminShipping() {
   const createRateMutation = useMutation({
     mutationFn: async (data: any) => {
       const res = await fetch("/api/admin/shipping/rates", {
+        credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -130,6 +133,7 @@ export default function AdminShipping() {
   const updateRateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: any }) => {
       const res = await fetch(`/api/admin/shipping/rates/${id}`, {
+        credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

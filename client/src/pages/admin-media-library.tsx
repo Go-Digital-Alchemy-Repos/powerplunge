@@ -86,7 +86,7 @@ export default function AdminMediaLibrary() {
   const { data: openaiStatus } = useQuery<{ configured: boolean }>({
     queryKey: ["/api/admin/media/openai/status"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/media/openai/status");
+      const res = await fetch("/api/admin/media/openai/status", { credentials: "include" });
       if (!res.ok) return { configured: false };
       return res.json();
     },
@@ -99,7 +99,7 @@ export default function AdminMediaLibrary() {
       if (searchQuery) params.set("search", searchQuery);
       if (selectedFolder) params.set("folder", selectedFolder);
       if (selectedMimeType) params.set("mimeType", selectedMimeType);
-      const res = await fetch(`/api/admin/media?${params}`);
+      const res = await fetch(`/api/admin/media?${params}`, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch media");
       return res.json();
     },
@@ -108,7 +108,7 @@ export default function AdminMediaLibrary() {
   const { data: stats } = useQuery<MediaStats>({
     queryKey: ["/api/admin/media/stats/summary"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/media/stats/summary");
+      const res = await fetch("/api/admin/media/stats/summary", { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch stats");
       return res.json();
     },
@@ -117,7 +117,7 @@ export default function AdminMediaLibrary() {
   const { data: folders = [] } = useQuery<string[]>({
     queryKey: ["/api/admin/media/folders/list"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/media/folders/list");
+      const res = await fetch("/api/admin/media/folders/list", { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch folders");
       return res.json();
     },
@@ -126,9 +126,11 @@ export default function AdminMediaLibrary() {
   const updateMutation = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<MediaItem> }) => {
       const res = await fetch(`/api/admin/media/${id}`, {
+        credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updates),
+        credentials: "include",
       });
       if (!res.ok) throw new Error("Failed to update media");
       return res.json();
@@ -144,7 +146,7 @@ export default function AdminMediaLibrary() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`/api/admin/media/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/media/${id}`, { method: "DELETE", credentials: "include" });
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.error || "Failed to delete");
@@ -181,9 +183,11 @@ export default function AdminMediaLibrary() {
         };
 
         await fetch("/api/admin/media", {
+        credentials: "include",
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(mediaData),
+          credentials: "include",
         });
 
         queryClient.invalidateQueries({ queryKey: ["/api/admin/media"] });
@@ -226,9 +230,11 @@ export default function AdminMediaLibrary() {
     setIsGeneratingSeo(true);
     try {
       const res = await fetch(`/api/admin/media/${selectedItem.id}/generate-seo`, {
+        credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
+        credentials: "include",
       });
       
       if (!res.ok) {

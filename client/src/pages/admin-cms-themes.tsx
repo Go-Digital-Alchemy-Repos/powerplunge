@@ -242,6 +242,7 @@ export default function AdminCmsThemes() {
   const activatePackMutation = useMutation({
     mutationFn: async (packId: string) => {
       const res = await fetch("/api/admin/cms/theme-packs/activate", {
+        credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ packId }),
@@ -267,6 +268,7 @@ export default function AdminCmsThemes() {
   const activateThemeMutation = useMutation({
     mutationFn: async (themeId: string) => {
       const res = await fetch("/api/admin/cms/themes/activate", {
+        credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ themeId }),

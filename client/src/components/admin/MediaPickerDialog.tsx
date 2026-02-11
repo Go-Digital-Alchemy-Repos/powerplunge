@@ -109,6 +109,7 @@ export function MediaPickerDialog({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(mediaData),
+          credentials: "include",
         });
 
         toast({ title: "Uploaded", description: `${file.name} added to library` });

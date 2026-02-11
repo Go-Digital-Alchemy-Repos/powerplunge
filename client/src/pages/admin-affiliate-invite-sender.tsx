@@ -45,6 +45,7 @@ export default function AdminAffiliateInviteSender() {
   const shareWithContacts = useMutation({
     mutationFn: async () => {
       const res = await fetch("/api/admin/affiliate-invites/send", {
+        credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -80,6 +81,7 @@ export default function AdminAffiliateInviteSender() {
   const sendInviteMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
       const res = await fetch("/api/admin/affiliate-invites/send", {
+        credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

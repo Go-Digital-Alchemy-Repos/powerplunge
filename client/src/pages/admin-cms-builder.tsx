@@ -556,6 +556,7 @@ function DetachSectionButton({ pageId, pageTitle, onDone }: { pageId: string; pa
       };
 
       const saveRes = await fetch(`/api/admin/cms/pages/${pageId}`, {
+        credentials: "include",
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ contentJson, title: (appState.data.root as any)?.props?.title || pageTitle }),
@@ -630,6 +631,7 @@ function SaveDraftButton({ pageId, pageTitle, seoData, onDone }: { pageId: strin
         try { parsedJsonLd = JSON.parse(seoData.jsonLd); } catch {}
       }
       const res = await fetch(`/api/admin/cms/pages/${pageId}`, {
+        credentials: "include",
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -689,6 +691,7 @@ function PublishButton({ pageId, pageTitle, seoData, onDone }: { pageId: string;
         try { parsedJsonLd = JSON.parse(seoData.jsonLd); } catch {}
       }
       await fetch(`/api/admin/cms/pages/${pageId}`, {
+        credentials: "include",
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -708,7 +711,7 @@ function PublishButton({ pageId, pageTitle, seoData, onDone }: { pageId: string;
           jsonLd: parsedJsonLd,
         }),
       });
-      const pubRes = await fetch(`/api/admin/cms/pages/${pageId}/publish`, { method: "POST" });
+      const pubRes = await fetch(`/api/admin/cms/pages/${pageId}/publish`, { credentials: "include", method: "POST" });
       if (!pubRes.ok) throw new Error("Publish failed");
       toast({ title: "Published", description: "Page and SEO settings are now live." });
       onDone();
@@ -1148,6 +1151,7 @@ export default function AdminCmsBuilder() {
 
     try {
       const res = await fetch(`/api/admin/cms/pages/${pageId}`, {
+        credentials: "include",
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ contentJson: updatedContentJson }),

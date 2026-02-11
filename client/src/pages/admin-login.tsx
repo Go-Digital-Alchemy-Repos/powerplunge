@@ -19,7 +19,7 @@ export default function AdminLogin() {
   });
 
   useEffect(() => {
-    fetch("/api/admin/check-setup")
+    fetch("/api/admin/check-setup", { credentials: "include" })
       .then((r) => r.json())
       .then((data) => {
         if (data.needsSetup) {
@@ -36,6 +36,7 @@ export default function AdminLogin() {
 
     try {
       const response = await fetch("/api/admin/login", {
+        credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

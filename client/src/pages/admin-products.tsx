@@ -146,7 +146,7 @@ export default function AdminProducts() {
   const { data: products, isLoading } = useQuery<Product[]>({
     queryKey: ["/api/admin/products"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/products");
+      const res = await fetch("/api/admin/products", { credentials: "include" });
       if (res.status === 401) {
         setLocation("/admin/login");
         return [];
@@ -159,6 +159,7 @@ export default function AdminProducts() {
   const createMutation = useMutation({
     mutationFn: async (product: Partial<Product>) => {
       const res = await fetch("/api/admin/products", {
+        credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(product),
@@ -176,6 +177,7 @@ export default function AdminProducts() {
   const updateMutation = useMutation({
     mutationFn: async ({ id, ...product }: Partial<Product> & { id: string }) => {
       const res = await fetch(`/api/admin/products/${id}`, {
+        credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(product),
@@ -192,7 +194,8 @@ export default function AdminProducts() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`/api/admin/products/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/products/${id}`, {
+        credentials: "include", method: "DELETE" });
       if (!res.ok) throw new Error("Failed to delete product");
     },
     onSuccess: () => {

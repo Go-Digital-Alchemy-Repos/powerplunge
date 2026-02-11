@@ -118,7 +118,7 @@ export default function AdminOrders() {
   const { data: orders, isLoading, error } = useQuery<Order[]>({
     queryKey: ["/api/admin/orders"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/orders");
+      const res = await fetch("/api/admin/orders", { credentials: "include" });
       if (res.status === 401) {
         setLocation("/admin/login");
         return [];
@@ -173,6 +173,7 @@ export default function AdminOrders() {
   const updateOrderMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
       const res = await fetch(`/api/admin/orders/${id}`, {
+        credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
@@ -192,6 +193,7 @@ export default function AdminOrders() {
       const results = await Promise.all(
         ids.map((id) =>
           fetch(`/api/admin/orders/${id}`, {
+        credentials: "include",
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ status }),
@@ -222,6 +224,7 @@ export default function AdminOrders() {
       const results = await Promise.all(
         ids.map((id) =>
           fetch(`/api/admin/orders/${id}/shipments`, {
+        credentials: "include",
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data),
@@ -259,6 +262,7 @@ export default function AdminOrders() {
   const shipOrderMutation = useMutation({
     mutationFn: async ({ orderId, ...data }: { orderId: string; carrier: string; trackingNumber: string; trackingUrl: string; sendEmail: boolean }) => {
       const res = await fetch(`/api/admin/orders/${orderId}/shipments`, {
+        credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -284,6 +288,7 @@ export default function AdminOrders() {
   const resendEmailMutation = useMutation({
     mutationFn: async (shipmentId: string) => {
       const res = await fetch(`/api/admin/shipments/${shipmentId}/resend-email`, {
+        credentials: "include",
         method: "POST",
       });
       if (!res.ok) throw new Error("Failed to resend email");

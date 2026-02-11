@@ -196,7 +196,7 @@ export default function AdminRevenue() {
   const { data: metrics, isLoading: metricsLoading } = useQuery<RevenueMetrics>({
     queryKey: ["/api/admin/revenue/metrics", queryParams],
     queryFn: async () => {
-      const res = await fetch(`/api/admin/revenue/metrics?${queryParams}`);
+      const res = await fetch(`/api/admin/revenue/metrics?${queryParams}`, { credentials: "include" });
       if (res.status === 401) {
         setLocation("/admin/login");
         throw new Error("Unauthorized");
@@ -209,7 +209,7 @@ export default function AdminRevenue() {
   const { data: revenueSeries } = useQuery<TimeSeriesPoint[]>({
     queryKey: ["/api/admin/revenue/timeseries/revenue", queryParams],
     queryFn: async () => {
-      const res = await fetch(`/api/admin/revenue/timeseries/revenue?${queryParams}`);
+      const res = await fetch(`/api/admin/revenue/timeseries/revenue?${queryParams}`, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch revenue series");
       return res.json();
     },
@@ -218,7 +218,7 @@ export default function AdminRevenue() {
   const { data: ordersSeries } = useQuery<TimeSeriesPoint[]>({
     queryKey: ["/api/admin/revenue/timeseries/orders", queryParams],
     queryFn: async () => {
-      const res = await fetch(`/api/admin/revenue/timeseries/orders?${queryParams}`);
+      const res = await fetch(`/api/admin/revenue/timeseries/orders?${queryParams}`, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch orders series");
       return res.json();
     },
@@ -227,7 +227,7 @@ export default function AdminRevenue() {
   const { data: aovSeries } = useQuery<TimeSeriesPoint[]>({
     queryKey: ["/api/admin/revenue/timeseries/aov", queryParams],
     queryFn: async () => {
-      const res = await fetch(`/api/admin/revenue/timeseries/aov?${queryParams}`);
+      const res = await fetch(`/api/admin/revenue/timeseries/aov?${queryParams}`, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch AOV series");
       return res.json();
     },
@@ -236,7 +236,7 @@ export default function AdminRevenue() {
   const { data: refundsSeries } = useQuery<TimeSeriesPoint[]>({
     queryKey: ["/api/admin/revenue/timeseries/refunds", queryParams],
     queryFn: async () => {
-      const res = await fetch(`/api/admin/revenue/timeseries/refunds?${queryParams}`);
+      const res = await fetch(`/api/admin/revenue/timeseries/refunds?${queryParams}`, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch refunds series");
       return res.json();
     },
@@ -245,7 +245,7 @@ export default function AdminRevenue() {
   const { data: affiliateVsDirect } = useQuery<{ affiliate: number; direct: number }>({
     queryKey: ["/api/admin/revenue/affiliate-vs-direct", queryParams],
     queryFn: async () => {
-      const res = await fetch(`/api/admin/revenue/affiliate-vs-direct?${queryParams}`);
+      const res = await fetch(`/api/admin/revenue/affiliate-vs-direct?${queryParams}`, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch affiliate vs direct");
       return res.json();
     },
@@ -254,7 +254,7 @@ export default function AdminRevenue() {
   const { data: topProducts } = useQuery<ProductRevenue[]>({
     queryKey: ["/api/admin/revenue/top-products", queryParams],
     queryFn: async () => {
-      const res = await fetch(`/api/admin/revenue/top-products?${queryParams}`);
+      const res = await fetch(`/api/admin/revenue/top-products?${queryParams}`, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch top products");
       return res.json();
     },
@@ -263,7 +263,7 @@ export default function AdminRevenue() {
   const { data: topAffiliates } = useQuery<AffiliateRevenue[]>({
     queryKey: ["/api/admin/revenue/top-affiliates", queryParams],
     queryFn: async () => {
-      const res = await fetch(`/api/admin/revenue/top-affiliates?${queryParams}`);
+      const res = await fetch(`/api/admin/revenue/top-affiliates?${queryParams}`, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch top affiliates");
       return res.json();
     },
@@ -272,7 +272,7 @@ export default function AdminRevenue() {
   const { data: topCustomers } = useQuery<CustomerLTV[]>({
     queryKey: ["/api/admin/revenue/top-customers", queryParams],
     queryFn: async () => {
-      const res = await fetch(`/api/admin/revenue/top-customers?${queryParams}`);
+      const res = await fetch(`/api/admin/revenue/top-customers?${queryParams}`, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch top customers");
       return res.json();
     },
@@ -281,7 +281,7 @@ export default function AdminRevenue() {
   const { data: availableProducts } = useQuery<{ id: string; name: string }[]>({
     queryKey: ["/api/admin/revenue/products"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/revenue/products");
+      const res = await fetch("/api/admin/revenue/products", { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch products");
       return res.json();
     },

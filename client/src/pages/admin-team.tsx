@@ -48,7 +48,7 @@ export default function AdminTeam() {
   const { data: team, isLoading } = useQuery<TeamMember[]>({
     queryKey: ["/api/admin/team"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/team");
+      const res = await fetch("/api/admin/team", { credentials: "include" });
       if (res.status === 401) {
         setLocation("/admin/login");
         return [];
@@ -61,6 +61,7 @@ export default function AdminTeam() {
   const addMemberMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
       const res = await fetch("/api/admin/team", {
+        credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -84,6 +85,7 @@ export default function AdminTeam() {
   const updateMemberMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<typeof formData> }) => {
       const res = await fetch(`/api/admin/team/${id}`, {
+        credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -106,7 +108,8 @@ export default function AdminTeam() {
 
   const deleteMemberMutation = useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`/api/admin/team/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/team/${id}`, {
+        credentials: "include", method: "DELETE" });
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.message || "Failed to delete team member");

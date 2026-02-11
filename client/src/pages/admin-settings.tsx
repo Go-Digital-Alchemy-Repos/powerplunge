@@ -55,6 +55,7 @@ export default function AdminSettings() {
   const updateMutation = useMutation({
     mutationFn: async (data: Partial<SiteSettings>) => {
       const res = await fetch("/api/admin/settings", {
+        credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -97,6 +98,7 @@ export default function AdminSettings() {
       const { objectPath } = await uploadRes.json();
 
       const saveRes = await fetch("/api/admin/settings", {
+        credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ logoUrl: objectPath }),
@@ -119,6 +121,7 @@ export default function AdminSettings() {
   const handleRemoveLogo = async () => {
     try {
       const res = await fetch("/api/admin/settings", {
+        credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ logoUrl: null }),

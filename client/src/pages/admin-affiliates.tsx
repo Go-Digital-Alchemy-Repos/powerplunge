@@ -255,7 +255,7 @@ export default function AdminAffiliates() {
   const { data: leaderboard, isLoading: loadingLeaderboard } = useQuery<LeaderboardEntry[]>({
     queryKey: ["/api/admin/affiliates-v2/leaderboard"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/affiliates-v2/leaderboard?limit=50");
+      const res = await fetch("/api/admin/affiliates-v2/leaderboard?limit=50", { credentials: "include" });
       if (res.status === 401) {
         setLocation("/admin/login");
         return [];
@@ -269,7 +269,7 @@ export default function AdminAffiliates() {
   const { data: affiliateProfile } = useQuery<AffiliateProfile>({
     queryKey: ["/api/admin/affiliates-v2", selectedAffiliateId, "profile"],
     queryFn: async () => {
-      const res = await fetch(`/api/admin/affiliates-v2/${selectedAffiliateId}/profile`);
+      const res = await fetch(`/api/admin/affiliates-v2/${selectedAffiliateId}/profile`, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch profile");
       return res.json();
     },
@@ -280,7 +280,7 @@ export default function AdminAffiliates() {
   const { data: commissions } = useQuery<Commission[]>({
     queryKey: ["/api/admin/affiliates-v2", selectedAffiliateId, "commissions"],
     queryFn: async () => {
-      const res = await fetch(`/api/admin/affiliates-v2/${selectedAffiliateId}/commissions`);
+      const res = await fetch(`/api/admin/affiliates-v2/${selectedAffiliateId}/commissions`, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch commissions");
       return res.json();
     },
@@ -291,7 +291,7 @@ export default function AdminAffiliates() {
   const { data: referredCustomers } = useQuery<ReferredCustomer[]>({
     queryKey: ["/api/admin/affiliates-v2", selectedAffiliateId, "customers"],
     queryFn: async () => {
-      const res = await fetch(`/api/admin/affiliates-v2/${selectedAffiliateId}/referred-customers`);
+      const res = await fetch(`/api/admin/affiliates-v2/${selectedAffiliateId}/referred-customers`, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch customers");
       return res.json();
     },
@@ -302,7 +302,7 @@ export default function AdminAffiliates() {
   const { data: affiliatePayouts } = useQuery<Payout[]>({
     queryKey: ["/api/admin/affiliates-v2", selectedAffiliateId, "payouts"],
     queryFn: async () => {
-      const res = await fetch(`/api/admin/affiliates-v2/${selectedAffiliateId}/payouts`);
+      const res = await fetch(`/api/admin/affiliates-v2/${selectedAffiliateId}/payouts`, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch payouts");
       return res.json();
     },
@@ -313,7 +313,7 @@ export default function AdminAffiliates() {
   const { data: allPayouts } = useQuery<Payout[]>({
     queryKey: ["/api/admin/payouts"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/payouts");
+      const res = await fetch("/api/admin/payouts", { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch payouts");
       return res.json();
     },
@@ -324,7 +324,7 @@ export default function AdminAffiliates() {
   const { data: flaggedCommissions, isLoading: loadingFlagged } = useQuery<FlaggedCommission[]>({
     queryKey: ["/api/admin/affiliates-v2/commissions/flagged"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/affiliates-v2/commissions/flagged");
+      const res = await fetch("/api/admin/affiliates-v2/commissions/flagged", { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch flagged commissions");
       return res.json();
     },
@@ -335,7 +335,7 @@ export default function AdminAffiliates() {
   const { data: affiliateInvites, isLoading: loadingInvites } = useQuery<AffiliateInvite[]>({
     queryKey: ["/api/admin/affiliate-invites"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/affiliate-invites");
+      const res = await fetch("/api/admin/affiliate-invites", { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch invites");
       return res.json();
     },
@@ -349,6 +349,7 @@ export default function AdminAffiliates() {
         ? new Date(Date.now() + data.expiresInDays * 24 * 60 * 60 * 1000).toISOString() 
         : null;
       const res = await fetch("/api/admin/affiliate-invites", {
+        credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -377,6 +378,7 @@ export default function AdminAffiliates() {
   const deleteInviteMutation = useMutation({
     mutationFn: async (inviteId: string) => {
       const res = await fetch(`/api/admin/affiliate-invites/${inviteId}`, {
+        credentials: "include",
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Failed to delete invite");
@@ -395,6 +397,7 @@ export default function AdminAffiliates() {
   const deleteAffiliateMutation = useMutation({
     mutationFn: async (affiliateId: string) => {
       const res = await fetch(`/api/admin/affiliates-v2/${affiliateId}`, {
+        credentials: "include",
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Failed to delete affiliate");
@@ -414,6 +417,7 @@ export default function AdminAffiliates() {
   const reviewApproveMutation = useMutation({
     mutationFn: async ({ commissionId, notes }: { commissionId: string; notes?: string }) => {
       const res = await fetch(`/api/admin/affiliates-v2/commissions/${commissionId}/review-approve`, {
+        credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ notes }),
@@ -435,6 +439,7 @@ export default function AdminAffiliates() {
   const reviewVoidMutation = useMutation({
     mutationFn: async ({ commissionId, notes }: { commissionId: string; notes: string }) => {
       const res = await fetch(`/api/admin/affiliates-v2/commissions/${commissionId}/review-void`, {
+        credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ notes }),
@@ -457,6 +462,7 @@ export default function AdminAffiliates() {
   const approveCommissionMutation = useMutation({
     mutationFn: async (commissionId: string) => {
       const res = await fetch(`/api/admin/affiliates-v2/commissions/${commissionId}/approve`, {
+        credentials: "include",
         method: "POST",
       });
       if (!res.ok) throw new Error("Failed to approve");
@@ -474,6 +480,7 @@ export default function AdminAffiliates() {
   const voidCommissionMutation = useMutation({
     mutationFn: async (commissionId: string) => {
       const res = await fetch(`/api/admin/affiliates-v2/commissions/${commissionId}/void`, {
+        credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reason: "Admin voided" }),
@@ -494,6 +501,7 @@ export default function AdminAffiliates() {
   const recordPayoutMutation = useMutation({
     mutationFn: async ({ affiliateId, amount, notes }: { affiliateId: string; amount: number; notes: string }) => {
       const res = await fetch(`/api/admin/affiliates-v2/${affiliateId}/payouts`, {
+        credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ amount, paymentMethod: "paypal", notes }),
@@ -516,6 +524,7 @@ export default function AdminAffiliates() {
   const updatePayoutMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
       const res = await fetch(`/api/admin/payouts/${id}`, {
+        credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
@@ -534,6 +543,7 @@ export default function AdminAffiliates() {
   const autoApproveMutation = useMutation({
     mutationFn: async () => {
       const res = await fetch("/api/admin/affiliates-v2/commissions/auto-approve", {
+        credentials: "include",
         method: "POST",
       });
       if (!res.ok) throw new Error("Failed to auto-approve");
@@ -549,6 +559,7 @@ export default function AdminAffiliates() {
   const runBatchPayoutMutation = useMutation({
     mutationFn: async (dryRun: boolean) => {
       const res = await fetch("/api/admin/affiliate-payouts/run", {
+        credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ dryRun }),
@@ -599,6 +610,7 @@ export default function AdminAffiliates() {
       const results = await Promise.all(
         ids.map((id) =>
           fetch(`/api/admin/payouts/${id}`, {
+        credentials: "include",
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ status: "approved" }),
@@ -629,6 +641,7 @@ export default function AdminAffiliates() {
       const results = await Promise.all(
         ids.map((id) =>
           fetch(`/api/admin/payouts/${id}`, {
+        credentials: "include",
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ status: "rejected" }),
