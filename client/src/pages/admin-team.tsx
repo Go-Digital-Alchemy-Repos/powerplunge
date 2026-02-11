@@ -41,7 +41,7 @@ export default function AdminTeam() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [panelMode, setPanelMode] = useState<PanelMode>("add");
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ firstName: "", lastName: "", email: "", phone: "", password: "", role: "admin" as "admin" | "store_manager" | "fulfillment" });
+  const [formData, setFormData] = useState({ firstName: "", lastName: "", email: "", phone: "", password: "", role: "admin" as "super_admin" | "admin" | "store_manager" | "fulfillment" });
   const [isDirty, setIsDirty] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<TeamMember | null>(null);
 
