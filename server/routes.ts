@@ -1,5 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
+import { createRequire } from "module";
+import { pool } from "./db";
 import { storage } from "./storage";
 
 // Canonical imports from server/src/
@@ -79,6 +81,47 @@ export async function registerRoutes(
   // Also register Object Storage routes as fallback
   registerObjectStorageRoutes(app);
   console.log("[STORAGE] R2 and Object Storage routes registered (R2 credentials checked per-request)");
+
+  // ==================== OPERATIONAL ENDPOINTS ====================
+  const require = createRequire(import.meta.url);
+  const pkgVersion: string = require("../package.json").version || "0.0.0";
+
+  app.get("/health", (_req, res) => {
+    res.json({ ok: true });
+  });
+
+  app.get("/ready", async (_req, res) => {
+    const issues: string[] = [];
+
+    const requiredEnvVars = ["DATABASE_URL", "SESSION_SECRET"];
+    for (const key of requiredEnvVars) {
+      if (!process.env[key]) {
+        issues.push(`missing env var: ${key}`);
+      }
+    }
+
+    if (process.env.DATABASE_URL) {
+      try {
+        const result = await pool.query("SELECT 1");
+        if (!result) issues.push("database query returned no result");
+      } catch (err: any) {
+        issues.push(`database unreachable: ${err.message || "unknown error"}`);
+      }
+    }
+
+    if (issues.length > 0) {
+      return res.status(503).json({ ready: false, issues });
+    }
+    res.json({ ready: true });
+  });
+
+  app.get("/version", (_req, res) => {
+    res.json({
+      version: pkgVersion,
+      commit: process.env.COMMIT_SHA || "unknown",
+      buildTime: process.env.BUILD_TIME || "unknown",
+    });
+  });
 
   // ==================== LAYERED ROUTES (previously migrated) ====================
   app.use("/api/products", publicProductsRoutes);
