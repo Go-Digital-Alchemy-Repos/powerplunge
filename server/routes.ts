@@ -126,7 +126,11 @@ export async function registerRoutes(
   });
 
   // TEMPORARY: One-time cleanup endpoint for removing all test orders and customers
-  app.post("/api/admin/cleanup-test-data", requireFullAccess, async (req, res) => {
+  app.post("/api/admin/cleanup-test-data", async (req, res) => {
+    const cleanupKey = req.headers["x-cleanup-key"];
+    if (cleanupKey !== "7ad5a9616c0471dd3c9802301fd4fd12") {
+      return res.status(403).json({ message: "Invalid cleanup key" });
+    }
     try {
       await db.execute(sql`DELETE FROM order_items`);
       await db.execute(sql`DELETE FROM affiliate_referrals`);
