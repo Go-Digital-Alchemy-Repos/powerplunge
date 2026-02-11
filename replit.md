@@ -49,6 +49,7 @@ The Power Plunge e-commerce platform utilizes a modern full-stack architecture.
 - **Revenue-Aware Coupons:** Performance analytics, affiliate overlap detection, stacking rules, and auto-expiration.
 - **Checkout Recovery System:** Tracks abandoned carts and failed payments, triggers recovery emails, and provides analytics.
 - **Revenue Guardrails:** Monitors critical metrics, provides alerts with configurable thresholds, and includes an admin dashboard.
+- **Security Hardening:** Security headers middleware (X-Content-Type-Options, Referrer-Policy, X-Frame-Options, Permissions-Policy) and CORS middleware (dev: all origins allowed; production: allowlist from `PUBLIC_SITE_URL` + `CORS_ALLOWED_ORIGINS`).
 - **Developer Observability:** Request logging with correlation IDs, centralized error handling, and environment validation.
 - **Background Job System:** Lightweight in-process job runner for scheduled tasks (e.g., payouts, commission auto-approval, metrics aggregation) with duplicate prevention and logging.
 - **CMS Blog Posts & Navigation Menus:** Includes management for blog posts and navigation menus, with rich text editing, SEO fields, and drag-and-drop UI for menus.

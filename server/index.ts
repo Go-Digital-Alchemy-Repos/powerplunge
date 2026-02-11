@@ -8,6 +8,8 @@ import { createServer } from "http";
 import { errorHandler } from "./src/middleware/error.middleware";
 import { requestLoggerMiddleware } from "./src/middleware/request-logger.middleware";
 import { serverTimingMiddleware } from "./src/middleware/server-timing.middleware";
+import { securityHeadersMiddleware } from "./src/middleware/security-headers.middleware";
+import { corsMiddleware } from "./src/middleware/cors.middleware";
 
 const app = express();
 const httpServer = createServer(app);
@@ -18,6 +20,8 @@ declare module "http" {
   }
 }
 
+app.use(securityHeadersMiddleware);
+app.use(corsMiddleware);
 app.use(compression());
 
 app.use(

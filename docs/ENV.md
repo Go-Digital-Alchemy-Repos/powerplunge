@@ -36,6 +36,7 @@ Missing optional vars disable the associated feature with a warning at startup.
 | `TWILIO_PHONE_NUMBER` | SMS | Twilio sender phone number | `+1234567890` |
 | `BETTER_AUTH_SECRET` | Better Auth | Secret for Better Auth sessions (only if `USE_BETTER_AUTH=true`) | `a-random-string` |
 | `IP_HASH_SALT` | Security | Salt for hashing IP addresses in analytics and fraud detection | `random-salt-string` |
+| `CORS_ALLOWED_ORIGINS` | Security | Comma-separated additional allowed CORS origins in production | `https://admin.powerplunge.com,https://staging.powerplunge.com` |
 
 ## Build-Time Variables
 

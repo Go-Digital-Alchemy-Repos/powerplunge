@@ -103,6 +103,11 @@ const ENV_VARS: Record<string, EnvVarSpec> = {
     feature: "Security",
     description: "Salt for hashing IP addresses in analytics and fraud detection",
   },
+  CORS_ALLOWED_ORIGINS: {
+    level: "optional",
+    feature: "Security",
+    description: "Comma-separated list of additional allowed CORS origins for production",
+  },
 };
 
 export interface ValidationResult {
