@@ -89,7 +89,8 @@ export default function AdminSettings() {
       fd.append("file", file);
       fd.append("folder", "branding");
       let uploadRes = await fetch("/api/r2/upload", { method: "POST", body: fd, credentials: "include" });
-      if (!uploadRes.ok) {
+      const contentType = uploadRes.headers.get("content-type") || "";
+      if (!uploadRes.ok || !contentType.includes("application/json")) {
         uploadRes = await fetch("/api/uploads/upload", { method: "POST", body: fd, credentials: "include" });
       }
       if (!uploadRes.ok) throw new Error("Upload failed");
