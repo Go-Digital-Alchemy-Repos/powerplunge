@@ -2,7 +2,10 @@ import { Router } from "express";
 import { storage } from "../../../storage";
 import { z } from "zod";
 import type { InsertMediaLibrary } from "@shared/schema";
+import { posts, postSettings } from "@shared/schema";
 import { openaiService } from "../../integrations/openai/OpenAIService";
+import { db } from "../../../db";
+import { eq } from "drizzle-orm";
 
 const router = Router();
 
@@ -88,6 +91,12 @@ router.patch("/:id", async (req, res) => {
   }
 });
 
+async function clearMediaForeignKeys(mediaId: string) {
+  await db.update(posts).set({ coverImageId: null }).where(eq(posts.coverImageId, mediaId));
+  await db.update(posts).set({ ogImageId: null }).where(eq(posts.ogImageId, mediaId));
+  await db.update(postSettings).set({ defaultOgImageId: null }).where(eq(postSettings.defaultOgImageId, mediaId));
+}
+
 router.delete("/:id", async (req, res) => {
   try {
     const item = await storage.getMediaItem(req.params.id);
@@ -103,6 +112,7 @@ router.delete("/:id", async (req, res) => {
       });
     }
 
+    await clearMediaForeignKeys(req.params.id);
     await storage.deleteMediaItem(req.params.id);
     res.json({ success: true });
   } catch (error) {
@@ -118,6 +128,7 @@ router.delete("/:id/force", async (req, res) => {
       return res.status(404).json({ error: "Media item not found" });
     }
 
+    await clearMediaForeignKeys(req.params.id);
     await storage.deleteMediaItem(req.params.id);
     res.json({ success: true, wasInUse: item.usageCount > 0 });
   } catch (error) {
