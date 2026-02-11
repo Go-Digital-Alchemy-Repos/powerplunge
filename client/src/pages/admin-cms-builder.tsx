@@ -1231,7 +1231,6 @@ export default function AdminCmsBuilder() {
                 <PreviewButton pageSlug={page?.slug} isHomePage={page?.isHome} isShopPage={page?.isShop} />
                 <DetachSectionButton pageId={pageId!} pageTitle={page?.title || ""} onDone={invalidateQueries} />
                 <SaveDraftButton pageId={pageId!} pageTitle={page?.title || ""} seoData={seoData} onDone={invalidateQueries} />
-                <PublishButton pageId={pageId!} pageTitle={page?.title || ""} seoData={seoData} onDone={invalidateQueries} />
               </>
             ),
             drawer: () => <EnhancedBlockPicker />,
