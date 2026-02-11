@@ -169,8 +169,13 @@ export default function AdminMediaLibrary() {
     if (!files?.length) return;
 
     for (const file of Array.from(files)) {
-      const result = await uploadFile(file);
-      if (result) {
+      try {
+        const result = await uploadFile(file);
+        if (!result) {
+          toast({ title: "Upload failed", description: `Could not upload ${file.name}. Please check your storage configuration.`, variant: "destructive" });
+          continue;
+        }
+
         const publicUrl = (result.metadata as any)?.publicUrl || result.objectPath;
         const mediaData = {
           filename: file.name,
@@ -181,16 +186,24 @@ export default function AdminMediaLibrary() {
           folder: "uploads",
         };
 
-        await fetch("/api/admin/media", {
+        const response = await fetch("/api/admin/media", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(mediaData),
           credentials: "include",
         });
 
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
+          toast({ title: "Failed to save media", description: errorData.error || `Could not save ${file.name} to library`, variant: "destructive" });
+          continue;
+        }
+
         queryClient.invalidateQueries({ queryKey: ["/api/admin/media"] });
         queryClient.invalidateQueries({ queryKey: ["/api/admin/media/stats/summary"] });
         toast({ title: "Upload complete", description: `${file.name} added to library` });
+      } catch (err) {
+        toast({ title: "Upload error", description: `Failed to upload ${file.name}`, variant: "destructive" });
       }
     }
     event.target.value = "";

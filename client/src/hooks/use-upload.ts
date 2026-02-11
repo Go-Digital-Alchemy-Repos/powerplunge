@@ -83,8 +83,8 @@ export function useUpload(options: UseUploadOptions = {}) {
           body: formData,
         });
 
-        // Check if R2 endpoint failed (404 or 500 due to TLS issues)
-        if (response.status === 404 || response.status === 500) {
+        // Check if R2 endpoint failed (404, 500 due to TLS, or 503 not configured)
+        if (response.status === 404 || response.status === 500 || response.status === 503) {
           // Fall back to Replit object storage proxy endpoint (avoids CORS)
           const fallbackFormData = new FormData();
           fallbackFormData.append("file", file);

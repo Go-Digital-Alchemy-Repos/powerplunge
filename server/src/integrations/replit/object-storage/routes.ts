@@ -1,6 +1,6 @@
 import type { Express, Request, Response } from "express";
 import multer from "multer";
-import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
+import { ObjectStorageService, ObjectNotFoundError, objectStorageClient } from "./objectStorage";
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -72,7 +72,7 @@ export function registerObjectStorageRoutes(app: Express): void {
 
   /**
    * Proxy upload endpoint - uploads file through server to object storage.
-   * This bypasses CORS issues with direct browser uploads.
+   * Uses direct GCS client upload to avoid presigned URL signing issues.
    * 
    * Request: multipart/form-data with 'file' field
    * Response: { objectPath, metadata }
@@ -84,20 +84,25 @@ export function registerObjectStorageRoutes(app: Express): void {
         return res.status(400).json({ error: "No file provided" });
       }
 
-      // Get upload URL and upload the file
-      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
-      const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
+      const privateObjectDir = objectStorageService.getPrivateObjectDir();
+      const { randomUUID } = await import("crypto");
+      const objectId = randomUUID();
+      const sanitizedName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, "_");
+      const fullPath = `${privateObjectDir}/uploads/${objectId}_${sanitizedName}`;
 
-      // Upload file to the presigned URL from the server (avoids CORS)
-      const uploadResponse = await fetch(uploadURL, {
-        method: "PUT",
-        body: file.buffer,
-        headers: { "Content-Type": file.mimetype || "application/octet-stream" },
+      const pathParts = fullPath.startsWith("/") ? fullPath.slice(1).split("/") : fullPath.split("/");
+      const bucketName = pathParts[0];
+      const objectName = pathParts.slice(1).join("/");
+
+      const bucket = objectStorageClient.bucket(bucketName);
+      const gcsFile = bucket.file(objectName);
+
+      await gcsFile.save(file.buffer, {
+        contentType: file.mimetype || "application/octet-stream",
+        resumable: false,
       });
 
-      if (!uploadResponse.ok) {
-        throw new Error(`Upload failed: ${uploadResponse.statusText}`);
-      }
+      const objectPath = `/objects/uploads/${objectId}_${sanitizedName}`;
 
       res.json({
         objectPath,
