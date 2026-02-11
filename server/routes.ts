@@ -2,6 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { createRequire } from "module";
 import { pool } from "./db";
+import { validateEnv } from "./src/config/env-validation";
 import { storage } from "./storage";
 
 // Canonical imports from server/src/
@@ -93,11 +94,9 @@ export async function registerRoutes(
   app.get("/ready", async (_req, res) => {
     const issues: string[] = [];
 
-    const requiredEnvVars = ["DATABASE_URL", "SESSION_SECRET"];
-    for (const key of requiredEnvVars) {
-      if (!process.env[key]) {
-        issues.push(`missing env var: ${key}`);
-      }
+    const envResult = validateEnv();
+    for (const { name } of envResult.missing) {
+      issues.push(`missing required env var: ${name}`);
     }
 
     if (process.env.DATABASE_URL) {

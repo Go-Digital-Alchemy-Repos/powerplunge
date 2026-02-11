@@ -1,3 +1,4 @@
+import { enforceEnv } from "./src/config/env-validation";
 import express, { type Request, Response, NextFunction } from "express";
 import compression from "compression";
 import cookieParser from "cookie-parser";
@@ -45,6 +46,8 @@ app.use(serverTimingMiddleware);
 app.use(requestLoggerMiddleware);
 
 (async () => {
+  enforceEnv();
+
   await registerRoutes(httpServer, app);
 
   app.use(errorHandler);
