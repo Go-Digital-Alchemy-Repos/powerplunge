@@ -6,9 +6,10 @@ interface RateLimitEntry {
 }
 
 interface RateLimitConfig {
-  windowMs: number; // Time window in milliseconds
-  maxRequests: number; // Max requests per window
+  windowMs: number;
+  maxRequests: number;
   message?: string;
+  name?: string;
 }
 
 const limiters = new Map<string, Map<string, RateLimitEntry>>();
@@ -32,15 +33,14 @@ function cleanupExpiredEntries(store: Map<string, RateLimitEntry>, now: number) 
 }
 
 export function createRateLimiter(config: RateLimitConfig) {
-  const { windowMs, maxRequests, message = "Too many requests, please try again later" } = config;
-  const storeKey = `${windowMs}-${maxRequests}`;
+  const { windowMs, maxRequests, message = "Too many requests, please try again later", name } = config;
+  const storeKey = name || `${windowMs}-${maxRequests}`;
   
   if (!limiters.has(storeKey)) {
     limiters.set(storeKey, new Map());
   }
   const store = limiters.get(storeKey)!;
 
-  // Cleanup every 60 seconds
   setInterval(() => cleanupExpiredEntries(store, Date.now()), 60000);
 
   return (req: Request, res: Response, next: NextFunction) => {
@@ -63,6 +63,11 @@ export function createRateLimiter(config: RateLimitConfig) {
       res.setHeader("X-RateLimit-Limit", String(maxRequests));
       res.setHeader("X-RateLimit-Remaining", "0");
       res.setHeader("X-RateLimit-Reset", String(Math.ceil(entry.resetTime / 1000)));
+
+      console.warn(
+        `[RATE_LIMIT] ${req.method} ${req.path} blocked | limiter=${storeKey} count=${entry.count} limit=${maxRequests}`
+      );
+
       return res.status(429).json({ 
         error: "RATE_LIMIT_EXCEEDED",
         message,
@@ -77,33 +82,58 @@ export function createRateLimiter(config: RateLimitConfig) {
   };
 }
 
-// Pre-configured limiters for common use cases
-export const checkoutLimiter = createRateLimiter({
-  windowMs: 60 * 1000, // 1 minute
+export const authLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
   maxRequests: 10,
+  name: "auth",
+  message: "Too many login attempts. Please try again in 15 minutes.",
+});
+
+export const smsVerificationLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  maxRequests: 5,
+  name: "sms-verification",
+  message: "Too many verification attempts. Please try again later.",
+});
+
+export const checkoutLimiter = createRateLimiter({
+  windowMs: 60 * 1000,
+  maxRequests: 10,
+  name: "checkout",
   message: "Too many checkout attempts. Please wait a moment.",
 });
 
 export const paymentLimiter = createRateLimiter({
-  windowMs: 60 * 1000, // 1 minute
+  windowMs: 60 * 1000,
   maxRequests: 15,
+  name: "payment",
   message: "Too many payment requests. Please wait a moment.",
 });
 
 export const affiliateTrackLimiter = createRateLimiter({
-  windowMs: 60 * 1000, // 1 minute
+  windowMs: 60 * 1000,
   maxRequests: 30,
+  name: "affiliate-track",
   message: "Too many tracking requests.",
 });
 
 export const passwordResetLimiter = createRateLimiter({
-  windowMs: 15 * 60 * 1000, // 15 minutes
+  windowMs: 15 * 60 * 1000,
   maxRequests: 5,
+  name: "password-reset",
   message: "Too many password reset attempts. Please try again later.",
 });
 
+export const affiliateSignupLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  maxRequests: 10,
+  name: "affiliate-signup",
+  message: "Too many signup attempts. Please try again later.",
+});
+
 export const generalApiLimiter = createRateLimiter({
-  windowMs: 60 * 1000, // 1 minute
+  windowMs: 60 * 1000,
   maxRequests: 100,
+  name: "general-api",
   message: "Too many requests. Please slow down.",
 });

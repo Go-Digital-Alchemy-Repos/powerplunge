@@ -3,6 +3,7 @@ import { storage } from "../../../storage";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { createSessionToken, verifySessionToken } from "../../middleware/customer-auth.middleware";
+import { affiliateSignupLimiter, smsVerificationLimiter } from "../../middleware/rate-limiter";
 
 const router = Router();
 
@@ -109,7 +110,7 @@ const signupSchema = z.object({
   inviteCode: z.string().min(1, "Affiliate signup is invite-only. A valid invite code is required."),
 });
 
-router.post("/", async (req: Request, res: Response) => {
+router.post("/", affiliateSignupLimiter, async (req: Request, res: Response) => {
   try {
     const settings = await storage.getAffiliateSettings();
     if (!settings?.programActive) {
@@ -284,7 +285,7 @@ const joinSchema = z.object({
   inviteCode: z.string().min(1, "Invite code is required"),
 });
 
-router.post("/join", async (req: Request, res: Response) => {
+router.post("/join", affiliateSignupLimiter, async (req: Request, res: Response) => {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -383,7 +384,7 @@ router.post("/join", async (req: Request, res: Response) => {
   }
 });
 
-router.post("/send-verification", async (req: Request, res: Response) => {
+router.post("/send-verification", smsVerificationLimiter, async (req: Request, res: Response) => {
   try {
     const schema = z.object({
       inviteCode: z.string().min(1, "Invite code is required"),
@@ -447,7 +448,7 @@ router.post("/send-verification", async (req: Request, res: Response) => {
   }
 });
 
-router.post("/verify-phone", async (req: Request, res: Response) => {
+router.post("/verify-phone", smsVerificationLimiter, async (req: Request, res: Response) => {
   try {
     const schema = z.object({
       inviteCode: z.string().min(1, "Invite code is required"),

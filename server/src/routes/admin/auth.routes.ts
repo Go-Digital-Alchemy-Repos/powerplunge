@@ -2,6 +2,7 @@ import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { storage } from "../../../storage";
 import { createSessionToken } from "../../middleware/customer-auth.middleware";
+import { authLimiter } from "../../middleware/rate-limiter";
 
 const router = Router();
 
@@ -14,7 +15,7 @@ router.get("/check-setup", async (req, res) => {
   }
 });
 
-router.post("/setup", async (req: any, res) => {
+router.post("/setup", authLimiter, async (req: any, res) => {
   try {
     const admins = await storage.getAdminUsers();
     if (admins.length > 0) {
@@ -62,7 +63,7 @@ router.post("/setup", async (req: any, res) => {
   }
 });
 
-router.post("/login", async (req: any, res) => {
+router.post("/login", authLimiter, async (req: any, res) => {
   try {
     const { email, password } = req.body;
 

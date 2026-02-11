@@ -11,6 +11,7 @@ import {
   AuthenticatedRequest 
 } from "../../middleware/customer-auth.middleware";
 import { normalizeEmail } from "../../services/customer-identity.service";
+import { authLimiter, passwordResetLimiter } from "../../middleware/rate-limiter";
 
 const router = Router();
 
@@ -20,7 +21,7 @@ const registerSchema = z.object({
   name: z.string().min(1, "Name is required"),
 });
 
-router.post("/register", async (req, res) => {
+router.post("/register", authLimiter, async (req, res) => {
   try {
     const parsed = registerSchema.parse(req.body);
     const email = normalizeEmail(parsed.email);
@@ -78,7 +79,7 @@ const loginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
-router.post("/login", async (req: any, res) => {
+router.post("/login", authLimiter, async (req: any, res) => {
   try {
     const parsed = loginSchema.parse(req.body);
     const email = normalizeEmail(parsed.email);
@@ -164,7 +165,7 @@ const magicLinkSchema = z.object({
   email: z.string().trim().email(),
 });
 
-router.post("/magic-link", async (req, res) => {
+router.post("/magic-link", passwordResetLimiter, async (req, res) => {
   try {
     const parsed = magicLinkSchema.parse(req.body);
     const email = normalizeEmail(parsed.email);
@@ -188,7 +189,7 @@ const verifyMagicLinkSchema = z.object({
   token: z.string().min(1),
 });
 
-router.post("/verify-magic-link", async (req, res) => {
+router.post("/verify-magic-link", passwordResetLimiter, async (req, res) => {
   try {
     const { token } = verifyMagicLinkSchema.parse(req.body);
     
@@ -339,7 +340,7 @@ const forgotPasswordSchema = z.object({
   email: z.string().trim().email(),
 });
 
-router.post("/forgot-password", async (req, res) => {
+router.post("/forgot-password", passwordResetLimiter, async (req, res) => {
   try {
     const parsed = forgotPasswordSchema.parse(req.body);
     const email = normalizeEmail(parsed.email);
@@ -377,7 +378,7 @@ const resetPasswordSchema = z.object({
   newPassword: z.string().min(8, "Password must be at least 8 characters"),
 });
 
-router.post("/reset-password", async (req, res) => {
+router.post("/reset-password", passwordResetLimiter, async (req, res) => {
   try {
     const { token, newPassword } = resetPasswordSchema.parse(req.body);
 
