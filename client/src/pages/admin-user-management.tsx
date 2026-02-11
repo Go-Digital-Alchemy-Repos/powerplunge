@@ -506,9 +506,9 @@ export default function AdminUserManagement() {
                           <td className="p-4 text-muted-foreground">{admin.email}</td>
                           <td className="p-4">
                             <span className={`px-2 py-1 rounded text-xs font-medium ${
-                              admin.role === "admin" ? "bg-primary/20 text-primary" : "bg-blue-500/20 text-blue-400"
+                              admin.role === "super_admin" ? "bg-amber-500/20 text-amber-400" : admin.role === "admin" ? "bg-primary/20 text-primary" : "bg-blue-500/20 text-blue-400"
                             }`}>
-                              {admin.role === "admin" ? "Admin" : "Store Manager"}
+                              {admin.role === "super_admin" ? "Super Admin" : admin.role === "admin" ? "Admin" : admin.role === "store_manager" ? "Store Manager" : "Fulfillment"}
                             </span>
                           </td>
                           <td className="p-4">

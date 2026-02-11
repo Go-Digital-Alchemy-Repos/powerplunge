@@ -21,10 +21,11 @@ interface TeamMember {
   name: string;
   email: string;
   phone: string;
-  role: "admin" | "store_manager" | "fulfillment";
+  role: "super_admin" | "admin" | "store_manager" | "fulfillment";
 }
 
-const ROLE_LABELS = {
+const ROLE_LABELS: Record<string, { label: string; description: string; icon: any; color: string }> = {
+  super_admin: { label: "Super Admin", description: "Owner account with unrestricted access", icon: Shield, color: "bg-amber-500/20 text-amber-400" },
   admin: { label: "Admin", description: "Full access to all features", icon: Shield, color: "bg-primary/20 text-primary" },
   store_manager: { label: "Store Manager", description: "Full access except team management", icon: Shield, color: "bg-blue-500/20 text-blue-400" },
   fulfillment: { label: "Fulfillment", description: "View & manage orders only", icon: Package, color: "bg-green-500/20 text-green-400" },
@@ -251,6 +252,7 @@ export default function AdminTeam() {
                       >
                         <Edit className="w-4 h-4" />
                       </Button>
+                      {member.role !== "super_admin" && (
                       <Button
                         variant="ghost"
                         size="sm"
@@ -261,6 +263,7 @@ export default function AdminTeam() {
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -375,6 +378,13 @@ export default function AdminTeam() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="role">Role</Label>
+            {formData.role === "super_admin" ? (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-md border bg-muted/50">
+                <Shield className="w-4 h-4 text-amber-400" />
+                <span className="font-medium text-amber-400">Super Admin</span>
+                <span className="text-xs text-muted-foreground ml-auto">Cannot be changed</span>
+              </div>
+            ) : (
             <Select
               value={formData.role}
               onValueChange={(value: "admin" | "store_manager" | "fulfillment") => {
@@ -415,6 +425,7 @@ export default function AdminTeam() {
                 </SelectItem>
               </SelectContent>
             </Select>
+            )}
           </div>
         </div>
       </SlideOutPanel>

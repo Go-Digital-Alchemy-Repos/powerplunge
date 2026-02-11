@@ -32,7 +32,7 @@ import { useAdminTheme } from "@/hooks/use-admin-theme";
 
 interface AdminNavProps {
   currentPage?: string;
-  role?: "admin" | "store_manager" | "fulfillment";
+  role?: "super_admin" | "admin" | "store_manager" | "fulfillment";
 }
 
 export default function AdminNav({ currentPage, role = "admin" }: AdminNavProps) {
@@ -49,7 +49,7 @@ export default function AdminNav({ currentPage, role = "admin" }: AdminNavProps)
   const isCms = currentPage === "media" || currentPage === "cms-settings" || currentPage === "cms" || currentPage?.startsWith("cms-");
   const isSettings = currentPage === "settings" || currentPage === "team" || currentPage === "email-templates" || currentPage === "integrations" || currentPage === "docs" || currentPage === "themes";
 
-  const hasFullAccess = role === "admin" || role === "store_manager";
+  const hasFullAccess = role === "super_admin" || role === "admin" || role === "store_manager";
 
   return (
     <nav className="sticky top-0 z-50 bg-card border-b border-border">

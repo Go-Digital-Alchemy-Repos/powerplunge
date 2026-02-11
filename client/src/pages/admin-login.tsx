@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Lock, Mail, ArrowLeft, User, ShieldCheck, Bug } from "lucide-react";
+import { Lock, Mail, ArrowLeft, User, ShieldCheck, Bug, Crown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 export default function AdminLogin() {
@@ -122,8 +122,8 @@ export default function AdminLogin() {
       }
 
       toast({
-        title: "Admin account created!",
-        description: `Welcome, ${data.admin.name}. Your admin account is ready.`,
+        title: "Super Admin account created!",
+        description: `Welcome, ${data.admin.name}. Your super admin account is ready.`,
       });
 
       setLocation("/admin/dashboard");
@@ -152,11 +152,11 @@ export default function AdminLogin() {
         <CardHeader className="text-center">
           {needsSetup ? (
             <>
-              <div className="mx-auto mb-4 w-12 h-12 bg-cyan-500/10 rounded-full flex items-center justify-center">
-                <ShieldCheck className="w-6 h-6 text-cyan-500" />
+              <div className="mx-auto mb-4 w-12 h-12 bg-amber-500/10 rounded-full flex items-center justify-center">
+                <Crown className="w-6 h-6 text-amber-500" />
               </div>
-              <CardTitle className="font-display text-2xl">Create Admin Account</CardTitle>
-              <CardDescription>Set up your first admin account to manage the store</CardDescription>
+              <CardTitle className="font-display text-2xl">Create Super Admin</CardTitle>
+              <CardDescription>Set up your super admin account to manage the store. This account will have the highest level of access and cannot be deleted.</CardDescription>
             </>
           ) : (
             <>
@@ -234,8 +234,9 @@ export default function AdminLogin() {
                   />
                 </div>
               </div>
-              <Button type="submit" className="w-full" disabled={isLoading} data-testid="button-submit">
-                {isLoading ? "Creating Account..." : "Create Admin Account"}
+              <Button type="submit" className="w-full gap-2" disabled={isLoading} data-testid="button-submit">
+                <Crown className="w-4 h-4" />
+                {isLoading ? "Creating Account..." : "Create Super Admin Account"}
               </Button>
             </form>
           ) : (

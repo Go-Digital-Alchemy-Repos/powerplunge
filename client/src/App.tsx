@@ -84,9 +84,15 @@ function AdminRedirect() {
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    fetch("/api/admin/me", { credentials: "include" })
-      .then((res) => {
-        if (res.ok) {
+    Promise.all([
+      fetch("/api/admin/me", { credentials: "include" }),
+      fetch("/api/admin/check-setup"),
+    ])
+      .then(async ([meRes, setupRes]) => {
+        const setupData = await setupRes.json().catch(() => ({ needsSetup: false }));
+        if (setupData.needsSetup) {
+          setLocation("/admin/login", { replace: true });
+        } else if (meRes.ok) {
           setLocation("/admin/dashboard", { replace: true });
         } else {
           setLocation("/admin/login", { replace: true });

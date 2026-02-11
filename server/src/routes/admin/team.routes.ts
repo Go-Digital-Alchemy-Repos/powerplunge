@@ -105,10 +105,13 @@ router.patch("/:id", async (req: Request, res: Response) => {
       if (!validRoles.includes(role)) {
         return res.status(400).json({ message: "Invalid role. Must be admin, store_manager, or fulfillment" });
       }
-      const currentAdmin = updateData.email ? await storage.getAdminUser(req.params.id) : await storage.getAdminUser(req.params.id);
+      const currentAdmin = await storage.getAdminUser(req.params.id);
+      if (currentAdmin?.role === "super_admin") {
+        return res.status(403).json({ message: "Cannot change the role of the Super Admin account." });
+      }
       if (currentAdmin?.role === "admin" && role !== "admin") {
         const allAdmins = await storage.getAdminUsers();
-        const adminCount = allAdmins.filter(a => a.role === "admin").length;
+        const adminCount = allAdmins.filter(a => a.role === "admin" || a.role === "super_admin").length;
         if (adminCount <= 1) {
           return res.status(400).json({ message: "Cannot change the role of the last admin. At least one admin must remain." });
         }
@@ -142,9 +145,12 @@ router.delete("/:id", async (req: any, res: Response) => {
     }
 
     const targetAdmin = await storage.getAdminUser(req.params.id);
+    if (targetAdmin?.role === "super_admin") {
+      return res.status(403).json({ message: "Cannot delete the Super Admin account." });
+    }
     if (targetAdmin?.role === "admin") {
       const allAdmins = await storage.getAdminUsers();
-      const adminCount = allAdmins.filter(a => a.role === "admin").length;
+      const adminCount = allAdmins.filter(a => a.role === "admin" || a.role === "super_admin").length;
       if (adminCount <= 1) {
         return res.status(400).json({ message: "Cannot delete the last admin. At least one admin must remain to manage the system." });
       }

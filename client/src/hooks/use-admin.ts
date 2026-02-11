@@ -4,7 +4,7 @@ interface AdminUser {
   id: string;
   email: string;
   name: string;
-  role: "admin" | "store_manager" | "fulfillment";
+  role: "super_admin" | "admin" | "store_manager" | "fulfillment";
 }
 
 async function fetchAdminUser(): Promise<AdminUser | null> {
@@ -36,6 +36,7 @@ export function useAdmin() {
     isLoading,
     isAuthenticated: !!admin,
     role: admin?.role ?? "admin",
-    hasFullAccess: admin?.role === "admin" || admin?.role === "store_manager",
+    hasFullAccess: admin?.role === "super_admin" || admin?.role === "admin" || admin?.role === "store_manager",
+    isSuperAdmin: admin?.role === "super_admin",
   };
 }

@@ -90,7 +90,7 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
                         </DropdownMenuItem>
                       </>
                     )}
-                    {isAdminAuthenticated && (admin?.role === "admin" || admin?.role === "store_manager") && (
+                    {isAdminAuthenticated && (admin?.role === "super_admin" || admin?.role === "admin" || admin?.role === "store_manager") && (
                       <>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => setLocation("/admin/dashboard")} data-testid="menu-admin-dashboard">

@@ -36,7 +36,7 @@ router.post("/setup", async (req: any, res) => {
       email,
       password: hashedPassword,
       name,
-      role: "admin",
+      role: "super_admin",
     });
 
     req.session.adminId = admin.id;

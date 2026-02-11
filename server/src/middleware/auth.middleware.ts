@@ -35,8 +35,8 @@ export function requireRole(...allowedRoles: string[]) {
         return res.status(401).json({ message: "Admin not found" });
       }
 
-      // Admin role has access to everything
-      if (admin.role === "admin") {
+      // Admin and super_admin roles have access to everything
+      if (admin.role === "admin" || admin.role === "super_admin") {
         return next();
       }
 
@@ -53,7 +53,7 @@ export function requireRole(...allowedRoles: string[]) {
 }
 
 // Shorthand middlewares for common role combinations
-export const requireFullAccess = requireRole("admin", "store_manager");
-export const requireOrderAccess = requireRole("admin", "store_manager", "fulfillment");
+export const requireFullAccess = requireRole("super_admin", "admin", "store_manager");
+export const requireOrderAccess = requireRole("super_admin", "admin", "store_manager", "fulfillment");
 
 export { isAuthenticated } from "../integrations/replit/auth";
