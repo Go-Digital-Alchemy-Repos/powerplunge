@@ -1,5 +1,7 @@
 import type { Express, Request, Response } from "express";
 import multer from "multer";
+import path from "path";
+import fs from "fs";
 import { ObjectStorageService, ObjectNotFoundError, objectStorageClient } from "./objectStorage";
 
 const upload = multer({
@@ -8,6 +10,8 @@ const upload = multer({
     fileSize: 10 * 1024 * 1024, // 10MB limit
   },
 });
+
+const LOCAL_UPLOADS_DIR = path.resolve(process.cwd(), "server/public/uploads");
 
 /**
  * Register object storage routes for file uploads.
@@ -71,25 +75,26 @@ export function registerObjectStorageRoutes(app: Express): void {
   });
 
   /**
-   * Proxy upload endpoint - uploads file through server to object storage.
-   * Uses direct GCS client upload to avoid presigned URL signing issues.
+   * Proxy upload endpoint - uploads file through server.
+   * Tries Object Storage first, falls back to local filesystem.
    * 
    * Request: multipart/form-data with 'file' field
    * Response: { objectPath, metadata }
    */
   app.post("/api/uploads/upload", upload.single("file"), async (req: Request, res: Response) => {
+    const file = req.file;
+    if (!file) {
+      return res.status(400).json({ error: "No file provided" });
+    }
+
+    const { randomUUID } = await import("crypto");
+    const objectId = randomUUID().split("-")[0];
+    const sanitizedName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, "_");
+    const uniqueFilename = `${Date.now()}_${objectId}_${sanitizedName}`;
+
     try {
-      const file = req.file;
-      if (!file) {
-        return res.status(400).json({ error: "No file provided" });
-      }
-
       const privateObjectDir = objectStorageService.getPrivateObjectDir();
-      const { randomUUID } = await import("crypto");
-      const objectId = randomUUID();
-      const sanitizedName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, "_");
-      const fullPath = `${privateObjectDir}/uploads/${objectId}_${sanitizedName}`;
-
+      const fullPath = `${privateObjectDir}/uploads/${uniqueFilename}`;
       const pathParts = fullPath.startsWith("/") ? fullPath.slice(1).split("/") : fullPath.split("/");
       const bucketName = pathParts[0];
       const objectName = pathParts.slice(1).join("/");
@@ -102,7 +107,29 @@ export function registerObjectStorageRoutes(app: Express): void {
         resumable: false,
       });
 
-      const objectPath = `/objects/uploads/${objectId}_${sanitizedName}`;
+      const objectPath = `/objects/uploads/${uniqueFilename}`;
+      console.log("[Object Storage] File uploaded successfully:", objectPath);
+
+      return res.json({
+        objectPath,
+        metadata: {
+          name: file.originalname,
+          size: file.size,
+          contentType: file.mimetype,
+          publicUrl: objectPath,
+        },
+      });
+    } catch (objStorageError) {
+      console.warn("[Object Storage] Cloud upload failed, using local filesystem fallback:", (objStorageError as Error).message);
+    }
+
+    try {
+      fs.mkdirSync(LOCAL_UPLOADS_DIR, { recursive: true });
+      const filePath = path.join(LOCAL_UPLOADS_DIR, uniqueFilename);
+      fs.writeFileSync(filePath, file.buffer);
+
+      const objectPath = `/local-uploads/${uniqueFilename}`;
+      console.log("[Local Storage] File saved to local filesystem:", objectPath);
 
       res.json({
         objectPath,
@@ -113,10 +140,19 @@ export function registerObjectStorageRoutes(app: Express): void {
           publicUrl: objectPath,
         },
       });
-    } catch (error) {
-      console.error("[Object Storage] Error uploading file:", error);
+    } catch (localError) {
+      console.error("[Local Storage] Error saving file locally:", localError);
       res.status(500).json({ error: "Failed to upload file" });
     }
+  });
+
+  app.get("/local-uploads/:filename", (req, res) => {
+    const filename = req.params.filename;
+    const filePath = path.join(LOCAL_UPLOADS_DIR, filename);
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: "File not found" });
+    }
+    res.sendFile(filePath);
   });
 
   /**
