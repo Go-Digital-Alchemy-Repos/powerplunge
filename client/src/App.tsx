@@ -197,6 +197,7 @@ function Router() {
         <Route path="/admin/cms/templates">{() => <CmsErrorBoundary><AdminCmsTemplates /></CmsErrorBoundary>}</Route>
         <Route path="/admin/settings/themes">{() => <CmsErrorBoundary><AdminCmsThemes /></CmsErrorBoundary>}</Route>
         <Route path="/admin/cms/themes">{() => { window.location.replace("/admin/settings/themes"); return null; }}</Route>
+        <Route path="/admin/cms/media">{() => { window.location.replace("/admin/media"); return null; }}</Route>
         <Route path="/admin/cms/seo">{() => <CmsErrorBoundary><AdminCmsSeo /></CmsErrorBoundary>}</Route>
         <Route path="/admin/cms/settings">{() => <CmsErrorBoundary><AdminCmsSettings /></CmsErrorBoundary>}</Route>
         <Route path="/admin/cms">{() => <CmsErrorBoundary><AdminCms /></CmsErrorBoundary>}</Route>
