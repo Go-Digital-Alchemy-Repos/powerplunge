@@ -43,6 +43,8 @@ integrationsStatusRoutes.get("/", async (req: any, res) => {
     xShopping: intSettings?.xShoppingConfigured || false,
     mailchimp: intSettings?.mailchimpConfigured || false,
     googlePlaces: intSettings?.googlePlacesConfigured || false,
+    twilio: intSettings?.twilioEnabled || false,
+    twilioEnvConfigured: !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_PHONE_NUMBER),
   });
 });
 
@@ -504,6 +506,130 @@ router.post("/r2/test", async (req: any, res) => {
       message = "Bucket not found - check the bucket name";
     }
     res.json({ success: false, error: message, code });
+  }
+});
+
+// ==================== TWILIO SMS INTEGRATION ====================
+
+router.get("/twilio", async (req: any, res) => {
+  try {
+    const settings = await storage.getIntegrationSettings();
+    
+    const envConfigured = !!(
+      process.env.TWILIO_ACCOUNT_SID &&
+      process.env.TWILIO_AUTH_TOKEN &&
+      process.env.TWILIO_PHONE_NUMBER
+    );
+
+    res.json({
+      enabled: settings?.twilioEnabled || false,
+      accountSid: settings?.twilioAccountSid || "",
+      phoneNumber: settings?.twilioPhoneNumber || "",
+      authTokenSet: !!settings?.twilioAuthTokenEncrypted,
+      envConfigured,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch Twilio settings" });
+  }
+});
+
+router.put("/twilio", async (req: any, res) => {
+  try {
+    const { encrypt } = await import("../../utils/encryption");
+    const { enabled, accountSid, authToken, phoneNumber } = req.body;
+
+    const updateData: any = {};
+
+    if (typeof enabled === "boolean") {
+      updateData.twilioEnabled = enabled;
+    }
+
+    if (accountSid !== undefined) {
+      updateData.twilioAccountSid = accountSid || null;
+    }
+
+    if (phoneNumber !== undefined) {
+      updateData.twilioPhoneNumber = phoneNumber || null;
+    }
+
+    if (authToken && authToken.trim()) {
+      updateData.twilioAuthTokenEncrypted = encrypt(authToken.trim());
+    }
+
+    if (enabled === true) {
+      const existingSettings = await storage.getIntegrationSettings();
+      const finalSid = accountSid || existingSettings?.twilioAccountSid;
+      const finalPhone = phoneNumber || existingSettings?.twilioPhoneNumber;
+      const hasToken = !!authToken || !!existingSettings?.twilioAuthTokenEncrypted;
+
+      if (!finalSid || !finalPhone || !hasToken) {
+        return res.status(400).json({
+          message: "Account SID, Phone Number, and Auth Token are all required to enable Twilio",
+        });
+      }
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({ message: "No changes provided" });
+    }
+
+    const settings = await storage.updateIntegrationSettings(updateData);
+
+    try {
+      const { smsService } = await import("../../services/sms.service");
+      smsService.clearCache();
+    } catch {}
+
+    const adminId = (req as any).adminUser?.id;
+    if (adminId) {
+      try {
+        await storage.createAdminAuditLog({
+          adminId,
+          action: "update_twilio_settings",
+          targetType: "settings",
+          targetId: "twilio",
+          details: { enabled: settings.twilioEnabled, hasAuthToken: !!authToken },
+          ipAddress: req.ip || null,
+        });
+      } catch (auditErr) {
+        console.error("Failed to create audit log for Twilio settings update:", auditErr);
+      }
+    }
+
+    res.json({
+      success: true,
+      enabled: settings.twilioEnabled,
+      accountSid: settings.twilioAccountSid || "",
+      phoneNumber: settings.twilioPhoneNumber || "",
+      authTokenSet: !!settings.twilioAuthTokenEncrypted,
+    });
+  } catch (error: any) {
+    console.error("Twilio settings update error:", error);
+    res.status(500).json({ message: error.message || "Failed to update Twilio settings" });
+  }
+});
+
+router.post("/twilio/test-sms", async (req: any, res) => {
+  try {
+    const { toPhoneNumber } = req.body;
+    if (!toPhoneNumber) {
+      return res.status(400).json({ success: false, message: "Phone number is required" });
+    }
+
+    const { smsService } = await import("../../services/sms.service");
+    const normalizedPhone = smsService.normalizePhone(toPhoneNumber);
+    const result = await smsService.sendVerificationCode(
+      normalizedPhone,
+      "123456"
+    );
+
+    if (result.success) {
+      res.json({ success: true, message: "Test SMS sent successfully" });
+    } else {
+      res.status(400).json({ success: false, message: result.error || "Failed to send test SMS" });
+    }
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message || "Failed to send test SMS" });
   }
 });
 

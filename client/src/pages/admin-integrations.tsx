@@ -32,6 +32,8 @@ interface IntegrationStatus {
   xShopping?: boolean;
   mailchimp?: boolean;
   googlePlaces?: boolean;
+  twilio?: boolean;
+  twilioEnvConfigured?: boolean;
 }
 
 interface MailchimpSettings {
@@ -170,6 +172,7 @@ export default function AdminIntegrations() {
   const [showXDialog, setShowXDialog] = useState(false);
   const [showMailchimpDialog, setShowMailchimpDialog] = useState(false);
   const [showGooglePlacesDialog, setShowGooglePlacesDialog] = useState(false);
+  const [showTwilioDialog, setShowTwilioDialog] = useState(false);
 
   const { data: integrations, refetch: refetchIntegrations } = useQuery<IntegrationStatus>({
     queryKey: ["/api/admin/integrations"],
@@ -579,6 +582,35 @@ export default function AdminIntegrations() {
               </div>
             </CardContent>
           </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Zap className="w-5 h-5 text-primary" />
+                Twilio SMS
+              </CardTitle>
+              <CardDescription>
+                SMS verification for affiliate invite phone verification
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <StatusBadge configured={integrations?.twilio || integrations?.twilioEnvConfigured} />
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowTwilioDialog(true)}
+                  data-testid="button-configure-twilio"
+                >
+                  Configure
+                </Button>
+              </div>
+              <div className="mt-4 text-xs text-muted-foreground">
+                <a href="https://www.twilio.com/console" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1">
+                  Get your credentials from Twilio Console <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
 
@@ -646,6 +678,11 @@ export default function AdminIntegrations() {
       <GooglePlacesConfigDialog
         open={showGooglePlacesDialog}
         onOpenChange={setShowGooglePlacesDialog}
+        onSuccess={() => refetchIntegrations()}
+      />
+      <TwilioConfigDialog
+        open={showTwilioDialog}
+        onOpenChange={setShowTwilioDialog}
         onSuccess={() => refetchIntegrations()}
       />
     </div>
@@ -3655,6 +3692,208 @@ function GooglePlacesConfigDialog({ open, onOpenChange, onSuccess }: {
             </Button>
           )}
           <Button onClick={handleSave} disabled={saving} data-testid="button-save-google-places">
+            {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+            Save Configuration
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+interface TwilioSettings {
+  enabled: boolean;
+  accountSid: string;
+  phoneNumber: string;
+  authTokenSet: boolean;
+  envConfigured: boolean;
+}
+
+function TwilioConfigDialog({ open, onOpenChange, onSuccess }: { open: boolean; onOpenChange: (open: boolean) => void; onSuccess: () => void }) {
+  const { toast } = useToast();
+  const [enabled, setEnabled] = useState(false);
+  const [accountSid, setAccountSid] = useState("");
+  const [authToken, setAuthToken] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [testPhone, setTestPhone] = useState("");
+  const [sendingTest, setSendingTest] = useState(false);
+
+  const { data: settings, isLoading } = useQuery<TwilioSettings>({
+    queryKey: ["/api/admin/settings/twilio"],
+    enabled: open,
+    queryFn: async () => {
+      const res = await fetch("/api/admin/settings/twilio", { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch Twilio settings");
+      return res.json();
+    },
+  });
+
+  useEffect(() => {
+    if (settings) {
+      setEnabled(settings.enabled);
+      setAccountSid(settings.accountSid || "");
+      setPhoneNumber(settings.phoneNumber || "");
+      setAuthToken("");
+    }
+  }, [settings]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const body: any = { enabled, accountSid, phoneNumber };
+      if (authToken.trim()) {
+        body.authToken = authToken.trim();
+      }
+      const res = await fetch("/api/admin/settings/twilio", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Failed to save");
+      }
+      toast({ title: "Twilio settings saved" });
+      setAuthToken("");
+      onSuccess();
+    } catch (error: any) {
+      toast({ title: error.message, variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSendTest = async () => {
+    if (!testPhone.trim()) {
+      toast({ title: "Enter a phone number to send a test SMS", variant: "destructive" });
+      return;
+    }
+    setSendingTest(true);
+    try {
+      const res = await fetch("/api/admin/settings/twilio/test-sms", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ toPhoneNumber: testPhone.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || "Failed to send test SMS");
+      }
+      toast({ title: "Test SMS sent successfully" });
+    } catch (error: any) {
+      toast({ title: error.message, variant: "destructive" });
+    } finally {
+      setSendingTest(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Zap className="w-5 h-5 text-primary" />
+            Twilio SMS Configuration
+          </DialogTitle>
+          <DialogDescription>
+            Configure Twilio for SMS-based affiliate invite phone verification.
+          </DialogDescription>
+        </DialogHeader>
+
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="w-6 h-6 animate-spin" />
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {settings?.envConfigured && !settings?.enabled && (
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                <AlertCircle className="w-4 h-4 text-blue-500" />
+                <span className="text-sm text-blue-500">Using environment variable configuration</span>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between">
+              <div>
+                <Label htmlFor="twilio-enabled">Enable SMS Verification</Label>
+                <p className="text-xs text-muted-foreground">Enable DB-configured Twilio credentials</p>
+              </div>
+              <Switch
+                id="twilio-enabled"
+                checked={enabled}
+                onCheckedChange={setEnabled}
+                data-testid="switch-twilio-enabled"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="twilio-account-sid">Account SID</Label>
+              <Input
+                id="twilio-account-sid"
+                value={accountSid}
+                onChange={(e) => setAccountSid(e.target.value)}
+                placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                data-testid="input-twilio-account-sid"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="twilio-auth-token">Auth Token</Label>
+              <Input
+                id="twilio-auth-token"
+                type="password"
+                value={authToken}
+                onChange={(e) => setAuthToken(e.target.value)}
+                placeholder={settings?.authTokenSet ? "•••••••• (leave blank to keep current)" : "Enter auth token"}
+                data-testid="input-twilio-auth-token"
+              />
+              {settings?.authTokenSet && (
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Shield className="w-3 h-3" /> Auth token is stored encrypted
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="twilio-phone-number">From Phone Number</Label>
+              <Input
+                id="twilio-phone-number"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                placeholder="+15551234567"
+                data-testid="input-twilio-phone-number"
+              />
+              <p className="text-xs text-muted-foreground">E.164 format (e.g. +15551234567)</p>
+            </div>
+
+            <div className="border-t pt-4 space-y-2">
+              <Label>Send Test SMS</Label>
+              <div className="flex gap-2">
+                <Input
+                  value={testPhone}
+                  onChange={(e) => setTestPhone(e.target.value)}
+                  placeholder="+15559876543"
+                  data-testid="input-twilio-test-phone"
+                />
+                <Button
+                  variant="outline"
+                  onClick={handleSendTest}
+                  disabled={sendingTest}
+                  data-testid="button-send-test-sms"
+                >
+                  {sendingTest ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <TestTube className="w-4 h-4 mr-2" />}
+                  Test
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <DialogFooter>
+          <Button onClick={handleSave} disabled={saving} data-testid="button-save-twilio">
             {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
             Save Configuration
           </Button>

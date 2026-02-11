@@ -318,6 +318,11 @@ export const integrationSettings = pgTable("integration_settings", {
   googlePlacesConfigured: boolean("google_places_configured").default(false),
   googlePlacesApiKeyEncrypted: text("google_places_api_key_encrypted"),
   googlePlacesId: text("google_places_id"),
+  // Twilio SMS integration (for affiliate invite phone verification)
+  twilioEnabled: boolean("twilio_enabled").default(false),
+  twilioAccountSid: text("twilio_account_sid"),
+  twilioAuthTokenEncrypted: text("twilio_auth_token_encrypted"),
+  twilioPhoneNumber: text("twilio_phone_number"),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   updatedByUserId: varchar("updated_by_user_id"),
 });
