@@ -30,6 +30,7 @@ const AffiliatePortal = lazy(() => import("@/pages/affiliate-portal"));
 const ResetPassword = lazy(() => import("@/pages/reset-password"));
 const OrderStatusPage = lazy(() => import("@/pages/order-status"));
 
+const AdminSetup = lazy(() => import("@/pages/admin-setup"));
 const AdminLogin = lazy(() => import("@/pages/admin-login"));
 const AdminForgotPassword = lazy(() => import("@/pages/admin-forgot-password"));
 const AdminResetPassword = lazy(() => import("@/pages/admin-reset-password"));
@@ -91,7 +92,7 @@ function AdminRedirect() {
       .then(async ([meRes, setupRes]) => {
         const setupData = await setupRes.json().catch(() => ({ needsSetup: false }));
         if (setupData.needsSetup) {
-          setLocation("/admin/login", { replace: true });
+          setLocation("/admin/setup", { replace: true });
         } else if (meRes.ok) {
           setLocation("/admin/dashboard", { replace: true });
         } else {
@@ -147,6 +148,7 @@ function Router() {
         <Route path="/blog">{() => <BlogIndexPage />}</Route>
         <Route path="/page/:slug" component={PageView} />
         <Route path="/admin" component={AdminRedirect} />
+        <Route path="/admin/setup" component={AdminSetup} />
         <Route path="/admin/login" component={AdminLogin} />
         <Route path="/admin/forgot-password" component={AdminForgotPassword} />
         <Route path="/admin/reset-password" component={AdminResetPassword} />
