@@ -103,6 +103,8 @@ async function getR2Client(): Promise<{ client: S3Client; bucketName: string; pu
       secretAccessKey: creds.secretAccessKey,
     },
     forcePathStyle: true,
+    requestChecksumCalculation: "WHEN_REQUIRED",
+    responseChecksumValidation: "WHEN_REQUIRED",
   });
 
   return { client, bucketName: creds.bucketName, publicUrl: creds.publicUrl };
