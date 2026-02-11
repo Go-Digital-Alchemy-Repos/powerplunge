@@ -1,5 +1,26 @@
 import { storage } from "./storage";
+import { db } from "./db";
+import { adminUsers } from "@shared/schema";
+import { eq, asc } from "drizzle-orm";
 import bcrypt from "bcryptjs";
+
+export async function ensureSuperAdmin() {
+  const allAdmins = await db.select().from(adminUsers).orderBy(asc(adminUsers.createdAt));
+  if (allAdmins.length === 0) return;
+
+  const hasSuperAdmin = allAdmins.some((a) => a.role === "super_admin");
+  if (hasSuperAdmin) return;
+
+  const oldest = allAdmins[0];
+  await db
+    .update(adminUsers)
+    .set({ role: "super_admin" })
+    .where(eq(adminUsers.id, oldest.id));
+
+  console.log(
+    `[SUPER-ADMIN] Promoted "${oldest.email}" to super_admin (first admin account)`
+  );
+}
 
 const TEST_ADMIN_USERS = [
   {

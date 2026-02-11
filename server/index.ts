@@ -82,6 +82,14 @@ app.use(requestLoggerMiddleware);
         console.error("[CMS-INIT] Failed to ensure CMS defaults:", error);
       }
 
+      // Ensure a super_admin exists (promotes oldest admin if needed)
+      try {
+        const { ensureSuperAdmin } = await import("./seed");
+        await ensureSuperAdmin();
+      } catch (error) {
+        console.error("[SUPER-ADMIN] Failed to ensure super admin:", error);
+      }
+
       // Seed test admin users in development only
       if (process.env.NODE_ENV !== "production") {
         try {
