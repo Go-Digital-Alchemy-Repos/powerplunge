@@ -440,7 +440,7 @@ export default function AdminCmsThemes() {
                           {!isActive && (
                             <Button
                               size="sm"
-                              className="bg-primary text-foreground h-7 text-[11px] gap-1"
+                              className="bg-cyan-500 hover:bg-cyan-400 text-gray-950 font-medium h-7 text-[11px] gap-1"
                               onClick={() => activatePackMutation.mutate(pack.id)}
                               disabled={activatePackMutation.isPending}
                               data-testid={`button-activate-pack-${pack.id}`}
@@ -514,7 +514,7 @@ export default function AdminCmsThemes() {
                       {!isActive && (
                         <Button
                           size="sm"
-                          className="bg-primary text-foreground h-7 text-[11px]"
+                          className="bg-cyan-500 hover:bg-cyan-400 text-gray-950 font-medium h-7 text-[11px]"
                           onClick={() => activateThemeMutation.mutate(theme.id)}
                           disabled={activateThemeMutation.isPending}
                           data-testid={`button-activate-${theme.id}`}

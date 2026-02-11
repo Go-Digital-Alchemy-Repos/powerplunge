@@ -396,6 +396,29 @@ export default function AdminCmsPageEdit() {
             </CardHeader>
             {seoOpen && (
               <CardContent className="space-y-4">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-cyan-950/30 border border-cyan-800/30">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-cyan-400" />
+                    <div>
+                      <p className="text-sm font-medium text-foreground">AI Meta Data Generator</p>
+                      <p className="text-xs text-muted-foreground">Scan page content and generate optimized SEO metadata</p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="bg-cyan-500 hover:bg-cyan-400 text-gray-950 font-medium gap-1.5"
+                    onClick={handleGenerateSeo}
+                    disabled={generatingSeo}
+                    data-testid="button-ai-generate-seo"
+                  >
+                    {generatingSeo ? (
+                      <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Generating...</>
+                    ) : (
+                      <><Sparkles className="w-3.5 h-3.5" /> Generate</>
+                    )}
+                  </Button>
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="metaTitle">Meta Title</Label>
                   <Input
