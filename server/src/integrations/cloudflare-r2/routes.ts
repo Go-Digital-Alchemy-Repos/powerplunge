@@ -75,9 +75,13 @@ export function registerR2Routes(app: Express): void {
           contentType: file.mimetype,
         },
       });
-    } catch (error) {
-      console.error("[R2] Error uploading file:", error);
-      res.status(500).json({ error: "Failed to upload file" });
+    } catch (error: any) {
+      const code = error.Code || error.name || "Unknown";
+      console.error("[R2] Error uploading file:", code, error.message);
+      if (code === "SignatureDoesNotMatch") {
+        console.error("[R2] Signature mismatch - check credentials");
+      }
+      res.status(500).json({ error: `Failed to upload file: ${code}` });
     }
   });
 

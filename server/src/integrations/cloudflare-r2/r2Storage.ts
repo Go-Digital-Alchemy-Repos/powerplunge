@@ -4,11 +4,15 @@ import { randomUUID } from "crypto";
 import { storage } from "../../../storage";
 import { decrypt } from "../../utils/encryption";
 
-// Environment variables (fallback)
-const ENV_R2_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID;
-const ENV_R2_ACCESS_KEY_ID = process.env.CLOUDFLARE_R2_ACCESS_KEY_ID;
-const ENV_R2_SECRET_ACCESS_KEY = process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY;
-const ENV_R2_BUCKET_NAME = process.env.CLOUDFLARE_R2_BUCKET_NAME;
+// Read environment variables dynamically (not cached at module load)
+function getEnvR2Config() {
+  return {
+    accountId: process.env.CLOUDFLARE_ACCOUNT_ID,
+    accessKeyId: process.env.CLOUDFLARE_R2_ACCESS_KEY_ID,
+    secretAccessKey: process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY,
+    bucketName: process.env.CLOUDFLARE_R2_BUCKET_NAME,
+  };
+}
 
 // Cached credentials from database
 let cachedDbCredentials: {
@@ -57,12 +61,13 @@ async function getR2Credentials(): Promise<{
   }
 
   // Fall back to environment variables
-  if (ENV_R2_ACCOUNT_ID && ENV_R2_ACCESS_KEY_ID && ENV_R2_SECRET_ACCESS_KEY && ENV_R2_BUCKET_NAME) {
+  const env = getEnvR2Config();
+  if (env.accountId && env.accessKeyId && env.secretAccessKey && env.bucketName) {
     return {
-      accountId: ENV_R2_ACCOUNT_ID,
-      accessKeyId: ENV_R2_ACCESS_KEY_ID,
-      secretAccessKey: ENV_R2_SECRET_ACCESS_KEY,
-      bucketName: ENV_R2_BUCKET_NAME,
+      accountId: env.accountId,
+      accessKeyId: env.accessKeyId,
+      secretAccessKey: env.secretAccessKey,
+      bucketName: env.bucketName,
       publicUrl: null,
     };
   }
@@ -72,12 +77,10 @@ async function getR2Credentials(): Promise<{
 
 // Check if R2 is configured (sync version for route registration)
 export function isR2Configured(): boolean {
-  // Check environment variables first (sync check)
-  if (ENV_R2_ACCOUNT_ID && ENV_R2_ACCESS_KEY_ID && ENV_R2_SECRET_ACCESS_KEY && ENV_R2_BUCKET_NAME) {
+  const env = getEnvR2Config();
+  if (env.accountId && env.accessKeyId && env.secretAccessKey && env.bucketName) {
     return true;
   }
-  // For database credentials, we'll return true if cache exists
-  // The actual check happens async in the route handlers
   return !!cachedDbCredentials;
 }
 
@@ -94,6 +97,14 @@ async function getR2Client(): Promise<{ client: S3Client; bucketName: string; pu
   if (!creds) {
     throw new Error("Cloudflare R2 is not configured. Please configure it in the admin Integrations page or set environment variables.");
   }
+
+  console.log("[R2-DEBUG] Creating client with:", {
+    endpoint: `https://${creds.accountId}.r2.cloudflarestorage.com`,
+    keyStarts: creds.accessKeyId?.substring(0, 8),
+    secretStarts: creds.secretAccessKey?.substring(0, 8),
+    secretLength: creds.secretAccessKey?.length,
+    bucket: creds.bucketName,
+  });
 
   const client = new S3Client({
     region: "auto",

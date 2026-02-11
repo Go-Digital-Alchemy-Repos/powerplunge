@@ -174,7 +174,7 @@ export default function AdminIntegrations() {
   const { data: integrations, refetch: refetchIntegrations } = useQuery<IntegrationStatus>({
     queryKey: ["/api/admin/integrations"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/integrations");
+      const res = await fetch("/api/admin/integrations", { credentials: "include" });
       if (res.status === 401) {
         setLocation("/admin/login");
         return null;
@@ -697,7 +697,7 @@ function MailgunConfigDialog({ open, onOpenChange, onSuccess }: {
     queryKey: ["/api/admin/settings/email"],
     enabled: open,
     queryFn: async () => {
-      const res = await fetch("/api/admin/settings/email");
+      const res = await fetch("/api/admin/settings/email", { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch email settings");
       return res.json();
     },
@@ -734,6 +734,7 @@ function MailgunConfigDialog({ open, onOpenChange, onSuccess }: {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
+        credentials: "include",
       });
 
       if (!res.ok) {
@@ -763,6 +764,7 @@ function MailgunConfigDialog({ open, onOpenChange, onSuccess }: {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ to: testEmail }),
+        credentials: "include",
       });
 
       const result = await res.json();
@@ -947,6 +949,7 @@ function StripeEnvPanel({ env, stripeSettings, onSaved }: {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ publishableKey, secretKey }),
+        credentials: "include",
       });
       const result = await res.json();
       setValidation(result);
@@ -986,6 +989,7 @@ function StripeEnvPanel({ env, stripeSettings, onSaved }: {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
+        credentials: "include",
       });
       if (!res.ok) {
         const error = await res.json();
@@ -1157,7 +1161,7 @@ function StripeConfigDialog({ open, onOpenChange, onSuccess }: {
     queryKey: ["/api/admin/settings/stripe"],
     enabled: open,
     queryFn: async () => {
-      const res = await fetch("/api/admin/settings/stripe");
+      const res = await fetch("/api/admin/settings/stripe", { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch Stripe settings");
       return res.json();
     },
@@ -1174,6 +1178,7 @@ function StripeConfigDialog({ open, onOpenChange, onSuccess }: {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ activeMode: newMode }),
+        credentials: "include",
       });
       if (!res.ok) {
         const error = await res.json();
@@ -1197,6 +1202,7 @@ function StripeConfigDialog({ open, onOpenChange, onSuccess }: {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ connectWebhookSecret }),
+        credentials: "include",
       });
       if (!res.ok) {
         const error = await res.json();
@@ -1410,7 +1416,7 @@ function R2ConfigDialog({ open, onOpenChange, onSuccess }: {
     queryKey: ["/api/admin/settings/r2"],
     enabled: open,
     queryFn: async () => {
-      const res = await fetch("/api/admin/settings/r2");
+      const res = await fetch("/api/admin/settings/r2", { credentials: "include" });
       if (!res.ok) return { configured: false };
       return res.json();
     },
@@ -1450,6 +1456,7 @@ function R2ConfigDialog({ open, onOpenChange, onSuccess }: {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
+        credentials: "include",
       });
 
       if (!res.ok) {
@@ -1599,7 +1606,7 @@ function OpenAIConfigDialog({ open, onOpenChange, onSuccess }: {
     queryKey: ["/api/admin/settings/openai"],
     enabled: open,
     queryFn: async () => {
-      const res = await fetch("/api/admin/settings/openai");
+      const res = await fetch("/api/admin/settings/openai", { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch OpenAI settings");
       return res.json();
     },
@@ -1622,6 +1629,7 @@ function OpenAIConfigDialog({ open, onOpenChange, onSuccess }: {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ apiKey }),
+        credentials: "include",
       });
       
       if (!res.ok) {
@@ -1643,7 +1651,7 @@ function OpenAIConfigDialog({ open, onOpenChange, onSuccess }: {
   const handleRemove = async () => {
     setRemoving(true);
     try {
-      const res = await fetch("/api/admin/settings/openai", { method: "DELETE" });
+      const res = await fetch("/api/admin/settings/openai", { method: "DELETE", credentials: "include" });
       
       if (!res.ok) {
         const data = await res.json();
@@ -1755,7 +1763,7 @@ function TikTokShopConfigDialog({ open, onOpenChange, onSuccess }: {
     queryKey: ["/api/admin/settings/tiktok-shop"],
     enabled: open,
     queryFn: async () => {
-      const res = await fetch("/api/admin/settings/tiktok-shop");
+      const res = await fetch("/api/admin/settings/tiktok-shop", { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch TikTok Shop settings");
       return res.json();
     },
@@ -1785,6 +1793,7 @@ function TikTokShopConfigDialog({ open, onOpenChange, onSuccess }: {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
+        credentials: "include",
       });
 
       if (!res.ok) {
@@ -1805,7 +1814,7 @@ function TikTokShopConfigDialog({ open, onOpenChange, onSuccess }: {
   const handleVerify = async () => {
     setVerifying(true);
     try {
-      const res = await fetch("/api/admin/settings/tiktok-shop/verify", { method: "POST" });
+      const res = await fetch("/api/admin/settings/tiktok-shop/verify", { method: "POST", credentials: "include" });
       const result = await res.json();
       if (result.success) {
         toast({ title: `Connection verified! Shop: ${result.shopName || "Connected"}` });
@@ -1822,7 +1831,7 @@ function TikTokShopConfigDialog({ open, onOpenChange, onSuccess }: {
   const handleRemove = async () => {
     setRemoving(true);
     try {
-      const res = await fetch("/api/admin/settings/tiktok-shop", { method: "DELETE" });
+      const res = await fetch("/api/admin/settings/tiktok-shop", { method: "DELETE", credentials: "include" });
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.message || "Failed to remove configuration");
@@ -1987,7 +1996,7 @@ function InstagramShopConfigDialog({ open, onOpenChange, onSuccess }: {
     queryKey: ["/api/admin/settings/instagram-shop"],
     enabled: open,
     queryFn: async () => {
-      const res = await fetch("/api/admin/settings/instagram-shop");
+      const res = await fetch("/api/admin/settings/instagram-shop", { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch Instagram Shop settings");
       return res.json();
     },
@@ -2015,6 +2024,7 @@ function InstagramShopConfigDialog({ open, onOpenChange, onSuccess }: {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
+        credentials: "include",
       });
 
       if (!res.ok) {
@@ -2035,7 +2045,7 @@ function InstagramShopConfigDialog({ open, onOpenChange, onSuccess }: {
   const handleVerify = async () => {
     setVerifying(true);
     try {
-      const res = await fetch("/api/admin/settings/instagram-shop/verify", { method: "POST" });
+      const res = await fetch("/api/admin/settings/instagram-shop/verify", { method: "POST", credentials: "include" });
       const result = await res.json();
       if (result.success) {
         toast({ title: `Connection verified! Account: ${result.accountName || "Connected"}` });
@@ -2052,7 +2062,7 @@ function InstagramShopConfigDialog({ open, onOpenChange, onSuccess }: {
   const handleRemove = async () => {
     setRemoving(true);
     try {
-      const res = await fetch("/api/admin/settings/instagram-shop", { method: "DELETE" });
+      const res = await fetch("/api/admin/settings/instagram-shop", { method: "DELETE", credentials: "include" });
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.message || "Failed to remove configuration");
@@ -2192,7 +2202,7 @@ function PinterestShoppingConfigDialog({ open, onOpenChange, onSuccess }: {
     queryKey: ["/api/admin/settings/pinterest-shopping"],
     enabled: open,
     queryFn: async () => {
-      const res = await fetch("/api/admin/settings/pinterest-shopping");
+      const res = await fetch("/api/admin/settings/pinterest-shopping", { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch Pinterest Shopping settings");
       return res.json();
     },
@@ -2223,6 +2233,7 @@ function PinterestShoppingConfigDialog({ open, onOpenChange, onSuccess }: {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
+        credentials: "include",
       });
 
       if (!res.ok) {
@@ -2243,7 +2254,7 @@ function PinterestShoppingConfigDialog({ open, onOpenChange, onSuccess }: {
   const handleVerify = async () => {
     setVerifying(true);
     try {
-      const res = await fetch("/api/admin/settings/pinterest-shopping/verify", { method: "POST" });
+      const res = await fetch("/api/admin/settings/pinterest-shopping/verify", { method: "POST", credentials: "include" });
       const result = await res.json();
       if (result.success) {
         toast({ title: `Connection verified! ${result.accountName || "Connected"}` });
@@ -2260,7 +2271,7 @@ function PinterestShoppingConfigDialog({ open, onOpenChange, onSuccess }: {
   const handleSync = async () => {
     setSyncing(true);
     try {
-      const res = await fetch("/api/admin/integrations/pinterest-shopping/sync", { method: "POST" });
+      const res = await fetch("/api/admin/integrations/pinterest-shopping/sync", { method: "POST", credentials: "include" });
       const result = await res.json();
       if (result.success) {
         toast({ title: "Pinterest Shopping sync started" });
@@ -2277,7 +2288,7 @@ function PinterestShoppingConfigDialog({ open, onOpenChange, onSuccess }: {
   const handleRemove = async () => {
     setRemoving(true);
     try {
-      const res = await fetch("/api/admin/settings/pinterest-shopping", { method: "DELETE" });
+      const res = await fetch("/api/admin/settings/pinterest-shopping", { method: "DELETE", credentials: "include" });
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.message || "Failed to remove configuration");
@@ -2472,7 +2483,7 @@ function YouTubeShoppingConfigDialog({ open, onOpenChange, onSuccess }: {
     queryKey: ["/api/admin/settings/youtube-shopping"],
     enabled: open,
     queryFn: async () => {
-      const res = await fetch("/api/admin/settings/youtube-shopping");
+      const res = await fetch("/api/admin/settings/youtube-shopping", { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch YouTube Shopping settings");
       return res.json();
     },
@@ -2503,6 +2514,7 @@ function YouTubeShoppingConfigDialog({ open, onOpenChange, onSuccess }: {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
+        credentials: "include",
       });
 
       if (!res.ok) {
@@ -2523,7 +2535,7 @@ function YouTubeShoppingConfigDialog({ open, onOpenChange, onSuccess }: {
   const handleVerify = async () => {
     setVerifying(true);
     try {
-      const res = await fetch("/api/admin/settings/youtube-shopping/verify", { method: "POST" });
+      const res = await fetch("/api/admin/settings/youtube-shopping/verify", { method: "POST", credentials: "include" });
       const result = await res.json();
       if (result.success) {
         toast({ title: `Connection verified! ${result.channelName || "Connected"}` });
@@ -2540,7 +2552,7 @@ function YouTubeShoppingConfigDialog({ open, onOpenChange, onSuccess }: {
   const handleSync = async () => {
     setSyncing(true);
     try {
-      const res = await fetch("/api/admin/integrations/youtube-shopping/sync", { method: "POST" });
+      const res = await fetch("/api/admin/integrations/youtube-shopping/sync", { method: "POST", credentials: "include" });
       const result = await res.json();
       if (result.success) {
         toast({ title: "YouTube Shopping sync started" });
@@ -2557,7 +2569,7 @@ function YouTubeShoppingConfigDialog({ open, onOpenChange, onSuccess }: {
   const handleRemove = async () => {
     setRemoving(true);
     try {
-      const res = await fetch("/api/admin/settings/youtube-shopping", { method: "DELETE" });
+      const res = await fetch("/api/admin/settings/youtube-shopping", { method: "DELETE", credentials: "include" });
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.message || "Failed to remove configuration");
@@ -2752,7 +2764,7 @@ function SnapchatShoppingConfigDialog({ open, onOpenChange, onSuccess }: {
     queryKey: ["/api/admin/settings/snapchat-shopping"],
     enabled: open,
     queryFn: async () => {
-      const res = await fetch("/api/admin/settings/snapchat-shopping");
+      const res = await fetch("/api/admin/settings/snapchat-shopping", { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch Snapchat Shopping settings");
       return res.json();
     },
@@ -2783,6 +2795,7 @@ function SnapchatShoppingConfigDialog({ open, onOpenChange, onSuccess }: {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
+        credentials: "include",
       });
 
       if (!res.ok) {
@@ -2803,7 +2816,7 @@ function SnapchatShoppingConfigDialog({ open, onOpenChange, onSuccess }: {
   const handleVerify = async () => {
     setVerifying(true);
     try {
-      const res = await fetch("/api/admin/settings/snapchat-shopping/verify", { method: "POST" });
+      const res = await fetch("/api/admin/settings/snapchat-shopping/verify", { method: "POST", credentials: "include" });
       const result = await res.json();
       if (result.success) {
         toast({ title: `Connection verified! ${result.accountName || "Connected"}` });
@@ -2820,7 +2833,7 @@ function SnapchatShoppingConfigDialog({ open, onOpenChange, onSuccess }: {
   const handleSync = async () => {
     setSyncing(true);
     try {
-      const res = await fetch("/api/admin/integrations/snapchat-shopping/sync", { method: "POST" });
+      const res = await fetch("/api/admin/integrations/snapchat-shopping/sync", { method: "POST", credentials: "include" });
       const result = await res.json();
       if (result.success) {
         toast({ title: "Snapchat Shopping sync started" });
@@ -2837,7 +2850,7 @@ function SnapchatShoppingConfigDialog({ open, onOpenChange, onSuccess }: {
   const handleRemove = async () => {
     setRemoving(true);
     try {
-      const res = await fetch("/api/admin/settings/snapchat-shopping", { method: "DELETE" });
+      const res = await fetch("/api/admin/settings/snapchat-shopping", { method: "DELETE", credentials: "include" });
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.message || "Failed to remove configuration");
@@ -3032,7 +3045,7 @@ function XShoppingConfigDialog({ open, onOpenChange, onSuccess }: {
     queryKey: ["/api/admin/settings/x-shopping"],
     enabled: open,
     queryFn: async () => {
-      const res = await fetch("/api/admin/settings/x-shopping");
+      const res = await fetch("/api/admin/settings/x-shopping", { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch X Shopping settings");
       return res.json();
     },
@@ -3063,6 +3076,7 @@ function XShoppingConfigDialog({ open, onOpenChange, onSuccess }: {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
+        credentials: "include",
       });
 
       if (!res.ok) {
@@ -3083,7 +3097,7 @@ function XShoppingConfigDialog({ open, onOpenChange, onSuccess }: {
   const handleVerify = async () => {
     setVerifying(true);
     try {
-      const res = await fetch("/api/admin/settings/x-shopping/verify", { method: "POST" });
+      const res = await fetch("/api/admin/settings/x-shopping/verify", { method: "POST", credentials: "include" });
       const result = await res.json();
       if (result.success) {
         toast({ title: `Connection verified! ${result.accountName || "Connected"}` });
@@ -3100,7 +3114,7 @@ function XShoppingConfigDialog({ open, onOpenChange, onSuccess }: {
   const handleSync = async () => {
     setSyncing(true);
     try {
-      const res = await fetch("/api/admin/integrations/x-shopping/sync", { method: "POST" });
+      const res = await fetch("/api/admin/integrations/x-shopping/sync", { method: "POST", credentials: "include" });
       const result = await res.json();
       if (result.success) {
         toast({ title: "X Shopping sync started" });
@@ -3117,7 +3131,7 @@ function XShoppingConfigDialog({ open, onOpenChange, onSuccess }: {
   const handleRemove = async () => {
     setRemoving(true);
     try {
-      const res = await fetch("/api/admin/settings/x-shopping", { method: "DELETE" });
+      const res = await fetch("/api/admin/settings/x-shopping", { method: "DELETE", credentials: "include" });
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.message || "Failed to remove configuration");
@@ -3309,7 +3323,7 @@ function MailchimpConfigDialog({ open, onOpenChange, onSuccess }: {
     queryKey: ["/api/admin/settings/mailchimp"],
     enabled: open,
     queryFn: async () => {
-      const res = await fetch("/api/admin/settings/mailchimp");
+      const res = await fetch("/api/admin/settings/mailchimp", { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch Mailchimp settings");
       return res.json();
     },
@@ -3332,6 +3346,7 @@ function MailchimpConfigDialog({ open, onOpenChange, onSuccess }: {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
+        credentials: "include",
       });
 
       if (!res.ok) {
@@ -3353,7 +3368,7 @@ function MailchimpConfigDialog({ open, onOpenChange, onSuccess }: {
   const handleVerify = async () => {
     setVerifying(true);
     try {
-      const res = await fetch("/api/admin/settings/mailchimp/verify", { method: "POST" });
+      const res = await fetch("/api/admin/settings/mailchimp/verify", { method: "POST", credentials: "include" });
       const data = await res.json();
       if (data.success) {
         toast({ title: `Mailchimp connected: ${data.accountName}` });
@@ -3370,7 +3385,7 @@ function MailchimpConfigDialog({ open, onOpenChange, onSuccess }: {
   const handleRemove = async () => {
     setRemoving(true);
     try {
-      const res = await fetch("/api/admin/settings/mailchimp", { method: "DELETE" });
+      const res = await fetch("/api/admin/settings/mailchimp", { method: "DELETE", credentials: "include" });
 
       if (!res.ok) {
         const data = await res.json();
@@ -3508,7 +3523,7 @@ function GooglePlacesConfigDialog({ open, onOpenChange, onSuccess }: {
     queryKey: ["/api/admin/integrations/settings/google-places"],
     enabled: open,
     queryFn: async () => {
-      const res = await fetch("/api/admin/integrations/settings/google-places");
+      const res = await fetch("/api/admin/integrations/settings/google-places", { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch Google Places settings");
       return res.json();
     },
@@ -3539,6 +3554,7 @@ function GooglePlacesConfigDialog({ open, onOpenChange, onSuccess }: {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
+        credentials: "include",
       });
       if (!res.ok) {
         const data = await res.json();
@@ -3557,7 +3573,7 @@ function GooglePlacesConfigDialog({ open, onOpenChange, onSuccess }: {
   const handleRemove = async () => {
     setRemoving(true);
     try {
-      const res = await fetch("/api/admin/integrations/settings/google-places", { method: "DELETE" });
+      const res = await fetch("/api/admin/integrations/settings/google-places", { method: "DELETE", credentials: "include" });
       if (!res.ok) throw new Error("Failed to remove");
       toast({ title: "Google Places configuration removed" });
       setApiKey("");
