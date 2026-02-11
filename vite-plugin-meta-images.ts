@@ -2,21 +2,16 @@ import type { Plugin } from 'vite';
 import fs from 'fs';
 import path from 'path';
 
-/**
- * Vite plugin that updates og:image and twitter:image meta tags
- * to point to the app's opengraph image with the correct Replit domain.
- */
 export function metaImagesPlugin(): Plugin {
   return {
     name: 'vite-plugin-meta-images',
     transformIndexHtml(html) {
-      const baseUrl = getDeploymentUrl();
+      const baseUrl = resolveBaseUrl();
       if (!baseUrl) {
-        log('[meta-images] no Replit deployment domain found, skipping meta tag updates');
+        log('[meta-images] no deployment domain found, skipping meta tag updates');
         return html;
       }
 
-      // Check if opengraph image exists in public directory
       const publicDir = path.resolve(process.cwd(), 'client', 'public');
       const opengraphPngPath = path.join(publicDir, 'opengraph.png');
       const opengraphJpgPath = path.join(publicDir, 'opengraph.jpg');
@@ -55,7 +50,22 @@ export function metaImagesPlugin(): Plugin {
   };
 }
 
-function getDeploymentUrl(): string | null {
+function resolveBaseUrl(): string | null {
+  const explicit = process.env.PUBLIC_SITE_URL || process.env.VITE_PUBLIC_SITE_URL;
+  if (explicit) {
+    const normalized = explicit.replace(/\/+$/, '');
+    log('[meta-images] using PUBLIC_SITE_URL:', normalized);
+    return normalized;
+  }
+
+  if (process.env.NODE_ENV === 'production') {
+    console.warn(
+      '[meta-images] WARNING: PUBLIC_SITE_URL is not set. ' +
+      'Meta image URLs may reference a Replit preview domain instead of your public site. ' +
+      'Set PUBLIC_SITE_URL=https://yourdomain.com to fix this.'
+    );
+  }
+
   if (process.env.REPLIT_INTERNAL_APP_DOMAIN) {
     const url = `https://${process.env.REPLIT_INTERNAL_APP_DOMAIN}`;
     log('[meta-images] using internal app domain:', url);
