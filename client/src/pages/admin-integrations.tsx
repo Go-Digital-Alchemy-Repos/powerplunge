@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
-import { CheckCircle2, XCircle, ExternalLink, Key, CreditCard, Loader2, TestTube, AlertCircle, Save, HardDrive, Mail, Brain, Link2, Copy, ShoppingBag, Instagram, RefreshCw, Users, Star, MapPin, Shield, Zap } from "lucide-react";
+import { CheckCircle2, XCircle, ExternalLink, Key, CreditCard, Loader2, TestTube, AlertCircle, Save, HardDrive, Mail, Brain, Link2, Copy, ShoppingBag, Instagram, RefreshCw, Users, Star, MapPin, Shield, Zap, Eye, EyeOff } from "lucide-react";
 import AdminNav from "@/components/admin/AdminNav";
 
 interface IntegrationStatus {
@@ -711,6 +711,85 @@ function StatusBadge({ configured }: { configured?: boolean }) {
   );
 }
 
+function SecretInput({
+  value,
+  onChange,
+  hasSavedValue,
+  placeholder,
+  id,
+  "data-testid": dataTestId,
+  className,
+}: {
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  hasSavedValue?: boolean;
+  placeholder?: string;
+  id?: string;
+  "data-testid"?: string;
+  className?: string;
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [showValue, setShowValue] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const maskedDisplay = "••••••••";
+  const showingSavedMask = !!(hasSavedValue && !isEditing && !value);
+
+  const handleMaskClick = () => {
+    if (showingSavedMask) {
+      setIsEditing(true);
+      setTimeout(() => inputRef.current?.focus(), 0);
+    }
+  };
+
+  return (
+    <div className="relative">
+      {showingSavedMask ? (
+        <div
+          role="button"
+          tabIndex={0}
+          className={`flex items-center h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm cursor-text pr-10 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${className || ""}`}
+          onClick={handleMaskClick}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleMaskClick(); } }}
+          aria-label="Saved credential - click to update"
+          data-testid={dataTestId}
+        >
+          <span className="text-foreground tracking-wider">{maskedDisplay}</span>
+        </div>
+      ) : (
+        <Input
+          ref={inputRef}
+          id={id}
+          type={showValue ? "text" : "password"}
+          value={value}
+          onChange={onChange}
+          onBlur={() => {
+            if (!value && hasSavedValue) {
+              setIsEditing(false);
+              setShowValue(false);
+            }
+          }}
+          placeholder={hasSavedValue ? "Leave blank to keep existing" : placeholder}
+          className={`pr-10 ${className || ""}`}
+          data-testid={dataTestId}
+          autoFocus={hasSavedValue && isEditing}
+        />
+      )}
+      {showingSavedMask ? (
+        <Eye className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground opacity-50" />
+      ) : value ? (
+        <button
+          type="button"
+          className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+          onClick={() => setShowValue(!showValue)}
+          tabIndex={-1}
+        >
+          {showValue ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 function MailgunConfigDialog({ open, onOpenChange, onSuccess }: { 
   open: boolean; 
   onOpenChange: (open: boolean) => void;
@@ -838,17 +917,14 @@ function MailgunConfigDialog({ open, onOpenChange, onSuccess }: {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="mailgunApiKey">API Key</Label>
-              <Input
+              <SecretInput
                 id="mailgunApiKey"
-                type="password"
                 value={formData.mailgunApiKey}
                 onChange={(e) => setFormData({ ...formData, mailgunApiKey: e.target.value })}
-                placeholder={emailSettings?.hasApiKey ? "••••••••••••••••" : "Enter your Mailgun API key"}
+                hasSavedValue={emailSettings?.hasApiKey}
+                placeholder="Enter your Mailgun API key"
                 data-testid="input-mailgun-api-key"
               />
-              {emailSettings?.hasApiKey && (
-                <p className="text-xs text-muted-foreground">Leave blank to keep the existing key</p>
-              )}
             </div>
 
             <div className="space-y-2">
@@ -1074,11 +1150,11 @@ function StripeEnvPanel({ env, stripeSettings, onSaved }: {
 
       <div className="space-y-2">
         <Label>Publishable Key</Label>
-        <Input
-          type="password"
+        <SecretInput
           value={publishableKey}
           onChange={(e) => { setPublishableKey(e.target.value); setValidation(null); }}
-          placeholder={envStatus?.configured ? "••••••••••••••••" : "Enter publishable key"}
+          hasSavedValue={envStatus?.configured}
+          placeholder="Enter publishable key"
           data-testid={`input-stripe-pk-${env}`}
         />
         {pkError && <p className="text-xs text-red-500">{pkError}</p>}
@@ -1086,11 +1162,11 @@ function StripeEnvPanel({ env, stripeSettings, onSaved }: {
 
       <div className="space-y-2">
         <Label>Secret Key</Label>
-        <Input
-          type="password"
+        <SecretInput
           value={secretKey}
           onChange={(e) => { setSecretKey(e.target.value); setValidation(null); }}
-          placeholder={envStatus?.configured ? "••••••••••••••••" : "Enter secret key"}
+          hasSavedValue={envStatus?.configured}
+          placeholder="Enter secret key"
           data-testid={`input-stripe-sk-${env}`}
         />
         {skError && <p className="text-xs text-red-500">{skError}</p>}
@@ -1098,10 +1174,10 @@ function StripeEnvPanel({ env, stripeSettings, onSaved }: {
 
       <div className="space-y-2">
         <Label>{env === "live" ? "Live" : "Test"} Payment Webhook Secret</Label>
-        <Input
-          type="password"
+        <SecretInput
           value={webhookSecret}
           onChange={(e) => setWebhookSecret(e.target.value)}
+          hasSavedValue={envStatus?.hasWebhookSecret}
           placeholder="whsec_..."
           data-testid={`input-stripe-webhook-${env}`}
         />
@@ -1366,10 +1442,10 @@ function StripeConfigDialog({ open, onOpenChange, onSuccess }: {
                 <div className="space-y-2 pl-3">
                   <Label>Connect Webhook Secret</Label>
                   <div className="flex gap-2">
-                    <Input
-                      type="password"
+                    <SecretInput
                       value={connectWebhookSecret}
                       onChange={(e) => setConnectWebhookSecret(e.target.value)}
+                      hasSavedValue={stripeSettings?.hasConnectWebhookSecret}
                       placeholder="whsec_..."
                       data-testid="input-stripe-connect-webhook-secret"
                     />
@@ -1556,31 +1632,26 @@ function R2ConfigDialog({ open, onOpenChange, onSuccess }: {
 
             <div className="space-y-2">
               <Label htmlFor="r2AccessKeyId">Access Key ID</Label>
-              <Input
+              <SecretInput
                 id="r2AccessKeyId"
                 value={formData.accessKeyId}
                 onChange={(e) => setFormData({ ...formData, accessKeyId: e.target.value })}
-                placeholder={r2Settings?.hasAccessKey ? "••••••••••••••••" : "R2 Access Key ID"}
+                hasSavedValue={r2Settings?.hasAccessKey}
+                placeholder="R2 Access Key ID"
                 data-testid="input-r2-access-key-id"
               />
-              {r2Settings?.hasAccessKey && (
-                <p className="text-xs text-muted-foreground">Leave blank to keep the existing key</p>
-              )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="r2SecretAccessKey">Secret Access Key</Label>
-              <Input
+              <SecretInput
                 id="r2SecretAccessKey"
-                type="password"
                 value={formData.secretAccessKey}
                 onChange={(e) => setFormData({ ...formData, secretAccessKey: e.target.value })}
-                placeholder={r2Settings?.hasSecretKey ? "••••••••••••••••" : "R2 Secret Access Key"}
+                hasSavedValue={r2Settings?.hasSecretKey}
+                placeholder="R2 Secret Access Key"
                 data-testid="input-r2-secret-access-key"
               />
-              {r2Settings?.hasSecretKey && (
-                <p className="text-xs text-muted-foreground">Leave blank to keep the existing key</p>
-              )}
             </div>
 
             <div className="space-y-2">
@@ -1737,12 +1808,12 @@ function OpenAIConfigDialog({ open, onOpenChange, onSuccess }: {
 
             <div className="space-y-2">
               <Label htmlFor="openaiApiKey">API Key</Label>
-              <Input
+              <SecretInput
                 id="openaiApiKey"
-                type="password"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
-                placeholder={openaiSettings?.configured ? "Enter new key to update" : "sk-..."}
+                hasSavedValue={openaiSettings?.configured}
+                placeholder="sk-..."
                 data-testid="input-openai-api-key"
               />
               <p className="text-xs text-muted-foreground">
@@ -1936,47 +2007,38 @@ function TikTokShopConfigDialog({ open, onOpenChange, onSuccess }: {
 
             <div className="space-y-2">
               <Label htmlFor="tiktokAppSecret">App Secret</Label>
-              <Input
+              <SecretInput
                 id="tiktokAppSecret"
-                type="password"
                 value={formData.appSecret}
                 onChange={(e) => setFormData({ ...formData, appSecret: e.target.value })}
-                placeholder={tiktokSettings?.hasAppSecret ? "••••••••••••••••" : "Enter your App Secret"}
+                hasSavedValue={tiktokSettings?.hasAppSecret}
+                placeholder="Enter your App Secret"
                 data-testid="input-tiktok-app-secret"
               />
-              {tiktokSettings?.hasAppSecret && (
-                <p className="text-xs text-muted-foreground">Leave blank to keep the existing secret</p>
-              )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="tiktokAccessToken">Access Token</Label>
-              <Input
+              <SecretInput
                 id="tiktokAccessToken"
-                type="password"
                 value={formData.accessToken}
                 onChange={(e) => setFormData({ ...formData, accessToken: e.target.value })}
-                placeholder={tiktokSettings?.hasAccessToken ? "••••••••••••••••" : "Enter your Access Token"}
+                hasSavedValue={tiktokSettings?.hasAccessToken}
+                placeholder="Enter your Access Token"
                 data-testid="input-tiktok-access-token"
               />
-              {tiktokSettings?.hasAccessToken && (
-                <p className="text-xs text-muted-foreground">Leave blank to keep the existing token</p>
-              )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="tiktokRefreshToken">Refresh Token (optional)</Label>
-              <Input
+              <SecretInput
                 id="tiktokRefreshToken"
-                type="password"
                 value={formData.refreshToken}
                 onChange={(e) => setFormData({ ...formData, refreshToken: e.target.value })}
-                placeholder={tiktokSettings?.hasRefreshToken ? "••••••••••••••••" : "Enter your Refresh Token"}
+                hasSavedValue={tiktokSettings?.hasRefreshToken}
+                placeholder="Enter your Refresh Token"
                 data-testid="input-tiktok-refresh-token"
               />
-              {tiktokSettings?.hasRefreshToken && (
-                <p className="text-xs text-muted-foreground">Leave blank to keep the existing token</p>
-              )}
             </div>
 
             {tiktokSettings?.configured && (
@@ -2165,17 +2227,14 @@ function InstagramShopConfigDialog({ open, onOpenChange, onSuccess }: {
 
             <div className="space-y-2">
               <Label htmlFor="instagramAccessToken">Access Token</Label>
-              <Input
+              <SecretInput
                 id="instagramAccessToken"
-                type="password"
                 value={formData.accessToken}
                 onChange={(e) => setFormData({ ...formData, accessToken: e.target.value })}
-                placeholder={instagramSettings?.hasAccessToken ? "••••••••••••••••" : "Enter your Access Token"}
+                hasSavedValue={instagramSettings?.hasAccessToken}
+                placeholder="Enter your Access Token"
                 data-testid="input-instagram-access-token"
               />
-              {instagramSettings?.hasAccessToken && (
-                <p className="text-xs text-muted-foreground">Leave blank to keep the existing token</p>
-              )}
               <p className="text-xs text-muted-foreground">
                 Requires a long-lived token with Instagram Shopping permissions
               </p>
@@ -2409,47 +2468,38 @@ function PinterestShoppingConfigDialog({ open, onOpenChange, onSuccess }: {
 
             <div className="space-y-2">
               <Label htmlFor="pinterestClientSecret">Client Secret</Label>
-              <Input
+              <SecretInput
                 id="pinterestClientSecret"
-                type="password"
                 value={formData.clientSecret}
                 onChange={(e) => setFormData({ ...formData, clientSecret: e.target.value })}
-                placeholder={pinterestSettings?.hasClientSecret ? "••••••••••••••••" : "Enter your Client Secret"}
+                hasSavedValue={pinterestSettings?.hasClientSecret}
+                placeholder="Enter your Client Secret"
                 data-testid="input-pinterest-client-secret"
               />
-              {pinterestSettings?.hasClientSecret && (
-                <p className="text-xs text-muted-foreground">Leave blank to keep the existing secret</p>
-              )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="pinterestAccessToken">Access Token</Label>
-              <Input
+              <SecretInput
                 id="pinterestAccessToken"
-                type="password"
                 value={formData.accessToken}
                 onChange={(e) => setFormData({ ...formData, accessToken: e.target.value })}
-                placeholder={pinterestSettings?.hasAccessToken ? "••••••••••••••••" : "Enter your Access Token"}
+                hasSavedValue={pinterestSettings?.hasAccessToken}
+                placeholder="Enter your Access Token"
                 data-testid="input-pinterest-access-token"
               />
-              {pinterestSettings?.hasAccessToken && (
-                <p className="text-xs text-muted-foreground">Leave blank to keep the existing token</p>
-              )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="pinterestRefreshToken">Refresh Token (optional)</Label>
-              <Input
+              <SecretInput
                 id="pinterestRefreshToken"
-                type="password"
                 value={formData.refreshToken}
                 onChange={(e) => setFormData({ ...formData, refreshToken: e.target.value })}
-                placeholder={pinterestSettings?.hasRefreshToken ? "••••••••••••••••" : "Enter your Refresh Token"}
+                hasSavedValue={pinterestSettings?.hasRefreshToken}
+                placeholder="Enter your Refresh Token"
                 data-testid="input-pinterest-refresh-token"
               />
-              {pinterestSettings?.hasRefreshToken && (
-                <p className="text-xs text-muted-foreground">Leave blank to keep the existing token</p>
-              )}
             </div>
 
             {pinterestSettings?.configured && (
@@ -2690,47 +2740,38 @@ function YouTubeShoppingConfigDialog({ open, onOpenChange, onSuccess }: {
 
             <div className="space-y-2">
               <Label htmlFor="youtubeClientSecret">Client Secret</Label>
-              <Input
+              <SecretInput
                 id="youtubeClientSecret"
-                type="password"
                 value={formData.clientSecret}
                 onChange={(e) => setFormData({ ...formData, clientSecret: e.target.value })}
-                placeholder={youtubeSettings?.hasClientSecret ? "••••••••••••••••" : "Enter your Client Secret"}
+                hasSavedValue={youtubeSettings?.hasClientSecret}
+                placeholder="Enter your Client Secret"
                 data-testid="input-youtube-client-secret"
               />
-              {youtubeSettings?.hasClientSecret && (
-                <p className="text-xs text-muted-foreground">Leave blank to keep the existing secret</p>
-              )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="youtubeAccessToken">Access Token</Label>
-              <Input
+              <SecretInput
                 id="youtubeAccessToken"
-                type="password"
                 value={formData.accessToken}
                 onChange={(e) => setFormData({ ...formData, accessToken: e.target.value })}
-                placeholder={youtubeSettings?.hasAccessToken ? "••••••••••••••••" : "Enter your Access Token"}
+                hasSavedValue={youtubeSettings?.hasAccessToken}
+                placeholder="Enter your Access Token"
                 data-testid="input-youtube-access-token"
               />
-              {youtubeSettings?.hasAccessToken && (
-                <p className="text-xs text-muted-foreground">Leave blank to keep the existing token</p>
-              )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="youtubeRefreshToken">Refresh Token (optional)</Label>
-              <Input
+              <SecretInput
                 id="youtubeRefreshToken"
-                type="password"
                 value={formData.refreshToken}
                 onChange={(e) => setFormData({ ...formData, refreshToken: e.target.value })}
-                placeholder={youtubeSettings?.hasRefreshToken ? "••••••••••••••••" : "Enter your Refresh Token"}
+                hasSavedValue={youtubeSettings?.hasRefreshToken}
+                placeholder="Enter your Refresh Token"
                 data-testid="input-youtube-refresh-token"
               />
-              {youtubeSettings?.hasRefreshToken && (
-                <p className="text-xs text-muted-foreground">Leave blank to keep the existing token</p>
-              )}
             </div>
 
             {youtubeSettings?.configured && (
@@ -2971,47 +3012,38 @@ function SnapchatShoppingConfigDialog({ open, onOpenChange, onSuccess }: {
 
             <div className="space-y-2">
               <Label htmlFor="snapchatClientSecret">Client Secret</Label>
-              <Input
+              <SecretInput
                 id="snapchatClientSecret"
-                type="password"
                 value={formData.clientSecret}
                 onChange={(e) => setFormData({ ...formData, clientSecret: e.target.value })}
-                placeholder={snapchatSettings?.hasClientSecret ? "••••••••••••••••" : "Enter your Client Secret"}
+                hasSavedValue={snapchatSettings?.hasClientSecret}
+                placeholder="Enter your Client Secret"
                 data-testid="input-snapchat-client-secret"
               />
-              {snapchatSettings?.hasClientSecret && (
-                <p className="text-xs text-muted-foreground">Leave blank to keep the existing secret</p>
-              )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="snapchatAccessToken">Access Token</Label>
-              <Input
+              <SecretInput
                 id="snapchatAccessToken"
-                type="password"
                 value={formData.accessToken}
                 onChange={(e) => setFormData({ ...formData, accessToken: e.target.value })}
-                placeholder={snapchatSettings?.hasAccessToken ? "••••••••••••••••" : "Enter your Access Token"}
+                hasSavedValue={snapchatSettings?.hasAccessToken}
+                placeholder="Enter your Access Token"
                 data-testid="input-snapchat-access-token"
               />
-              {snapchatSettings?.hasAccessToken && (
-                <p className="text-xs text-muted-foreground">Leave blank to keep the existing token</p>
-              )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="snapchatRefreshToken">Refresh Token (optional)</Label>
-              <Input
+              <SecretInput
                 id="snapchatRefreshToken"
-                type="password"
                 value={formData.refreshToken}
                 onChange={(e) => setFormData({ ...formData, refreshToken: e.target.value })}
-                placeholder={snapchatSettings?.hasRefreshToken ? "••••••••••••••••" : "Enter your Refresh Token"}
+                hasSavedValue={snapchatSettings?.hasRefreshToken}
+                placeholder="Enter your Refresh Token"
                 data-testid="input-snapchat-refresh-token"
               />
-              {snapchatSettings?.hasRefreshToken && (
-                <p className="text-xs text-muted-foreground">Leave blank to keep the existing token</p>
-              )}
             </div>
 
             {snapchatSettings?.configured && (
@@ -3252,47 +3284,38 @@ function XShoppingConfigDialog({ open, onOpenChange, onSuccess }: {
 
             <div className="space-y-2">
               <Label htmlFor="xClientSecret">Client Secret</Label>
-              <Input
+              <SecretInput
                 id="xClientSecret"
-                type="password"
                 value={formData.clientSecret}
                 onChange={(e) => setFormData({ ...formData, clientSecret: e.target.value })}
-                placeholder={xSettings?.hasClientSecret ? "••••••••••••••••" : "Enter your Client Secret"}
+                hasSavedValue={xSettings?.hasClientSecret}
+                placeholder="Enter your Client Secret"
                 data-testid="input-x-client-secret"
               />
-              {xSettings?.hasClientSecret && (
-                <p className="text-xs text-muted-foreground">Leave blank to keep the existing secret</p>
-              )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="xAccessToken">Access Token</Label>
-              <Input
+              <SecretInput
                 id="xAccessToken"
-                type="password"
                 value={formData.accessToken}
                 onChange={(e) => setFormData({ ...formData, accessToken: e.target.value })}
-                placeholder={xSettings?.hasAccessToken ? "••••••••••••••••" : "Enter your Access Token"}
+                hasSavedValue={xSettings?.hasAccessToken}
+                placeholder="Enter your Access Token"
                 data-testid="input-x-access-token"
               />
-              {xSettings?.hasAccessToken && (
-                <p className="text-xs text-muted-foreground">Leave blank to keep the existing token</p>
-              )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="xRefreshToken">Refresh Token (optional)</Label>
-              <Input
+              <SecretInput
                 id="xRefreshToken"
-                type="password"
                 value={formData.refreshToken}
                 onChange={(e) => setFormData({ ...formData, refreshToken: e.target.value })}
-                placeholder={xSettings?.hasRefreshToken ? "••••••••••••••••" : "Enter your Refresh Token"}
+                hasSavedValue={xSettings?.hasRefreshToken}
+                placeholder="Enter your Refresh Token"
                 data-testid="input-x-refresh-token"
               />
-              {xSettings?.hasRefreshToken && (
-                <p className="text-xs text-muted-foreground">Leave blank to keep the existing token</p>
-              )}
             </div>
 
             {xSettings?.configured && (
@@ -3469,17 +3492,14 @@ function MailchimpConfigDialog({ open, onOpenChange, onSuccess }: {
 
             <div className="space-y-2">
               <Label htmlFor="mailchimpApiKey">API Key</Label>
-              <Input
+              <SecretInput
                 id="mailchimpApiKey"
-                type="password"
                 value={formData.apiKey}
                 onChange={(e) => setFormData({ ...formData, apiKey: e.target.value })}
-                placeholder={mailchimpSettings?.hasApiKey ? "••••••••••••••••" : "Enter your Mailchimp API key"}
+                hasSavedValue={mailchimpSettings?.hasApiKey}
+                placeholder="Enter your Mailchimp API key"
                 data-testid="input-mailchimp-api-key"
               />
-              {mailchimpSettings?.hasApiKey && (
-                <p className="text-xs text-muted-foreground">Leave blank to keep the existing key</p>
-              )}
             </div>
 
             <div className="space-y-2">
@@ -3651,12 +3671,12 @@ function GooglePlacesConfigDialog({ open, onOpenChange, onSuccess }: {
 
             <div className="space-y-2">
               <Label htmlFor="google-api-key">Google API Key</Label>
-              <Input
+              <SecretInput
                 id="google-api-key"
-                type="password"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
-                placeholder={settings?.configured ? "••••••• (leave blank to keep current)" : "AIzaSy..."}
+                hasSavedValue={settings?.configured}
+                placeholder="AIzaSy..."
                 data-testid="input-google-api-key"
               />
               <p className="text-xs text-muted-foreground">
@@ -3841,19 +3861,14 @@ function TwilioConfigDialog({ open, onOpenChange, onSuccess }: { open: boolean; 
 
             <div className="space-y-2">
               <Label htmlFor="twilio-auth-token">Auth Token</Label>
-              <Input
+              <SecretInput
                 id="twilio-auth-token"
-                type="password"
                 value={authToken}
                 onChange={(e) => setAuthToken(e.target.value)}
-                placeholder={settings?.authTokenSet ? "•••••••• (leave blank to keep current)" : "Enter auth token"}
+                hasSavedValue={settings?.authTokenSet}
+                placeholder="Enter auth token"
                 data-testid="input-twilio-auth-token"
               />
-              {settings?.authTokenSet && (
-                <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Shield className="w-3 h-3" /> Auth token is stored encrypted
-                </p>
-              )}
             </div>
 
             <div className="space-y-2">
