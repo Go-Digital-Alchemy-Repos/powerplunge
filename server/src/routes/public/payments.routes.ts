@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { storage } from "../../../storage";
-import { insertCustomerSchema } from "@shared/schema";
+import { insertCustomerSchema, type Product, type AffiliateSettings } from "@shared/schema";
 import { checkoutLimiter, paymentLimiter } from "../../middleware/rate-limiter";
 import { affiliateCommissionService } from "../../services/affiliate-commission.service";
 import { normalizeEmail } from "../../services/customer-identity.service";
@@ -11,6 +11,33 @@ import { stripeService } from "../../integrations/stripe/StripeService";
 const DEFAULT_STRIPE_TAX_CODE = "txcd_99999999";
 
 const TAXABLE_STATES_WARN_ON_ZERO = ["NC"];
+
+function computeAffiliateDiscount(
+  product: Product,
+  lineTotal: number,
+  settings: AffiliateSettings | undefined
+): number {
+  if (!product.affiliateEnabled) return 0;
+
+  let discountType: string;
+  let discountValue: number;
+
+  if (product.affiliateUseGlobalSettings || !product.affiliateDiscountType) {
+    discountType = settings?.defaultDiscountType || "PERCENT";
+    discountValue = settings?.defaultDiscountValue ?? settings?.customerDiscountPercent ?? 0;
+  } else {
+    discountType = product.affiliateDiscountType;
+    discountValue = product.affiliateDiscountValue ?? 0;
+  }
+
+  if (discountValue <= 0) return 0;
+
+  if (discountType === "PERCENT") {
+    return Math.floor(lineTotal * (discountValue / 100));
+  } else {
+    return Math.min(lineTotal, discountValue);
+  }
+}
 
 const router = Router();
 
@@ -165,6 +192,7 @@ router.post("/create-payment-intent", paymentLimiter, async (req: any, res) => {
       quantity: number;
       unitPrice: number;
     }> = [];
+    const resolvedProducts: Product[] = [];
 
     for (const item of items) {
       const product = await storage.getProduct(item.productId);
@@ -178,14 +206,15 @@ router.post("/create-payment-intent", paymentLimiter, async (req: any, res) => {
         quantity: item.quantity,
         unitPrice: product.price,
       });
+      resolvedProducts.push(product);
     }
 
     let affiliateDiscountAmount = 0;
     if (affiliate && affiliate.status === "active") {
       const affSettings = await storage.getAffiliateSettings();
-      const discountPercent = affSettings?.customerDiscountPercent || 0;
-      if (discountPercent > 0) {
-        affiliateDiscountAmount = Math.floor(subtotalAmount * (discountPercent / 100));
+      for (let i = 0; i < orderItems.length; i++) {
+        const lineTotal = orderItems[i].unitPrice * orderItems[i].quantity;
+        affiliateDiscountAmount += computeAffiliateDiscount(resolvedProducts[i], lineTotal, affSettings);
       }
     }
 
@@ -439,6 +468,7 @@ router.post("/reprice-payment-intent", paymentLimiter, async (req: any, res) => 
       quantity: number;
       unitPrice: number;
     }> = [];
+    const repriceProducts: Product[] = [];
 
     for (const item of items) {
       const product = await storage.getProduct(item.productId);
@@ -452,14 +482,15 @@ router.post("/reprice-payment-intent", paymentLimiter, async (req: any, res) => 
         quantity: item.quantity,
         unitPrice: product.price,
       });
+      repriceProducts.push(product);
     }
 
     let affiliateDiscountAmount = 0;
     if (affiliate && affiliate.status === "active") {
       const affSettings = await storage.getAffiliateSettings();
-      const discountPercent = affSettings?.customerDiscountPercent || 0;
-      if (discountPercent > 0) {
-        affiliateDiscountAmount = Math.floor(subtotalAmount * (discountPercent / 100));
+      for (let i = 0; i < orderItems.length; i++) {
+        const lineTotal = orderItems[i].unitPrice * orderItems[i].quantity;
+        affiliateDiscountAmount += computeAffiliateDiscount(repriceProducts[i], lineTotal, affSettings);
       }
     }
 

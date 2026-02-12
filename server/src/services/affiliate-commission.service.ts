@@ -1,6 +1,6 @@
 import { db } from "../../db";
 import { storage } from "../../storage";
-import { affiliates, affiliateReferrals, affiliateSettings, affiliateClicks, orders, customers, coupons, couponRedemptions, adminUsers } from "@shared/schema";
+import { affiliates, affiliateReferrals, affiliateSettings, affiliateClicks, orders, orderItems, customers, coupons, couponRedemptions, adminUsers, products, type Product, type AffiliateSettings } from "@shared/schema";
 import { eq, and, lt, sql, isNull, isNotNull, desc } from "drizzle-orm";
 
 export type FraudCheckResult = {
@@ -197,15 +197,61 @@ export class AffiliateCommissionService {
         return { success: false, error: "Affiliate is not active" };
       }
 
-      // Get current commission rate from settings
+      // Get current settings
       const [settings] = await db
         .select()
         .from(affiliateSettings)
         .where(eq(affiliateSettings.id, "main"));
 
-      const commissionRate = settings?.commissionRate || 10;
+      // Get order items with their products for per-product commission
+      const items = await db
+        .select()
+        .from(orderItems)
+        .where(eq(orderItems.orderId, orderId));
+
+      let commissionAmount = 0;
       const commissionBase = order.subtotalAmount ?? order.totalAmount;
-      const commissionAmount = Math.floor(commissionBase * (commissionRate / 100));
+
+      if (items.length > 0) {
+        for (const item of items) {
+          const [product] = await db
+            .select()
+            .from(products)
+            .where(eq(products.id, item.productId));
+
+          if (!product || !product.affiliateEnabled) continue;
+
+          const lineAmount = item.unitPrice * item.quantity;
+
+          let commType: string;
+          let commValue: number;
+          if (product.affiliateUseGlobalSettings || !product.affiliateCommissionType) {
+            commType = settings?.defaultCommissionType || "PERCENT";
+            commValue = settings?.defaultCommissionValue ?? settings?.commissionRate ?? 10;
+          } else {
+            commType = product.affiliateCommissionType;
+            commValue = product.affiliateCommissionValue ?? 0;
+          }
+
+          if (commType === "PERCENT") {
+            commissionAmount += Math.floor(lineAmount * (commValue / 100));
+          } else {
+            commissionAmount += Math.min(lineAmount, commValue);
+          }
+        }
+      } else {
+        const fallbackValue = settings?.defaultCommissionValue ?? settings?.commissionRate ?? 10;
+        const fallbackType = settings?.defaultCommissionType || "PERCENT";
+        if (fallbackType === "PERCENT") {
+          commissionAmount = Math.floor(commissionBase * (fallbackValue / 100));
+        } else {
+          commissionAmount = Math.min(commissionBase, fallbackValue);
+        }
+      }
+
+      const effectiveCommissionRate = commissionBase > 0
+        ? Math.round((commissionAmount / commissionBase) * 100)
+        : (settings?.defaultCommissionValue ?? settings?.commissionRate ?? 10);
 
       // Lookup the attributed click if session ID is provided
       // Only link click if its affiliateId matches the order's affiliate
@@ -230,7 +276,7 @@ export class AffiliateCommissionService {
           affiliateId: affiliate.id,
           orderId: order.id,
           orderAmount: commissionBase,
-          commissionRate,
+          commissionRate: effectiveCommissionRate,
           commissionAmount,
           status: fraudCheck.isFlagged ? "flagged" : "pending",
           attributedClickId,

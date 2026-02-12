@@ -90,11 +90,23 @@ router.get("/affiliate-settings", async (req, res) => {
 const affiliateSettingsPatchSchema = z.object({
   commissionRate: z.number().int().min(0).max(100).optional(),
   customerDiscountPercent: z.number().int().min(0).max(100).optional(),
+  defaultCommissionType: z.enum(["PERCENT", "FIXED"]).optional(),
+  defaultCommissionValue: z.number().int().min(0).optional(),
+  defaultDiscountType: z.enum(["PERCENT", "FIXED"]).optional(),
+  defaultDiscountValue: z.number().int().min(0).optional(),
   minimumPayout: z.number().int().min(0).optional(),
   cookieDuration: z.number().int().min(1).max(365).optional(),
   agreementText: z.string().optional(),
   programActive: z.boolean().optional(),
-});
+}).refine((data) => {
+  if (data.defaultCommissionType === "PERCENT" && data.defaultCommissionValue !== undefined && data.defaultCommissionValue > 100) {
+    return false;
+  }
+  if (data.defaultDiscountType === "PERCENT" && data.defaultDiscountValue !== undefined && data.defaultDiscountValue > 100) {
+    return false;
+  }
+  return true;
+}, { message: "Percent values must be between 0 and 100" });
 
 router.patch("/affiliate-settings", async (req, res) => {
   try {
@@ -102,7 +114,22 @@ router.patch("/affiliate-settings", async (req, res) => {
     if (!parsed.success) {
       return res.status(400).json({ message: parsed.error.errors[0]?.message || "Invalid request body" });
     }
-    const settings = await storage.updateAffiliateSettings(parsed.data);
+    const data: any = { ...parsed.data };
+    if (data.defaultCommissionType !== undefined || data.defaultCommissionValue !== undefined) {
+      const type = data.defaultCommissionType || "PERCENT";
+      const value = data.defaultCommissionValue ?? 0;
+      if (type === "PERCENT") {
+        data.commissionRate = value;
+      }
+    }
+    if (data.defaultDiscountType !== undefined || data.defaultDiscountValue !== undefined) {
+      const type = data.defaultDiscountType || "PERCENT";
+      const value = data.defaultDiscountValue ?? 0;
+      if (type === "PERCENT") {
+        data.customerDiscountPercent = value;
+      }
+    }
+    const settings = await storage.updateAffiliateSettings(data);
     res.json(settings);
   } catch (error) {
     res.status(500).json({ message: "Failed to update affiliate settings" });

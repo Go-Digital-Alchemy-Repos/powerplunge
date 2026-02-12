@@ -15,6 +15,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAdmin } from "@/hooks/use-admin";
 import AdminNav from "@/components/admin/AdminNav";
 
@@ -22,6 +23,10 @@ interface AffiliateSettings {
   id: string;
   commissionRate: number;
   customerDiscountPercent: number;
+  defaultCommissionType: string;
+  defaultCommissionValue: number;
+  defaultDiscountType: string;
+  defaultDiscountValue: number;
   minimumPayout: number;
   cookieDuration: number;
   agreementText: string;
@@ -36,8 +41,10 @@ export default function AdminAffiliateSettings() {
   const { role, hasFullAccess, isLoading: adminLoading } = useAdmin();
 
   const [formData, setFormData] = useState<Partial<AffiliateSettings>>({
-    commissionRate: 10,
-    customerDiscountPercent: 0,
+    defaultCommissionType: "PERCENT",
+    defaultCommissionValue: 10,
+    defaultDiscountType: "PERCENT",
+    defaultDiscountValue: 0,
     minimumPayout: 5000,
     cookieDuration: 30,
     agreementText: "",
@@ -60,8 +67,10 @@ export default function AdminAffiliateSettings() {
   useEffect(() => {
     if (settings) {
       setFormData({
-        commissionRate: settings.commissionRate,
-        customerDiscountPercent: settings.customerDiscountPercent,
+        defaultCommissionType: settings.defaultCommissionType || "PERCENT",
+        defaultCommissionValue: settings.defaultCommissionValue ?? settings.commissionRate ?? 10,
+        defaultDiscountType: settings.defaultDiscountType || "PERCENT",
+        defaultDiscountValue: settings.defaultDiscountValue ?? settings.customerDiscountPercent ?? 0,
         minimumPayout: settings.minimumPayout,
         cookieDuration: settings.cookieDuration,
         agreementText: settings.agreementText,
@@ -246,61 +255,115 @@ export default function AdminAffiliateSettings() {
               <CardDescription>Configure commission rates and payout settings</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="commissionRate">Commission Rate (%)</Label>
-                  <Input
-                    id="commissionRate"
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={formData.commissionRate}
-                    onChange={(e) => setFormData({ ...formData, commissionRate: parseInt(e.target.value) || 0 })}
-                    data-testid="input-commission-rate"
-                  />
-                  <p className="text-xs text-muted-foreground">Percentage of sale affiliates earn. Commission is calculated on the order total before any discounts.</p>
+              <div className="space-y-6">
+                <div className="space-y-4">
+                  <h4 className="font-medium text-sm">Default Commission (paid to affiliates)</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Commission Type</Label>
+                      <Select
+                        value={formData.defaultCommissionType || "PERCENT"}
+                        onValueChange={(value) => setFormData({ ...formData, defaultCommissionType: value, defaultCommissionValue: 0 })}
+                      >
+                        <SelectTrigger data-testid="select-commission-type">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="PERCENT">Percentage (%)</SelectItem>
+                          <SelectItem value="FIXED">Fixed Amount ($)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="defaultCommissionValue">
+                        {formData.defaultCommissionType === "FIXED" ? "Amount (cents)" : "Percentage"}
+                      </Label>
+                      <Input
+                        id="defaultCommissionValue"
+                        type="number"
+                        min="0"
+                        max={formData.defaultCommissionType === "PERCENT" ? 100 : undefined}
+                        value={formData.defaultCommissionValue}
+                        onChange={(e) => setFormData({ ...formData, defaultCommissionValue: parseInt(e.target.value) || 0 })}
+                        data-testid="input-commission-value"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        {formData.defaultCommissionType === "FIXED"
+                          ? `Flat commission per eligible product (e.g. 500 = $5.00)`
+                          : "Percentage of the net sale amount per eligible product"}
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="customerDiscountPercent">Customer Discount (%)</Label>
-                  <Input
-                    id="customerDiscountPercent"
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={formData.customerDiscountPercent}
-                    onChange={(e) => setFormData({ ...formData, customerDiscountPercent: parseInt(e.target.value) || 0 })}
-                    data-testid="input-customer-discount-percent"
-                  />
-                  <p className="text-xs text-muted-foreground">Applied at checkout when a valid affiliate code is used. Set to 0 to disable.</p>
+                <div className="space-y-4">
+                  <h4 className="font-medium text-sm">Default Customer Discount (applied at checkout)</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Discount Type</Label>
+                      <Select
+                        value={formData.defaultDiscountType || "PERCENT"}
+                        onValueChange={(value) => setFormData({ ...formData, defaultDiscountType: value, defaultDiscountValue: 0 })}
+                      >
+                        <SelectTrigger data-testid="select-discount-type">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="PERCENT">Percentage (%)</SelectItem>
+                          <SelectItem value="FIXED">Fixed Amount ($)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="defaultDiscountValue">
+                        {formData.defaultDiscountType === "FIXED" ? "Amount (cents)" : "Percentage"}
+                      </Label>
+                      <Input
+                        id="defaultDiscountValue"
+                        type="number"
+                        min="0"
+                        max={formData.defaultDiscountType === "PERCENT" ? 100 : undefined}
+                        value={formData.defaultDiscountValue}
+                        onChange={(e) => setFormData({ ...formData, defaultDiscountValue: parseInt(e.target.value) || 0 })}
+                        data-testid="input-discount-value"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        {formData.defaultDiscountType === "FIXED"
+                          ? "Flat discount per eligible product (e.g. 500 = $5.00). Set to 0 to disable."
+                          : "Percentage off per eligible product. Set to 0 to disable."}
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="minimumPayout">Minimum Payout ($)</Label>
-                  <Input
-                    id="minimumPayout"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={(formData.minimumPayout || 0) / 100}
-                    onChange={(e) => setFormData({ ...formData, minimumPayout: Math.round(parseFloat(e.target.value) * 100) || 0 })}
-                    data-testid="input-minimum-payout"
-                  />
-                  <p className="text-xs text-muted-foreground">Minimum balance required for payout</p>
-                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="minimumPayout">Minimum Payout ($)</Label>
+                    <Input
+                      id="minimumPayout"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={(formData.minimumPayout || 0) / 100}
+                      onChange={(e) => setFormData({ ...formData, minimumPayout: Math.round(parseFloat(e.target.value) * 100) || 0 })}
+                      data-testid="input-minimum-payout"
+                    />
+                    <p className="text-xs text-muted-foreground">Minimum balance required for payout</p>
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="cookieDuration">Cookie Duration (days)</Label>
-                  <Input
-                    id="cookieDuration"
-                    type="number"
-                    min="1"
-                    max="365"
-                    value={formData.cookieDuration}
-                    onChange={(e) => setFormData({ ...formData, cookieDuration: parseInt(e.target.value) || 30 })}
-                    data-testid="input-cookie-duration"
-                  />
-                  <p className="text-xs text-muted-foreground">How long referral tracking lasts</p>
+                  <div className="space-y-2">
+                    <Label htmlFor="cookieDuration">Cookie Duration (days)</Label>
+                    <Input
+                      id="cookieDuration"
+                      type="number"
+                      min="1"
+                      max="365"
+                      value={formData.cookieDuration}
+                      onChange={(e) => setFormData({ ...formData, cookieDuration: parseInt(e.target.value) || 30 })}
+                      data-testid="input-cookie-duration"
+                    />
+                    <p className="text-xs text-muted-foreground">How long referral tracking lasts</p>
+                  </div>
                 </div>
               </div>
             </CardContent>

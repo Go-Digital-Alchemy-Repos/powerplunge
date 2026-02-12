@@ -51,6 +51,12 @@ interface Product {
   ogTitle?: string;
   ogDescription?: string;
   ogImage?: string;
+  affiliateEnabled: boolean;
+  affiliateUseGlobalSettings: boolean;
+  affiliateCommissionType?: string | null;
+  affiliateCommissionValue?: number | null;
+  affiliateDiscountType?: string | null;
+  affiliateDiscountValue?: number | null;
 }
 
 interface ProductFormData {
@@ -80,6 +86,12 @@ interface ProductFormData {
   ogTitle: string;
   ogDescription: string;
   ogImage: string;
+  affiliateEnabled: boolean;
+  affiliateUseGlobalSettings: boolean;
+  affiliateCommissionType: string;
+  affiliateCommissionValue: string;
+  affiliateDiscountType: string;
+  affiliateDiscountValue: string;
 }
 
 const defaultFormData: ProductFormData = {
@@ -109,6 +121,12 @@ const defaultFormData: ProductFormData = {
   ogTitle: "",
   ogDescription: "",
   ogImage: "",
+  affiliateEnabled: true,
+  affiliateUseGlobalSettings: true,
+  affiliateCommissionType: "PERCENT",
+  affiliateCommissionValue: "",
+  affiliateDiscountType: "PERCENT",
+  affiliateDiscountValue: "",
 };
 
 export default function AdminProducts() {
@@ -234,6 +252,12 @@ export default function AdminProducts() {
         ogTitle: product.ogTitle || "",
         ogDescription: product.ogDescription || "",
         ogImage: product.ogImage || "",
+        affiliateEnabled: product.affiliateEnabled ?? true,
+        affiliateUseGlobalSettings: product.affiliateUseGlobalSettings ?? true,
+        affiliateCommissionType: product.affiliateCommissionType || "PERCENT",
+        affiliateCommissionValue: product.affiliateCommissionValue != null ? String(product.affiliateCommissionValue) : "",
+        affiliateDiscountType: product.affiliateDiscountType || "PERCENT",
+        affiliateDiscountValue: product.affiliateDiscountValue != null ? String(product.affiliateDiscountValue) : "",
       });
     } else {
       setEditingProduct(null);
@@ -369,6 +393,12 @@ export default function AdminProducts() {
       ogTitle: formData.ogTitle || undefined,
       ogDescription: formData.ogDescription || undefined,
       ogImage: formData.ogImage || undefined,
+      affiliateEnabled: formData.affiliateEnabled,
+      affiliateUseGlobalSettings: formData.affiliateUseGlobalSettings,
+      affiliateCommissionType: formData.affiliateUseGlobalSettings ? null : (formData.affiliateCommissionType || null),
+      affiliateCommissionValue: formData.affiliateUseGlobalSettings ? null : (formData.affiliateCommissionValue ? parseInt(formData.affiliateCommissionValue) : null),
+      affiliateDiscountType: formData.affiliateUseGlobalSettings ? null : (formData.affiliateDiscountType || null),
+      affiliateDiscountValue: formData.affiliateUseGlobalSettings ? null : (formData.affiliateDiscountValue ? parseInt(formData.affiliateDiscountValue) : null),
     };
 
     if (editingProduct) {
@@ -546,7 +576,7 @@ export default function AdminProducts() {
         }
       >
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="w-full grid grid-cols-3 mb-6">
+          <TabsList className="w-full grid grid-cols-4 mb-6">
             <TabsTrigger value="overview" className="gap-2" data-testid="tab-overview">
               <FileText className="w-4 h-4" />
               Overview
@@ -554,6 +584,10 @@ export default function AdminProducts() {
             <TabsTrigger value="photos" className="gap-2" data-testid="tab-photos">
               <ImageIcon className="w-4 h-4" />
               Photos
+            </TabsTrigger>
+            <TabsTrigger value="affiliate" className="gap-2" data-testid="tab-affiliate">
+              <Tag className="w-4 h-4" />
+              Affiliate
             </TabsTrigger>
             <TabsTrigger value="seo" className="gap-2" data-testid="tab-seo">
               <Search className="w-4 h-4" />
@@ -978,6 +1012,131 @@ export default function AdminProducts() {
                   data-testid="input-image-url"
                 />
               </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="affiliate" className="space-y-6 mt-0">
+            <div className="space-y-4">
+              <h3 className="font-semibold text-lg border-b border-border pb-2">Affiliate Settings</h3>
+              <div className="flex items-center justify-between py-2">
+                <div>
+                  <Label>Affiliate Eligible</Label>
+                  <p className="text-xs text-muted-foreground">Allow affiliate commissions and discounts for this product</p>
+                </div>
+                <Switch
+                  checked={formData.affiliateEnabled}
+                  onCheckedChange={(checked) => {
+                    setFormData(prev => ({ ...prev, affiliateEnabled: checked }));
+                    setIsDirty(true);
+                  }}
+                  data-testid="switch-affiliate-enabled"
+                />
+              </div>
+
+              {formData.affiliateEnabled && (
+                <>
+                  <div className="flex items-center justify-between py-2">
+                    <div>
+                      <Label>Use Global Defaults</Label>
+                      <p className="text-xs text-muted-foreground">Use the global affiliate commission and discount settings</p>
+                    </div>
+                    <Switch
+                      checked={formData.affiliateUseGlobalSettings}
+                      onCheckedChange={(checked) => {
+                        setFormData(prev => ({ ...prev, affiliateUseGlobalSettings: checked }));
+                        setIsDirty(true);
+                      }}
+                      data-testid="switch-affiliate-use-global"
+                    />
+                  </div>
+
+                  {!formData.affiliateUseGlobalSettings && (
+                    <div className="space-y-6 border border-border rounded-lg p-4">
+                      <div className="space-y-4">
+                        <h4 className="font-medium text-sm">Commission Override</h4>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Type</Label>
+                            <Select
+                              value={formData.affiliateCommissionType}
+                              onValueChange={(value) => {
+                                setFormData(prev => ({ ...prev, affiliateCommissionType: value, affiliateCommissionValue: "" }));
+                                setIsDirty(true);
+                              }}
+                            >
+                              <SelectTrigger data-testid="select-product-commission-type">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="PERCENT">Percentage (%)</SelectItem>
+                                <SelectItem value="FIXED">Fixed ($)</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>{formData.affiliateCommissionType === "FIXED" ? "Amount (cents)" : "Percentage"}</Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              max={formData.affiliateCommissionType === "PERCENT" ? 100 : undefined}
+                              value={formData.affiliateCommissionValue}
+                              onChange={(e) => {
+                                setFormData(prev => ({ ...prev, affiliateCommissionValue: e.target.value }));
+                                setIsDirty(true);
+                              }}
+                              data-testid="input-product-commission-value"
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              {formData.affiliateCommissionType === "FIXED" ? "e.g. 500 = $5.00" : "0-100"}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <h4 className="font-medium text-sm">Customer Discount Override</h4>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Type</Label>
+                            <Select
+                              value={formData.affiliateDiscountType}
+                              onValueChange={(value) => {
+                                setFormData(prev => ({ ...prev, affiliateDiscountType: value, affiliateDiscountValue: "" }));
+                                setIsDirty(true);
+                              }}
+                            >
+                              <SelectTrigger data-testid="select-product-discount-type">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="PERCENT">Percentage (%)</SelectItem>
+                                <SelectItem value="FIXED">Fixed ($)</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>{formData.affiliateDiscountType === "FIXED" ? "Amount (cents)" : "Percentage"}</Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              max={formData.affiliateDiscountType === "PERCENT" ? 100 : undefined}
+                              value={formData.affiliateDiscountValue}
+                              onChange={(e) => {
+                                setFormData(prev => ({ ...prev, affiliateDiscountValue: e.target.value }));
+                                setIsDirty(true);
+                              }}
+                              data-testid="input-product-discount-value"
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              {formData.affiliateDiscountType === "FIXED" ? "e.g. 500 = $5.00" : "0-100"}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </TabsContent>
 

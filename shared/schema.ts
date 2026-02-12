@@ -74,6 +74,13 @@ export const products = pgTable("products", {
   ogTitle: text("og_title"),
   ogDescription: text("og_description"),
   ogImage: text("og_image"),
+  // Affiliate per-product settings
+  affiliateEnabled: boolean("affiliate_enabled").notNull().default(true),
+  affiliateUseGlobalSettings: boolean("affiliate_use_global_settings").notNull().default(true),
+  affiliateCommissionType: text("affiliate_commission_type"), // PERCENT or FIXED, nullable when global used
+  affiliateCommissionValue: integer("affiliate_commission_value"), // percent points or cents, nullable
+  affiliateDiscountType: text("affiliate_discount_type"), // PERCENT or FIXED, nullable when global used
+  affiliateDiscountValue: integer("affiliate_discount_value"), // percent points or cents, nullable
 });
 
 export const insertProductSchema = createInsertSchema(products).omit({ id: true });
@@ -337,8 +344,12 @@ export type IntegrationSettings = typeof integrationSettings.$inferSelect;
 // Affiliate Program Settings
 export const affiliateSettings = pgTable("affiliate_settings", {
   id: varchar("id").primaryKey().default("main"),
-  commissionRate: integer("commission_rate").notNull().default(10), // percentage
-  customerDiscountPercent: integer("customer_discount_percent").notNull().default(0), // percentage discount for customers using affiliate code
+  commissionRate: integer("commission_rate").notNull().default(10), // legacy percentage field
+  customerDiscountPercent: integer("customer_discount_percent").notNull().default(0), // legacy percentage field
+  defaultCommissionType: text("default_commission_type").notNull().default("PERCENT"), // PERCENT or FIXED
+  defaultCommissionValue: integer("default_commission_value").notNull().default(10), // percent points or cents
+  defaultDiscountType: text("default_discount_type").notNull().default("PERCENT"), // PERCENT or FIXED
+  defaultDiscountValue: integer("default_discount_value").notNull().default(0), // percent points or cents
   minimumPayout: integer("minimum_payout").notNull().default(5000), // in cents ($50)
   cookieDuration: integer("cookie_duration").notNull().default(30), // days
   approvalDays: integer("approval_days").notNull().default(14), // days before auto-approval
