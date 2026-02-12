@@ -1,5 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useRoute } from "wouter";
+import { ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import SiteLayout from "@/components/SiteLayout";
 
 export default function LegalPage() {
@@ -21,6 +23,15 @@ export default function LegalPage() {
   return (
     <SiteLayout>
       <div className="max-w-4xl mx-auto px-6 py-16" data-testid={`page-${type}`}>
+        <Button
+          variant="ghost"
+          onClick={() => window.history.back()}
+          className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-400/10 mb-6 -ml-2"
+          data-testid="button-back"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back
+        </Button>
         <h1 className="text-4xl font-bold mb-8" data-testid="legal-page-title">{title}</h1>
         {isLoading ? (
           <div className="text-muted-foreground py-12 text-center">Loading...</div>
