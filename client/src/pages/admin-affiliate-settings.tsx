@@ -16,6 +16,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AmountTypeInput } from "@/components/ui/amount-type-input";
 import { useAdmin } from "@/hooks/use-admin";
 import AdminNav from "@/components/admin/AdminNav";
 
@@ -271,83 +272,39 @@ export default function AdminAffiliateSettings() {
               <div className="space-y-6">
                 <div className="space-y-4">
                   <h4 className="font-medium text-sm">Default Commission (paid to affiliates)</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Commission Type</Label>
-                      <Select
-                        value={formData.defaultCommissionType || "PERCENT"}
-                        onValueChange={(value) => setFormData({ ...formData, defaultCommissionType: value, defaultCommissionValue: 0 })}
-                      >
-                        <SelectTrigger data-testid="select-commission-type">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="PERCENT">Percentage (%)</SelectItem>
-                          <SelectItem value="FIXED">Fixed Amount ($)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="defaultCommissionValue">
-                        {formData.defaultCommissionType === "FIXED" ? "Amount ($)" : "Percentage"}
-                      </Label>
-                      <Input
-                        id="defaultCommissionValue"
-                        type="number"
-                        min="0"
-                        step={formData.defaultCommissionType === "FIXED" ? "0.01" : "1"}
-                        max={formData.defaultCommissionType === "PERCENT" ? 100 : undefined}
-                        value={formData.defaultCommissionValue}
-                        onChange={(e) => setFormData({ ...formData, defaultCommissionValue: parseFloat(e.target.value) || 0 })}
-                        data-testid="input-commission-value"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        {formData.defaultCommissionType === "FIXED"
-                          ? "Flat commission per eligible product in dollars (e.g. 5.00 = $5.00)"
-                          : "Percentage of the net sale amount per eligible product"}
-                      </p>
-                    </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="defaultCommissionValue">Commission Amount</Label>
+                    <AmountTypeInput
+                      value={formData.defaultCommissionValue ?? 0}
+                      onChange={(v) => setFormData({ ...formData, defaultCommissionValue: v })}
+                      type={formData.defaultCommissionType === "FIXED" ? "fixed" : "percent"}
+                      onTypeChange={(t) => setFormData({ ...formData, defaultCommissionType: t === "fixed" ? "FIXED" : "PERCENT", defaultCommissionValue: 0 })}
+                      data-testid="input-commission-value"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {formData.defaultCommissionType === "FIXED"
+                        ? "Flat commission per eligible product in dollars"
+                        : "Percentage of the net sale amount per eligible product"}
+                    </p>
                   </div>
                 </div>
 
                 <div className="space-y-4">
                   <h4 className="font-medium text-sm">Default Customer Discount (applied at checkout)</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Discount Type</Label>
-                      <Select
-                        value={formData.defaultDiscountType || "PERCENT"}
-                        onValueChange={(value) => setFormData({ ...formData, defaultDiscountType: value, defaultDiscountValue: 0 })}
-                      >
-                        <SelectTrigger data-testid="select-discount-type">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="PERCENT">Percentage (%)</SelectItem>
-                          <SelectItem value="FIXED">Fixed Amount ($)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="defaultDiscountValue">
-                        {formData.defaultDiscountType === "FIXED" ? "Amount ($)" : "Percentage"}
-                      </Label>
-                      <Input
-                        id="defaultDiscountValue"
-                        type="number"
-                        min="0"
-                        step={formData.defaultDiscountType === "FIXED" ? "0.01" : "1"}
-                        max={formData.defaultDiscountType === "PERCENT" ? 100 : undefined}
-                        value={formData.defaultDiscountValue}
-                        onChange={(e) => setFormData({ ...formData, defaultDiscountValue: parseFloat(e.target.value) || 0 })}
-                        data-testid="input-discount-value"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        {formData.defaultDiscountType === "FIXED"
-                          ? "Flat discount per eligible product in dollars (e.g. 5.00 = $5.00). Set to 0 to disable."
-                          : "Percentage off per eligible product. Set to 0 to disable."}
-                      </p>
-                    </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="defaultDiscountValue">Discount Amount</Label>
+                    <AmountTypeInput
+                      value={formData.defaultDiscountValue ?? 0}
+                      onChange={(v) => setFormData({ ...formData, defaultDiscountValue: v })}
+                      type={formData.defaultDiscountType === "FIXED" ? "fixed" : "percent"}
+                      onTypeChange={(t) => setFormData({ ...formData, defaultDiscountType: t === "fixed" ? "FIXED" : "PERCENT", defaultDiscountValue: 0 })}
+                      data-testid="input-discount-value"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {formData.defaultDiscountType === "FIXED"
+                        ? "Flat discount per eligible product in dollars. Set to 0 to disable."
+                        : "Percentage off per eligible product. Set to 0 to disable."}
+                    </p>
                   </div>
                 </div>
 

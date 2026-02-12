@@ -1,13 +1,14 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Plus, Edit, Trash2, Tag, Percent, DollarSign, BarChart3, TrendingUp, TrendingDown, AlertTriangle, Power, Users, Search, ToggleLeft, ToggleRight } from "lucide-react";
+import { Plus, Edit, Trash2, Tag, Percent, DollarSign, BarChart3, TrendingUp, TrendingDown, AlertTriangle, Power, Users, Search, ToggleLeft, ToggleRight, Truck } from "lucide-react";
 import AdminNav from "@/components/admin/AdminNav";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AmountTypeInput } from "@/components/ui/amount-type-input";
 import { SlideOutPanel } from "@/components/ui/slide-out-panel";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -851,32 +852,40 @@ export default function AdminCoupons() {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Type</Label>
-              <Select value={formData.type} onValueChange={(v) => { setFormData({ ...formData, type: v }); setIsDirty(true); }}>
-                <SelectTrigger className="bg-slate-900 border-slate-700" data-testid="select-type">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="percentage">Percentage Off</SelectItem>
-                  <SelectItem value="fixed">Fixed Amount</SelectItem>
-                  <SelectItem value="freeShipping">Free Shipping</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            {formData.type !== "freeShipping" && (
-              <div className="space-y-2">
-                <Label>{formData.type === "percentage" ? "Percentage" : "Amount ($)"}</Label>
-                <Input
-                  type="number"
+          <div className="space-y-2">
+            <Label>Discount</Label>
+            <div className="flex items-center gap-3">
+              <div className="flex-1">
+                <AmountTypeInput
                   value={formData.value}
-                  onChange={(e) => { setFormData({ ...formData, value: parseFloat(e.target.value) || 0 }); setIsDirty(true); }}
-                  className="bg-slate-900 border-slate-700"
+                  onChange={(v) => { setFormData({ ...formData, value: v }); setIsDirty(true); }}
+                  type={formData.type === "fixed" ? "fixed" : "percent"}
+                  onTypeChange={(t) => { setFormData({ ...formData, type: t === "fixed" ? "fixed" : "percentage", value: 0 }); setIsDirty(true); }}
+                  disabled={formData.type === "freeShipping"}
                   data-testid="input-value"
                 />
               </div>
-            )}
+              <button
+                type="button"
+                onClick={() => {
+                  if (formData.type === "freeShipping") {
+                    setFormData({ ...formData, type: "percentage", value: 0 });
+                  } else {
+                    setFormData({ ...formData, type: "freeShipping", value: 0 });
+                  }
+                  setIsDirty(true);
+                }}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-md border text-xs font-medium transition-colors whitespace-nowrap ${
+                  formData.type === "freeShipping"
+                    ? "bg-primary/15 text-primary border-primary/30"
+                    : "text-muted-foreground border-input hover:text-foreground hover:bg-muted/50"
+                }`}
+                data-testid="button-free-shipping"
+              >
+                <Truck className="w-3.5 h-3.5" />
+                Free Shipping
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
