@@ -628,14 +628,14 @@ router.post("/twilio/test-sms", async (req: any, res) => {
     }
 
     const { smsService } = await import("../../services/sms.service");
-    const normalizedPhone = smsService.normalizePhone(toPhoneNumber);
-    const result = await smsService.sendVerificationCode(
-      normalizedPhone,
-      "123456"
-    );
+    const phoneValidation = smsService.validateAndNormalizePhone(toPhoneNumber);
+    if (!phoneValidation.valid || !phoneValidation.e164) {
+      return res.status(400).json({ success: false, message: "Invalid phone number format" });
+    }
 
+    const result = await smsService.sendTestSms(phoneValidation.e164);
     if (result.success) {
-      res.json({ success: true, message: "Test SMS sent successfully" });
+      res.json({ success: true, message: `Test SMS sent (SID: ${result.messageSid})` });
     } else {
       res.status(400).json({ success: false, message: result.error || "Failed to send test SMS" });
     }

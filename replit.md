@@ -58,6 +58,13 @@ The Power Plunge e-commerce platform utilizes a modern full-stack architecture.
 
 ## Recent Changes
 
+### Twilio Verify API Migration (Feb 12, 2026)
+- **Verify API**: Migrated affiliate phone verification from custom OTP generation/hashing to Twilio's managed Verify API (`TWILIO_VERIFY_SERVICE_SID`). Twilio handles code generation, expiry, delivery, and attempt limiting.
+- **SMS Service**: Added `startVerification()` and `checkVerification()` methods to `sms.service.ts`. Removed `sendVerificationCode()`.
+- **Schema**: Simplified `affiliate_invite_verifications` table — removed `codeHash`, `codeSalt`, `attempts`, `maxAttempts`, `expiresAt`, `twilioMessageSid`, `deliveryStatus`; added `twilioVerifySid`.
+- **Rate Limiting**: Layered rate limits preserved (per-phone daily cap, per-invite resend window, global SMS budget, IP middleware).
+- **Security**: Session nonce binding, verification tokens, anti-enumeration responses all maintained. Removed `otp-hash.ts` utility.
+
 ### Page Builder Status Dropdown (Feb 12, 2026)
 - **Status Dropdown**: Replaced "Publish" button in both page builders with a status dropdown offering Draft, Published, and Schedule options. "Save" and "Preview" are now the only action buttons.
 - **Scheduled Publishing**: When "Schedule" is selected, a date/time picker appears for setting the future publish date. Validation prevents saving without a scheduled date.

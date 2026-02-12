@@ -140,6 +140,21 @@ class SmsService {
     }
   }
 
+  async sendTestSms(to: string): Promise<SmsSendResult> {
+    try {
+      const client = await this.getClient();
+      const message = await client.messages.create({
+        body: "Power Plunge test SMS — your Twilio integration is working!",
+        from: this.fromNumber!,
+        to,
+      });
+      return { success: true, messageSid: message.sid };
+    } catch (error: any) {
+      console.error("[SMS] Failed to send test SMS:", error);
+      return { success: false, error: error.message || "Failed to send SMS" };
+    }
+  }
+
   async sendInviteSms(to: string, inviteUrl: string, recipientName?: string): Promise<SmsSendResult> {
     try {
       if (!this.checkDailyBudget()) {
