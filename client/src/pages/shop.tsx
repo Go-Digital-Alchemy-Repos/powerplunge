@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
-import { useLocation, Link } from "wouter";
+import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { ShoppingCart, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PageRenderer from "@/components/PageRenderer";
-import DynamicNav from "@/components/DynamicNav";
+import SiteLayout from "@/components/SiteLayout";
 import { useCustomerAuth } from "@/hooks/use-customer-auth";
 import { trackAddToCart, trackViewItemList } from "@/lib/analytics";
 
@@ -47,7 +46,6 @@ interface CartItem {
 }
 
 export default function Shop() {
-  const [, navigate] = useLocation();
   const { customer } = useCustomerAuth();
   const [cart, setCart] = useState<CartItem[]>(() => {
     if (typeof window !== "undefined") {
@@ -113,9 +111,6 @@ export default function Shop() {
     });
   };
 
-  const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
-
   if (pageLoading || productsLoading) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center">
@@ -127,32 +122,7 @@ export default function Shop() {
   const hasPageContent = shopPage?.contentJson?.blocks && shopPage.contentJson.blocks.length > 0;
 
   return (
-    <div className="min-h-screen bg-slate-900">
-      <header className="sticky top-0 z-50 bg-card border-b border-border">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={() => navigate("/")} className="text-muted-foreground hover:text-foreground" data-testid="button-home">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Home
-            </Button>
-            <h1 className="text-2xl font-bold text-foreground">Shop</h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <DynamicNav location="main" />
-            <Button
-              onClick={() => navigate("/checkout")}
-              className="bg-cyan-500 hover:bg-cyan-600 text-black"
-              disabled={cart.length === 0}
-              data-testid="button-cart"
-            >
-              <ShoppingCart className="w-4 h-4 mr-2" />
-              {cartCount > 0 && <span className="mr-2">{cartCount}</span>}
-              ${(cartTotal / 100).toFixed(2)}
-            </Button>
-          </div>
-        </div>
-      </header>
-
+    <SiteLayout>
       {hasPageContent ? (
         <PageRenderer
           contentJson={shopPage?.contentJson}
@@ -166,7 +136,7 @@ export default function Shop() {
           onAddToCart={handleAddToCart}
         />
       )}
-    </div>
+    </SiteLayout>
   );
 }
 
