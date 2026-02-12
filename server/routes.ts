@@ -1,6 +1,6 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
-import { createRequire } from "module";
+import { readFileSync } from "fs";
 import { pool } from "./db";
 import { validateEnv } from "./src/config/env-validation";
 import { storage } from "./storage";
@@ -84,8 +84,12 @@ export async function registerRoutes(
   console.log("[STORAGE] R2 and Object Storage routes registered (R2 credentials checked per-request)");
 
   // ==================== OPERATIONAL ENDPOINTS ====================
-  const require = createRequire(import.meta.url);
-  const pkgVersion: string = require("../package.json").version || "0.0.0";
+  let pkgVersion = "0.0.0";
+  try {
+    const pkg = JSON.parse(readFileSync("package.json", "utf-8"));
+    pkgVersion = pkg.version || "0.0.0";
+  } catch {}
+
 
   app.get("/health", (_req, res) => {
     res.json({ ok: true });
