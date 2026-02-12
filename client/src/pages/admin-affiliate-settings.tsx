@@ -18,6 +18,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AmountTypeInput } from "@/components/ui/amount-type-input";
 import { useAdmin } from "@/hooks/use-admin";
+import defaultAdminIcon from "@assets/powerplungeicon_1770929882628.png";
 import AdminNav from "@/components/admin/AdminNav";
 
 interface AffiliateSettings {
@@ -153,7 +154,7 @@ export default function AdminAffiliateSettings() {
       <nav className="sticky top-0 z-50 bg-card border-b border-border">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-6">
-            <h1 className="text-xl font-bold">Power Plunge Admin</h1>
+            <img src={defaultAdminIcon} alt="Admin" className="h-8 w-auto object-contain" />
             <div className="flex gap-2">
               <Link href="/admin/dashboard">
                 <Button variant="ghost" size="sm" className="gap-2" data-testid="link-home">

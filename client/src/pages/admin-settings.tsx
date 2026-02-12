@@ -23,6 +23,7 @@ interface SiteSettings {
   supportEmail?: string;
   gaMeasurementId?: string;
   logoUrl?: string;
+  adminIconUrl?: string;
   privacyPolicy?: string;
   termsAndConditions?: string;
 }
@@ -34,7 +35,9 @@ export default function AdminSettings() {
   const { role, hasFullAccess, isLoading: adminLoading } = useAdmin();
   const [formData, setFormData] = useState<Partial<SiteSettings>>({});
   const [logoUploading, setLogoUploading] = useState(false);
+  const [adminIconUploading, setAdminIconUploading] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
+  const adminIconInputRef = useRef<HTMLInputElement>(null);
 
   const { data: settings, isLoading } = useQuery<SiteSettings>({
     queryKey: ["/api/admin/settings"],
@@ -135,6 +138,71 @@ export default function AdminSettings() {
       toast({ title: "Logo removed", description: "The default logo will be used." });
     } catch {
       toast({ title: "Error", description: "Could not remove logo.", variant: "destructive" });
+    }
+  };
+
+  const handleAdminIconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Invalid file", description: "Please upload an image file (PNG, JPG, SVG, or WebP).", variant: "destructive" });
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "File too large", description: "Icon must be under 5MB.", variant: "destructive" });
+      return;
+    }
+
+    setAdminIconUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("folder", "branding");
+      let uploadRes = await fetch("/api/r2/upload", { method: "POST", body: fd, credentials: "include" });
+      const contentType = uploadRes.headers.get("content-type") || "";
+      if (!uploadRes.ok || !contentType.includes("application/json")) {
+        uploadRes = await fetch("/api/uploads/upload", { method: "POST", body: fd, credentials: "include" });
+      }
+      if (!uploadRes.ok) throw new Error("Upload failed");
+      const { objectPath } = await uploadRes.json();
+
+      const saveRes = await fetch("/api/admin/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ adminIconUrl: objectPath }),
+        credentials: "include",
+      });
+      if (!saveRes.ok) throw new Error("Failed to save admin icon");
+      const updated = await saveRes.json();
+      setFormData((prev) => ({ ...prev, adminIconUrl: updated.adminIconUrl }));
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/settings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/site-settings"] });
+      toast({ title: "Admin icon uploaded", description: "Your admin navigation icon has been updated." });
+    } catch {
+      toast({ title: "Upload failed", description: "Could not upload icon. Please try again.", variant: "destructive" });
+    } finally {
+      setAdminIconUploading(false);
+      if (adminIconInputRef.current) adminIconInputRef.current.value = "";
+    }
+  };
+
+  const handleRemoveAdminIcon = async () => {
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ adminIconUrl: null }),
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to remove admin icon");
+      setFormData((prev) => ({ ...prev, adminIconUrl: undefined }));
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/settings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/site-settings"] });
+      toast({ title: "Admin icon removed", description: "The default icon will be used." });
+    } catch {
+      toast({ title: "Error", description: "Could not remove admin icon.", variant: "destructive" });
     }
   };
 
@@ -326,6 +394,75 @@ export default function AdminSettings() {
                       </div>
                       <p className="text-sm text-muted-foreground">
                         Recommended: PNG or SVG with transparent background. Max 5MB.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <ImageIcon className="w-5 h-5" />
+                      Admin Icon Settings
+                    </CardTitle>
+                    <CardDescription>
+                      Upload an icon to display in the admin navigation bar. Replaces the default text header.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Admin Navigation Icon</Label>
+                      <div className="flex items-center gap-4">
+                        <div className="w-16 h-16 rounded-lg border border-dashed border-border flex items-center justify-center overflow-hidden bg-muted/30" data-testid="admin-icon-preview">
+                          {formData.adminIconUrl ? (
+                            <img
+                              src={formData.adminIconUrl}
+                              alt="Current admin icon"
+                              className="max-w-full max-h-full object-contain"
+                              data-testid="img-current-admin-icon"
+                            />
+                          ) : (
+                            <ImageIcon className="w-6 h-6 text-muted-foreground" />
+                          )}
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <input
+                            ref={adminIconInputRef}
+                            type="file"
+                            accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                            className="hidden"
+                            onChange={handleAdminIconUpload}
+                            data-testid="input-admin-icon-file"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="gap-2"
+                            onClick={() => adminIconInputRef.current?.click()}
+                            disabled={adminIconUploading}
+                            data-testid="button-upload-admin-icon"
+                          >
+                            <Upload className="w-4 h-4" />
+                            {adminIconUploading ? "Uploading..." : "Upload Icon"}
+                          </Button>
+                          {formData.adminIconUrl && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="gap-2 text-destructive hover:text-destructive"
+                              onClick={handleRemoveAdminIcon}
+                              data-testid="button-remove-admin-icon"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              Remove
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Recommended: Square PNG or SVG, 32-64px. Appears in the admin header navigation.
                       </p>
                     </div>
                   </CardContent>

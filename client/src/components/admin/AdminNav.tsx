@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -46,6 +47,7 @@ import {
 } from "lucide-react";
 import { useAdminTheme } from "@/hooks/use-admin-theme";
 import { cn } from "@/lib/utils";
+import defaultAdminIcon from "@assets/powerplungeicon_1770929882628.png";
 
 interface AdminNavProps {
   currentPage?: string;
@@ -57,6 +59,18 @@ export default function AdminNav({ currentPage, role = "admin" }: AdminNavProps)
   const { theme, toggleTheme } = useAdminTheme();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+
+  const { data: siteSettings } = useQuery<{ adminIconUrl?: string }>({
+    queryKey: ["/api/admin/settings"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/settings", { credentials: "include" });
+      if (!res.ok) return {};
+      return res.json();
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const adminIconSrc = siteSettings?.adminIconUrl || defaultAdminIcon;
 
   const handleLogout = async () => {
     await fetch("/api/admin/logout", { method: "POST" });
@@ -176,7 +190,7 @@ export default function AdminNav({ currentPage, role = "admin" }: AdminNavProps)
         {/* Desktop nav — hidden on mobile */}
         <div className="hidden lg:flex max-w-7xl mx-auto px-6 py-4 items-center justify-between">
           <div className="flex items-center gap-6">
-            <h1 className="text-xl font-bold">Power Plunge Admin</h1>
+            <img src={adminIconSrc} alt="Admin" className="h-8 w-auto object-contain" data-testid="img-admin-nav-icon" />
             <div className="flex gap-2">
               <Link href="/admin/dashboard">
                 <Button
@@ -416,7 +430,9 @@ export default function AdminNav({ currentPage, role = "admin" }: AdminNavProps)
       <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
         <SheetContent side="left" className="w-[300px] sm:w-[320px] p-0 flex flex-col" data-testid="admin-mobile-drawer">
           <SheetHeader className="px-4 pt-4 pb-3 border-b border-border">
-            <SheetTitle className="text-left text-base">Power Plunge Admin</SheetTitle>
+            <SheetTitle className="text-left text-base flex items-center gap-2">
+              <img src={adminIconSrc} alt="Admin" className="h-6 w-auto object-contain" data-testid="img-admin-drawer-icon" />
+            </SheetTitle>
           </SheetHeader>
 
           <div className="px-3 py-2 border-b border-border">

@@ -63,7 +63,7 @@ router.get("/", async (req: any, res) => {
 
 router.patch("/", async (req: any, res) => {
   try {
-    const { companyName, companyTagline, companyAddress, companyPhone, orderNotificationEmail, supportEmail, gaMeasurementId, logoUrl, privacyPolicy, termsAndConditions } = req.body;
+    const { companyName, companyTagline, companyAddress, companyPhone, orderNotificationEmail, supportEmail, gaMeasurementId, logoUrl, adminIconUrl, privacyPolicy, termsAndConditions } = req.body;
     const updateData: Record<string, any> = {};
     if (companyName !== undefined) updateData.companyName = companyName;
     if (companyTagline !== undefined) updateData.companyTagline = companyTagline;
@@ -73,6 +73,7 @@ router.patch("/", async (req: any, res) => {
     if (supportEmail !== undefined) updateData.supportEmail = supportEmail;
     if (gaMeasurementId !== undefined) updateData.gaMeasurementId = gaMeasurementId;
     if (logoUrl !== undefined) updateData.logoUrl = logoUrl;
+    if (adminIconUrl !== undefined) updateData.adminIconUrl = adminIconUrl;
     if (privacyPolicy !== undefined) updateData.privacyPolicy = privacyPolicy;
     if (termsAndConditions !== undefined) updateData.termsAndConditions = termsAndConditions;
     if (req.body.consentSettings !== undefined) {

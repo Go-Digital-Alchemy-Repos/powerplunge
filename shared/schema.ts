@@ -193,6 +193,7 @@ export const siteSettings = pgTable("site_settings", {
   companyAddress: text("company_address"),
   companyPhone: text("company_phone"),
   logoUrl: text("logo_url"),
+  adminIconUrl: text("admin_icon_url"),
   // Email settings
   fromEmail: text("from_email"),
   replyToEmail: text("reply_to_email"),
