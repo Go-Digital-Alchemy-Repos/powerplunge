@@ -172,7 +172,16 @@ export function useCustomerAuth() {
     [setToken]
   );
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    // Best-effort clear any admin session cookie
+    try {
+      await fetch("/api/admin/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch (_) {
+      // Ignore — admin logout is best-effort
+    }
     clearToken();
     setState({ customer: null, isLoading: false, isAuthenticated: false });
   }, [clearToken]);

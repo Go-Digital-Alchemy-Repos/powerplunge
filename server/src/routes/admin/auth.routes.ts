@@ -1,7 +1,6 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { storage } from "../../../storage";
-import { createSessionToken } from "../../middleware/customer-auth.middleware";
 import { authLimiter } from "../../middleware/rate-limiter";
 
 const router = Router();
@@ -42,20 +41,10 @@ router.post("/setup", authLimiter, async (req: any, res) => {
 
     req.session.adminId = admin.id;
 
-    let customerRecord = await storage.getCustomerByEmail(email);
-    if (!customerRecord) {
-      const customerHash = await bcrypt.hash(password, 10);
-      customerRecord = await storage.createCustomer({
-        email,
-        name,
-        passwordHash: customerHash,
-      });
-    }
-    const sessionToken = createSessionToken(customerRecord.id, email);
-
+    // Admin setup only creates admin session — no customer session token issued.
+    // Storefront access requires separate customer login.
     res.status(201).json({ 
       success: true, 
-      sessionToken,
       admin: { id: admin.id, email: admin.email, name: admin.name } 
     });
   } catch (error) {
@@ -83,20 +72,10 @@ router.post("/login", authLimiter, async (req: any, res) => {
 
     req.session.adminId = admin.id;
 
-    let customerRecord = await storage.getCustomerByEmail(email);
-    if (!customerRecord) {
-      const customerHash = await bcrypt.hash(password, 10);
-      customerRecord = await storage.createCustomer({
-        email,
-        name: admin.name,
-        passwordHash: customerHash,
-      });
-    }
-    const sessionToken = createSessionToken(customerRecord.id, email);
-
+    // Admin login only creates admin session — no customer session token issued.
+    // Storefront access requires separate customer login.
     res.json({ 
       success: true, 
-      sessionToken,
       admin: { id: admin.id, email: admin.email, name: admin.name } 
     });
   } catch (error) {

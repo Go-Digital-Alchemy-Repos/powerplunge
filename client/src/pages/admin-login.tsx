@@ -13,9 +13,12 @@ export default function AdminLogin() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingSetup, setIsCheckingSetup] = useState(true);
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
+  const [formData, setFormData] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return {
+      email: params.get("email") || "",
+      password: "",
+    };
   });
 
   useEffect(() => {
@@ -46,10 +49,6 @@ export default function AdminLogin() {
 
       if (!response.ok) {
         throw new Error(data.message || "Login failed");
-      }
-
-      if (data.sessionToken) {
-        localStorage.setItem("customerSessionToken", data.sessionToken);
       }
 
       toast({

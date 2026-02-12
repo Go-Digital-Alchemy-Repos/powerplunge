@@ -85,54 +85,18 @@ router.post("/login", authLimiter, async (req: any, res) => {
     const email = normalizeEmail(parsed.email);
     const { password } = parsed;
     
-    const [customer, admin] = await Promise.all([
-      storage.getCustomerByEmail(email),
-      storage.getAdminUserByEmail(email),
-    ]);
+    // Storefront login authenticates only against customer records.
+    // Admin access requires explicit login via /admin/login.
+    const customerRecord = await storage.getCustomerByEmail(email);
     
-    let authenticated = false;
-    let adminAuthenticated = false;
-    let customerRecord = customer;
-    
-    if (admin) {
-      const adminPasswordMatch = await bcrypt.compare(password, admin.password);
-      if (adminPasswordMatch) {
-        authenticated = true;
-        adminAuthenticated = true;
-        if (req.session) {
-          req.session.adminId = admin.id;
-        }
-      }
-    }
-    
-    if (!authenticated && customerRecord) {
-      if (!customerRecord.passwordHash) {
-        return res.status(401).json({ 
-          message: "This account uses email link login. Please use 'Send login link' instead.",
-          requireMagicLink: true 
-        });
-      }
-      
-      if (customerRecord.isDisabled) {
-        return res.status(403).json({ message: "This account has been disabled" });
-      }
-      
-      const passwordMatch = await bcrypt.compare(password, customerRecord.passwordHash);
-      if (passwordMatch) {
-        authenticated = true;
-      }
-    }
-    
-    if (!authenticated) {
+    if (!customerRecord) {
       return res.status(401).json({ message: "Invalid email or password" });
     }
     
-    if (!customerRecord) {
-      const passwordHash = await bcrypt.hash(password, 10);
-      customerRecord = await storage.createCustomer({
-        email,
-        name: admin!.name,
-        passwordHash,
+    if (!customerRecord.passwordHash) {
+      return res.status(401).json({ 
+        message: "This account uses email link login. Please use 'Send login link' instead.",
+        requireMagicLink: true 
       });
     }
     
@@ -140,12 +104,16 @@ router.post("/login", authLimiter, async (req: any, res) => {
       return res.status(403).json({ message: "This account has been disabled" });
     }
     
+    const passwordMatch = await bcrypt.compare(password, customerRecord.passwordHash);
+    if (!passwordMatch) {
+      return res.status(401).json({ message: "Invalid email or password" });
+    }
+    
     const sessionToken = createSessionToken(customerRecord.id, email);
     
     return res.json({
       success: true,
       sessionToken,
-      isAdmin: adminAuthenticated,
       customer: {
         id: customerRecord.id,
         email: customerRecord.email,
@@ -225,6 +193,23 @@ router.post("/verify-magic-link", passwordResetLimiter, async (req, res) => {
     }
     console.error("Token verification error:", error);
     res.status(500).json({ message: "Failed to verify token" });
+  }
+});
+
+// Checks if the authenticated customer's email has a corresponding admin account.
+// Returns eligibility status only — does not grant any admin session.
+router.get("/check-admin-eligible", requireCustomerAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const customerId = req.customerSession!.customerId;
+    const customer = await storage.getCustomer(customerId);
+    if (!customer) {
+      return res.json({ eligible: false });
+    }
+    const admin = await storage.getAdminUserByEmail(customer.email);
+    return res.json({ eligible: !!admin });
+  } catch (error) {
+    console.error("Admin eligibility check error:", error);
+    return res.json({ eligible: false });
   }
 });
 

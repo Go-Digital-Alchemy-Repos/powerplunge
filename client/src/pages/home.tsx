@@ -3,7 +3,7 @@ import { useLocation, Link } from "wouter";
 import { openConsentPreferences } from "@/components/ConsentBanner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Check, ShoppingCart, Zap, Shield, Snowflake, Timer, X, Plus, Minus, Truck, Award, HeartPulse, Dumbbell, Building2, Sparkles, ThermometerSnowflake, Volume2, Filter, Gauge, User, LogOut, Settings, Link2, Headphones, Package, LayoutDashboard } from "lucide-react";
+import { Check, ShoppingCart, Zap, Shield, Snowflake, Timer, X, Plus, Minus, Truck, Award, HeartPulse, Dumbbell, Building2, Sparkles, ThermometerSnowflake, Volume2, Filter, Gauge, User, LogOut, Settings, Link2, Headphones, LayoutDashboard } from "lucide-react";
 import DynamicNav from "@/components/DynamicNav";
 import CartUpsells from "@/components/CartUpsells";
 import PageRenderer from "@/components/PageRenderer";
@@ -11,7 +11,6 @@ import SeoHead from "@/components/SeoHead";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useCustomerAuth } from "@/hooks/use-customer-auth";
-import { useAdmin } from "@/hooks/use-admin";
 import { trackAddToCart, trackViewItem, trackViewItemList } from "@/lib/analytics";
 import chillerImage from "@assets/power_plunge_1hp_chiller_mockup_1767902865789.png";
 import tubImage from "@assets/power_plunge_portable_tub_mockup_1767902865790.png";
@@ -110,7 +109,21 @@ export default function Home() {
   const [product, setProduct] = useState<Product>(fallbackProduct);
   const [quantity, setQuantity] = useState(1);
   const { customer, isLoading: authLoading, isAuthenticated, logout, getAuthHeader } = useCustomerAuth();
-  const { admin, isAuthenticated: isAdminAuthenticated } = useAdmin();
+
+  // Check if this customer email has a corresponding admin account (without granting admin access)
+  const { data: adminEligibility } = useQuery<{ eligible: boolean }>({
+    queryKey: ["/api/customer/auth/check-admin-eligible"],
+    queryFn: async () => {
+      const res = await fetch("/api/customer/auth/check-admin-eligible", {
+        headers: { ...getAuthHeader() },
+      });
+      if (!res.ok) return { eligible: false };
+      return res.json();
+    },
+    enabled: isAuthenticated,
+    staleTime: 1000 * 60 * 5,
+  });
+  const isAdminEligible = adminEligibility?.eligible ?? false;
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -279,21 +292,15 @@ export default function Home() {
                         </DropdownMenuItem>
                       </>
                     )}
-                    {isAdminAuthenticated && (admin?.role === "super_admin" || admin?.role === "admin" || admin?.role === "store_manager") && (
+                    {isAdminEligible && (
                       <>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => setLocation("/admin/dashboard")} data-testid="menu-admin-dashboard">
+                        <DropdownMenuItem
+                          onClick={() => setLocation(`/admin/login?email=${encodeURIComponent(customer?.email || "")}`)}
+                          data-testid="menu-admin-portal"
+                        >
                           <LayoutDashboard className="w-4 h-4 mr-2" />
-                          Admin Dashboard
-                        </DropdownMenuItem>
-                      </>
-                    )}
-                    {isAdminAuthenticated && admin?.role === "fulfillment" && (
-                      <>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => setLocation("/admin/orders")} data-testid="menu-fulfillment">
-                          <Package className="w-4 h-4 mr-2" />
-                          Fulfillment
+                          Go to Admin Portal
                         </DropdownMenuItem>
                       </>
                     )}

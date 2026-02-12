@@ -104,10 +104,6 @@ export default function AdminSetup() {
         throw new Error(data.message || "Setup failed");
       }
 
-      if (data.sessionToken) {
-        localStorage.setItem("customerSessionToken", data.sessionToken);
-      }
-
       setAdminName(formData.name);
       setStep("success");
     } catch (error: any) {

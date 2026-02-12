@@ -10,11 +10,28 @@ declare module "express-session" {
   }
 }
 
-export function requireAdmin(req: Request, res: Response, next: NextFunction) {
+// Validates admin session by checking both session.adminId and that the admin user
+// still exists in the database. Rejects stale/deleted admin sessions.
+export async function requireAdmin(req: Request, res: Response, next: NextFunction) {
   if (!req.session.adminId) {
     return res.status(401).json({ message: "Unauthorized" });
   }
-  next();
+
+  try {
+    const [admin] = await db
+      .select({ id: adminUsers.id })
+      .from(adminUsers)
+      .where(eq(adminUsers.id, req.session.adminId));
+
+    if (!admin) {
+      req.session.destroy(() => {});
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    next();
+  } catch (error) {
+    return res.status(500).json({ message: "Error validating admin session" });
+  }
 }
 
 // Middleware to require specific roles (admin, store_manager, or fulfillment)
@@ -32,7 +49,8 @@ export function requireRole(...allowedRoles: string[]) {
         .where(eq(adminUsers.id, req.session.adminId));
 
       if (!admin) {
-        return res.status(401).json({ message: "Admin not found" });
+        req.session.destroy(() => {});
+        return res.status(401).json({ message: "Unauthorized" });
       }
 
       // Admin and super_admin roles have access to everything

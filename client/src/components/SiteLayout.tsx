@@ -1,12 +1,12 @@
 import { useState, useEffect, type ReactNode } from "react";
 import { useLocation, Link } from "wouter";
 import { openConsentPreferences } from "@/components/ConsentBanner";
-import { ShoppingCart, User, LogOut, Settings, Link2, Headphones, Package, LayoutDashboard } from "lucide-react";
+import { ShoppingCart, User, LogOut, Settings, Link2, Headphones, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import DynamicNav from "@/components/DynamicNav";
 import { useCustomerAuth } from "@/hooks/use-customer-auth";
-import { useAdmin } from "@/hooks/use-admin";
+import { useQuery } from "@tanstack/react-query";
 import { useBranding } from "@/hooks/use-branding";
 
 interface CartItem {
@@ -19,9 +19,23 @@ interface CartItem {
 
 export default function SiteLayout({ children }: { children: ReactNode }) {
   const [, setLocation] = useLocation();
-  const { customer, isAuthenticated, isLoading: authLoading, logout } = useCustomerAuth();
-  const { admin, isAuthenticated: isAdminAuthenticated } = useAdmin();
+  const { customer, isAuthenticated, isLoading: authLoading, logout, getAuthHeader } = useCustomerAuth();
   const { logoSrc, companyName } = useBranding();
+
+  // Check if this customer email has a corresponding admin account (without granting admin access)
+  const { data: adminEligibility } = useQuery<{ eligible: boolean }>({
+    queryKey: ["/api/customer/auth/check-admin-eligible"],
+    queryFn: async () => {
+      const res = await fetch("/api/customer/auth/check-admin-eligible", {
+        headers: { ...getAuthHeader() },
+      });
+      if (!res.ok) return { eligible: false };
+      return res.json();
+    },
+    enabled: isAuthenticated,
+    staleTime: 1000 * 60 * 5,
+  });
+  const isAdminEligible = adminEligibility?.eligible ?? false;
 
   const [cart, setCart] = useState<CartItem[]>(() => {
     if (typeof window !== "undefined") {
@@ -91,21 +105,15 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
                         </DropdownMenuItem>
                       </>
                     )}
-                    {isAdminAuthenticated && (admin?.role === "super_admin" || admin?.role === "admin" || admin?.role === "store_manager") && (
+                    {isAdminEligible && (
                       <>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => setLocation("/admin/dashboard")} data-testid="menu-admin-dashboard">
+                        <DropdownMenuItem
+                          onClick={() => setLocation(`/admin/login?email=${encodeURIComponent(customer?.email || "")}`)}
+                          data-testid="menu-admin-portal"
+                        >
                           <LayoutDashboard className="w-4 h-4 mr-2" />
-                          Admin Dashboard
-                        </DropdownMenuItem>
-                      </>
-                    )}
-                    {isAdminAuthenticated && admin?.role === "fulfillment" && (
-                      <>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => setLocation("/admin/orders")} data-testid="menu-fulfillment">
-                          <Package className="w-4 h-4 mr-2" />
-                          Fulfillment
+                          Go to Admin Portal
                         </DropdownMenuItem>
                       </>
                     )}
