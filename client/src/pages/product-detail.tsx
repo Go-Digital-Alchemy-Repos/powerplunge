@@ -2,9 +2,10 @@ import { useState, useEffect } from "react";
 import { useRoute, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { ArrowLeft, ShoppingCart, Check, Minus, Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, ShoppingCart, Check, Minus, Plus, ChevronLeft, ChevronRight, Expand } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SiteLayout from "@/components/SiteLayout";
+import ImageLightbox from "@/components/ui/image-lightbox";
 import { trackViewItem, trackAddToCart } from "@/lib/analytics";
 
 interface Product {
@@ -40,6 +41,7 @@ export default function ProductDetail() {
 
   const [quantity, setQuantity] = useState(1);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const [cart, setCart] = useState<CartItem[]>(() => {
     if (typeof window !== "undefined") {
       const savedCart = localStorage.getItem("cart");
@@ -178,24 +180,34 @@ export default function ProductDetail() {
           >
             {allImages.length > 0 ? (
               <div>
-                <div className="relative rounded-xl overflow-hidden bg-slate-800/50 border border-slate-700 mb-4">
+                <div
+                  className="relative rounded-xl overflow-hidden bg-slate-800/50 border border-slate-700 mb-4 cursor-pointer group"
+                  onClick={() => setLightboxOpen(true)}
+                  data-testid="button-open-lightbox"
+                >
                   <img
                     src={allImages[selectedImageIndex]}
                     alt={product.name}
-                    className="w-full h-[400px] sm:h-[500px] object-cover"
+                    className="w-full h-[400px] sm:h-[500px] object-cover transition-transform duration-300 group-hover:scale-[1.02]"
                     data-testid="img-product-main"
                   />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                  <div className="absolute bottom-4 right-4 bg-black/60 backdrop-blur-sm text-white/90 px-3 py-2 rounded-lg flex items-center gap-2 text-sm opacity-80 group-hover:opacity-100 transition-opacity pointer-events-none">
+                    <Expand className="w-4 h-4" />
+                    <span className="hidden sm:inline">Click to enlarge</span>
+                    <span className="sm:hidden">Tap to enlarge</span>
+                  </div>
                   {allImages.length > 1 && (
                     <>
                       <button
-                        onClick={() => setSelectedImageIndex(i => i === 0 ? allImages.length - 1 : i - 1)}
+                        onClick={(e) => { e.stopPropagation(); setSelectedImageIndex(i => i === 0 ? allImages.length - 1 : i - 1); }}
                         className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors"
                         data-testid="button-prev-image"
                       >
                         <ChevronLeft className="w-5 h-5" />
                       </button>
                       <button
-                        onClick={() => setSelectedImageIndex(i => i === allImages.length - 1 ? 0 : i + 1)}
+                        onClick={(e) => { e.stopPropagation(); setSelectedImageIndex(i => i === allImages.length - 1 ? 0 : i + 1); }}
                         className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors"
                         data-testid="button-next-image"
                       >
@@ -342,6 +354,15 @@ export default function ProductDetail() {
           </motion.div>
         </div>
       </div>
+
+      <ImageLightbox
+        images={allImages}
+        initialIndex={selectedImageIndex}
+        alt={product.name}
+        open={lightboxOpen}
+        onClose={() => setLightboxOpen(false)}
+        onIndexChange={setSelectedImageIndex}
+      />
     </SiteLayout>
   );
 }
