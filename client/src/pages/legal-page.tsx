@@ -3,7 +3,7 @@ import { useRoute } from "wouter";
 import SiteLayout from "@/components/SiteLayout";
 
 export default function LegalPage() {
-  const [, params] = useRoute("/privacy-policy");
+  useRoute("/privacy-policy");
   const [matchTerms] = useRoute("/terms-and-conditions");
 
   const type = matchTerms ? "terms-and-conditions" : "privacy-policy";
