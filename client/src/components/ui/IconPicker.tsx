@@ -151,7 +151,14 @@ export function IconPicker({ value, onChange, className, placeholder = "Select i
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0" align="start">
+      <PopoverContent
+        className="w-80 p-0"
+        align="start"
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
+        onMouseDown={(e) => e.stopPropagation()}
+        onPointerDown={(e) => e.stopPropagation()}
+      >
         <div className="p-2 border-b border-border">
           <Input
             placeholder="Search icons..."
@@ -175,13 +182,17 @@ export function IconPicker({ value, onChange, className, placeholder = "Select i
                 return (
                   <Button
                     key={iconName}
+                    type="button"
                     variant="ghost"
                     size="sm"
                     className={cn(
                       "h-9 w-9 p-0",
                       isSelected && "bg-cyan-500/20 text-cyan-400 border border-cyan-500/50"
                     )}
-                    onClick={() => handleSelect(iconName)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSelect(iconName);
+                    }}
                     title={kebabName}
                     aria-label={`Select ${kebabName} icon`}
                     data-testid={`icon-option-${kebabName}`}
@@ -201,10 +212,12 @@ export function IconPicker({ value, onChange, className, placeholder = "Select i
         {value && (
           <div className="p-2 border-t border-border">
             <Button
+              type="button"
               variant="ghost"
               size="sm"
               className="w-full text-xs text-muted-foreground"
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 onChange("");
                 setOpen(false);
               }}
