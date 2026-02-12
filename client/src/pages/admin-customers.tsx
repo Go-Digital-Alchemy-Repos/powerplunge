@@ -188,7 +188,7 @@ export default function AdminCustomers() {
     <div className="min-h-screen bg-background">
       <AdminNav currentPage="customers" role={role} />
 
-      <main className="max-w-6xl mx-auto px-6 py-8">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
         <div className="flex items-center justify-between mb-8">
           <div>
             <h2 className="font-display text-2xl font-bold">Customers</h2>
@@ -221,7 +221,7 @@ export default function AdminCustomers() {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
           </div>
         ) : (
-          <div className="bg-card rounded-xl border border-border overflow-hidden">
+          <div className="bg-card rounded-xl border border-border overflow-hidden overflow-x-auto">
             <table className="w-full">
               <thead className="bg-muted/50">
                 <tr>

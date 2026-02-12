@@ -697,7 +697,7 @@ export default function AdminAffiliates() {
     <div className="min-h-screen bg-background">
       <AdminNav currentPage="affiliates" role={role} />
 
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         <div className="flex items-center justify-between mb-6">
           <h2 className="font-display text-2xl font-bold">Affiliate Revenue Engine</h2>
           <div className="flex gap-2">
@@ -832,6 +832,7 @@ export default function AdminAffiliates() {
               ) : !leaderboard?.length ? (
                 <p className="text-muted-foreground">No affiliates yet</p>
               ) : (
+                <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -906,6 +907,7 @@ export default function AdminAffiliates() {
                     ))}
                   </TableBody>
                 </Table>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -1066,6 +1068,7 @@ export default function AdminAffiliates() {
                     {!commissions?.length ? (
                       <p className="text-muted-foreground">No commissions yet</p>
                     ) : (
+                      <div className="overflow-x-auto">
                       <Table>
                         <TableHeader>
                           <TableRow>
@@ -1143,6 +1146,7 @@ export default function AdminAffiliates() {
                           ))}
                         </TableBody>
                       </Table>
+                      </div>
                     )}
                   </CardContent>
                 </Card>
@@ -1157,6 +1161,7 @@ export default function AdminAffiliates() {
                     {!referredCustomers?.length ? (
                       <p className="text-muted-foreground">No referred customers yet</p>
                     ) : (
+                      <div className="overflow-x-auto">
                       <Table>
                         <TableHeader>
                           <TableRow>
@@ -1186,6 +1191,7 @@ export default function AdminAffiliates() {
                           ))}
                         </TableBody>
                       </Table>
+                      </div>
                     )}
                   </CardContent>
                 </Card>
@@ -1200,6 +1206,7 @@ export default function AdminAffiliates() {
                     {!affiliatePayouts?.length ? (
                       <p className="text-muted-foreground">No payouts yet</p>
                     ) : (
+                      <div className="overflow-x-auto">
                       <Table>
                         <TableHeader>
                           <TableRow>
@@ -1226,6 +1233,7 @@ export default function AdminAffiliates() {
                           ))}
                         </TableBody>
                       </Table>
+                      </div>
                     )}
                   </CardContent>
                 </Card>
@@ -1344,6 +1352,7 @@ export default function AdminAffiliates() {
                 {!displayedPayouts?.length ? (
                   <p className="text-muted-foreground">No payout requests</p>
                 ) : (
+                  <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -1452,6 +1461,7 @@ export default function AdminAffiliates() {
                       ))}
                     </TableBody>
                   </Table>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -1624,6 +1634,7 @@ export default function AdminAffiliates() {
                     <Button onClick={() => setShowCreateInvite(true)}>Create First Invite</Button>
                   </div>
                 ) : (
+                  <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -1721,6 +1732,7 @@ export default function AdminAffiliates() {
                       ))}
                     </TableBody>
                   </Table>
+                  </div>
                 )}
               </CardContent>
             </Card>

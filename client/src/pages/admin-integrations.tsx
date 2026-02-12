@@ -207,7 +207,7 @@ export default function AdminIntegrations() {
     <div className="min-h-screen bg-background">
       <AdminNav currentPage="integrations" role={role} />
 
-      <div className="max-w-4xl mx-auto px-6 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
         <div className="mb-8">
           <h2 className="text-3xl font-bold">Integrations</h2>
           <p className="text-muted-foreground mt-2">

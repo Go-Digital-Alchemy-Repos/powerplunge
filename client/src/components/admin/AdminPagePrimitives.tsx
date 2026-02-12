@@ -10,19 +10,19 @@ interface AdminPageProps {
 
 export function AdminPage({ title, subtitle, actions, children }: AdminPageProps) {
   return (
-    <div className="min-h-screen bg-gray-950 text-white" data-testid="admin-page-wrapper">
-      <div className="flex items-start justify-between px-6 pt-6 pb-4" data-testid="admin-page-header">
-        <div>
-          <h1 className="text-2xl font-bold" data-testid="admin-page-title">{title}</h1>
+    <div className="min-h-screen bg-gray-950 text-white overflow-x-hidden" data-testid="admin-page-wrapper">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 px-4 sm:px-6 pt-4 sm:pt-6 pb-4" data-testid="admin-page-header">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold truncate" data-testid="admin-page-title">{title}</h1>
           {subtitle && (
             <p className="text-gray-400 text-sm mt-1" data-testid="admin-page-subtitle">{subtitle}</p>
           )}
         </div>
         {actions && (
-          <div className="flex gap-2" data-testid="admin-page-actions">{actions}</div>
+          <div className="flex gap-2 flex-shrink-0 flex-wrap" data-testid="admin-page-actions">{actions}</div>
         )}
       </div>
-      <div className="px-6 pb-8" data-testid="admin-page-content">{children}</div>
+      <div className="px-4 sm:px-6 pb-8" data-testid="admin-page-content">{children}</div>
     </div>
   );
 }
@@ -56,7 +56,7 @@ export function AdminCard({ title, description, children, className, actions }: 
   const hasHeader = title || description || actions;
   return (
     <div
-      className={cn("bg-gray-900/50 border border-gray-800/60 rounded-lg p-5", className)}
+      className={cn("bg-gray-900/50 border border-gray-800/60 rounded-lg p-4 sm:p-5", className)}
       data-testid="admin-card-wrapper"
     >
       {hasHeader && (
@@ -86,7 +86,7 @@ interface AdminToolbarProps {
 
 export function AdminToolbar({ children, className }: AdminToolbarProps) {
   return (
-    <div className={cn("flex items-center gap-3 mb-4", className)} data-testid="admin-toolbar-wrapper">
+    <div className={cn("flex flex-wrap items-center gap-3 mb-4", className)} data-testid="admin-toolbar-wrapper">
       {children}
     </div>
   );

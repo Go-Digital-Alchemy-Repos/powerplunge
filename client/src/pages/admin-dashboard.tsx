@@ -58,7 +58,7 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-background font-sans">
       <AdminNav currentPage="home" role={role} />
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         <h2 className="text-3xl font-bold mb-8 font-sans">Dashboard</h2>
 
         {isLoading ? (

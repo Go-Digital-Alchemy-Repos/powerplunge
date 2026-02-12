@@ -356,10 +356,10 @@ export default function AdminOrders() {
     <div className="min-h-screen bg-background">
       <AdminNav currentPage="orders" role={role} />
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         <div className="flex items-center justify-between mb-6">
           <h2 className="font-display text-3xl font-bold">Orders</h2>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <SavedFiltersPanel
               savedFilters={savedFilters}
               filterName={filterName}

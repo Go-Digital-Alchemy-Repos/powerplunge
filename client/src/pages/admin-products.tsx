@@ -440,7 +440,7 @@ export default function AdminProducts() {
     <div className="min-h-screen bg-background">
       <AdminNav currentPage="products" role={role} />
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         <div className="flex items-center justify-between mb-8">
           <h2 className="font-display text-3xl font-bold">Products</h2>
           <Button className="gap-2" onClick={() => openPanel()} data-testid="button-add-product">

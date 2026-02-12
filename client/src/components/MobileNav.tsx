@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ShoppingCart, User, LogOut, Settings, Link2, Headphones, LayoutDashboard, ChevronRight } from "lucide-react";
+import { ShoppingCart, User, UserPlus, LogOut, Settings, Link2, Headphones, LayoutDashboard, ChevronRight, Shield, FileText, Cookie } from "lucide-react";
+import { openConsentPreferences } from "@/components/ConsentBanner";
 
 interface NavMenuItem {
   id: string;
@@ -162,7 +163,10 @@ export default function MobileNav({
             )}
           </div>
 
-          <div className="border-t border-border mt-2 pt-2 pb-6">
+          <div className="border-t border-border mt-2 pt-2">
+            <div className="px-4 pt-1 pb-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              Account
+            </div>
             {isAuthenticated ? (
               <>
                 <div className="px-4 py-2 text-sm text-muted-foreground truncate">
@@ -214,15 +218,55 @@ export default function MobileNav({
                 </button>
               </>
             ) : (
-              <button
-                onClick={() => onNavigate("/login")}
-                className="flex items-center gap-3 w-full px-4 py-3.5 text-base font-medium text-foreground hover:bg-accent/50 active:bg-accent transition-colors"
-                data-testid="mobile-menu-login"
-              >
-                <User className="w-4 h-4" />
-                Sign In
-              </button>
+              <>
+                <button
+                  onClick={() => onNavigate("/login")}
+                  className="flex items-center gap-3 w-full px-4 py-3.5 text-base font-medium text-foreground hover:bg-accent/50 active:bg-accent transition-colors"
+                  data-testid="mobile-menu-login"
+                >
+                  <User className="w-4 h-4" />
+                  Sign In
+                </button>
+                <button
+                  onClick={() => onNavigate("/register")}
+                  className="flex items-center gap-3 w-full px-4 py-3.5 text-base font-medium text-foreground hover:bg-accent/50 active:bg-accent transition-colors"
+                  data-testid="mobile-menu-register"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  Create Account
+                </button>
+              </>
             )}
+          </div>
+
+          <div className="border-t border-border mt-2 pt-2 pb-6">
+            <div className="px-4 pt-1 pb-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              Legal
+            </div>
+            <button
+              onClick={() => onNavigate("/privacy-policy")}
+              className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 active:bg-accent transition-colors"
+              data-testid="mobile-menu-privacy"
+            >
+              <Shield className="w-4 h-4" />
+              Privacy Policy
+            </button>
+            <button
+              onClick={() => onNavigate("/terms-and-conditions")}
+              className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 active:bg-accent transition-colors"
+              data-testid="mobile-menu-terms"
+            >
+              <FileText className="w-4 h-4" />
+              Terms & Conditions
+            </button>
+            <button
+              onClick={() => { openConsentPreferences(); onClose(); }}
+              className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 active:bg-accent transition-colors"
+              data-testid="mobile-menu-cookies"
+            >
+              <Cookie className="w-4 h-4" />
+              Cookie Preferences
+            </button>
           </div>
         </div>
       </div>

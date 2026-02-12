@@ -162,7 +162,7 @@ export default function AdminSettings() {
   return (
     <div className="min-h-screen bg-background">
       <AdminNav currentPage="settings" role={role} />
-      <div className="max-w-4xl mx-auto px-6 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
         <div className="mb-8">
           <h2 className="text-3xl font-bold">Site Settings</h2>
           <p className="text-muted-foreground mt-2">Configure your website, branding, notifications, and integrations.</p>
