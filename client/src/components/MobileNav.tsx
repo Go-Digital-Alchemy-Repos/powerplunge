@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ShoppingCart, User, LogOut, Settings, Link2, Headphones, LayoutDashboard, ChevronRight } from "lucide-react";
 
@@ -74,6 +75,15 @@ export default function MobileNav({
     },
     staleTime: 60000,
   });
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 

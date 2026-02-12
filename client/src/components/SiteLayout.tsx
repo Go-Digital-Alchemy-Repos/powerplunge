@@ -81,7 +81,7 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
-              className="md:hidden flex items-center justify-center w-10 h-10 -ml-1 rounded-lg hover:bg-accent transition-colors"
+              className="md:hidden flex items-center justify-center w-11 h-11 min-w-[44px] min-h-[44px] -ml-1 rounded-lg hover:bg-accent transition-colors"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               aria-label="Toggle menu"
               data-testid="button-mobile-menu"
