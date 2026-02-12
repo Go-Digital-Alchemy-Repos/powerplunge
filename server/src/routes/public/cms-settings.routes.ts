@@ -24,4 +24,21 @@ router.get("/", async (_req: Request, res: Response) => {
   }
 });
 
+router.get("/legal/:type", async (req: Request, res: Response) => {
+  try {
+    const { type } = req.params;
+    if (type !== "privacy-policy" && type !== "terms-and-conditions") {
+      return res.status(404).json({ message: "Page not found" });
+    }
+    const settings = await storage.getSiteSettings();
+    const field = type === "privacy-policy" ? "privacyPolicy" : "termsAndConditions";
+    res.json({
+      content: settings?.[field] || null,
+      companyName: settings?.companyName || "Power Plunge",
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch legal content" });
+  }
+});
+
 export default router;

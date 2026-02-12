@@ -1,5 +1,5 @@
 import { useState, useEffect, type ReactNode } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { ShoppingCart, User, LogOut, Settings, Link2, Headphones, Package, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -151,7 +151,15 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
             <div className="flex items-center">
               <img src={logoSrc} alt={companyName} className="h-8" />
             </div>
-            <div className="flex items-center gap-6">
+            <div className="flex flex-col items-center gap-3 md:items-end">
+              <div className="flex items-center gap-4">
+                <Link href="/privacy-policy" className="text-muted-foreground text-sm hover:text-foreground transition-colors" data-testid="link-privacy-policy">
+                  Privacy Policy
+                </Link>
+                <Link href="/terms-and-conditions" className="text-muted-foreground text-sm hover:text-foreground transition-colors" data-testid="link-terms">
+                  Terms & Conditions
+                </Link>
+              </div>
               <p className="text-muted-foreground text-sm">
                 Mind + Body + Spirit | &copy; 2026 Power Plunge. All rights reserved.
               </p>

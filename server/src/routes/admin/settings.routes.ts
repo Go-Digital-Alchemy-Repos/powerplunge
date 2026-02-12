@@ -62,7 +62,7 @@ router.get("/", async (req: any, res) => {
 
 router.patch("/", async (req: any, res) => {
   try {
-    const { companyName, companyTagline, companyAddress, companyPhone, orderNotificationEmail, supportEmail, gaMeasurementId, logoUrl } = req.body;
+    const { companyName, companyTagline, companyAddress, companyPhone, orderNotificationEmail, supportEmail, gaMeasurementId, logoUrl, privacyPolicy, termsAndConditions } = req.body;
     const updateData: Record<string, any> = {};
     if (companyName !== undefined) updateData.companyName = companyName;
     if (companyTagline !== undefined) updateData.companyTagline = companyTagline;
@@ -72,6 +72,8 @@ router.patch("/", async (req: any, res) => {
     if (supportEmail !== undefined) updateData.supportEmail = supportEmail;
     if (gaMeasurementId !== undefined) updateData.gaMeasurementId = gaMeasurementId;
     if (logoUrl !== undefined) updateData.logoUrl = logoUrl;
+    if (privacyPolicy !== undefined) updateData.privacyPolicy = privacyPolicy;
+    if (termsAndConditions !== undefined) updateData.termsAndConditions = termsAndConditions;
     const settings = await storage.updateSiteSettings(updateData);
     res.json(settings);
   } catch (error) {

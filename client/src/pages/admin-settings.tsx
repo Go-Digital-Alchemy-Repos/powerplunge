@@ -8,8 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useAdmin } from "@/hooks/use-admin";
-import { Building2, Save, Mail, BarChart3, ImageIcon, Upload, Trash2 } from "lucide-react";
+import { Building2, Save, Mail, BarChart3, ImageIcon, Upload, Trash2, Scale } from "lucide-react";
 import AdminNav from "@/components/admin/AdminNav";
+import RichTextEditor from "@/components/admin/RichTextEditor";
 
 interface SiteSettings {
   id: string;
@@ -21,6 +22,8 @@ interface SiteSettings {
   supportEmail?: string;
   gaMeasurementId?: string;
   logoUrl?: string;
+  privacyPolicy?: string;
+  termsAndConditions?: string;
 }
 
 export default function AdminSettings() {
@@ -168,7 +171,7 @@ export default function AdminSettings() {
           <div className="text-center py-12 text-muted-foreground">Loading settings...</div>
         ) : (
           <Tabs defaultValue="company" className="space-y-6" data-testid="settings-tabs">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="company" className="gap-2" data-testid="tab-company">
                 <Building2 className="w-4 h-4 hidden sm:inline" />
                 Company
@@ -184,6 +187,10 @@ export default function AdminSettings() {
               <TabsTrigger value="analytics" className="gap-2" data-testid="tab-analytics">
                 <BarChart3 className="w-4 h-4 hidden sm:inline" />
                 Analytics
+              </TabsTrigger>
+              <TabsTrigger value="legal" className="gap-2" data-testid="tab-legal">
+                <Scale className="w-4 h-4 hidden sm:inline" />
+                Legal
               </TabsTrigger>
             </TabsList>
 
@@ -398,6 +405,53 @@ export default function AdminSettings() {
                 </Card>
 
                 <Button type="submit" className="w-full gap-2" disabled={updateMutation.isPending} data-testid="button-save-analytics-settings">
+                  <Save className="w-4 h-4" />
+                  {updateMutation.isPending ? "Saving..." : "Save Settings"}
+                </Button>
+              </TabsContent>
+
+              <TabsContent value="legal" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Scale className="w-5 h-5" />
+                      Privacy Policy
+                    </CardTitle>
+                    <CardDescription>
+                      Your website's privacy policy displayed at /privacy-policy
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <RichTextEditor
+                      value={formData.privacyPolicy || ""}
+                      onChange={(html) => setFormData({ ...formData, privacyPolicy: html })}
+                      placeholder="Enter your privacy policy content..."
+                      data-testid="editor-privacy-policy"
+                    />
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Scale className="w-5 h-5" />
+                      Terms & Conditions
+                    </CardTitle>
+                    <CardDescription>
+                      Your website's terms and conditions displayed at /terms-and-conditions
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <RichTextEditor
+                      value={formData.termsAndConditions || ""}
+                      onChange={(html) => setFormData({ ...formData, termsAndConditions: html })}
+                      placeholder="Enter your terms and conditions content..."
+                      data-testid="editor-terms-conditions"
+                    />
+                  </CardContent>
+                </Card>
+
+                <Button type="submit" className="w-full gap-2" disabled={updateMutation.isPending} data-testid="button-save-legal-settings">
                   <Save className="w-4 h-4" />
                   {updateMutation.isPending ? "Saving..." : "Save Settings"}
                 </Button>

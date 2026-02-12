@@ -204,6 +204,8 @@ export const siteSettings = pgTable("site_settings", {
   globalCtaDefaults: jsonb("global_cta_defaults"),
   blogPageId: varchar("blog_page_id"),
   gaMeasurementId: text("ga_measurement_id"),
+  privacyPolicy: text("privacy_policy"),
+  termsAndConditions: text("terms_and_conditions"),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
