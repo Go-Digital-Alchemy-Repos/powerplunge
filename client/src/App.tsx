@@ -26,15 +26,16 @@ function lazyRetry(importFn: () => Promise<any>) {
 }
 
 import Home from "@/pages/home";
-import Checkout from "@/pages/checkout";
-import OrderSuccess from "@/pages/order-success";
-import TrackOrder from "@/pages/track-order";
-import MyAccount from "@/pages/my-account";
-import CustomerLogin from "@/pages/customer-login";
-import CustomerRegister from "@/pages/customer-register";
-import PageView from "@/pages/page-view";
-import Shop from "@/pages/shop";
 import NotFound from "@/pages/not-found";
+
+const Checkout = lazyRetry(() => import("@/pages/checkout"));
+const OrderSuccess = lazyRetry(() => import("@/pages/order-success"));
+const TrackOrder = lazyRetry(() => import("@/pages/track-order"));
+const MyAccount = lazyRetry(() => import("@/pages/my-account"));
+const CustomerLogin = lazyRetry(() => import("@/pages/customer-login"));
+const CustomerRegister = lazyRetry(() => import("@/pages/customer-register"));
+const PageView = lazyRetry(() => import("@/pages/page-view"));
+const Shop = lazyRetry(() => import("@/pages/shop"));
 
 const BlogIndexPage = lazyRetry(() => import("@/blog/BlogIndexPage"));
 const BlogPostPage = lazyRetry(() => import("@/blog/BlogPostPage"));
