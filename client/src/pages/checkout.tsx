@@ -22,6 +22,7 @@ import { validateEmail, validatePhone, validateRequired } from "@shared/validati
 import { trackCheckoutEvent } from "@/lib/checkout-analytics";
 import { trackBeginCheckout, trackPurchase } from "@/lib/analytics";
 import { useBranding } from "@/hooks/use-branding";
+import SiteLayout from "@/components/SiteLayout";
 
 interface CartItem {
   id: string;
@@ -805,19 +806,7 @@ export default function Checkout() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <nav className="sticky top-0 z-50 bg-card border-b border-border">
-        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/">
-            <img src={logoSrc} alt={companyName} className="h-8" />
-          </Link>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Shield className="w-4 h-4 text-green-500" />
-            Secure Checkout
-          </div>
-        </div>
-      </nav>
-
+    <SiteLayout>
       <div className="max-w-4xl mx-auto px-6 py-8">
         <Link href="/">
           <Button variant="ghost" size="sm" className="mb-6 gap-2" data-testid="button-back">
@@ -1173,6 +1162,6 @@ export default function Checkout() {
           </div>
         </div>
       </div>
-    </div>
+    </SiteLayout>
   );
 }
