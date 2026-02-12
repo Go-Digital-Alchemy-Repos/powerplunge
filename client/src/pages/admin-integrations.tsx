@@ -1075,13 +1075,13 @@ function StripeEnvPanel({ env, stripeSettings, onSaved }: {
       <div className="space-y-2">
         <Label>Publishable Key</Label>
         <Input
+          type="password"
           value={publishableKey}
           onChange={(e) => { setPublishableKey(e.target.value); setValidation(null); }}
-          placeholder={`${prefix}...`}
+          placeholder={envStatus?.configured ? "••••••••••••••••" : "Enter publishable key"}
           data-testid={`input-stripe-pk-${env}`}
         />
         {pkError && <p className="text-xs text-red-500">{pkError}</p>}
-        <p className="text-xs text-muted-foreground">Expected prefix: <code>{prefix}</code></p>
       </div>
 
       <div className="space-y-2">
@@ -1090,11 +1090,10 @@ function StripeEnvPanel({ env, stripeSettings, onSaved }: {
           type="password"
           value={secretKey}
           onChange={(e) => { setSecretKey(e.target.value); setValidation(null); }}
-          placeholder={`${skPrefix}...`}
+          placeholder={envStatus?.configured ? "••••••••••••••••" : "Enter secret key"}
           data-testid={`input-stripe-sk-${env}`}
         />
         {skError && <p className="text-xs text-red-500">{skError}</p>}
-        <p className="text-xs text-muted-foreground">Expected prefix: <code>{skPrefix}</code></p>
       </div>
 
       <div className="space-y-2">
