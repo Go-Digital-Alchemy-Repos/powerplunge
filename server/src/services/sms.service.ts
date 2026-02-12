@@ -35,6 +35,21 @@ class SmsService {
     this.configSource = null;
   }
 
+  async isSmsAvailable(): Promise<boolean> {
+    try {
+      const { storage } = await import("../../storage");
+      const settings = await storage.getIntegrationSettings();
+      if (settings?.twilioEnabled && settings.twilioAccountSid && settings.twilioAuthTokenEncrypted && settings.twilioPhoneNumber) {
+        return true;
+      }
+    } catch {}
+
+    const accountSid = process.env.TWILIO_ACCOUNT_SID;
+    const authToken = process.env.TWILIO_AUTH_TOKEN;
+    const fromNumber = process.env.TWILIO_PHONE_NUMBER;
+    return !!(accountSid && authToken && fromNumber);
+  }
+
   private async getClient() {
     if (this.client) {
       return this.client;

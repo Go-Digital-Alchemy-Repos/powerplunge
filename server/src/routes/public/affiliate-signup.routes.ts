@@ -91,9 +91,14 @@ router.get("/", async (req: Request, res: Response) => {
     }
 
     let requiresPhoneVerification = false;
+    let smsAvailable = false;
     if (invite?.targetPhone) {
-      const verified = await storage.getVerifiedVerificationForInvite(invite.id, invite.targetPhone);
-      requiresPhoneVerification = !verified;
+      const { smsService } = await import("../../services/sms.service");
+      smsAvailable = await smsService.isSmsAvailable();
+      if (smsAvailable) {
+        const verified = await storage.getVerifiedVerificationForInvite(invite.id, invite.targetPhone);
+        requiresPhoneVerification = !verified;
+      }
     }
 
     res.json({
@@ -166,20 +171,24 @@ router.post("/", affiliateSignupLimiter, async (req: Request, res: Response) => 
     }
 
     if (invite.targetPhone) {
-      let verified = false;
-      if (verificationToken) {
-        const verification = await storage.getVerificationByToken(verificationToken);
-        if (verification && verification.inviteId === invite.id && verification.status === "verified") {
-          const tokenAge = Date.now() - new Date(verification.updatedAt).getTime();
-          verified = tokenAge < VERIFICATION_TOKEN_EXPIRY_MINUTES * 60 * 1000;
+      const { smsService } = await import("../../services/sms.service");
+      const smsAvailable = await smsService.isSmsAvailable();
+      if (smsAvailable) {
+        let verified = false;
+        if (verificationToken) {
+          const verification = await storage.getVerificationByToken(verificationToken);
+          if (verification && verification.inviteId === invite.id && verification.status === "verified") {
+            const tokenAge = Date.now() - new Date(verification.updatedAt).getTime();
+            verified = tokenAge < VERIFICATION_TOKEN_EXPIRY_MINUTES * 60 * 1000;
+          }
         }
-      }
-      if (!verified) {
-        const recentVerified = await storage.getVerifiedVerificationForInvite(invite.id, invite.targetPhone);
-        verified = !!recentVerified;
-      }
-      if (!verified) {
-        return res.status(403).json({ message: "Phone verification is required before signup. Please verify your phone number first." });
+        if (!verified) {
+          const recentVerified = await storage.getVerifiedVerificationForInvite(invite.id, invite.targetPhone);
+          verified = !!recentVerified;
+        }
+        if (!verified) {
+          return res.status(403).json({ message: "Phone verification is required before signup. Please verify your phone number first." });
+        }
       }
     }
 
@@ -368,20 +377,24 @@ router.post("/join", affiliateSignupLimiter, async (req: Request, res: Response)
     }
 
     if (invite.targetPhone) {
-      let verified = false;
-      if (verificationToken) {
-        const verification = await storage.getVerificationByToken(verificationToken);
-        if (verification && verification.inviteId === invite.id && verification.status === "verified") {
-          const tokenAge = Date.now() - new Date(verification.updatedAt).getTime();
-          verified = tokenAge < VERIFICATION_TOKEN_EXPIRY_MINUTES * 60 * 1000;
+      const { smsService } = await import("../../services/sms.service");
+      const smsAvailable = await smsService.isSmsAvailable();
+      if (smsAvailable) {
+        let verified = false;
+        if (verificationToken) {
+          const verification = await storage.getVerificationByToken(verificationToken);
+          if (verification && verification.inviteId === invite.id && verification.status === "verified") {
+            const tokenAge = Date.now() - new Date(verification.updatedAt).getTime();
+            verified = tokenAge < VERIFICATION_TOKEN_EXPIRY_MINUTES * 60 * 1000;
+          }
         }
-      }
-      if (!verified) {
-        const recentVerified = await storage.getVerifiedVerificationForInvite(invite.id, invite.targetPhone);
-        verified = !!recentVerified;
-      }
-      if (!verified) {
-        return res.status(403).json({ message: "Phone verification is required before signup." });
+        if (!verified) {
+          const recentVerified = await storage.getVerifiedVerificationForInvite(invite.id, invite.targetPhone);
+          verified = !!recentVerified;
+        }
+        if (!verified) {
+          return res.status(403).json({ message: "Phone verification is required before signup." });
+        }
       }
     }
 
