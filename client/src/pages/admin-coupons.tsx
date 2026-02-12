@@ -905,7 +905,7 @@ export default function AdminCoupons() {
                 </span>
                 <input
                   type="number"
-                  value={formData.value}
+                  value={formData.value === 0 ? "" : formData.value}
                   onChange={(e) => { setFormData({ ...formData, value: parseFloat(e.target.value) || 0 }); setIsDirty(true); }}
                   min={0}
                   max={formData.type === "percentage" ? 100 : undefined}

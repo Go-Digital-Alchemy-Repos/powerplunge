@@ -33,6 +33,14 @@ function AmountTypeInput({
   const isPercent = type === "percent";
   const effectiveMax = isPercent ? (max ?? 100) : max;
   const effectiveStep = step ?? (isPercent ? 1 : 0.01);
+  const [displayValue, setDisplayValue] = React.useState(value === 0 ? "" : String(value));
+  const [isFocused, setIsFocused] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!isFocused) {
+      setDisplayValue(value === 0 ? "" : String(value));
+    }
+  }, [value, isFocused]);
 
   return (
     <div className={cn("space-y-2", className)} data-testid={dataTestId}>
@@ -78,8 +86,19 @@ function AmountTypeInput({
         </span>
         <input
           type="number"
-          value={value}
-          onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
+          value={displayValue}
+          onChange={(e) => {
+            setDisplayValue(e.target.value);
+            onChange(parseFloat(e.target.value) || 0);
+          }}
+          onFocus={() => {
+            setIsFocused(true);
+            if (value === 0) setDisplayValue("");
+          }}
+          onBlur={() => {
+            setIsFocused(false);
+            setDisplayValue(value === 0 ? "" : String(value));
+          }}
           min={min}
           max={effectiveMax}
           step={effectiveStep}
