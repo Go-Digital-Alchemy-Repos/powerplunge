@@ -11,7 +11,7 @@ import {
   List, ListOrdered, Quote, Code, Link as LinkIcon, Image as ImageIcon,
   AlignLeft, AlignCenter, AlignRight, Heading1, Heading2, Heading3,
   Undo, Redo, RemoveFormatting, Minus, Upload, FolderOpen,
-  Loader2,
+  Loader2, ClipboardPaste,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -182,6 +182,157 @@ export default function RichTextEditor({
     }
   }, [imageUrlInput, insertImage]);
 
+  const handlePasteFromClipboard = useCallback(async () => {
+    if (!editor) return;
+    try {
+      const clipboardItems = await navigator.clipboard.read();
+      let htmlContent = "";
+      let plainText = "";
+
+      for (const item of clipboardItems) {
+        if (item.types.includes("text/html")) {
+          const blob = await item.getType("text/html");
+          htmlContent = await blob.text();
+        }
+        if (item.types.includes("text/plain")) {
+          const blob = await item.getType("text/plain");
+          plainText = await blob.text();
+        }
+      }
+
+      if (htmlContent) {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(htmlContent, "text/html");
+
+        const metaTags = doc.querySelectorAll("meta, style, title, script, link");
+        metaTags.forEach(el => el.remove());
+
+        const cleanHtml = doc.body.innerHTML;
+
+        editor.chain().focus().insertContent(cleanHtml, {
+          parseOptions: { preserveWhitespace: false },
+        }).run();
+
+        toast({ title: "Content pasted with formatting preserved" });
+      } else if (plainText) {
+        const lines = plainText.split("\n");
+        let html = "";
+        let inList = false;
+        let listType = "";
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) {
+            if (inList) {
+              html += listType === "ol" ? "</ol>" : "</ul>";
+              inList = false;
+              listType = "";
+            }
+            continue;
+          }
+
+          const orderedMatch = trimmed.match(/^(\d+)[.)]\s+(.+)$/);
+          const bulletMatch = trimmed.match(/^[-•*]\s+(.+)$/);
+
+          if (orderedMatch) {
+            if (!inList || listType !== "ol") {
+              if (inList) html += listType === "ol" ? "</ol>" : "</ul>";
+              html += "<ol>";
+              inList = true;
+              listType = "ol";
+            }
+            html += `<li>${orderedMatch[2]}</li>`;
+          } else if (bulletMatch) {
+            if (!inList || listType !== "ul") {
+              if (inList) html += listType === "ol" ? "</ol>" : "</ul>";
+              html += "<ul>";
+              inList = true;
+              listType = "ul";
+            }
+            html += `<li>${bulletMatch[1]}</li>`;
+          } else {
+            if (inList) {
+              html += listType === "ol" ? "</ol>" : "</ul>";
+              inList = false;
+              listType = "";
+            }
+            html += `<p>${trimmed}</p>`;
+          }
+        }
+        if (inList) {
+          html += listType === "ol" ? "</ol>" : "</ul>";
+        }
+
+        editor.chain().focus().insertContent(html, {
+          parseOptions: { preserveWhitespace: false },
+        }).run();
+
+        toast({ title: "Content pasted with formatting preserved" });
+      }
+    } catch (err: any) {
+      try {
+        const text = await navigator.clipboard.readText();
+        if (text) {
+          const lines = text.split("\n");
+          let html = "";
+          let inList = false;
+          let listType = "";
+
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed) {
+              if (inList) {
+                html += listType === "ol" ? "</ol>" : "</ul>";
+                inList = false;
+                listType = "";
+              }
+              continue;
+            }
+
+            const orderedMatch = trimmed.match(/^(\d+)[.)]\s+(.+)$/);
+            const bulletMatch = trimmed.match(/^[-•*]\s+(.+)$/);
+
+            if (orderedMatch) {
+              if (!inList || listType !== "ol") {
+                if (inList) html += listType === "ol" ? "</ol>" : "</ul>";
+                html += "<ol>";
+                inList = true;
+                listType = "ol";
+              }
+              html += `<li>${orderedMatch[2]}</li>`;
+            } else if (bulletMatch) {
+              if (!inList || listType !== "ul") {
+                if (inList) html += listType === "ol" ? "</ol>" : "</ul>";
+                html += "<ul>";
+                inList = true;
+                listType = "ul";
+              }
+              html += `<li>${bulletMatch[1]}</li>`;
+            } else {
+              if (inList) {
+                html += listType === "ol" ? "</ol>" : "</ul>";
+                inList = false;
+                listType = "";
+              }
+              html += `<p>${trimmed}</p>`;
+            }
+          }
+          if (inList) {
+            html += listType === "ol" ? "</ol>" : "</ul>";
+          }
+
+          editor.chain().focus().insertContent(html, {
+            parseOptions: { preserveWhitespace: false },
+          }).run();
+
+          toast({ title: "Content pasted with formatting preserved" });
+        }
+      } catch {
+        toast({ title: "Unable to access clipboard", description: "Please use Ctrl+V / Cmd+V to paste, or allow clipboard permissions in your browser.", variant: "destructive" });
+      }
+    }
+  }, [editor, toast]);
+
   if (!editor) return null;
 
   return (
@@ -318,6 +469,12 @@ export default function RichTextEditor({
 
         <ToolbarDivider />
 
+        <ToolbarButton
+          onClick={handlePasteFromClipboard}
+          title="Paste from Clipboard (preserves formatting)"
+        >
+          <ClipboardPaste className="w-4 h-4" />
+        </ToolbarButton>
         <ToolbarButton
           onClick={() => editor.chain().focus().unsetAllMarks().clearNodes().run()}
           title="Clear Formatting"

@@ -174,55 +174,55 @@ function Router() {
         <Route path="/admin/login" component={AdminLogin} />
         <Route path="/admin/forgot-password" component={AdminForgotPassword} />
         <Route path="/admin/reset-password" component={AdminResetPassword} />
-        <Route path="/admin/dashboard" component={AdminDashboard} />
-        <Route path="/admin/orders" component={AdminOrders} />
-        <Route path="/admin/products" component={AdminProducts} />
-        <Route path="/admin/settings" component={AdminSettings} />
-        <Route path="/admin/team" component={AdminTeam} />
-        <Route path="/admin/customers" component={AdminCustomers} />
-        <Route path="/admin/user-management" component={AdminUserManagement} />
-        <Route path="/admin/affiliates" component={AdminAffiliates} />
-        <Route path="/admin/affiliate-settings" component={AdminAffiliateSettings} />
-        <Route path="/admin/coupons" component={AdminCoupons} />
-        <Route path="/admin/reports" component={AdminReports} />
-        <Route path="/admin/theme" component={AdminTheme} />
-        <Route path="/admin/pages" component={AdminPages} />
-        <Route path="/admin/pages/new" component={AdminPageBuilder} />
-        <Route path="/admin/pages/:id/edit" component={AdminPageBuilder} />
-        <Route path="/admin/shipping" component={AdminShipping} />
-        <Route path="/admin/email-templates" component={AdminEmailTemplates} />
-        <Route path="/admin/integrations" component={AdminIntegrations} />
-        <Route path="/admin/docs" component={AdminDocs} />
-        <Route path="/admin/docs-coverage" component={AdminDocsCoverage} />
-        <Route path="/admin/revenue" component={AdminRevenue} />
-        <Route path="/admin/upsells" component={AdminUpsells} />
-        <Route path="/admin/vip" component={AdminVip} />
-        <Route path="/admin/recovery" component={AdminRecovery} />
-        <Route path="/admin/alerts" component={AdminAlerts} />
-        <Route path="/admin/sections" component={AdminSections} />
-        <Route path="/admin/media" component={AdminMediaLibrary} />
-        <Route path="/admin/support" component={AdminSupport} />
-        <Route path="/admin/affiliate-invite-sender" component={AdminAffiliateInviteSender} />
-        <Route path="/admin/cms/posts/new">{() => <CmsErrorBoundary><AdminCmsPostEditor /></CmsErrorBoundary>}</Route>
-        <Route path="/admin/cms/posts/:id/edit">{() => <CmsErrorBoundary><AdminCmsPostEditor /></CmsErrorBoundary>}</Route>
-        <Route path="/admin/cms/posts/:id/builder">{() => <CmsErrorBoundary><AdminCmsPostBuilder /></CmsErrorBoundary>}</Route>
-        <Route path="/admin/cms/posts">{() => <CmsErrorBoundary><AdminCmsPosts /></CmsErrorBoundary>}</Route>
-        <Route path="/admin/cms/menus">{() => <CmsErrorBoundary><AdminCmsMenus /></CmsErrorBoundary>}</Route>
-        <Route path="/admin/cms/sidebars">{() => <CmsErrorBoundary><AdminCmsSidebars /></CmsErrorBoundary>}</Route>
-        <Route path="/admin/cms/presets">{() => <CmsErrorBoundary><AdminCmsPresets /></CmsErrorBoundary>}</Route>
-        <Route path="/admin/cms/generator/campaigns">{() => <CmsErrorBoundary><AdminCmsGeneratorCampaigns /></CmsErrorBoundary>}</Route>
-        <Route path="/admin/cms/generator/landing">{() => <CmsErrorBoundary><AdminCmsGeneratorLanding /></CmsErrorBoundary>}</Route>
-        <Route path="/admin/cms/pages/:id/builder">{() => <CmsErrorBoundary><AdminCmsBuilder /></CmsErrorBoundary>}</Route>
-        <Route path="/admin/cms/pages/:id/edit">{() => <CmsErrorBoundary><AdminCmsPageEdit /></CmsErrorBoundary>}</Route>
-        <Route path="/admin/cms/pages">{() => <CmsErrorBoundary><AdminCmsPages /></CmsErrorBoundary>}</Route>
+        <Route path="/admin/dashboard">{() => <AdminGuard><AdminDashboard /></AdminGuard>}</Route>
+        <Route path="/admin/orders">{() => <AdminGuard><AdminOrders /></AdminGuard>}</Route>
+        <Route path="/admin/products">{() => <AdminGuard><AdminProducts /></AdminGuard>}</Route>
+        <Route path="/admin/settings">{() => <AdminGuard><AdminSettings /></AdminGuard>}</Route>
+        <Route path="/admin/team">{() => <AdminGuard><AdminTeam /></AdminGuard>}</Route>
+        <Route path="/admin/customers">{() => <AdminGuard><AdminCustomers /></AdminGuard>}</Route>
+        <Route path="/admin/user-management">{() => <AdminGuard><AdminUserManagement /></AdminGuard>}</Route>
+        <Route path="/admin/affiliates">{() => <AdminGuard><AdminAffiliates /></AdminGuard>}</Route>
+        <Route path="/admin/affiliate-settings">{() => <AdminGuard><AdminAffiliateSettings /></AdminGuard>}</Route>
+        <Route path="/admin/coupons">{() => <AdminGuard><AdminCoupons /></AdminGuard>}</Route>
+        <Route path="/admin/reports">{() => <AdminGuard><AdminReports /></AdminGuard>}</Route>
+        <Route path="/admin/theme">{() => <AdminGuard><AdminTheme /></AdminGuard>}</Route>
+        <Route path="/admin/pages">{() => <AdminGuard><AdminPages /></AdminGuard>}</Route>
+        <Route path="/admin/pages/new">{() => <AdminGuard><AdminPageBuilder /></AdminGuard>}</Route>
+        <Route path="/admin/pages/:id/edit">{() => <AdminGuard><AdminPageBuilder /></AdminGuard>}</Route>
+        <Route path="/admin/shipping">{() => <AdminGuard><AdminShipping /></AdminGuard>}</Route>
+        <Route path="/admin/email-templates">{() => <AdminGuard><AdminEmailTemplates /></AdminGuard>}</Route>
+        <Route path="/admin/integrations">{() => <AdminGuard><AdminIntegrations /></AdminGuard>}</Route>
+        <Route path="/admin/docs">{() => <AdminGuard><AdminDocs /></AdminGuard>}</Route>
+        <Route path="/admin/docs-coverage">{() => <AdminGuard><AdminDocsCoverage /></AdminGuard>}</Route>
+        <Route path="/admin/revenue">{() => <AdminGuard><AdminRevenue /></AdminGuard>}</Route>
+        <Route path="/admin/upsells">{() => <AdminGuard><AdminUpsells /></AdminGuard>}</Route>
+        <Route path="/admin/vip">{() => <AdminGuard><AdminVip /></AdminGuard>}</Route>
+        <Route path="/admin/recovery">{() => <AdminGuard><AdminRecovery /></AdminGuard>}</Route>
+        <Route path="/admin/alerts">{() => <AdminGuard><AdminAlerts /></AdminGuard>}</Route>
+        <Route path="/admin/sections">{() => <AdminGuard><AdminSections /></AdminGuard>}</Route>
+        <Route path="/admin/media">{() => <AdminGuard><AdminMediaLibrary /></AdminGuard>}</Route>
+        <Route path="/admin/support">{() => <AdminGuard><AdminSupport /></AdminGuard>}</Route>
+        <Route path="/admin/affiliate-invite-sender">{() => <AdminGuard><AdminAffiliateInviteSender /></AdminGuard>}</Route>
+        <Route path="/admin/cms/posts/new">{() => <AdminGuard><CmsErrorBoundary><AdminCmsPostEditor /></CmsErrorBoundary></AdminGuard>}</Route>
+        <Route path="/admin/cms/posts/:id/edit">{() => <AdminGuard><CmsErrorBoundary><AdminCmsPostEditor /></CmsErrorBoundary></AdminGuard>}</Route>
+        <Route path="/admin/cms/posts/:id/builder">{() => <AdminGuard><CmsErrorBoundary><AdminCmsPostBuilder /></CmsErrorBoundary></AdminGuard>}</Route>
+        <Route path="/admin/cms/posts">{() => <AdminGuard><CmsErrorBoundary><AdminCmsPosts /></CmsErrorBoundary></AdminGuard>}</Route>
+        <Route path="/admin/cms/menus">{() => <AdminGuard><CmsErrorBoundary><AdminCmsMenus /></CmsErrorBoundary></AdminGuard>}</Route>
+        <Route path="/admin/cms/sidebars">{() => <AdminGuard><CmsErrorBoundary><AdminCmsSidebars /></CmsErrorBoundary></AdminGuard>}</Route>
+        <Route path="/admin/cms/presets">{() => <AdminGuard><CmsErrorBoundary><AdminCmsPresets /></CmsErrorBoundary></AdminGuard>}</Route>
+        <Route path="/admin/cms/generator/campaigns">{() => <AdminGuard><CmsErrorBoundary><AdminCmsGeneratorCampaigns /></CmsErrorBoundary></AdminGuard>}</Route>
+        <Route path="/admin/cms/generator/landing">{() => <AdminGuard><CmsErrorBoundary><AdminCmsGeneratorLanding /></CmsErrorBoundary></AdminGuard>}</Route>
+        <Route path="/admin/cms/pages/:id/builder">{() => <AdminGuard><CmsErrorBoundary><AdminCmsBuilder /></CmsErrorBoundary></AdminGuard>}</Route>
+        <Route path="/admin/cms/pages/:id/edit">{() => <AdminGuard><CmsErrorBoundary><AdminCmsPageEdit /></CmsErrorBoundary></AdminGuard>}</Route>
+        <Route path="/admin/cms/pages">{() => <AdminGuard><CmsErrorBoundary><AdminCmsPages /></CmsErrorBoundary></AdminGuard>}</Route>
         <Route path="/admin/cms/sections">{() => { window.location.replace("/admin/cms/templates?tab=sections"); return null; }}</Route>
-        <Route path="/admin/cms/templates">{() => <CmsErrorBoundary><AdminCmsTemplates /></CmsErrorBoundary>}</Route>
-        <Route path="/admin/settings/themes">{() => <CmsErrorBoundary><AdminCmsThemes /></CmsErrorBoundary>}</Route>
+        <Route path="/admin/cms/templates">{() => <AdminGuard><CmsErrorBoundary><AdminCmsTemplates /></CmsErrorBoundary></AdminGuard>}</Route>
+        <Route path="/admin/settings/themes">{() => <AdminGuard><CmsErrorBoundary><AdminCmsThemes /></CmsErrorBoundary></AdminGuard>}</Route>
         <Route path="/admin/cms/themes">{() => { window.location.replace("/admin/settings/themes"); return null; }}</Route>
         <Route path="/admin/cms/media">{() => { window.location.replace("/admin/media"); return null; }}</Route>
-        <Route path="/admin/cms/seo">{() => <CmsErrorBoundary><AdminCmsSeo /></CmsErrorBoundary>}</Route>
-        <Route path="/admin/cms/settings">{() => <CmsErrorBoundary><AdminCmsSettings /></CmsErrorBoundary>}</Route>
-        <Route path="/admin/cms">{() => <CmsErrorBoundary><AdminCms /></CmsErrorBoundary>}</Route>
+        <Route path="/admin/cms/seo">{() => <AdminGuard><CmsErrorBoundary><AdminCmsSeo /></CmsErrorBoundary></AdminGuard>}</Route>
+        <Route path="/admin/cms/settings">{() => <AdminGuard><CmsErrorBoundary><AdminCmsSettings /></CmsErrorBoundary></AdminGuard>}</Route>
+        <Route path="/admin/cms">{() => <AdminGuard><CmsErrorBoundary><AdminCms /></CmsErrorBoundary></AdminGuard>}</Route>
         <Route component={NotFound} />
       </Switch>
     </Suspense>
