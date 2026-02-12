@@ -793,6 +793,7 @@ export const pages = pgTable("pages", {
   featuredImage: text("featured_image"), // OG image for social sharing
   status: text("status").notNull().default("draft"), // draft, published, scheduled
   scheduledAt: timestamp("scheduled_at"),
+  sidebarId: varchar("sidebar_id").references(() => sidebars.id, { onDelete: "set null" }),
   showInNav: boolean("show_in_nav").default(false),
   navOrder: integer("nav_order").default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -1780,6 +1781,7 @@ export const sidebars = pgTable("sidebars", {
   name: text("name").notNull(),
   slug: text("slug").notNull().unique(),
   description: text("description"),
+  location: text("location"), // "post_left" | "page_left" | null (unassigned)
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
