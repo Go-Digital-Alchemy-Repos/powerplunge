@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useLocation, useParams } from "wouter";
+import { useLocation, useParams, Link } from "wouter";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PageRenderer from "@/components/PageRenderer";
@@ -90,6 +90,14 @@ export default function PageView() {
 
       <footer className="bg-slate-800 border-t border-slate-700 py-8 mt-12">
         <div className="container mx-auto px-4 text-center text-slate-400">
+          <div className="flex items-center justify-center gap-4 mb-2">
+            <Link href="/privacy-policy" className="text-slate-400 text-sm hover:text-white transition-colors" data-testid="link-privacy-policy">
+              Privacy Policy
+            </Link>
+            <Link href="/terms-and-conditions" className="text-slate-400 text-sm hover:text-white transition-colors" data-testid="link-terms">
+              Terms & Conditions
+            </Link>
+          </div>
           <p>© 2026 Power Plunge. All rights reserved.</p>
         </div>
       </footer>
