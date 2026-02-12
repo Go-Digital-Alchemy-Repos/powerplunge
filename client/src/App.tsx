@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import ThemeProvider from "@/components/ThemeProvider";
 import { AdminThemeProvider } from "@/hooks/use-admin-theme";
 import CmsErrorBoundary from "@/components/CmsErrorBoundary";
+import AdminGuard from "@/components/admin/AdminGuard";
 import { initGAFromSettings } from "@/lib/analytics";
 import { useAnalytics } from "@/hooks/use-analytics";
 import { getStoredConsent } from "@/lib/consent";
