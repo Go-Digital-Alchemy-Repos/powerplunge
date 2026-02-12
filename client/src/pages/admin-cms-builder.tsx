@@ -630,7 +630,7 @@ function PreviewButton({ pageSlug, isHomePage, isShopPage }: { pageSlug?: string
   );
 }
 
-function SaveButton({ pageId, pageTitle, seoData, pageStatus, scheduledAt, onDone }: { pageId: string; pageTitle: string; seoData: SeoData; pageStatus: string; scheduledAt: string | null; onDone: () => void }) {
+function SaveButton({ pageId, pageTitle, seoData, pageStatus, scheduledAt, sidebarId, onDone }: { pageId: string; pageTitle: string; seoData: SeoData; pageStatus: string; scheduledAt: string | null; sidebarId: string | null; onDone: () => void }) {
   const { appState } = usePuck();
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
@@ -669,6 +669,7 @@ function SaveButton({ pageId, pageTitle, seoData, pageStatus, scheduledAt, onDon
           twitterDescription: seoData.twitterDescription || null,
           twitterImage: seoData.twitterImage || null,
           jsonLd: parsedJsonLd,
+          sidebarId: sidebarId || null,
         }),
       });
       if (!res.ok) throw new Error("Save failed");
@@ -1035,6 +1036,7 @@ export default function AdminCmsBuilder() {
   const [viewportMode, setViewportMode] = useState<ViewportMode>("desktop");
   const [pageStatus, setPageStatus] = useState<string>("draft");
   const [scheduledAt, setScheduledAt] = useState<string | null>(null);
+  const [pageSidebarId, setPageSidebarId] = useState<string | null>(null);
   const [seoData, setSeoData] = useState<SeoData>({
     metaTitle: "",
     metaDescription: "",
@@ -1055,10 +1057,16 @@ export default function AdminCmsBuilder() {
     enabled: !!pageId && hasFullAccess,
   });
 
+  const { data: sidebarsList = [] } = useQuery<any[]>({
+    queryKey: ["/api/admin/cms/sidebars"],
+    enabled: hasFullAccess,
+  });
+
   useEffect(() => {
     if (page) {
       setPageStatus(page.status || "draft");
       setScheduledAt(page.scheduledAt ? new Date(page.scheduledAt).toISOString().slice(0, 16) : null);
+      setPageSidebarId(page.sidebarId || null);
       setSeoData({
         metaTitle: page.metaTitle || "",
         metaDescription: page.metaDescription || "",
@@ -1187,6 +1195,17 @@ export default function AdminCmsBuilder() {
           <div className="flex items-center gap-2">
             <ViewportSwitcher mode={viewportMode} onChange={setViewportMode} />
             <div className="w-px h-5 bg-muted" />
+            <Select value={pageSidebarId || "__none__"} onValueChange={(v) => setPageSidebarId(v === "__none__" ? null : v)}>
+              <SelectTrigger className="h-7 text-[11px] w-auto min-w-[130px] gap-1 px-2 border border-border text-muted-foreground" data-testid="select-page-sidebar">
+                <SelectValue placeholder="Sidebar..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">No Sidebar</SelectItem>
+                {sidebarsList.filter((s: any) => s.isActive && (!s.location || s.location === "page_left")).map((s: any) => (
+                  <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Button
               size="sm"
               variant="outline"
@@ -1212,7 +1231,7 @@ export default function AdminCmsBuilder() {
             headerActions: () => (
               <>
                 <PreviewButton pageSlug={page?.slug} isHomePage={page?.isHome} isShopPage={page?.isShop} />
-                <SaveButton pageId={pageId!} pageTitle={page?.title || ""} seoData={seoData} pageStatus={pageStatus} scheduledAt={scheduledAt} onDone={invalidateQueries} />
+                <SaveButton pageId={pageId!} pageTitle={page?.title || ""} seoData={seoData} pageStatus={pageStatus} scheduledAt={scheduledAt} sidebarId={pageSidebarId} onDone={invalidateQueries} />
               </>
             ),
             drawer: () => <EnhancedBlockPicker />,

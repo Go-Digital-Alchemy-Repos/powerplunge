@@ -46,9 +46,20 @@ interface Sidebar {
   name: string;
   slug: string;
   description: string | null;
+  location: string | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+const LOCATION_OPTIONS = [
+  { value: "__none__", label: "No location (general)" },
+  { value: "post_left", label: "Blog Posts — Left Sidebar" },
+  { value: "page_left", label: "Pages — Left Sidebar" },
+] as const;
+
+function locationLabel(loc: string | null): string {
+  return LOCATION_OPTIONS.find((o) => o.value === (loc || "__none__"))?.label || "No location";
 }
 
 interface SidebarWidget {
@@ -102,19 +113,26 @@ function CreateSidebarForm({ onCreated }: { onCreated: () => void }) {
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");
+  const [location, setLocation] = useState<string>("__none__");
   const { toast } = useToast();
 
   const createMutation = useMutation({
     mutationFn: () =>
       apiRequest("/api/admin/cms/sidebars", {
         method: "POST",
-        body: JSON.stringify({ name, slug: slug || name.toLowerCase().replace(/[^a-z0-9]+/g, "-"), description: description || undefined }),
+        body: JSON.stringify({
+          name,
+          slug: slug || name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+          description: description || undefined,
+          location: location === "__none__" ? null : location,
+        }),
       }),
     onSuccess: () => {
       toast({ title: "Sidebar created" });
       setName("");
       setSlug("");
       setDescription("");
+      setLocation("__none__");
       onCreated();
     },
     onError: (err: any) => {
@@ -146,6 +164,19 @@ function CreateSidebarForm({ onCreated }: { onCreated: () => void }) {
         onChange={(e) => setDescription(e.target.value)}
         data-testid="input-sidebar-description"
       />
+      <div>
+        <label className="text-xs text-muted-foreground mb-1 block">Display Location</label>
+        <select
+          className="w-full bg-muted border border-border rounded-md px-3 py-2 text-sm text-foreground"
+          value={location}
+          onChange={(e) => setLocation(e.target.value)}
+          data-testid="select-sidebar-location"
+        >
+          {LOCATION_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+      </div>
       <Button
         size="sm"
         disabled={!name || createMutation.isPending}
@@ -349,6 +380,7 @@ function SidebarDetail({
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(sidebar.name);
   const [editDesc, setEditDesc] = useState(sidebar.description || "");
+  const [editLocation, setEditLocation] = useState<string>(sidebar.location || "__none__");
 
   const { data: sidebarData, isLoading } = useQuery<SidebarWithWidgets>({
     queryKey: [`/api/admin/cms/sidebars/${sidebar.id}`],
@@ -449,9 +481,19 @@ function SidebarDetail({
               className="max-w-xs"
               data-testid="input-edit-sidebar-name"
             />
+            <select
+              className="bg-muted border border-border rounded-md px-2 py-1.5 text-xs text-foreground max-w-[200px]"
+              value={editLocation}
+              onChange={(e) => setEditLocation(e.target.value)}
+              data-testid="select-edit-sidebar-location"
+            >
+              {LOCATION_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
             <Button
               size="sm"
-              onClick={() => updateSidebarMutation.mutate({ name: editName, description: editDesc, slug: sidebar.slug, isActive: sidebar.isActive })}
+              onClick={() => updateSidebarMutation.mutate({ name: editName, description: editDesc, location: editLocation === "__none__" ? null : editLocation, slug: sidebar.slug, isActive: sidebar.isActive })}
               data-testid="button-save-sidebar"
             >
               <Save className="w-4 h-4" />
@@ -467,6 +509,11 @@ function SidebarDetail({
               {sidebar.description && <p className="text-sm text-muted-foreground">{sidebar.description}</p>}
             </div>
             <Badge variant="outline" className="text-xs" data-testid="badge-sidebar-slug">{sidebar.slug}</Badge>
+            {sidebar.location && (
+              <Badge variant="outline" className="text-[10px] text-primary border-primary/30" data-testid="badge-sidebar-detail-location">
+                {locationLabel(sidebar.location)}
+              </Badge>
+            )}
             <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)} data-testid="button-edit-sidebar">
               <Pencil className="w-4 h-4" />
             </Button>
@@ -664,6 +711,11 @@ export function SidebarsContent({ embedded = false }: { embedded?: boolean }) {
                     <p className="text-sm font-medium text-foreground" data-testid={`text-sidebar-name-${sb.id}`}>{sb.name}</p>
                     <p className="text-xs text-muted-foreground truncate">{sb.description || sb.slug}</p>
                   </div>
+                  {sb.location && (
+                    <Badge variant="outline" className="text-[10px] text-primary border-primary/30" data-testid={`badge-sidebar-location-${sb.id}`}>
+                      {locationLabel(sb.location)}
+                    </Badge>
+                  )}
                   <Badge variant={sb.isActive ? "default" : "secondary"} className="text-xs" data-testid={`badge-sidebar-status-${sb.id}`}>
                     {sb.isActive ? "Active" : "Inactive"}
                   </Badge>

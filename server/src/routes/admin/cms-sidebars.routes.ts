@@ -9,6 +9,7 @@ const updateSidebarSchema = z.object({
   name: z.string().min(1).optional(),
   slug: z.string().min(1).optional(),
   description: z.string().nullable().optional(),
+  location: z.enum(["post_left", "page_left"]).nullable().optional(),
   isActive: z.boolean().optional(),
 });
 

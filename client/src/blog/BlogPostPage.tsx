@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import PageRenderer from "@/components/PageRenderer";
 import SiteLayout from "@/components/SiteLayout";
 import SeoHead from "@/components/SeoHead";
+import { ContentWithLeftSidebar } from "@/components/SidebarRenderer";
 import PostMeta from "./components/PostMeta";
 import PostTaxonomy from "./components/PostTaxonomy";
 import PostCard from "./components/PostCard";
@@ -34,6 +35,7 @@ interface BlogPost {
   canonicalUrl: string | null;
   allowIndex: boolean;
   allowFollow: boolean;
+  sidebarId: string | null;
   categories: TaxonomyItem[];
   tags: TaxonomyItem[];
 }
@@ -149,81 +151,83 @@ export default function BlogPostPage() {
         }}
       />
 
-      <article className="max-w-4xl mx-auto px-6 py-10" data-testid="blog-post-article">
-        <Button
-          variant="ghost"
-          onClick={() => navigate("/blog")}
-          className="text-muted-foreground hover:text-foreground mb-6 -ml-2"
-          data-testid="button-back-to-blog"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" /> Back to Blog
-        </Button>
+      <ContentWithLeftSidebar sidebarId={post.sidebarId}>
+        <article className={`${post.sidebarId ? '' : 'max-w-4xl mx-auto px-6'} py-10`} data-testid="blog-post-article">
+          <Button
+            variant="ghost"
+            onClick={() => navigate("/blog")}
+            className="text-muted-foreground hover:text-foreground mb-6 -ml-2"
+            data-testid="button-back-to-blog"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" /> Back to Blog
+          </Button>
 
-        {coverSrc && (
-          <div className="aspect-video rounded-xl overflow-hidden mb-8 bg-card" data-testid="blog-post-cover">
-            <img
-              src={coverSrc}
-              alt={post.title}
-              className="w-full h-full object-cover"
-            />
-          </div>
-        )}
-
-        <div className="mb-4">
-          <PostTaxonomy categories={post.categories} tags={post.tags} />
-        </div>
-
-        <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4 leading-tight" data-testid="blog-post-title">
-          {post.title}
-        </h1>
-
-        <div className="mb-8">
-          <PostMeta publishedAt={post.publishedAt} readingTimeMinutes={post.readingTimeMinutes} />
-        </div>
-
-        {post.excerpt && !hasBlocks && (
-          <p className="text-lg text-muted-foreground border-l-4 border-primary pl-4 mb-8 italic" data-testid="blog-post-excerpt">
-            {post.excerpt}
-          </p>
-        )}
-
-        <div data-testid="blog-post-content">
-          {hasBlocks ? (
-            <PageRenderer contentJson={post.contentJson} legacyContent={post.legacyHtml || post.body} />
-          ) : (post.legacyHtml || post.body) ? (
-            <div
-              className="prose prose-invert prose-lg max-w-none prose-headings:text-foreground prose-p:text-muted-foreground prose-a:text-primary prose-strong:text-foreground prose-li:text-muted-foreground"
-              dangerouslySetInnerHTML={{ __html: (post.legacyHtml || post.body)! }}
-            />
-          ) : (
-            <div className="text-center py-12 text-muted-foreground">
-              <p>This post has no content yet.</p>
+          {coverSrc && (
+            <div className="aspect-video rounded-xl overflow-hidden mb-8 bg-card" data-testid="blog-post-cover">
+              <img
+                src={coverSrc}
+                alt={post.title}
+                className="w-full h-full object-cover"
+              />
             </div>
           )}
-        </div>
-      </article>
 
-      {relatedPosts.length > 0 && (
-        <section className="max-w-7xl mx-auto px-6 py-12 border-t border-border" data-testid="related-posts">
-          <h2 className="text-2xl font-bold text-foreground mb-6">Related Posts</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {relatedPosts.map((rp) => (
-              <PostCard
-                key={rp.id}
-                slug={rp.slug}
-                title={rp.title}
-                excerpt={rp.excerpt}
-                publishedAt={rp.publishedAt}
-                readingTimeMinutes={rp.readingTimeMinutes}
-                coverImageUrl={rp.coverImageUrl}
-                categories={rp.categories}
-                tags={rp.tags}
-                featured={rp.featured}
-              />
-            ))}
+          <div className="mb-4">
+            <PostTaxonomy categories={post.categories} tags={post.tags} />
           </div>
-        </section>
-      )}
+
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4 leading-tight" data-testid="blog-post-title">
+            {post.title}
+          </h1>
+
+          <div className="mb-8">
+            <PostMeta publishedAt={post.publishedAt} readingTimeMinutes={post.readingTimeMinutes} />
+          </div>
+
+          {post.excerpt && !hasBlocks && (
+            <p className="text-lg text-muted-foreground border-l-4 border-primary pl-4 mb-8 italic" data-testid="blog-post-excerpt">
+              {post.excerpt}
+            </p>
+          )}
+
+          <div data-testid="blog-post-content">
+            {hasBlocks ? (
+              <PageRenderer contentJson={post.contentJson} legacyContent={post.legacyHtml || post.body} />
+            ) : (post.legacyHtml || post.body) ? (
+              <div
+                className="prose prose-invert prose-lg max-w-none prose-headings:text-foreground prose-p:text-muted-foreground prose-a:text-primary prose-strong:text-foreground prose-li:text-muted-foreground"
+                dangerouslySetInnerHTML={{ __html: (post.legacyHtml || post.body)! }}
+              />
+            ) : (
+              <div className="text-center py-12 text-muted-foreground">
+                <p>This post has no content yet.</p>
+              </div>
+            )}
+          </div>
+        </article>
+
+        {relatedPosts.length > 0 && (
+          <section className={`${post.sidebarId ? '' : 'max-w-7xl mx-auto px-6'} py-12 border-t border-border`} data-testid="related-posts">
+            <h2 className="text-2xl font-bold text-foreground mb-6">Related Posts</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {relatedPosts.map((rp) => (
+                <PostCard
+                  key={rp.id}
+                  slug={rp.slug}
+                  title={rp.title}
+                  excerpt={rp.excerpt}
+                  publishedAt={rp.publishedAt}
+                  readingTimeMinutes={rp.readingTimeMinutes}
+                  coverImageUrl={rp.coverImageUrl}
+                  categories={rp.categories}
+                  tags={rp.tags}
+                  featured={rp.featured}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+      </ContentWithLeftSidebar>
     </SiteLayout>
   );
 }

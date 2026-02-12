@@ -726,7 +726,7 @@ export default function AdminCmsPostEditor() {
                   </SelectTrigger>
                   <SelectContent className="bg-card border-border text-foreground">
                     <SelectItem value="__none__">None</SelectItem>
-                    {sidebarsList.filter((s: any) => s.isActive).map((s: any) => (
+                    {sidebarsList.filter((s: any) => s.isActive && (!s.location || s.location === "post_left")).map((s: any) => (
                       <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
                     ))}
                   </SelectContent>
