@@ -8,13 +8,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AmountTypeInput } from "@/components/ui/amount-type-input";
 import { SlideOutPanel } from "@/components/ui/slide-out-panel";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useAdmin } from "@/hooks/use-admin";
+import { cn } from "@/lib/utils";
 import { useBulkSelection } from "@/hooks/use-bulk-selection";
 import { useSavedFilters } from "@/hooks/use-saved-filters";
 import { BulkActionsBar } from "@/components/admin/BulkActionsBar";
@@ -853,39 +853,69 @@ export default function AdminCoupons() {
           </div>
 
           <div className="space-y-2">
-            <Label>Discount</Label>
-            <div className="flex items-center gap-3">
-              <div className="flex-1">
-                <AmountTypeInput
-                  value={formData.value}
-                  onChange={(v) => { setFormData({ ...formData, value: v }); setIsDirty(true); }}
-                  type={formData.type === "fixed" ? "fixed" : "percent"}
-                  onTypeChange={(t) => { setFormData({ ...formData, type: t === "fixed" ? "fixed" : "percentage", value: 0 }); setIsDirty(true); }}
-                  disabled={formData.type === "freeShipping"}
-                  data-testid="input-value"
-                />
-              </div>
+            <Label>Discount Type</Label>
+            <div className="inline-flex rounded-lg bg-muted p-0.5">
               <button
                 type="button"
-                onClick={() => {
-                  if (formData.type === "freeShipping") {
-                    setFormData({ ...formData, type: "percentage", value: 0 });
-                  } else {
-                    setFormData({ ...formData, type: "freeShipping", value: 0 });
-                  }
-                  setIsDirty(true);
-                }}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-md border text-xs font-medium transition-colors whitespace-nowrap ${
+                onClick={() => { setFormData({ ...formData, type: "percentage", value: 0 }); setIsDirty(true); }}
+                className={cn(
+                  "px-3 py-1.5 text-xs font-medium rounded-md transition-all",
+                  formData.type === "percentage"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                data-testid="select-type-percentage"
+              >
+                Percentage
+              </button>
+              <button
+                type="button"
+                onClick={() => { setFormData({ ...formData, type: "fixed", value: 0 }); setIsDirty(true); }}
+                className={cn(
+                  "px-3 py-1.5 text-xs font-medium rounded-md transition-all",
+                  formData.type === "fixed"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                data-testid="select-type-fixed"
+              >
+                Fixed Amount
+              </button>
+              <button
+                type="button"
+                onClick={() => { setFormData({ ...formData, type: "freeShipping", value: 0 }); setIsDirty(true); }}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all",
                   formData.type === "freeShipping"
-                    ? "bg-primary/15 text-primary border-primary/30"
-                    : "text-muted-foreground border-input hover:text-foreground hover:bg-muted/50"
-                }`}
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
                 data-testid="button-free-shipping"
               >
                 <Truck className="w-3.5 h-3.5" />
                 Free Shipping
               </button>
             </div>
+            {formData.type !== "freeShipping" && (
+              <div
+                className="flex h-10 w-full rounded-md border border-input bg-background text-sm shadow-sm transition-colors focus-within:ring-1 focus-within:ring-ring"
+              >
+                <span className="flex items-center pl-3 pr-1 text-muted-foreground select-none font-medium">
+                  {formData.type === "percentage" ? "%" : "$"}
+                </span>
+                <input
+                  type="number"
+                  value={formData.value}
+                  onChange={(e) => { setFormData({ ...formData, value: parseFloat(e.target.value) || 0 }); setIsDirty(true); }}
+                  min={0}
+                  max={formData.type === "percentage" ? 100 : undefined}
+                  step={formData.type === "percentage" ? 1 : 0.01}
+                  placeholder={formData.type === "percentage" ? "0" : "0.00"}
+                  className="flex-1 bg-transparent px-2 py-2 text-sm outline-none placeholder:text-muted-foreground [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  data-testid="input-value"
+                />
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">

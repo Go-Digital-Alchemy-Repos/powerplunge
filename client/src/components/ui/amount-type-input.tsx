@@ -12,6 +12,8 @@ interface AmountTypeInputProps {
   className?: string;
   "data-testid"?: string;
   disabled?: boolean;
+  percentLabel?: string;
+  fixedLabel?: string;
 }
 
 function AmountTypeInput({
@@ -25,69 +27,67 @@ function AmountTypeInput({
   className,
   "data-testid": dataTestId,
   disabled = false,
+  percentLabel = "Percentage",
+  fixedLabel = "Fixed Amount",
 }: AmountTypeInputProps) {
   const isPercent = type === "percent";
   const effectiveMax = isPercent ? (max ?? 100) : max;
   const effectiveStep = step ?? (isPercent ? 1 : 0.01);
 
   return (
-    <div
-      className={cn(
-        "flex h-10 w-full rounded-md border border-input bg-background text-sm shadow-sm transition-colors",
-        "focus-within:ring-1 focus-within:ring-ring",
-        disabled && "opacity-50 cursor-not-allowed",
-        className
-      )}
-      data-testid={dataTestId}
-    >
-      <span className="flex items-center pl-3 text-muted-foreground select-none">
-        {isPercent ? "" : "$"}
-      </span>
-      <input
-        type="number"
-        value={value}
-        onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
-        min={min}
-        max={effectiveMax}
-        step={effectiveStep}
-        disabled={disabled}
-        className="flex-1 bg-transparent px-2 py-2 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-        data-testid={dataTestId ? `${dataTestId}-input` : undefined}
-      />
-      {isPercent && (
-        <span className="flex items-center pr-1 text-muted-foreground select-none">
-          %
-        </span>
-      )}
-      <div className="flex items-center border-l border-input">
+    <div className={cn("space-y-2", className)} data-testid={dataTestId}>
+      <div className="inline-flex rounded-lg bg-muted p-0.5">
         <button
           type="button"
           onClick={() => { if (!disabled) onTypeChange("percent"); }}
           disabled={disabled}
           className={cn(
-            "px-2.5 py-1 text-xs font-medium transition-colors h-full",
+            "px-3 py-1.5 text-xs font-medium rounded-md transition-all",
             isPercent
-              ? "bg-primary/15 text-primary"
-              : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              ? "bg-background text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
           )}
           data-testid={dataTestId ? `${dataTestId}-percent` : undefined}
         >
-          %
+          {percentLabel}
         </button>
         <button
           type="button"
           onClick={() => { if (!disabled) onTypeChange("fixed"); }}
           disabled={disabled}
           className={cn(
-            "px-2.5 py-1 text-xs font-medium transition-colors rounded-r-md h-full",
+            "px-3 py-1.5 text-xs font-medium rounded-md transition-all",
             !isPercent
-              ? "bg-primary/15 text-primary"
-              : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              ? "bg-background text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
           )}
           data-testid={dataTestId ? `${dataTestId}-fixed` : undefined}
         >
-          $
+          {fixedLabel}
         </button>
+      </div>
+      <div
+        className={cn(
+          "flex h-10 w-full rounded-md border border-input bg-background text-sm shadow-sm transition-colors",
+          "focus-within:ring-1 focus-within:ring-ring",
+          disabled && "opacity-50 cursor-not-allowed"
+        )}
+      >
+        <span className="flex items-center pl-3 pr-1 text-muted-foreground select-none font-medium">
+          {isPercent ? "%" : "$"}
+        </span>
+        <input
+          type="number"
+          value={value}
+          onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
+          min={min}
+          max={effectiveMax}
+          step={effectiveStep}
+          disabled={disabled}
+          placeholder={isPercent ? "0" : "0.00"}
+          className="flex-1 bg-transparent px-2 py-2 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+          data-testid={dataTestId ? `${dataTestId}-input` : undefined}
+        />
       </div>
     </div>
   );
