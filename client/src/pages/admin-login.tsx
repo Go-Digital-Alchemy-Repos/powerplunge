@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { Lock, Mail, ArrowLeft, Bug } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { queryClient } from "@/lib/queryClient";
 
 export default function AdminLogin() {
   const [, setLocation] = useLocation();
@@ -50,6 +51,9 @@ export default function AdminLogin() {
       if (!response.ok) {
         throw new Error(data.message || "Login failed");
       }
+
+      queryClient.setQueryData(["/api/admin/me"], data.admin);
+      await queryClient.invalidateQueries({ queryKey: ["/api/admin/me"] });
 
       toast({
         title: "Welcome back",
