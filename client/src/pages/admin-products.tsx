@@ -255,9 +255,9 @@ export default function AdminProducts() {
         affiliateEnabled: product.affiliateEnabled ?? true,
         affiliateUseGlobalSettings: product.affiliateUseGlobalSettings ?? true,
         affiliateCommissionType: product.affiliateCommissionType || "PERCENT",
-        affiliateCommissionValue: product.affiliateCommissionValue != null ? String(product.affiliateCommissionValue) : "",
+        affiliateCommissionValue: product.affiliateCommissionValue != null ? String(product.affiliateCommissionType === "FIXED" ? product.affiliateCommissionValue / 100 : product.affiliateCommissionValue) : "",
         affiliateDiscountType: product.affiliateDiscountType || "PERCENT",
-        affiliateDiscountValue: product.affiliateDiscountValue != null ? String(product.affiliateDiscountValue) : "",
+        affiliateDiscountValue: product.affiliateDiscountValue != null ? String(product.affiliateDiscountType === "FIXED" ? product.affiliateDiscountValue / 100 : product.affiliateDiscountValue) : "",
       });
     } else {
       setEditingProduct(null);
@@ -396,9 +396,9 @@ export default function AdminProducts() {
       affiliateEnabled: formData.affiliateEnabled,
       affiliateUseGlobalSettings: formData.affiliateUseGlobalSettings,
       affiliateCommissionType: formData.affiliateUseGlobalSettings ? null : (formData.affiliateCommissionType || null),
-      affiliateCommissionValue: formData.affiliateUseGlobalSettings ? null : (formData.affiliateCommissionValue ? parseInt(formData.affiliateCommissionValue) : null),
+      affiliateCommissionValue: formData.affiliateUseGlobalSettings ? null : (formData.affiliateCommissionValue ? (formData.affiliateCommissionType === "FIXED" ? Math.round(parseFloat(formData.affiliateCommissionValue) * 100) : parseInt(formData.affiliateCommissionValue)) : null),
       affiliateDiscountType: formData.affiliateUseGlobalSettings ? null : (formData.affiliateDiscountType || null),
-      affiliateDiscountValue: formData.affiliateUseGlobalSettings ? null : (formData.affiliateDiscountValue ? parseInt(formData.affiliateDiscountValue) : null),
+      affiliateDiscountValue: formData.affiliateUseGlobalSettings ? null : (formData.affiliateDiscountValue ? (formData.affiliateDiscountType === "FIXED" ? Math.round(parseFloat(formData.affiliateDiscountValue) * 100) : parseInt(formData.affiliateDiscountValue)) : null),
     };
 
     if (editingProduct) {
@@ -1074,10 +1074,11 @@ export default function AdminProducts() {
                             </Select>
                           </div>
                           <div className="space-y-2">
-                            <Label>{formData.affiliateCommissionType === "FIXED" ? "Amount (cents)" : "Percentage"}</Label>
+                            <Label>{formData.affiliateCommissionType === "FIXED" ? "Amount ($)" : "Percentage"}</Label>
                             <Input
                               type="number"
                               min="0"
+                              step={formData.affiliateCommissionType === "FIXED" ? "0.01" : "1"}
                               max={formData.affiliateCommissionType === "PERCENT" ? 100 : undefined}
                               value={formData.affiliateCommissionValue}
                               onChange={(e) => {
@@ -1087,7 +1088,7 @@ export default function AdminProducts() {
                               data-testid="input-product-commission-value"
                             />
                             <p className="text-xs text-muted-foreground">
-                              {formData.affiliateCommissionType === "FIXED" ? "e.g. 500 = $5.00" : "0-100"}
+                              {formData.affiliateCommissionType === "FIXED" ? "e.g. 5.00 = $5.00" : "0-100"}
                             </p>
                           </div>
                         </div>
@@ -1115,10 +1116,11 @@ export default function AdminProducts() {
                             </Select>
                           </div>
                           <div className="space-y-2">
-                            <Label>{formData.affiliateDiscountType === "FIXED" ? "Amount (cents)" : "Percentage"}</Label>
+                            <Label>{formData.affiliateDiscountType === "FIXED" ? "Amount ($)" : "Percentage"}</Label>
                             <Input
                               type="number"
                               min="0"
+                              step={formData.affiliateDiscountType === "FIXED" ? "0.01" : "1"}
                               max={formData.affiliateDiscountType === "PERCENT" ? 100 : undefined}
                               value={formData.affiliateDiscountValue}
                               onChange={(e) => {
@@ -1128,7 +1130,7 @@ export default function AdminProducts() {
                               data-testid="input-product-discount-value"
                             />
                             <p className="text-xs text-muted-foreground">
-                              {formData.affiliateDiscountType === "FIXED" ? "e.g. 500 = $5.00" : "0-100"}
+                              {formData.affiliateDiscountType === "FIXED" ? "e.g. 5.00 = $5.00" : "0-100"}
                             </p>
                           </div>
                         </div>

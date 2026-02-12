@@ -68,9 +68,13 @@ export default function AdminAffiliateSettings() {
     if (settings) {
       setFormData({
         defaultCommissionType: settings.defaultCommissionType || "PERCENT",
-        defaultCommissionValue: settings.defaultCommissionValue ?? settings.commissionRate ?? 10,
+        defaultCommissionValue: (settings.defaultCommissionType === "FIXED"
+          ? Math.round((settings.defaultCommissionValue ?? 0) / 100 * 100) / 100
+          : settings.defaultCommissionValue ?? settings.commissionRate ?? 10),
         defaultDiscountType: settings.defaultDiscountType || "PERCENT",
-        defaultDiscountValue: settings.defaultDiscountValue ?? settings.customerDiscountPercent ?? 0,
+        defaultDiscountValue: (settings.defaultDiscountType === "FIXED"
+          ? Math.round((settings.defaultDiscountValue ?? 0) / 100 * 100) / 100
+          : settings.defaultDiscountValue ?? settings.customerDiscountPercent ?? 0),
         minimumPayout: settings.minimumPayout,
         cookieDuration: settings.cookieDuration,
         agreementText: settings.agreementText,
@@ -107,7 +111,16 @@ export default function AdminAffiliateSettings() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    updateMutation.mutate(formData);
+    const payload = {
+      ...formData,
+      defaultCommissionValue: formData.defaultCommissionType === "FIXED"
+        ? Math.round((formData.defaultCommissionValue || 0) * 100)
+        : (formData.defaultCommissionValue || 0),
+      defaultDiscountValue: formData.defaultDiscountType === "FIXED"
+        ? Math.round((formData.defaultDiscountValue || 0) * 100)
+        : (formData.defaultDiscountValue || 0),
+    };
+    updateMutation.mutate(payload);
   };
 
   if (isLoading) {
@@ -276,20 +289,21 @@ export default function AdminAffiliateSettings() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="defaultCommissionValue">
-                        {formData.defaultCommissionType === "FIXED" ? "Amount (cents)" : "Percentage"}
+                        {formData.defaultCommissionType === "FIXED" ? "Amount ($)" : "Percentage"}
                       </Label>
                       <Input
                         id="defaultCommissionValue"
                         type="number"
                         min="0"
+                        step={formData.defaultCommissionType === "FIXED" ? "0.01" : "1"}
                         max={formData.defaultCommissionType === "PERCENT" ? 100 : undefined}
                         value={formData.defaultCommissionValue}
-                        onChange={(e) => setFormData({ ...formData, defaultCommissionValue: parseInt(e.target.value) || 0 })}
+                        onChange={(e) => setFormData({ ...formData, defaultCommissionValue: parseFloat(e.target.value) || 0 })}
                         data-testid="input-commission-value"
                       />
                       <p className="text-xs text-muted-foreground">
                         {formData.defaultCommissionType === "FIXED"
-                          ? `Flat commission per eligible product (e.g. 500 = $5.00)`
+                          ? "Flat commission per eligible product in dollars (e.g. 5.00 = $5.00)"
                           : "Percentage of the net sale amount per eligible product"}
                       </p>
                     </div>
@@ -316,20 +330,21 @@ export default function AdminAffiliateSettings() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="defaultDiscountValue">
-                        {formData.defaultDiscountType === "FIXED" ? "Amount (cents)" : "Percentage"}
+                        {formData.defaultDiscountType === "FIXED" ? "Amount ($)" : "Percentage"}
                       </Label>
                       <Input
                         id="defaultDiscountValue"
                         type="number"
                         min="0"
+                        step={formData.defaultDiscountType === "FIXED" ? "0.01" : "1"}
                         max={formData.defaultDiscountType === "PERCENT" ? 100 : undefined}
                         value={formData.defaultDiscountValue}
-                        onChange={(e) => setFormData({ ...formData, defaultDiscountValue: parseInt(e.target.value) || 0 })}
+                        onChange={(e) => setFormData({ ...formData, defaultDiscountValue: parseFloat(e.target.value) || 0 })}
                         data-testid="input-discount-value"
                       />
                       <p className="text-xs text-muted-foreground">
                         {formData.defaultDiscountType === "FIXED"
-                          ? "Flat discount per eligible product (e.g. 500 = $5.00). Set to 0 to disable."
+                          ? "Flat discount per eligible product in dollars (e.g. 5.00 = $5.00). Set to 0 to disable."
                           : "Percentage off per eligible product. Set to 0 to disable."}
                       </p>
                     </div>
