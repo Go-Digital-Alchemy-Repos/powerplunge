@@ -39,8 +39,8 @@ class SmsService {
     try {
       const { storage } = await import("../../storage");
       const settings = await storage.getIntegrationSettings();
-      if (settings?.twilioEnabled && settings.twilioAccountSid && settings.twilioAuthTokenEncrypted && settings.twilioPhoneNumber) {
-        return true;
+      if (settings?.twilioAccountSid) {
+        return !!(settings.twilioEnabled && settings.twilioAccountSid && settings.twilioAuthTokenEncrypted && settings.twilioPhoneNumber);
       }
     } catch {}
 
