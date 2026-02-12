@@ -12,7 +12,7 @@ type IconComponentType = React.ComponentType<React.SVGProps<SVGSVGElement> & { c
 export function getLucideIcon(iconName: string): IconComponentType | null {
   if (!iconName) return null;
   
-  const pascalName = iconName.includes('-') ? kebabToPascal(iconName) : iconName;
+  const pascalName = kebabToPascal(iconName);
   const icon = (LucideIcons as any)[pascalName] || (LucideIcons as any)[iconName];
   
   if (icon && (typeof icon === 'function' || (typeof icon === 'object' && icon.$$typeof))) {

@@ -112,7 +112,7 @@ export function IconPicker({ value, onChange, className, placeholder = "Select i
 
   const getIcon = (name: string) => {
     if (!name) return null;
-    const pascalName = name.includes('-') ? kebabToPascal(name) : name;
+    const pascalName = kebabToPascal(name);
     const icon = (LucideIcons as any)[pascalName] || (LucideIcons as any)[name];
     if (!icon) return null;
     if (typeof icon === 'function' || (typeof icon === 'object' && icon.$$typeof)) return icon;
