@@ -1,5 +1,6 @@
 import { useState, useEffect, type ReactNode } from "react";
 import { useLocation, Link } from "wouter";
+import { openConsentPreferences } from "@/components/ConsentBanner";
 import { ShoppingCart, User, LogOut, Settings, Link2, Headphones, Package, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -159,6 +160,9 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
                 <Link href="/terms-and-conditions" className="text-muted-foreground text-sm hover:text-foreground transition-colors" data-testid="link-terms">
                   Terms & Conditions
                 </Link>
+                <button onClick={openConsentPreferences} className="text-muted-foreground text-sm hover:text-foreground transition-colors" data-testid="link-cookie-preferences">
+                  Cookie Preferences
+                </button>
               </div>
               <p className="text-muted-foreground text-sm">
                 Mind + Body + Spirit | &copy; 2026 Power Plunge. All rights reserved.

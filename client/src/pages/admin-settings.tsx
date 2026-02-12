@@ -8,9 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useAdmin } from "@/hooks/use-admin";
-import { Building2, Save, Mail, BarChart3, ImageIcon, Upload, Trash2, Scale } from "lucide-react";
+import { Building2, Save, Mail, BarChart3, ImageIcon, Upload, Trash2, Scale, Shield } from "lucide-react";
 import AdminNav from "@/components/admin/AdminNav";
 import RichTextEditor from "@/components/admin/RichTextEditor";
+import GdprSettingsTab from "@/components/admin/GdprSettingsTab";
 
 interface SiteSettings {
   id: string;
@@ -171,7 +172,7 @@ export default function AdminSettings() {
           <div className="text-center py-12 text-muted-foreground">Loading settings...</div>
         ) : (
           <Tabs defaultValue="company" className="space-y-6" data-testid="settings-tabs">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="company" className="gap-2" data-testid="tab-company">
                 <Building2 className="w-4 h-4 hidden sm:inline" />
                 Company
@@ -191,6 +192,10 @@ export default function AdminSettings() {
               <TabsTrigger value="legal" className="gap-2" data-testid="tab-legal">
                 <Scale className="w-4 h-4 hidden sm:inline" />
                 Legal
+              </TabsTrigger>
+              <TabsTrigger value="gdpr" className="gap-2" data-testid="tab-gdpr">
+                <Shield className="w-4 h-4 hidden sm:inline" />
+                GDPR
               </TabsTrigger>
             </TabsList>
 
@@ -457,6 +462,10 @@ export default function AdminSettings() {
                 </Button>
               </TabsContent>
             </form>
+
+            <TabsContent value="gdpr">
+              <GdprSettingsTab />
+            </TabsContent>
           </Tabs>
         )}
       </div>

@@ -206,6 +206,7 @@ export const siteSettings = pgTable("site_settings", {
   gaMeasurementId: text("ga_measurement_id"),
   privacyPolicy: text("privacy_policy"),
   termsAndConditions: text("terms_and_conditions"),
+  consentSettings: jsonb("consent_settings"),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 

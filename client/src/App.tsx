@@ -9,6 +9,8 @@ import { AdminThemeProvider } from "@/hooks/use-admin-theme";
 import CmsErrorBoundary from "@/components/CmsErrorBoundary";
 import { initGAFromSettings } from "@/lib/analytics";
 import { useAnalytics } from "@/hooks/use-analytics";
+import { getStoredConsent } from "@/lib/consent";
+import ConsentBanner from "@/components/ConsentBanner";
 
 function lazyRetry(importFn: () => Promise<any>) {
   return lazy(() =>
@@ -226,10 +228,45 @@ function Router() {
   );
 }
 
-function App() {
+function useConsentAwareGA() {
   useEffect(() => {
-    initGAFromSettings();
+    const loadGA = async () => {
+      try {
+        const res = await fetch("/api/site-settings/consent");
+        const consent = await res.json();
+        if (consent.enabled) {
+          const stored = getStoredConsent();
+          if (consent.mode === "opt_out") {
+            if (!stored || stored.categories.analytics !== false) {
+              initGAFromSettings();
+            }
+          } else {
+            if (stored?.categories?.analytics === true) {
+              initGAFromSettings();
+            }
+          }
+        } else {
+          initGAFromSettings();
+        }
+      } catch {
+        initGAFromSettings();
+      }
+    };
+    loadGA();
+
+    const handleConsentUpdate = () => {
+      const stored = getStoredConsent();
+      if (stored?.categories?.analytics) {
+        initGAFromSettings();
+      }
+    };
+    window.addEventListener("consent-updated", handleConsentUpdate);
+    return () => window.removeEventListener("consent-updated", handleConsentUpdate);
   }, []);
+}
+
+function App() {
+  useConsentAwareGA();
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -238,6 +275,7 @@ function App() {
           <TooltipProvider>
             <Toaster />
             <Router />
+            <ConsentBanner />
           </TooltipProvider>
         </AdminThemeProvider>
       </ThemeProvider>

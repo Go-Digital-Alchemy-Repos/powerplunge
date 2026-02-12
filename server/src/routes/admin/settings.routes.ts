@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { z } from "zod";
 import { storage } from "../../../storage";
 
 const router = Router();
@@ -74,6 +75,41 @@ router.patch("/", async (req: any, res) => {
     if (logoUrl !== undefined) updateData.logoUrl = logoUrl;
     if (privacyPolicy !== undefined) updateData.privacyPolicy = privacyPolicy;
     if (termsAndConditions !== undefined) updateData.termsAndConditions = termsAndConditions;
+    if (req.body.consentSettings !== undefined) {
+      const consentCategorySchema = z.object({
+        enabled: z.boolean(),
+        locked: z.boolean().optional(),
+        defaultOn: z.boolean(),
+        label: z.string().max(100),
+        description: z.string().max(500),
+      });
+      const consentSettingsSchema = z.object({
+        enabled: z.boolean(),
+        mode: z.enum(["opt_in", "opt_out"]),
+        position: z.enum(["top", "bottom"]),
+        style: z.enum(["banner", "modal"]),
+        overlay: z.boolean(),
+        theme: z.enum(["light", "dark", "site"]),
+        showOnFirstVisit: z.boolean(),
+        rePromptDays: z.number().int().min(0).max(365),
+        title: z.string().max(200),
+        messageHtml: z.string().max(2000),
+        acceptAllText: z.string().max(100),
+        rejectAllText: z.string().max(100),
+        manageText: z.string().max(100),
+        savePreferencesText: z.string().max(100),
+        policyLinks: z.object({
+          privacyPolicyPath: z.string().max(200),
+          termsPath: z.string().max(200).optional(),
+        }),
+        categories: z.record(z.string(), consentCategorySchema),
+      });
+      const parsed = consentSettingsSchema.safeParse(req.body.consentSettings);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid consent settings", errors: parsed.error.flatten() });
+      }
+      updateData.consentSettings = parsed.data;
+    }
     const settings = await storage.updateSiteSettings(updateData);
     res.json(settings);
   } catch (error) {

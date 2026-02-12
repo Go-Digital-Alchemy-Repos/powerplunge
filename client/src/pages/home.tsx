@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation, Link } from "wouter";
+import { openConsentPreferences } from "@/components/ConsentBanner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Check, ShoppingCart, Zap, Shield, Snowflake, Timer, X, Plus, Minus, Truck, Award, HeartPulse, Dumbbell, Building2, Sparkles, ThermometerSnowflake, Volume2, Filter, Gauge, User, LogOut, Settings, Link2, Headphones, Package, LayoutDashboard } from "lucide-react";
@@ -731,6 +732,9 @@ export default function Home() {
                 <Link href="/terms-and-conditions" className="text-muted-foreground text-sm hover:text-foreground transition-colors" data-testid="link-terms">
                   Terms & Conditions
                 </Link>
+                <button onClick={openConsentPreferences} className="text-muted-foreground text-sm hover:text-foreground transition-colors" data-testid="link-cookie-preferences">
+                  Cookie Preferences
+                </button>
               </div>
               <p className="text-muted-foreground text-sm">
                 Mind + Body + Spirit | © 2026 Power Plunge. All rights reserved.

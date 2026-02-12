@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useParams, Link } from "wouter";
+import { openConsentPreferences } from "@/components/ConsentBanner";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PageRenderer from "@/components/PageRenderer";
@@ -97,6 +98,9 @@ export default function PageView() {
             <Link href="/terms-and-conditions" className="text-slate-400 text-sm hover:text-white transition-colors" data-testid="link-terms">
               Terms & Conditions
             </Link>
+            <button onClick={openConsentPreferences} className="text-slate-400 text-sm hover:text-white transition-colors" data-testid="link-cookie-preferences">
+              Cookie Preferences
+            </button>
           </div>
           <p>© 2026 Power Plunge. All rights reserved.</p>
         </div>
