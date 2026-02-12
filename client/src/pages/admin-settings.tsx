@@ -24,6 +24,7 @@ interface SiteSettings {
   gaMeasurementId?: string;
   logoUrl?: string;
   adminIconUrl?: string;
+  faviconUrl?: string;
   privacyPolicy?: string;
   termsAndConditions?: string;
 }
@@ -36,8 +37,10 @@ export default function AdminSettings() {
   const [formData, setFormData] = useState<Partial<SiteSettings>>({});
   const [logoUploading, setLogoUploading] = useState(false);
   const [adminIconUploading, setAdminIconUploading] = useState(false);
+  const [faviconUploading, setFaviconUploading] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const adminIconInputRef = useRef<HTMLInputElement>(null);
+  const faviconInputRef = useRef<HTMLInputElement>(null);
 
   const { data: settings, isLoading } = useQuery<SiteSettings>({
     queryKey: ["/api/admin/settings"],
@@ -203,6 +206,71 @@ export default function AdminSettings() {
       toast({ title: "Admin icon removed", description: "The default icon will be used." });
     } catch {
       toast({ title: "Error", description: "Could not remove admin icon.", variant: "destructive" });
+    }
+  };
+
+  const handleFaviconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Invalid file", description: "Please upload an image file (PNG, JPG, SVG, or WebP).", variant: "destructive" });
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "File too large", description: "Favicon must be under 5MB.", variant: "destructive" });
+      return;
+    }
+
+    setFaviconUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("folder", "branding");
+      let uploadRes = await fetch("/api/r2/upload", { method: "POST", body: fd, credentials: "include" });
+      const contentType = uploadRes.headers.get("content-type") || "";
+      if (!uploadRes.ok || !contentType.includes("application/json")) {
+        uploadRes = await fetch("/api/uploads/upload", { method: "POST", body: fd, credentials: "include" });
+      }
+      if (!uploadRes.ok) throw new Error("Upload failed");
+      const { objectPath } = await uploadRes.json();
+
+      const saveRes = await fetch("/api/admin/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ faviconUrl: objectPath }),
+        credentials: "include",
+      });
+      if (!saveRes.ok) throw new Error("Failed to save favicon");
+      const updated = await saveRes.json();
+      setFormData((prev) => ({ ...prev, faviconUrl: updated.faviconUrl }));
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/settings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/site-settings"] });
+      toast({ title: "Favicon uploaded", description: "Your website favicon has been updated." });
+    } catch {
+      toast({ title: "Upload failed", description: "Could not upload favicon. Please try again.", variant: "destructive" });
+    } finally {
+      setFaviconUploading(false);
+      if (faviconInputRef.current) faviconInputRef.current.value = "";
+    }
+  };
+
+  const handleRemoveFavicon = async () => {
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ faviconUrl: null }),
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to remove favicon");
+      setFormData((prev) => ({ ...prev, faviconUrl: undefined }));
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/settings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/site-settings"] });
+      toast({ title: "Favicon removed", description: "The default favicon will be used." });
+    } catch {
+      toast({ title: "Error", description: "Could not remove favicon.", variant: "destructive" });
     }
   };
 
@@ -463,6 +531,79 @@ export default function AdminSettings() {
                       </div>
                       <p className="text-sm text-muted-foreground">
                         Recommended: Square PNG or SVG, 32-64px. Appears in the admin header navigation.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <ImageIcon className="w-5 h-5" />
+                      Favicon Settings
+                    </CardTitle>
+                    <CardDescription>
+                      Upload a favicon for your website. It appears in browser tabs and bookmarks.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Favicon</Label>
+                      <div className="flex items-center gap-4">
+                        <div className="w-16 h-16 rounded-lg border border-dashed border-border flex items-center justify-center overflow-hidden bg-muted/30" data-testid="favicon-preview">
+                          {formData.faviconUrl ? (
+                            <img
+                              src={formData.faviconUrl}
+                              alt="Current favicon"
+                              className="max-w-full max-h-full object-contain"
+                              data-testid="img-current-favicon"
+                            />
+                          ) : (
+                            <img
+                              src="/favicon.png"
+                              alt="Default favicon"
+                              className="max-w-full max-h-full object-contain"
+                            />
+                          )}
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <input
+                            ref={faviconInputRef}
+                            type="file"
+                            accept="image/png,image/jpeg,image/svg+xml,image/webp,image/x-icon"
+                            className="hidden"
+                            onChange={handleFaviconUpload}
+                            data-testid="input-favicon-file"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="gap-2"
+                            onClick={() => faviconInputRef.current?.click()}
+                            disabled={faviconUploading}
+                            data-testid="button-upload-favicon"
+                          >
+                            <Upload className="w-4 h-4" />
+                            {faviconUploading ? "Uploading..." : "Upload Favicon"}
+                          </Button>
+                          {formData.faviconUrl && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="gap-2 text-destructive hover:text-destructive"
+                              onClick={handleRemoveFavicon}
+                              data-testid="button-remove-favicon"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              Remove
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Recommended: Square PNG or ICO, 32x32 or 64x64 pixels. Appears in browser tabs.
                       </p>
                     </div>
                   </CardContent>

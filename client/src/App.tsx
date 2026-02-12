@@ -1,7 +1,7 @@
 import { Switch, Route, useLocation } from "wouter";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { queryClient } from "./lib/queryClient";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import ThemeProvider from "@/components/ThemeProvider";
@@ -268,6 +268,25 @@ function useConsentAwareGA() {
   }, []);
 }
 
+function DynamicFavicon() {
+  const { data } = useQuery<{ faviconUrl?: string | null }>({
+    queryKey: ["/api/site-settings"],
+    staleTime: 5 * 60 * 1000,
+    select: (d: any) => ({ faviconUrl: d?.faviconUrl }),
+  });
+
+  useEffect(() => {
+    if (data?.faviconUrl) {
+      const iconLink = document.querySelector('link[rel="icon"]') as HTMLLinkElement | null;
+      const appleLink = document.querySelector('link[rel="apple-touch-icon"]') as HTMLLinkElement | null;
+      if (iconLink) iconLink.href = data.faviconUrl;
+      if (appleLink) appleLink.href = data.faviconUrl;
+    }
+  }, [data?.faviconUrl]);
+
+  return null;
+}
+
 function App() {
   useConsentAwareGA();
 
@@ -276,6 +295,7 @@ function App() {
       <ThemeProvider>
         <AdminThemeProvider>
           <TooltipProvider>
+            <DynamicFavicon />
             <Toaster />
             <Router />
             <ConsentBanner />
