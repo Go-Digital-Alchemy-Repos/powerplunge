@@ -1,3 +1,5 @@
+import { getStoredConsent } from "./consent";
+
 declare global {
   interface Window {
     dataLayer: any[];
@@ -6,6 +8,79 @@ declare global {
 }
 
 let currentMeasurementId: string | null = null;
+
+const PURCHASE_DEDUPE_KEY = "pp_ga4_purchased_ids";
+
+function hasAnalyticsConsent(): boolean {
+  const stored = getStoredConsent();
+  if (!stored) return true;
+  return stored.categories.analytics === true;
+}
+
+function gaEvent(name: string, params: Record<string, any>): void {
+  try {
+    if (!hasAnalyticsConsent()) return;
+    if (typeof window === "undefined") return;
+    if (window.gtag) {
+      window.gtag("event", name, params);
+    } else if (window.dataLayer) {
+      window.dataLayer.push({ event: name, ...params });
+    }
+  } catch {}
+}
+
+function isPurchaseFired(transactionId: string): boolean {
+  try {
+    const raw = localStorage.getItem(PURCHASE_DEDUPE_KEY);
+    const ids: string[] = raw ? JSON.parse(raw) : [];
+    return ids.includes(transactionId);
+  } catch {
+    return false;
+  }
+}
+
+function markPurchaseFired(transactionId: string): void {
+  try {
+    const raw = localStorage.getItem(PURCHASE_DEDUPE_KEY);
+    const ids: string[] = raw ? JSON.parse(raw) : [];
+    ids.push(transactionId);
+    if (ids.length > 50) ids.splice(0, ids.length - 50);
+    localStorage.setItem(PURCHASE_DEDUPE_KEY, JSON.stringify(ids));
+  } catch {}
+}
+
+interface GA4Item {
+  item_id: string;
+  item_name: string;
+  price: number;
+  quantity?: number;
+  item_brand?: string;
+  item_category?: string;
+  item_variant?: string;
+  index?: number;
+}
+
+export function mapItem(item: {
+  id: string;
+  name: string;
+  price: number;
+  quantity?: number;
+  category?: string;
+  variant?: string;
+  index?: number;
+}): GA4Item {
+  const mapped: GA4Item = {
+    item_id: item.id,
+    item_name: item.name,
+    price: item.price,
+    item_brand: "Power Plunge",
+    item_category: item.category || "Cold Plunge",
+  };
+  if (item.quantity !== undefined) mapped.quantity = item.quantity;
+  if (item.variant) mapped.item_variant = item.variant;
+  if (item.index !== undefined) mapped.index = item.index;
+  return mapped;
+}
 
 export const initGA = (measurementId?: string) => {
   const id = measurementId || import.meta.env.VITE_GA_MEASUREMENT_ID;
@@ -50,6 +125,7 @@ export const initGAFromSettings = async () => {
 
 export const trackPageView = (url: string) => {
   if (typeof window === "undefined" || !window.gtag || !currentMeasurementId) return;
+  if (!hasAnalyticsConsent()) return;
   window.gtag("config", currentMeasurementId, { page_path: url });
 };
 
@@ -59,8 +135,7 @@ export const trackEvent = (
   label?: string,
   value?: number,
 ) => {
-  if (typeof window === "undefined" || !window.gtag) return;
-  window.gtag("event", action, {
+  gaEvent(action, {
     event_category: category,
     event_label: label,
     value,
@@ -71,8 +146,17 @@ export const trackEcommerceEvent = (
   eventName: string,
   params: Record<string, any>,
 ) => {
-  if (typeof window === "undefined" || !window.gtag) return;
-  window.gtag("event", eventName, params);
+  gaEvent(eventName, params);
+};
+
+export const trackViewItemList = (
+  listName: string,
+  items: Array<{ id: string; name: string; price: number }>,
+) => {
+  gaEvent("view_item_list", {
+    item_list_name: listName,
+    items: items.slice(0, 20).map((i, index) => mapItem({ ...i, index })),
+  });
 };
 
 export const trackViewItem = (item: {
@@ -81,17 +165,10 @@ export const trackViewItem = (item: {
   price: number;
   category?: string;
 }) => {
-  trackEcommerceEvent("view_item", {
+  gaEvent("view_item", {
     currency: "USD",
     value: item.price,
-    items: [
-      {
-        item_id: item.id,
-        item_name: item.name,
-        price: item.price,
-        item_category: item.category || "Cold Plunge",
-      },
-    ],
+    items: [mapItem(item)],
   });
 };
 
@@ -102,18 +179,10 @@ export const trackAddToCart = (item: {
   quantity: number;
   category?: string;
 }) => {
-  trackEcommerceEvent("add_to_cart", {
+  gaEvent("add_to_cart", {
     currency: "USD",
     value: item.price * item.quantity,
-    items: [
-      {
-        item_id: item.id,
-        item_name: item.name,
-        price: item.price,
-        quantity: item.quantity,
-        item_category: item.category || "Cold Plunge",
-      },
-    ],
+    items: [mapItem(item)],
   });
 };
 
@@ -123,17 +192,10 @@ export const trackRemoveFromCart = (item: {
   price: number;
   quantity: number;
 }) => {
-  trackEcommerceEvent("remove_from_cart", {
+  gaEvent("remove_from_cart", {
     currency: "USD",
     value: item.price * item.quantity,
-    items: [
-      {
-        item_id: item.id,
-        item_name: item.name,
-        price: item.price,
-        quantity: item.quantity,
-      },
-    ],
+    items: [mapItem(item)],
   });
 };
 
@@ -143,15 +205,38 @@ export const trackBeginCheckout = (items: Array<{
   price: number;
   quantity: number;
 }>, totalValue: number) => {
-  trackEcommerceEvent("begin_checkout", {
+  gaEvent("begin_checkout", {
     currency: "USD",
     value: totalValue,
-    items: items.map((i) => ({
-      item_id: i.id,
-      item_name: i.name,
-      price: i.price,
-      quantity: i.quantity,
-    })),
+    items: items.map((i) => mapItem(i)),
+  });
+};
+
+export const trackAddShippingInfo = (items: Array<{
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+}>, totalValue: number, shippingTier?: string) => {
+  gaEvent("add_shipping_info", {
+    currency: "USD",
+    value: totalValue,
+    shipping_tier: shippingTier || "Standard",
+    items: items.map((i) => mapItem(i)),
+  });
+};
+
+export const trackAddPaymentInfo = (items: Array<{
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+}>, totalValue: number, paymentType?: string) => {
+  gaEvent("add_payment_info", {
+    currency: "USD",
+    value: totalValue,
+    payment_type: paymentType || "Credit Card",
+    items: items.map((i) => mapItem(i)),
   });
 };
 
@@ -167,34 +252,16 @@ export const trackPurchase = (transaction: {
     quantity: number;
   }>;
 }) => {
-  trackEcommerceEvent("purchase", {
+  if (isPurchaseFired(transaction.transactionId)) return;
+  gaEvent("purchase", {
     transaction_id: transaction.transactionId,
     currency: "USD",
     value: transaction.value,
     tax: transaction.tax || 0,
     shipping: transaction.shipping || 0,
-    items: transaction.items.map((i) => ({
-      item_id: i.id,
-      item_name: i.name,
-      price: i.price,
-      quantity: i.quantity,
-    })),
+    items: transaction.items.map((i) => mapItem(i)),
   });
-};
-
-export const trackViewItemList = (
-  listName: string,
-  items: Array<{ id: string; name: string; price: number }>,
-) => {
-  trackEcommerceEvent("view_item_list", {
-    item_list_name: listName,
-    items: items.map((i, index) => ({
-      item_id: i.id,
-      item_name: i.name,
-      price: i.price,
-      index,
-    })),
-  });
+  markPurchaseFired(transaction.transactionId);
 };
 
 export const trackSearch = (searchTerm: string) => {

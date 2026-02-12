@@ -20,7 +20,7 @@ import { ArrowLeft, ArrowRight, CreditCard, Loader2, ShoppingBag, Lock, Shield, 
 import { AddressForm, emptyAddress, type AddressFormData } from "@/components/checkout/AddressForm";
 import { validateEmail, validatePhone, validateRequired } from "@shared/validation";
 import { trackCheckoutEvent } from "@/lib/checkout-analytics";
-import { trackBeginCheckout, trackPurchase } from "@/lib/analytics";
+import { trackBeginCheckout, trackPurchase, trackAddShippingInfo, trackAddPaymentInfo, trackRemoveFromCart } from "@/lib/analytics";
 import { useBranding } from "@/hooks/use-branding";
 import SiteLayout from "@/components/SiteLayout";
 
@@ -148,6 +148,7 @@ function CheckoutForm({ clientSecret, orderId, cartTotal, totalWithTax, cart, bi
 
           localStorage.removeItem("cart");
           localStorage.removeItem("checkoutSessionId");
+          sessionStorage.removeItem("pp_checkout_session_id");
           sessionStorage.removeItem("checkoutFormData");
           sessionStorage.removeItem("checkoutBillingData");
           sessionStorage.removeItem("checkoutShippingAddress");
@@ -534,6 +535,15 @@ export default function Checkout() {
   };
 
   const removeCartItem = (itemId: string) => {
+    const removedItem = cart.find((item) => item.id === itemId);
+    if (removedItem) {
+      trackRemoveFromCart({
+        id: removedItem.id,
+        name: removedItem.name,
+        price: removedItem.price / 100,
+        quantity: removedItem.quantity,
+      });
+    }
     setCart((prev) => {
       const updated = prev.filter((item) => item.id !== itemId);
       localStorage.setItem("cart", JSON.stringify(updated));
@@ -550,11 +560,15 @@ export default function Checkout() {
 
   useEffect(() => {
     if (cart.length > 0) {
-      trackCheckoutEvent("checkout_started", { cartValue: cartTotal, itemCount: cart.length });
-      trackBeginCheckout(
-        cart.map((i) => ({ id: i.id, name: i.name, price: i.price / 100, quantity: i.quantity })),
-        cartTotal / 100,
-      );
+      const existingSession = sessionStorage.getItem("pp_checkout_session_id");
+      if (!existingSession) {
+        sessionStorage.setItem("pp_checkout_session_id", crypto.randomUUID());
+        trackCheckoutEvent("checkout_started", { cartValue: cartTotal, itemCount: cart.length });
+        trackBeginCheckout(
+          cart.map((i) => ({ id: i.id, name: i.name, price: i.price / 100, quantity: i.quantity })),
+          cartTotal / 100,
+        );
+      }
     }
   }, []);
 
@@ -756,6 +770,9 @@ export default function Checkout() {
       });
       setStep("payment");
       trackCheckoutEvent("payment_step_started", { cartValue: data.total, itemCount: cart.length });
+      const mappedItems = cart.map((i) => ({ id: i.id, name: i.name, price: i.price / 100, quantity: i.quantity }));
+      trackAddShippingInfo(mappedItems, data.total / 100);
+      trackAddPaymentInfo(mappedItems, data.total / 100);
     } catch (error: any) {
       toast({
         title: "Error",
