@@ -1182,7 +1182,22 @@ export default function AdminPageBuilder() {
 
       {/* Block Editor Sheet - 80% viewport width */}
       <Sheet open={!!selectedBlock} onOpenChange={(open) => !open && setSelectedBlockId(null)}>
-        <SheetContent side="right" className="bg-card border-border w-[80vw] max-w-[80vw] sm:max-w-[80vw] p-0">
+        <SheetContent
+          side="right"
+          className="bg-card border-border w-[80vw] max-w-[80vw] sm:max-w-[80vw] p-0"
+          onInteractOutside={(e) => {
+            const target = e.target as HTMLElement;
+            if (target?.closest?.('[data-radix-popper-content-wrapper]') || target?.closest?.('[role="dialog"]')) {
+              e.preventDefault();
+            }
+          }}
+          onPointerDownOutside={(e) => {
+            const target = e.target as HTMLElement;
+            if (target?.closest?.('[data-radix-popper-content-wrapper]') || target?.closest?.('[role="dialog"]')) {
+              e.preventDefault();
+            }
+          }}
+        >
           <SheetHeader className="h-14 px-6 flex flex-row items-center justify-between border-b border-border">
             <SheetTitle className="text-lg">Edit Block</SheetTitle>
           </SheetHeader>
