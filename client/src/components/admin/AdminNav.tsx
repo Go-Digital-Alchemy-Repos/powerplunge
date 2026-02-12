@@ -80,7 +80,7 @@ export default function AdminNav({ currentPage, role = "admin" }: AdminNavProps)
   const isActive = (page: string) => currentPage === page;
   const isClientManagement = currentPage === "customers" || currentPage === "affiliates" || currentPage === "support" || currentPage === "affiliate-invite-sender";
   const isCms = currentPage === "media" || currentPage === "cms-settings" || currentPage === "cms" || currentPage?.startsWith("cms-");
-  const isSettings = currentPage === "settings" || currentPage === "team" || currentPage === "email-templates" || currentPage === "integrations" || currentPage === "docs" || currentPage === "themes";
+  const isSettings = currentPage === "settings" || currentPage === "analytics" || currentPage === "team" || currentPage === "email-templates" || currentPage === "integrations" || currentPage === "docs" || currentPage === "themes";
 
   const hasFullAccess = role === "super_admin" || role === "admin" || role === "store_manager";
 
@@ -151,6 +151,7 @@ export default function AdminNav({ currentPage, role = "admin" }: AdminNavProps)
       defaultOpen: isSettings,
       items: [
         { label: "Site Settings", icon: Building2, href: "/admin/settings", active: isActive("settings") },
+        { label: "Analytics", icon: BarChart3, href: "/admin/analytics", active: isActive("analytics") },
         { label: "Team", icon: UserPlus, href: "/admin/team", active: isActive("team") },
         { label: "Email Templates", icon: FileText, href: "/admin/email-templates", active: isActive("email-templates") },
         { label: "Integrations", icon: Key, href: "/admin/integrations", active: isActive("integrations") },
@@ -318,6 +319,12 @@ export default function AdminNav({ currentPage, role = "admin" }: AdminNavProps)
                       <Link href="/admin/settings" className="flex items-center gap-2 cursor-pointer">
                         <Building2 className="w-4 h-4" />
                         Site Settings
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/admin/analytics" className="flex items-center gap-2 cursor-pointer" data-testid="link-analytics">
+                        <BarChart3 className="w-4 h-4" />
+                        Analytics
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
