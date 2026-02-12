@@ -176,15 +176,13 @@ export interface IStorage {
   invalidatePhoneVerificationCodes(inviteCode: string, phone: string): Promise<void>;
   countRecentPhoneVerificationCodes(inviteCode: string, minutesAgo: number): Promise<number>;
 
-  // Affiliate Invite Verifications (new per-attempt model)
+  // Affiliate Invite Verifications (Twilio Verify model)
   createAffiliateInviteVerification(data: InsertAffiliateInviteVerification): Promise<AffiliateInviteVerification>;
-  getAffiliateInviteVerification(id: string): Promise<AffiliateInviteVerification | undefined>;
-  getActiveVerificationForInvite(inviteId: string, phone: string, sessionNonce: string): Promise<AffiliateInviteVerification | undefined>;
   getVerifiedVerificationForInvite(inviteId: string, phone: string): Promise<AffiliateInviteVerification | undefined>;
   getVerificationByToken(token: string): Promise<AffiliateInviteVerification | undefined>;
+  getPendingVerificationForInvite(inviteId: string, phone: string, sessionNonce: string): Promise<AffiliateInviteVerification | undefined>;
   updateAffiliateInviteVerification(id: string, data: Partial<AffiliateInviteVerification>): Promise<AffiliateInviteVerification | undefined>;
   invalidatePendingVerifications(inviteId: string, phone: string): Promise<void>;
-  countRecentVerificationsForPhone(phone: string, minutesAgo: number): Promise<number>;
   countDailyVerificationsForPhone(phone: string): Promise<number>;
   countRecentVerificationsForInvite(inviteId: string, minutesAgo: number): Promise<number>;
 
@@ -889,29 +887,9 @@ export class DatabaseStorage implements IStorage {
     return record;
   }
 
-  async getAffiliateInviteVerification(id: string): Promise<AffiliateInviteVerification | undefined> {
-    const [record] = await db.select().from(affiliateInviteVerifications).where(eq(affiliateInviteVerifications.id, id));
-    return record || undefined;
-  }
-
-  async getActiveVerificationForInvite(inviteId: string, phone: string, sessionNonce: string): Promise<AffiliateInviteVerification | undefined> {
-    const [record] = await db
-      .select()
-      .from(affiliateInviteVerifications)
-      .where(and(
-        eq(affiliateInviteVerifications.inviteId, inviteId),
-        eq(affiliateInviteVerifications.phone, phone),
-        eq(affiliateInviteVerifications.sessionNonce, sessionNonce),
-        eq(affiliateInviteVerifications.status, "pending"),
-      ))
-      .orderBy(desc(affiliateInviteVerifications.createdAt))
-      .limit(1);
-    return record || undefined;
-  }
-
   async getVerifiedVerificationForInvite(inviteId: string, phone: string): Promise<AffiliateInviteVerification | undefined> {
-    const tenMinutesAgo = new Date();
-    tenMinutesAgo.setMinutes(tenMinutesAgo.getMinutes() - 30);
+    const thirtyMinutesAgo = new Date();
+    thirtyMinutesAgo.setMinutes(thirtyMinutesAgo.getMinutes() - 30);
     const [record] = await db
       .select()
       .from(affiliateInviteVerifications)
@@ -919,7 +897,7 @@ export class DatabaseStorage implements IStorage {
         eq(affiliateInviteVerifications.inviteId, inviteId),
         eq(affiliateInviteVerifications.phone, phone),
         eq(affiliateInviteVerifications.status, "verified"),
-        sql`${affiliateInviteVerifications.updatedAt} > ${tenMinutesAgo}`,
+        sql`${affiliateInviteVerifications.updatedAt} > ${thirtyMinutesAgo}`,
       ))
       .orderBy(desc(affiliateInviteVerifications.updatedAt))
       .limit(1);
@@ -934,6 +912,21 @@ export class DatabaseStorage implements IStorage {
         eq(affiliateInviteVerifications.verificationToken, token),
         eq(affiliateInviteVerifications.status, "verified"),
       ))
+      .limit(1);
+    return record || undefined;
+  }
+
+  async getPendingVerificationForInvite(inviteId: string, phone: string, sessionNonce: string): Promise<AffiliateInviteVerification | undefined> {
+    const [record] = await db
+      .select()
+      .from(affiliateInviteVerifications)
+      .where(and(
+        eq(affiliateInviteVerifications.inviteId, inviteId),
+        eq(affiliateInviteVerifications.phone, phone),
+        eq(affiliateInviteVerifications.sessionNonce, sessionNonce),
+        eq(affiliateInviteVerifications.status, "pending"),
+      ))
+      .orderBy(desc(affiliateInviteVerifications.createdAt))
       .limit(1);
     return record || undefined;
   }
@@ -954,24 +947,8 @@ export class DatabaseStorage implements IStorage {
       .where(and(
         eq(affiliateInviteVerifications.inviteId, inviteId),
         eq(affiliateInviteVerifications.phone, phone),
-        or(
-          eq(affiliateInviteVerifications.status, "pending"),
-          eq(affiliateInviteVerifications.status, "pending_send"),
-        ),
+        eq(affiliateInviteVerifications.status, "pending"),
       ));
-  }
-
-  async countRecentVerificationsForPhone(phone: string, minutesAgo: number): Promise<number> {
-    const cutoff = new Date();
-    cutoff.setMinutes(cutoff.getMinutes() - minutesAgo);
-    const result = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(affiliateInviteVerifications)
-      .where(and(
-        eq(affiliateInviteVerifications.phone, phone),
-        sql`${affiliateInviteVerifications.createdAt} > ${cutoff}`,
-      ));
-    return Number(result[0]?.count || 0);
   }
 
   async countDailyVerificationsForPhone(phone: string): Promise<number> {

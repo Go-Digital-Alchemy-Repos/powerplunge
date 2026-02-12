@@ -5,7 +5,6 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { createSessionToken, verifySessionToken } from "../../middleware/customer-auth.middleware";
 import { affiliateSignupLimiter, smsVerificationLimiter, smsSendLimiter, smsPhoneLimiter } from "../../middleware/rate-limiter";
-import { hashOtp, generateSalt, verifyOtp, generateOtpCode } from "../../utils/otp-hash";
 
 const router = Router();
 
@@ -13,7 +12,6 @@ const GENERIC_ERROR = "Unable to process your request. Please try again later.";
 const PHONE_DAILY_CAP = 10;
 const INVITE_RESEND_WINDOW_MINUTES = 5;
 const INVITE_RESEND_MAX = 3;
-const OTP_EXPIRY_MINUTES = 10;
 const VERIFICATION_TOKEN_EXPIRY_MINUTES = 30;
 
 function generateVerificationToken(): string {
@@ -490,40 +488,19 @@ router.post("/send-verification", smsVerificationLimiter, smsSendLimiter, smsPho
 
     await storage.invalidatePendingVerifications(invite.id, normalizedPhone);
 
-    const code = generateOtpCode();
-    const salt = generateSalt();
-    const codeHash = hashOtp(code, salt);
+    const verifyResult = await smsService.startVerification(normalizedPhone);
 
-    const expiresAt = new Date();
-    expiresAt.setMinutes(expiresAt.getMinutes() + OTP_EXPIRY_MINUTES);
-
-    const verification = await storage.createAffiliateInviteVerification({
-      inviteId: invite.id,
-      phone: normalizedPhone,
-      sessionNonce,
-      codeHash,
-      codeSalt: salt,
-      attempts: 0,
-      maxAttempts: 5,
-      expiresAt,
-      status: "pending_send",
-    });
-
-    const smsResult = await smsService.sendVerificationCode(normalizedPhone, code);
-
-    if (!smsResult.success) {
-      await storage.updateAffiliateInviteVerification(verification.id, {
-        status: "send_failed",
-        ...(smsResult.error ? {} : {}),
-      });
-      console.error(`[SMS_VERIFY] Send failed for verification ${verification.id}: ${smsResult.error}`);
+    if (!verifyResult.success) {
+      console.error(`[SMS_VERIFY] Twilio Verify start failed: ${verifyResult.error}`);
       return res.status(500).json({ message: "Failed to send verification code. Please try again." });
     }
 
-    await storage.updateAffiliateInviteVerification(verification.id, {
+    await storage.createAffiliateInviteVerification({
+      inviteId: invite.id,
+      phone: normalizedPhone,
+      sessionNonce,
       status: "pending",
-      twilioMessageSid: smsResult.messageSid || null,
-      deliveryStatus: "queued",
+      twilioVerifySid: verifyResult.verifySid || null,
     });
 
     res.json({
@@ -577,33 +554,23 @@ router.post("/verify-phone", smsVerificationLimiter, async (req: Request, res: R
       });
     }
 
-    const verification = await storage.getActiveVerificationForInvite(invite.id, normalizedPhone, sessionNonce);
-
+    const verification = await storage.getPendingVerificationForInvite(invite.id, normalizedPhone, sessionNonce);
     if (!verification) {
       return res.status(400).json({ message: GENERIC_ERROR });
     }
 
-    if (verification.attempts >= verification.maxAttempts) {
-      await storage.updateAffiliateInviteVerification(verification.id, { status: "failed" });
-      return res.status(429).json({ message: "Too many attempts. Please request a new verification code." });
+    const checkResult = await smsService.checkVerification(normalizedPhone, code);
+
+    if (!checkResult.success) {
+      console.error(`[SMS_VERIFY] Twilio Verify check error: ${checkResult.error}`);
+      return res.status(500).json({ message: GENERIC_ERROR });
     }
 
-    if (new Date() > new Date(verification.expiresAt)) {
-      await storage.updateAffiliateInviteVerification(verification.id, { status: "expired" });
-      return res.status(400).json({ message: "Verification code has expired. Please request a new one." });
-    }
-
-    const isValid = verifyOtp(code, verification.codeSalt, verification.codeHash);
-
-    if (!isValid) {
-      await storage.updateAffiliateInviteVerification(verification.id, {
-        attempts: verification.attempts + 1,
-      });
-      const remaining = verification.maxAttempts - verification.attempts - 1;
+    if (!checkResult.valid) {
       return res.status(400).json({
-        message: remaining > 0
-          ? `Incorrect code. ${remaining} attempt${remaining !== 1 ? 's' : ''} remaining.`
-          : "Too many incorrect attempts. Please request a new code.",
+        message: checkResult.status === "not_found"
+          ? "Verification code has expired. Please request a new one."
+          : "Incorrect verification code. Please try again.",
       });
     }
 

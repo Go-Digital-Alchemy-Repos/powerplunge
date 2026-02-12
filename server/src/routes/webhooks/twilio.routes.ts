@@ -1,5 +1,4 @@
 import { Router, Request, Response } from "express";
-import { storage } from "../../../storage";
 import crypto from "crypto";
 
 const router = Router();
@@ -63,26 +62,12 @@ router.post("/status", async (req: Request, res: Response) => {
       return res.status(403).send("Invalid signature");
     }
 
-    const { affiliateInviteVerifications } = await import("@shared/schema");
-    const { db } = await import("../../../db");
-    const { eq } = await import("drizzle-orm");
-
-    const [verification] = await db
-      .select()
-      .from(affiliateInviteVerifications)
-      .where(eq(affiliateInviteVerifications.twilioMessageSid, MessageSid))
-      .limit(1);
-
-    if (verification) {
-      await storage.updateAffiliateInviteVerification(verification.id, {
-        deliveryStatus: MessageStatus,
-      });
-
-      if (MessageStatus === "failed" || MessageStatus === "undelivered") {
-        console.error(
-          `[TWILIO_WEBHOOK] Message delivery failed: SID=${MessageSid} status=${MessageStatus} error=${ErrorCode} ${ErrorMessage || ""}`
-        );
-      }
+    if (MessageStatus === "failed" || MessageStatus === "undelivered") {
+      console.error(
+        `[TWILIO_WEBHOOK] Message delivery failed: SID=${MessageSid} status=${MessageStatus} error=${ErrorCode} ${ErrorMessage || ""}`
+      );
+    } else {
+      console.info(`[TWILIO_WEBHOOK] Status update: SID=${MessageSid} status=${MessageStatus}`);
     }
 
     res.status(200).send("OK");

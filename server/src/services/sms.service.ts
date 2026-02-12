@@ -7,6 +7,19 @@ export interface SmsSendResult {
   error?: string;
 }
 
+export interface VerifyStartResult {
+  success: boolean;
+  verifySid?: string;
+  error?: string;
+}
+
+export interface VerifyCheckResult {
+  success: boolean;
+  valid: boolean;
+  status?: string;
+  error?: string;
+}
+
 class SmsService {
   private client: ReturnType<typeof twilio> | null = null;
   private fromNumber: string | null = null;
@@ -72,30 +85,58 @@ class SmsService {
     this.dailySmsCount++;
   }
 
-  async sendVerificationCode(to: string, code: string): Promise<SmsSendResult> {
+  private getVerifyServiceSid(): string | null {
+    return process.env.TWILIO_VERIFY_SERVICE_SID || null;
+  }
+
+  async startVerification(to: string): Promise<VerifyStartResult> {
     try {
       if (!this.checkDailyBudget()) {
         console.error("[SMS] Daily SMS budget exceeded");
         return { success: false, error: "SMS service temporarily unavailable" };
       }
 
-      const client = await this.getClient();
-      const callbackUrl = process.env.PUBLIC_SITE_URL
-        ? `${process.env.PUBLIC_SITE_URL}/api/webhooks/twilio/status`
-        : undefined;
+      const serviceSid = this.getVerifyServiceSid();
+      if (!serviceSid) {
+        return { success: false, error: "Twilio Verify service not configured" };
+      }
 
-      const message = await client.messages.create({
-        body: `Your Power Plunge affiliate verification code is: ${code}. This code expires in 10 minutes.`,
-        from: this.fromNumber!,
-        to,
-        ...(callbackUrl ? { statusCallback: callbackUrl } : {}),
-      });
+      const client = await this.getClient();
+      const verification = await client.verify.v2
+        .services(serviceSid)
+        .verifications.create({ to, channel: "sms" });
 
       this.incrementDailyCount();
-      return { success: true, messageSid: message.sid };
+      return { success: true, verifySid: verification.sid };
     } catch (error: any) {
-      console.error("[SMS] Failed to send verification code:", error);
-      return { success: false, error: error.message || "Failed to send SMS" };
+      console.error("[SMS] Failed to start verification:", error);
+      return { success: false, error: error.message || "Failed to send verification" };
+    }
+  }
+
+  async checkVerification(to: string, code: string): Promise<VerifyCheckResult> {
+    try {
+      const serviceSid = this.getVerifyServiceSid();
+      if (!serviceSid) {
+        return { success: false, valid: false, error: "Twilio Verify service not configured" };
+      }
+
+      const client = await this.getClient();
+      const check = await client.verify.v2
+        .services(serviceSid)
+        .verificationChecks.create({ to, code });
+
+      return {
+        success: true,
+        valid: check.valid === true && check.status === "approved",
+        status: check.status,
+      };
+    } catch (error: any) {
+      if (error.code === 20404) {
+        return { success: true, valid: false, status: "not_found", error: "Verification expired or not found" };
+      }
+      console.error("[SMS] Failed to check verification:", error);
+      return { success: false, valid: false, error: error.message || "Failed to check verification" };
     }
   }
 
@@ -120,11 +161,6 @@ class SmsService {
       console.error("[SMS] Failed to send invite SMS:", error);
       return { success: false, error: error.message || "Failed to send SMS" };
     }
-  }
-
-  generateCode(): string {
-    const { generateOtpCode } = require("../utils/otp-hash");
-    return generateOtpCode();
   }
 
   validateAndNormalizePhone(phone: string): { valid: boolean; e164?: string; error?: string } {
