@@ -36,6 +36,7 @@ interface PageContentJson {
 interface Product {
   id: string;
   name: string;
+  slug?: string;
   tagline?: string;
   description?: string;
   price: number;
@@ -321,7 +322,12 @@ const ProductGridBlock = ({ data, settings, onAddToCart }: {
             key={product.id}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-slate-800/50 backdrop-blur border border-slate-700 rounded-xl p-6 hover:border-cyan-500/50 transition-colors"
+            className="bg-slate-800/50 backdrop-blur border border-slate-700 rounded-xl p-6 hover:border-cyan-500/50 transition-colors cursor-pointer"
+            onClick={() => {
+              const productUrl = `/products/${product.slug || product.id}`;
+              window.location.href = productUrl;
+            }}
+            data-testid={`card-product-${product.id}`}
           >
             {product.primaryImage && (
               <img 
@@ -340,7 +346,10 @@ const ProductGridBlock = ({ data, settings, onAddToCart }: {
                 <Button 
                   size="sm"
                   className="bg-cyan-500 hover:bg-cyan-600 text-black"
-                  onClick={() => onAddToCart(product.id, 1)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onAddToCart(product.id, 1);
+                  }}
                 >
                   Add to Cart
                 </Button>
