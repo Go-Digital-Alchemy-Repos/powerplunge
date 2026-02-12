@@ -1,8 +1,9 @@
 import { storage } from "./storage";
 import { db } from "./db";
-import { adminUsers } from "@shared/schema";
-import { eq, asc } from "drizzle-orm";
+import { adminUsers, products } from "@shared/schema";
+import { eq, asc, isNull } from "drizzle-orm";
 import bcrypt from "bcryptjs";
+import { slugify } from "./src/utils/slugify";
 
 export async function ensureSuperAdmin() {
   const allAdmins = await db.select().from(adminUsers).orderBy(asc(adminUsers.createdAt));
@@ -155,6 +156,38 @@ async function migrateButtonConfigurations(productId: string) {
     await storage.updatePage(homePage.id, {
       contentJson: { ...contentJson, blocks }
     });
+  }
+}
+
+export async function backfillProductSlugs() {
+  try {
+    const productsWithoutSlug = await db
+      .select({ id: products.id, name: products.name })
+      .from(products)
+      .where(isNull(products.urlSlug));
+
+    if (productsWithoutSlug.length === 0) return;
+
+    const existingSlugs = new Set(
+      (await db.select({ slug: products.urlSlug }).from(products))
+        .map(r => r.slug)
+        .filter(Boolean)
+    );
+
+    for (const p of productsWithoutSlug) {
+      let base = slugify(p.name);
+      let slug = base;
+      let counter = 1;
+      while (existingSlugs.has(slug)) {
+        slug = `${base}-${counter}`;
+        counter++;
+      }
+      existingSlugs.add(slug);
+      await db.update(products).set({ urlSlug: slug }).where(eq(products.id, p.id));
+      console.log(`[SLUG-BACKFILL] "${p.name}" → ${slug}`);
+    }
+  } catch (err) {
+    console.error("[SLUG-BACKFILL] Error:", err);
   }
 }
 

@@ -89,6 +89,14 @@ app.use(requestLoggerMiddleware);
         console.error("[CMS-INIT] Failed to ensure CMS defaults:", error);
       }
 
+      // Backfill product URL slugs for any products missing them
+      try {
+        const { backfillProductSlugs } = await import("./seed");
+        await backfillProductSlugs();
+      } catch (error) {
+        console.error("[SLUG-BACKFILL] Failed to backfill product slugs:", error);
+      }
+
       // Ensure a super_admin exists (promotes oldest admin if needed)
       try {
         const { ensureSuperAdmin } = await import("./seed");

@@ -4,6 +4,7 @@ import * as productsController from "../../controllers/public/products.controlle
 const router = Router();
 
 router.get("/", productsController.listActiveProducts);
+router.get("/slug/:slug", productsController.getProductBySlug);
 router.get("/:id", productsController.getProduct);
 
 export default router;

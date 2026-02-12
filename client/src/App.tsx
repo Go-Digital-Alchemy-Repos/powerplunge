@@ -39,6 +39,7 @@ const CustomerLogin = lazyRetry(() => import("@/pages/customer-login"));
 const CustomerRegister = lazyRetry(() => import("@/pages/customer-register"));
 const PageView = lazyRetry(() => import("@/pages/page-view"));
 const Shop = lazyRetry(() => import("@/pages/shop"));
+const ProductDetail = lazyRetry(() => import("@/pages/product-detail"));
 
 const BlogIndexPage = lazyRetry(() => import("@/blog/BlogIndexPage"));
 const BlogPostPage = lazyRetry(() => import("@/blog/BlogPostPage"));
@@ -161,6 +162,7 @@ function Router() {
         <Route path="/auth/login" component={BetterAuthLogin} />
         <Route path="/auth/register" component={BetterAuthRegister} />
         <Route path="/shop" component={Shop} />
+        <Route path="/products/:slug" component={ProductDetail} />
         <Route path="/become-affiliate" component={BecomeAffiliate} />
         <Route path="/affiliate-portal" component={AffiliatePortal} />
         <Route path="/reset-password" component={ResetPassword} />

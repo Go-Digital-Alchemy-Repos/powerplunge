@@ -18,3 +18,12 @@ export async function getProduct(req: Request, res: Response, next: NextFunction
     next(error);
   }
 }
+
+export async function getProductBySlug(req: Request, res: Response, next: NextFunction) {
+  try {
+    const product = await productsService.getProductBySlug(req.params.slug);
+    res.json(product);
+  } catch (error) {
+    next(error);
+  }
+}

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { ShoppingCart, ArrowLeft } from "lucide-react";
@@ -18,6 +18,7 @@ interface Product {
   salePrice?: number;
   primaryImage?: string;
   features?: string[];
+  urlSlug?: string;
 }
 
 interface PageContentJson {
@@ -187,54 +188,83 @@ function FallbackShopContent({
       <section className="mb-16">
         <h2 className="text-3xl font-bold text-white mb-8 text-center">Our Products</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {products.map((product) => (
-            <motion.div
-              key={product.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-slate-800/50 backdrop-blur border border-slate-700 rounded-xl overflow-hidden hover:border-cyan-500/50 transition-colors"
-              data-testid={`product-card-${product.id}`}
-            >
-              {product.primaryImage && (
-                <img 
-                  src={product.primaryImage} 
-                  alt={product.name}
-                  className="w-full h-64 object-cover"
-                />
-              )}
-              <div className="p-6">
-                <h3 className="text-xl font-semibold text-white mb-2">{product.name}</h3>
-                {product.tagline && (
-                  <p className="text-slate-400 text-sm mb-4">{product.tagline}</p>
+          {products.map((product) => {
+            const productUrl = product.urlSlug ? `/products/${product.urlSlug}` : null;
+            return (
+              <motion.div
+                key={product.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-slate-800/50 backdrop-blur border border-slate-700 rounded-xl overflow-hidden hover:border-cyan-500/50 transition-colors group"
+                data-testid={`product-card-${product.id}`}
+              >
+                {productUrl ? (
+                  <Link href={productUrl} className="block cursor-pointer">
+                    {product.primaryImage && (
+                      <img 
+                        src={product.primaryImage} 
+                        alt={product.name}
+                        className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    )}
+                    <div className="p-6 pb-3">
+                      <h3 className="text-xl font-semibold text-white mb-2 group-hover:text-cyan-400 transition-colors">{product.name}</h3>
+                      {product.tagline && (
+                        <p className="text-slate-400 text-sm mb-2">{product.tagline}</p>
+                      )}
+                    </div>
+                  </Link>
+                ) : (
+                  <>
+                    {product.primaryImage && (
+                      <img 
+                        src={product.primaryImage} 
+                        alt={product.name}
+                        className="w-full h-64 object-cover"
+                      />
+                    )}
+                    <div className="p-6 pb-3">
+                      <h3 className="text-xl font-semibold text-white mb-2">{product.name}</h3>
+                      {product.tagline && (
+                        <p className="text-slate-400 text-sm mb-2">{product.tagline}</p>
+                      )}
+                    </div>
+                  </>
                 )}
-                <div className="flex items-center justify-between">
-                  <div>
-                    {product.salePrice ? (
-                      <div className="flex items-center gap-2">
+                <div className="px-6 pb-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      {product.salePrice ? (
+                        <div className="flex items-center gap-2">
+                          <span className="text-2xl font-bold text-cyan-400">
+                            ${(product.salePrice / 100).toLocaleString()}
+                          </span>
+                          <span className="text-sm text-slate-500 line-through">
+                            ${(product.price / 100).toLocaleString()}
+                          </span>
+                        </div>
+                      ) : (
                         <span className="text-2xl font-bold text-cyan-400">
-                          ${(product.salePrice / 100).toLocaleString()}
-                        </span>
-                        <span className="text-sm text-slate-500 line-through">
                           ${(product.price / 100).toLocaleString()}
                         </span>
-                      </div>
-                    ) : (
-                      <span className="text-2xl font-bold text-cyan-400">
-                        ${(product.price / 100).toLocaleString()}
-                      </span>
-                    )}
+                      )}
+                    </div>
+                    <Button 
+                      className="bg-cyan-500 hover:bg-cyan-600 text-black"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onAddToCart(product.id, 1);
+                      }}
+                      data-testid={`add-to-cart-${product.id}`}
+                    >
+                      Add to Cart
+                    </Button>
                   </div>
-                  <Button 
-                    className="bg-cyan-500 hover:bg-cyan-600 text-black"
-                    onClick={() => onAddToCart(product.id, 1)}
-                    data-testid={`add-to-cart-${product.id}`}
-                  >
-                    Add to Cart
-                  </Button>
                 </div>
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            );
+          })}
         </div>
       </section>
 

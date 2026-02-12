@@ -14,6 +14,10 @@ class ProductsRepository {
     return storage.getProduct(id);
   }
 
+  async findBySlug(slug: string): Promise<Product | undefined> {
+    return storage.getProductBySlug(slug);
+  }
+
   async create(data: InsertProduct): Promise<Product> {
     return storage.createProduct(data);
   }
