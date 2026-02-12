@@ -50,6 +50,7 @@ import publicGoogleReviewsRoutes from "./src/routes/public/google-reviews.routes
 // Newly-extracted route modules
 import paymentsRoutes from "./src/routes/public/payments.routes";
 import stripeWebhookRoutes from "./src/routes/webhooks/stripe.routes";
+import twilioWebhookRoutes from "./src/routes/webhooks/twilio.routes";
 import customerProfileRoutes from "./src/routes/customer/profile.routes";
 import customerAffiliateRoutes, { publicAffiliateRoutes } from "./src/routes/customer/affiliates.routes";
 import adminAuthRoutes from "./src/routes/admin/auth.routes";
@@ -186,6 +187,7 @@ export async function registerRoutes(
   // Public routes (no auth)
   app.use("/api", paymentsRoutes);
   app.use("/api/webhook", stripeWebhookRoutes);
+  app.use("/api/webhooks/twilio", twilioWebhookRoutes);
   app.use("/api/affiliate", publicAffiliateRoutes);
   app.use("/api/coupons", publicCouponRoutes);
 

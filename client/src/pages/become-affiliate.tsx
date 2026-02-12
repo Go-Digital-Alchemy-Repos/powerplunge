@@ -117,6 +117,8 @@ export default function BecomeAffiliate() {
   const [sendingCode, setSendingCode] = useState(false);
   const [verifyingCode, setVerifyingCode] = useState(false);
   const [phoneVerifyError, setPhoneVerifyError] = useState<string | null>(null);
+  const [verificationToken, setVerificationToken] = useState<string | null>(null);
+  const [sessionNonce] = useState(() => crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now().toString(36));
 
   const { data: signupInfo, isLoading: infoLoading } = useQuery<SignupInfo>({
     queryKey: ["/api/affiliate-signup", inviteCode, isAuthenticated],
@@ -198,6 +200,7 @@ export default function BecomeAffiliate() {
           name: data.name,
           signatureName: data.signatureName,
           inviteCode: data.inviteCode,
+          ...(verificationToken ? { verificationToken } : {}),
         }),
       });
       const result = await res.json();
@@ -256,6 +259,7 @@ export default function BecomeAffiliate() {
         body: JSON.stringify({
           signatureName: data.signatureName,
           inviteCode: data.inviteCode,
+          ...(verificationToken ? { verificationToken } : {}),
         }),
       });
       const result = await res.json();
@@ -456,7 +460,7 @@ export default function BecomeAffiliate() {
       const res = await fetch("/api/affiliate-signup/send-verification", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ inviteCode }),
+        body: JSON.stringify({ inviteCode, sessionNonce }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to send code");
@@ -480,10 +484,13 @@ export default function BecomeAffiliate() {
       const res = await fetch("/api/affiliate-signup/verify-phone", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ inviteCode, code: verificationCode }),
+        body: JSON.stringify({ inviteCode, code: verificationCode, sessionNonce }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Verification failed");
+      if (data.verificationToken) {
+        setVerificationToken(data.verificationToken);
+      }
       setPhoneVerified(true);
       toast({ title: "Verified!", description: "Phone number verified successfully." });
     } catch (err: any) {

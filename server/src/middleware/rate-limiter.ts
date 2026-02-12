@@ -131,6 +131,20 @@ export const affiliateSignupLimiter = createRateLimiter({
   message: "Too many signup attempts. Please try again later.",
 });
 
+export const smsPhoneLimiter = createRateLimiter({
+  windowMs: 60 * 60 * 1000,
+  maxRequests: 5,
+  name: "sms-phone-hourly",
+  message: "Too many verification requests for this number. Please try again later.",
+});
+
+export const smsSendLimiter = createRateLimiter({
+  windowMs: 60 * 1000,
+  maxRequests: 3,
+  name: "sms-send-per-minute",
+  message: "Please wait before requesting another code.",
+});
+
 export const generalApiLimiter = createRateLimiter({
   windowMs: 60 * 1000,
   maxRequests: 100,

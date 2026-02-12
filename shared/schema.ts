@@ -558,6 +558,31 @@ export const phoneVerificationCodes = pgTable("phone_verification_codes", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const affiliateInviteVerifications = pgTable("affiliate_invite_verifications", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  inviteId: varchar("invite_id").notNull().references(() => affiliateInvites.id),
+  phone: text("phone").notNull(),
+  sessionNonce: text("session_nonce").notNull(),
+  codeHash: text("code_hash").notNull(),
+  codeSalt: text("code_salt").notNull(),
+  attempts: integer("attempts").notNull().default(0),
+  maxAttempts: integer("max_attempts").notNull().default(5),
+  expiresAt: timestamp("expires_at").notNull(),
+  status: text("status").notNull().default("pending_send"),
+  twilioMessageSid: text("twilio_message_sid"),
+  deliveryStatus: text("delivery_status"),
+  verificationToken: text("verification_token"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const affiliateInviteVerificationsRelations = relations(affiliateInviteVerifications, ({ one }) => ({
+  invite: one(affiliateInvites, {
+    fields: [affiliateInviteVerifications.inviteId],
+    references: [affiliateInvites.id],
+  }),
+}));
+
 export const affiliateInvitesRelations = relations(affiliateInvites, ({ one }) => ({
   createdByAdmin: one(adminUsers, {
     fields: [affiliateInvites.createdByAdminId],
@@ -599,6 +624,10 @@ export type AffiliateInviteUsage = typeof affiliateInviteUsages.$inferSelect;
 export const insertPhoneVerificationCodeSchema = createInsertSchema(phoneVerificationCodes).omit({ id: true, createdAt: true });
 export type InsertPhoneVerificationCode = z.infer<typeof insertPhoneVerificationCodeSchema>;
 export type PhoneVerificationCode = typeof phoneVerificationCodes.$inferSelect;
+
+export const insertAffiliateInviteVerificationSchema = createInsertSchema(affiliateInviteVerifications).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertAffiliateInviteVerification = z.infer<typeof insertAffiliateInviteVerificationSchema>;
+export type AffiliateInviteVerification = typeof affiliateInviteVerifications.$inferSelect;
 
 // Product Categories
 export const categories = pgTable("categories", {

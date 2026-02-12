@@ -315,7 +315,11 @@ router.post("/affiliate-invites/send", async (req: any, res) => {
     let normalizedPhone: string | null = null;
     if (targetPhone && targetPhone.trim()) {
       const { smsService } = await import("../../services/sms.service");
-      normalizedPhone = smsService.normalizePhone(targetPhone.trim());
+      const phoneResult = smsService.validateAndNormalizePhone(targetPhone.trim());
+      if (!phoneResult.valid || !phoneResult.e164) {
+        return res.status(400).json({ message: phoneResult.error || "Invalid phone number" });
+      }
+      normalizedPhone = phoneResult.e164;
     }
 
     let expirationDate: Date | null = null;
@@ -346,7 +350,10 @@ router.post("/affiliate-invites/send", async (req: any, res) => {
     const baseUrl = getBaseUrl(req);
     const inviteUrl = `${baseUrl}/become-affiliate?code=${inviteCode}`;
 
-    let emailResult = { success: false, error: "No email address provided — share the link manually" } as any;
+    let emailResult = { success: false, error: "No email address provided" } as any;
+    let smsResult = { success: false, error: "No phone number provided" } as any;
+    let sentVia: string[] = [];
+
     if (normalizedEmail) {
       try {
         const { escapeHtml } = await import("../../utils/html-escape");
@@ -372,9 +379,21 @@ ${expirationDate ? `<p style="color: #666; font-size: 13px;">This link expires o
 </div>`,
           text: `Hi ${recipientName},\n\nI wanted to reach out personally — we'd love to have you as a Power Plunge affiliate partner.\n\nYou can sign up and get started here:\n${inviteUrl}\n\n${expirationDate ? `This link expires on ${expirationDate.toLocaleDateString()}.\n\n` : ""}Let us know if you have any questions.\n\nThanks,\nThe Power Plunge Team`,
         });
+        if (emailResult.success) sentVia.push("email");
       } catch (emailError: any) {
         console.error("Failed to send affiliate invite email:", emailError);
         emailResult = { success: false, error: emailError.message || "Failed to send email" };
+      }
+    }
+
+    if (normalizedPhone && !normalizedEmail) {
+      try {
+        const { smsService } = await import("../../services/sms.service");
+        smsResult = await smsService.sendInviteSms(normalizedPhone, inviteUrl, targetName || undefined);
+        if (smsResult.success) sentVia.push("sms");
+      } catch (smsError: any) {
+        console.error("Failed to send affiliate invite SMS:", smsError);
+        smsResult = { success: false, error: smsError.message || "Failed to send SMS" };
       }
     }
 
@@ -389,8 +408,12 @@ ${expirationDate ? `<p style="color: #666; font-size: 13px;">This link expires o
         targetEmail: normalizedEmail,
         targetPhone: normalizedPhone,
         targetName,
+        sentVia,
         emailSent: emailResult.success,
         emailError: emailResult.error || null,
+        smsSent: smsResult.success,
+        smsError: smsResult.error || null,
+        smsMessageSid: smsResult.messageSid || null,
         inviteUrl,
       },
     });
@@ -399,7 +422,10 @@ ${expirationDate ? `<p style="color: #666; font-size: 13px;">This link expires o
       invite,
       inviteUrl,
       emailSent: emailResult.success,
-      emailError: emailResult.success ? null : (emailResult.error || "Failed to send email"),
+      emailError: emailResult.success ? null : (emailResult.error || null),
+      smsSent: smsResult.success,
+      smsError: smsResult.success ? null : (smsResult.error || null),
+      sentVia,
     });
   } catch (error: any) {
     console.error("Failed to create and send affiliate invite:", error);

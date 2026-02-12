@@ -16,6 +16,7 @@ import {
   affiliateInvites, type AffiliateInvite, type InsertAffiliateInvite,
   affiliateInviteUsages, type AffiliateInviteUsage, type InsertAffiliateInviteUsage,
   phoneVerificationCodes, type PhoneVerificationCode, type InsertPhoneVerificationCode,
+  affiliateInviteVerifications, type AffiliateInviteVerification, type InsertAffiliateInviteVerification,
   categories, type Category, type InsertCategory,
   coupons, type Coupon, type InsertCoupon,
   couponRedemptions, type CouponRedemption, type InsertCouponRedemption,
@@ -167,13 +168,25 @@ export interface IStorage {
   redeemAffiliateInvite(inviteId: string, affiliateId: string, metadata?: string): Promise<{ success: boolean; invite?: AffiliateInvite; error?: string }>;
   createAffiliateInviteUsage(usage: InsertAffiliateInviteUsage): Promise<AffiliateInviteUsage>;
 
-  // Phone Verification Codes
+  // Phone Verification Codes (legacy)
   createPhoneVerificationCode(data: InsertPhoneVerificationCode): Promise<PhoneVerificationCode>;
   getPhoneVerificationCode(inviteCode: string, phone: string): Promise<PhoneVerificationCode | undefined>;
   markPhoneVerificationCodeVerified(id: string): Promise<void>;
   incrementPhoneVerificationAttempts(id: string): Promise<void>;
   invalidatePhoneVerificationCodes(inviteCode: string, phone: string): Promise<void>;
   countRecentPhoneVerificationCodes(inviteCode: string, minutesAgo: number): Promise<number>;
+
+  // Affiliate Invite Verifications (new per-attempt model)
+  createAffiliateInviteVerification(data: InsertAffiliateInviteVerification): Promise<AffiliateInviteVerification>;
+  getAffiliateInviteVerification(id: string): Promise<AffiliateInviteVerification | undefined>;
+  getActiveVerificationForInvite(inviteId: string, phone: string, sessionNonce: string): Promise<AffiliateInviteVerification | undefined>;
+  getVerifiedVerificationForInvite(inviteId: string, phone: string): Promise<AffiliateInviteVerification | undefined>;
+  getVerificationByToken(token: string): Promise<AffiliateInviteVerification | undefined>;
+  updateAffiliateInviteVerification(id: string, data: Partial<AffiliateInviteVerification>): Promise<AffiliateInviteVerification | undefined>;
+  invalidatePendingVerifications(inviteId: string, phone: string): Promise<void>;
+  countRecentVerificationsForPhone(phone: string, minutesAgo: number): Promise<number>;
+  countDailyVerificationsForPhone(phone: string): Promise<number>;
+  countRecentVerificationsForInvite(inviteId: string, minutesAgo: number): Promise<number>;
 
   // Categories
   getCategories(): Promise<Category[]>;
@@ -866,6 +879,123 @@ export class DatabaseStorage implements IStorage {
       .where(and(
         eq(phoneVerificationCodes.inviteCode, inviteCode),
         sql`${phoneVerificationCodes.createdAt} > ${cutoff}`,
+      ));
+    return Number(result[0]?.count || 0);
+  }
+
+  // Affiliate Invite Verifications (new per-attempt model)
+  async createAffiliateInviteVerification(data: InsertAffiliateInviteVerification): Promise<AffiliateInviteVerification> {
+    const [record] = await db.insert(affiliateInviteVerifications).values(data).returning();
+    return record;
+  }
+
+  async getAffiliateInviteVerification(id: string): Promise<AffiliateInviteVerification | undefined> {
+    const [record] = await db.select().from(affiliateInviteVerifications).where(eq(affiliateInviteVerifications.id, id));
+    return record || undefined;
+  }
+
+  async getActiveVerificationForInvite(inviteId: string, phone: string, sessionNonce: string): Promise<AffiliateInviteVerification | undefined> {
+    const [record] = await db
+      .select()
+      .from(affiliateInviteVerifications)
+      .where(and(
+        eq(affiliateInviteVerifications.inviteId, inviteId),
+        eq(affiliateInviteVerifications.phone, phone),
+        eq(affiliateInviteVerifications.sessionNonce, sessionNonce),
+        eq(affiliateInviteVerifications.status, "pending"),
+      ))
+      .orderBy(desc(affiliateInviteVerifications.createdAt))
+      .limit(1);
+    return record || undefined;
+  }
+
+  async getVerifiedVerificationForInvite(inviteId: string, phone: string): Promise<AffiliateInviteVerification | undefined> {
+    const tenMinutesAgo = new Date();
+    tenMinutesAgo.setMinutes(tenMinutesAgo.getMinutes() - 30);
+    const [record] = await db
+      .select()
+      .from(affiliateInviteVerifications)
+      .where(and(
+        eq(affiliateInviteVerifications.inviteId, inviteId),
+        eq(affiliateInviteVerifications.phone, phone),
+        eq(affiliateInviteVerifications.status, "verified"),
+        sql`${affiliateInviteVerifications.updatedAt} > ${tenMinutesAgo}`,
+      ))
+      .orderBy(desc(affiliateInviteVerifications.updatedAt))
+      .limit(1);
+    return record || undefined;
+  }
+
+  async getVerificationByToken(token: string): Promise<AffiliateInviteVerification | undefined> {
+    const [record] = await db
+      .select()
+      .from(affiliateInviteVerifications)
+      .where(and(
+        eq(affiliateInviteVerifications.verificationToken, token),
+        eq(affiliateInviteVerifications.status, "verified"),
+      ))
+      .limit(1);
+    return record || undefined;
+  }
+
+  async updateAffiliateInviteVerification(id: string, data: Partial<AffiliateInviteVerification>): Promise<AffiliateInviteVerification | undefined> {
+    const [updated] = await db
+      .update(affiliateInviteVerifications)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(affiliateInviteVerifications.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async invalidatePendingVerifications(inviteId: string, phone: string): Promise<void> {
+    await db
+      .update(affiliateInviteVerifications)
+      .set({ status: "expired", updatedAt: new Date() })
+      .where(and(
+        eq(affiliateInviteVerifications.inviteId, inviteId),
+        eq(affiliateInviteVerifications.phone, phone),
+        or(
+          eq(affiliateInviteVerifications.status, "pending"),
+          eq(affiliateInviteVerifications.status, "pending_send"),
+        ),
+      ));
+  }
+
+  async countRecentVerificationsForPhone(phone: string, minutesAgo: number): Promise<number> {
+    const cutoff = new Date();
+    cutoff.setMinutes(cutoff.getMinutes() - minutesAgo);
+    const result = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(affiliateInviteVerifications)
+      .where(and(
+        eq(affiliateInviteVerifications.phone, phone),
+        sql`${affiliateInviteVerifications.createdAt} > ${cutoff}`,
+      ));
+    return Number(result[0]?.count || 0);
+  }
+
+  async countDailyVerificationsForPhone(phone: string): Promise<number> {
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const result = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(affiliateInviteVerifications)
+      .where(and(
+        eq(affiliateInviteVerifications.phone, phone),
+        sql`${affiliateInviteVerifications.createdAt} > ${startOfDay}`,
+      ));
+    return Number(result[0]?.count || 0);
+  }
+
+  async countRecentVerificationsForInvite(inviteId: string, minutesAgo: number): Promise<number> {
+    const cutoff = new Date();
+    cutoff.setMinutes(cutoff.getMinutes() - minutesAgo);
+    const result = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(affiliateInviteVerifications)
+      .where(and(
+        eq(affiliateInviteVerifications.inviteId, inviteId),
+        sql`${affiliateInviteVerifications.createdAt} > ${cutoff}`,
       ));
     return Number(result[0]?.count || 0);
   }

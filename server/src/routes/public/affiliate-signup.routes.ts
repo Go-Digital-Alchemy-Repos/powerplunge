@@ -2,10 +2,23 @@ import { Router, Request, Response } from "express";
 import { storage } from "../../../storage";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { createSessionToken, verifySessionToken } from "../../middleware/customer-auth.middleware";
-import { affiliateSignupLimiter, smsVerificationLimiter } from "../../middleware/rate-limiter";
+import { affiliateSignupLimiter, smsVerificationLimiter, smsSendLimiter, smsPhoneLimiter } from "../../middleware/rate-limiter";
+import { hashOtp, generateSalt, verifyOtp, generateOtpCode } from "../../utils/otp-hash";
 
 const router = Router();
+
+const GENERIC_ERROR = "Unable to process your request. Please try again later.";
+const PHONE_DAILY_CAP = 10;
+const INVITE_RESEND_WINDOW_MINUTES = 5;
+const INVITE_RESEND_MAX = 3;
+const OTP_EXPIRY_MINUTES = 10;
+const VERIFICATION_TOKEN_EXPIRY_MINUTES = 30;
+
+function generateVerificationToken(): string {
+  return crypto.randomBytes(32).toString("hex");
+}
 
 router.get("/", async (req: Request, res: Response) => {
   try {
@@ -38,19 +51,19 @@ router.get("/", async (req: Request, res: Response) => {
       inviteError = "Affiliate signup is invite-only. Please use a valid invite link.";
     } else {
       invite = await storage.getAffiliateInviteByCode(inviteCode);
-      
+
       if (!invite) {
         inviteValid = false;
-        inviteError = "Invalid invite code";
+        inviteError = GENERIC_ERROR;
       } else if (invite.expiresAt && new Date(invite.expiresAt) < new Date()) {
         inviteValid = false;
-        inviteError = "This invite has expired";
+        inviteError = GENERIC_ERROR;
       } else if (invite.maxUses && invite.timesUsed >= invite.maxUses) {
         if (isExistingAffiliate) {
           inviteValid = true;
         } else {
           inviteValid = false;
-          inviteError = "This invite has reached its usage limit";
+          inviteError = GENERIC_ERROR;
         }
       } else {
         inviteValid = true;
@@ -79,6 +92,12 @@ router.get("/", async (req: Request, res: Response) => {
       }
     }
 
+    let requiresPhoneVerification = false;
+    if (invite?.targetPhone) {
+      const verified = await storage.getVerifiedVerificationForInvite(invite.id, invite.targetPhone);
+      requiresPhoneVerification = !verified;
+    }
+
     res.json({
       agreementText,
       inviteRequired: true,
@@ -89,7 +108,7 @@ router.get("/", async (req: Request, res: Response) => {
         emailMasked: maskedEmail,
         hasTargetName: !!invite.targetName,
         isEmailLocked: !!invite.targetEmail,
-        requiresPhoneVerification: !!invite.targetPhone && !invite.phoneVerified,
+        requiresPhoneVerification,
         phoneLastFour: invite.targetPhone ? invite.targetPhone.slice(-4) : null,
         sessionEmailMatch,
       } : null,
@@ -98,7 +117,7 @@ router.get("/", async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error("Get affiliate signup info error:", error);
-    res.status(500).json({ message: "Failed to get signup information" });
+    res.status(500).json({ message: GENERIC_ERROR });
   }
 });
 
@@ -108,66 +127,81 @@ const signupSchema = z.object({
   name: z.string().min(1, "Name is required"),
   signatureName: z.string().min(1, "Signature is required"),
   inviteCode: z.string().min(1, "Affiliate signup is invite-only. A valid invite code is required."),
+  verificationToken: z.string().optional(),
 });
 
 router.post("/", affiliateSignupLimiter, async (req: Request, res: Response) => {
   try {
     const settings = await storage.getAffiliateSettings();
     if (!settings?.programActive) {
-      return res.status(400).json({ 
-        message: "The affiliate program is not currently accepting new members" 
+      return res.status(400).json({
+        message: "The affiliate program is not currently accepting new members"
       });
     }
 
     const parseResult = signupSchema.safeParse(req.body);
     if (!parseResult.success) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         message: parseResult.error.errors[0].message,
-        errors: parseResult.error.errors 
+        errors: parseResult.error.errors
       });
     }
 
-    const { email, password, name, signatureName, inviteCode } = parseResult.data;
+    const { email, password, name, signatureName, inviteCode, verificationToken } = parseResult.data;
 
     const invite = await storage.getAffiliateInviteByCode(inviteCode);
-    
+
     if (!invite) {
-      return res.status(400).json({ message: "Invalid invite code" });
+      return res.status(400).json({ message: GENERIC_ERROR });
     }
-    
+
     if (invite.expiresAt && new Date(invite.expiresAt) < new Date()) {
-      return res.status(400).json({ message: "This invite has expired" });
+      return res.status(400).json({ message: GENERIC_ERROR });
     }
-    
+
     if (invite.maxUses && invite.timesUsed >= invite.maxUses) {
-      return res.status(400).json({ message: "This invite has reached its usage limit" });
+      return res.status(400).json({ message: GENERIC_ERROR });
     }
-    
+
     if (invite.targetEmail && invite.targetEmail.toLowerCase() !== email.toLowerCase()) {
       return res.status(400).json({ message: "This invite is for a different email address" });
     }
 
-    if (invite.targetPhone && !invite.phoneVerified) {
-      return res.status(403).json({ message: "This invite requires phone verification before signup. Please verify your phone number first." });
+    if (invite.targetPhone) {
+      let verified = false;
+      if (verificationToken) {
+        const verification = await storage.getVerificationByToken(verificationToken);
+        if (verification && verification.inviteId === invite.id && verification.status === "verified") {
+          const tokenAge = Date.now() - new Date(verification.updatedAt).getTime();
+          verified = tokenAge < VERIFICATION_TOKEN_EXPIRY_MINUTES * 60 * 1000;
+        }
+      }
+      if (!verified) {
+        const recentVerified = await storage.getVerifiedVerificationForInvite(invite.id, invite.targetPhone);
+        verified = !!recentVerified;
+      }
+      if (!verified) {
+        return res.status(403).json({ message: "Phone verification is required before signup. Please verify your phone number first." });
+      }
     }
 
     const existingCustomer = await storage.getCustomerByEmail(email);
-    
+
     if (existingCustomer) {
       const existingAffiliate = await storage.getAffiliateByCustomerId(existingCustomer.id);
       if (existingAffiliate) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           message: "An affiliate account already exists with this email. Please sign in to access your affiliate portal.",
           existingAffiliate: true
         });
       }
-      
+
       const wasMagicLinkOnly = !existingCustomer.passwordHash;
-      
+
       if (existingCustomer.passwordHash) {
         const passwordMatch = await bcrypt.compare(password, existingCustomer.passwordHash);
         if (!passwordMatch) {
-          return res.status(400).json({ 
+          return res.status(400).json({
             message: "An account with this email already exists. Please enter your correct password to join the affiliate program.",
             existingCustomer: true
           });
@@ -179,31 +213,31 @@ router.post("/", affiliateSignupLimiter, async (req: Request, res: Response) => 
         const passwordHash = await bcrypt.hash(password, 10);
         await storage.updateCustomer(existingCustomer.id, { passwordHash, name });
       }
-      
+
       const code = `${name.replace(/\s+/g, '').substring(0, 6).toUpperCase() || 'REF'}${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-      
+
       const affiliate = await storage.createAffiliate({
         customerId: existingCustomer.id,
         affiliateCode: code,
         status: "active",
       });
-      
+
       await storage.createAffiliateAgreement({
         affiliateId: affiliate.id,
         agreementText: `Affiliate Program Agreement v1.0 - Signed by ${signatureName}`,
         signatureName,
         signatureIp: req.ip || "unknown",
       });
-      
+
       const redemption = await storage.redeemAffiliateInvite(invite.id, affiliate.id, JSON.stringify({ email, signupType: "existing_customer" }));
       if (!redemption.success) {
         return res.status(409).json({ message: redemption.error || "This invite is no longer available" });
       }
-      
+
       const sessionToken = createSessionToken(existingCustomer.id, email);
-      
+
       const payoutAccount = await storage.getAffiliatePayoutAccountByAffiliateId(affiliate.id);
-      
+
       return res.json({
         success: true,
         sessionToken,
@@ -234,27 +268,27 @@ router.post("/", affiliateSignupLimiter, async (req: Request, res: Response) => 
     });
 
     const code = `${name.replace(/\s+/g, '').substring(0, 6).toUpperCase() || 'REF'}${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-    
+
     const affiliate = await storage.createAffiliate({
       customerId: customer.id,
       affiliateCode: code,
       status: "active",
     });
-    
+
     await storage.createAffiliateAgreement({
       affiliateId: affiliate.id,
       agreementText: `Affiliate Program Agreement v1.0 - Signed by ${signatureName}`,
       signatureName,
       signatureIp: req.ip || "unknown",
     });
-    
+
     const redemption = await storage.redeemAffiliateInvite(invite.id, affiliate.id, JSON.stringify({ email, signupType: "new_customer" }));
     if (!redemption.success) {
       return res.status(409).json({ message: redemption.error || "This invite is no longer available" });
     }
-    
+
     const sessionToken = createSessionToken(customer.id, email);
-    
+
     res.json({
       success: true,
       sessionToken,
@@ -276,13 +310,14 @@ router.post("/", affiliateSignupLimiter, async (req: Request, res: Response) => 
     });
   } catch (error: any) {
     console.error("Affiliate signup error:", error);
-    res.status(500).json({ message: "Failed to create affiliate account" });
+    res.status(500).json({ message: GENERIC_ERROR });
   }
 });
 
 const joinSchema = z.object({
   signatureName: z.string().min(1, "Signature is required"),
   inviteCode: z.string().min(1, "Invite code is required"),
+  verificationToken: z.string().optional(),
 });
 
 router.post("/join", affiliateSignupLimiter, async (req: Request, res: Response) => {
@@ -308,11 +343,11 @@ router.post("/join", affiliateSignupLimiter, async (req: Request, res: Response)
       return res.status(400).json({ message: parseResult.error.errors[0].message });
     }
 
-    const { signatureName, inviteCode } = parseResult.data;
+    const { signatureName, inviteCode, verificationToken } = parseResult.data;
 
     const customer = await storage.getCustomer(tokenResult.customerId);
     if (!customer) {
-      return res.status(404).json({ message: "Customer not found" });
+      return res.status(404).json({ message: GENERIC_ERROR });
     }
 
     const existingAffiliate = await storage.getAffiliateByCustomerId(customer.id);
@@ -322,19 +357,34 @@ router.post("/join", affiliateSignupLimiter, async (req: Request, res: Response)
 
     const invite = await storage.getAffiliateInviteByCode(inviteCode);
     if (!invite) {
-      return res.status(400).json({ message: "Invalid invite code" });
+      return res.status(400).json({ message: GENERIC_ERROR });
     }
     if (invite.expiresAt && new Date(invite.expiresAt) < new Date()) {
-      return res.status(400).json({ message: "This invite has expired" });
+      return res.status(400).json({ message: GENERIC_ERROR });
     }
     if (invite.maxUses && invite.timesUsed >= invite.maxUses) {
-      return res.status(400).json({ message: "This invite has reached its usage limit" });
+      return res.status(400).json({ message: GENERIC_ERROR });
     }
     if (invite.targetEmail && invite.targetEmail.toLowerCase() !== customer.email.toLowerCase()) {
       return res.status(400).json({ message: "This invite is for a different email address" });
     }
-    if (invite.targetPhone && !invite.phoneVerified) {
-      return res.status(403).json({ message: "This invite requires phone verification before signup." });
+
+    if (invite.targetPhone) {
+      let verified = false;
+      if (verificationToken) {
+        const verification = await storage.getVerificationByToken(verificationToken);
+        if (verification && verification.inviteId === invite.id && verification.status === "verified") {
+          const tokenAge = Date.now() - new Date(verification.updatedAt).getTime();
+          verified = tokenAge < VERIFICATION_TOKEN_EXPIRY_MINUTES * 60 * 1000;
+        }
+      }
+      if (!verified) {
+        const recentVerified = await storage.getVerifiedVerificationForInvite(invite.id, invite.targetPhone);
+        verified = !!recentVerified;
+      }
+      if (!verified) {
+        return res.status(403).json({ message: "Phone verification is required before signup." });
+      }
     }
 
     const name = customer.name || signatureName;
@@ -380,71 +430,109 @@ router.post("/join", affiliateSignupLimiter, async (req: Request, res: Response)
     });
   } catch (error: any) {
     console.error("Affiliate join error:", error);
-    res.status(500).json({ message: "Failed to join affiliate program" });
+    res.status(500).json({ message: GENERIC_ERROR });
   }
 });
 
-router.post("/send-verification", smsVerificationLimiter, async (req: Request, res: Response) => {
+router.post("/send-verification", smsVerificationLimiter, smsSendLimiter, smsPhoneLimiter, async (req: Request, res: Response) => {
   try {
     const schema = z.object({
       inviteCode: z.string().min(1, "Invite code is required"),
+      sessionNonce: z.string().min(1, "Session identifier is required"),
     });
 
     const parseResult = schema.safeParse(req.body);
     if (!parseResult.success) {
-      return res.status(400).json({ message: parseResult.error.errors[0].message });
+      return res.status(400).json({ message: GENERIC_ERROR });
     }
 
-    const { inviteCode } = parseResult.data;
+    const { inviteCode, sessionNonce } = parseResult.data;
     const invite = await storage.getAffiliateInviteByCode(inviteCode);
 
     if (!invite) {
-      return res.status(400).json({ message: "Invalid invite code" });
+      console.warn(`[SMS_VERIFY] Invalid invite code attempted: ${inviteCode.substring(0, 6)}...`);
+      return res.status(400).json({ message: GENERIC_ERROR });
     }
 
     if (!invite.targetPhone) {
-      return res.status(400).json({ message: "This invite does not require phone verification" });
+      return res.status(400).json({ message: GENERIC_ERROR });
     }
 
-    if (invite.phoneVerified) {
+    const { smsService } = await import("../../services/sms.service");
+    const phoneValidation = smsService.validateAndNormalizePhone(invite.targetPhone);
+    if (!phoneValidation.valid || !phoneValidation.e164) {
+      console.error(`[SMS_VERIFY] Invalid phone on invite ${invite.id}: ${invite.targetPhone}`);
+      return res.status(400).json({ message: GENERIC_ERROR });
+    }
+    const normalizedPhone = phoneValidation.e164;
+
+    const recentVerified = await storage.getVerifiedVerificationForInvite(invite.id, normalizedPhone);
+    if (recentVerified) {
       return res.json({ success: true, alreadyVerified: true });
     }
 
-    const recentCount = await storage.countRecentPhoneVerificationCodes(inviteCode, 5);
-    if (recentCount >= 3) {
+    const recentInviteCount = await storage.countRecentVerificationsForInvite(invite.id, INVITE_RESEND_WINDOW_MINUTES);
+    if (recentInviteCount >= INVITE_RESEND_MAX) {
+      console.warn(`[SMS_VERIFY] Rate limit: invite ${invite.id} exceeded ${INVITE_RESEND_MAX} sends in ${INVITE_RESEND_WINDOW_MINUTES} min`);
       return res.status(429).json({ message: "Too many verification attempts. Please wait a few minutes before trying again." });
     }
 
-    await storage.invalidatePhoneVerificationCodes(inviteCode, invite.targetPhone);
+    const dailyPhoneCount = await storage.countDailyVerificationsForPhone(normalizedPhone);
+    if (dailyPhoneCount >= PHONE_DAILY_CAP) {
+      console.warn(`[SMS_VERIFY] Daily cap: phone ${normalizedPhone.slice(-4)} exceeded ${PHONE_DAILY_CAP} sends`);
+      return res.status(429).json({ message: "Daily verification limit reached for this number. Please try again tomorrow." });
+    }
 
-    const { smsService } = await import("../../services/sms.service");
-    const code = smsService.generateCode();
+    if (!smsService.checkDailyBudget()) {
+      console.error("[SMS_VERIFY] Global SMS budget exceeded");
+      return res.status(503).json({ message: "Verification service is temporarily unavailable. Please try again later." });
+    }
+
+    await storage.invalidatePendingVerifications(invite.id, normalizedPhone);
+
+    const code = generateOtpCode();
+    const salt = generateSalt();
+    const codeHash = hashOtp(code, salt);
 
     const expiresAt = new Date();
-    expiresAt.setMinutes(expiresAt.getMinutes() + 10);
+    expiresAt.setMinutes(expiresAt.getMinutes() + OTP_EXPIRY_MINUTES);
 
-    await storage.createPhoneVerificationCode({
-      inviteCode,
-      phone: invite.targetPhone,
-      code,
-      expiresAt,
-      verified: false,
+    const verification = await storage.createAffiliateInviteVerification({
+      inviteId: invite.id,
+      phone: normalizedPhone,
+      sessionNonce,
+      codeHash,
+      codeSalt: salt,
       attempts: 0,
+      maxAttempts: 5,
+      expiresAt,
+      status: "pending_send",
     });
 
-    const smsResult = await smsService.sendVerificationCode(invite.targetPhone, code);
+    const smsResult = await smsService.sendVerificationCode(normalizedPhone, code);
 
     if (!smsResult.success) {
+      await storage.updateAffiliateInviteVerification(verification.id, {
+        status: "send_failed",
+        ...(smsResult.error ? {} : {}),
+      });
+      console.error(`[SMS_VERIFY] Send failed for verification ${verification.id}: ${smsResult.error}`);
       return res.status(500).json({ message: "Failed to send verification code. Please try again." });
     }
 
+    await storage.updateAffiliateInviteVerification(verification.id, {
+      status: "pending",
+      twilioMessageSid: smsResult.messageSid || null,
+      deliveryStatus: "queued",
+    });
+
     res.json({
       success: true,
-      phoneLastFour: invite.targetPhone.slice(-4),
+      phoneLastFour: normalizedPhone.slice(-4),
     });
   } catch (error: any) {
     console.error("Send phone verification error:", error);
-    res.status(500).json({ message: "Failed to send verification code" });
+    res.status(500).json({ message: GENERIC_ERROR });
   }
 });
 
@@ -453,54 +541,85 @@ router.post("/verify-phone", smsVerificationLimiter, async (req: Request, res: R
     const schema = z.object({
       inviteCode: z.string().min(1, "Invite code is required"),
       code: z.string().min(1, "Verification code is required"),
+      sessionNonce: z.string().min(1, "Session identifier is required"),
     });
 
     const parseResult = schema.safeParse(req.body);
     if (!parseResult.success) {
-      return res.status(400).json({ message: parseResult.error.errors[0].message });
+      return res.status(400).json({ message: GENERIC_ERROR });
     }
 
-    const { inviteCode, code } = parseResult.data;
+    const { inviteCode, code, sessionNonce } = parseResult.data;
     const invite = await storage.getAffiliateInviteByCode(inviteCode);
 
     if (!invite) {
-      return res.status(400).json({ message: "Invalid invite code" });
+      console.warn(`[SMS_VERIFY] Verify attempt with invalid invite: ${inviteCode.substring(0, 6)}...`);
+      return res.status(400).json({ message: GENERIC_ERROR });
     }
 
     if (!invite.targetPhone) {
-      return res.status(400).json({ message: "This invite does not require phone verification" });
+      return res.status(400).json({ message: GENERIC_ERROR });
     }
 
-    if (invite.phoneVerified) {
-      return res.json({ success: true, alreadyVerified: true });
+    const { smsService } = await import("../../services/sms.service");
+    const phoneValidation = smsService.validateAndNormalizePhone(invite.targetPhone);
+    if (!phoneValidation.valid || !phoneValidation.e164) {
+      return res.status(400).json({ message: GENERIC_ERROR });
+    }
+    const normalizedPhone = phoneValidation.e164;
+
+    const recentVerified = await storage.getVerifiedVerificationForInvite(invite.id, normalizedPhone);
+    if (recentVerified) {
+      return res.json({
+        success: true,
+        alreadyVerified: true,
+        verificationToken: recentVerified.verificationToken,
+      });
     }
 
-    const verification = await storage.getPhoneVerificationCode(inviteCode, invite.targetPhone);
+    const verification = await storage.getActiveVerificationForInvite(invite.id, normalizedPhone, sessionNonce);
 
     if (!verification) {
-      return res.status(400).json({ message: "No verification code found. Please request a new one." });
+      return res.status(400).json({ message: GENERIC_ERROR });
     }
 
-    if (verification.attempts >= 5) {
+    if (verification.attempts >= verification.maxAttempts) {
+      await storage.updateAffiliateInviteVerification(verification.id, { status: "failed" });
       return res.status(429).json({ message: "Too many attempts. Please request a new verification code." });
     }
 
     if (new Date() > new Date(verification.expiresAt)) {
+      await storage.updateAffiliateInviteVerification(verification.id, { status: "expired" });
       return res.status(400).json({ message: "Verification code has expired. Please request a new one." });
     }
 
-    if (verification.code !== code) {
-      await storage.incrementPhoneVerificationAttempts(verification.id);
-      return res.status(400).json({ message: "Incorrect verification code. Please try again." });
+    const isValid = verifyOtp(code, verification.codeSalt, verification.codeHash);
+
+    if (!isValid) {
+      await storage.updateAffiliateInviteVerification(verification.id, {
+        attempts: verification.attempts + 1,
+      });
+      const remaining = verification.maxAttempts - verification.attempts - 1;
+      return res.status(400).json({
+        message: remaining > 0
+          ? `Incorrect code. ${remaining} attempt${remaining !== 1 ? 's' : ''} remaining.`
+          : "Too many incorrect attempts. Please request a new code.",
+      });
     }
 
-    await storage.markPhoneVerificationCodeVerified(verification.id);
-    await storage.updateAffiliateInvite(invite.id, { phoneVerified: true } as any);
+    const vToken = generateVerificationToken();
+    await storage.updateAffiliateInviteVerification(verification.id, {
+      status: "verified",
+      verificationToken: vToken,
+    });
 
-    res.json({ success: true });
+    res.json({
+      success: true,
+      verificationToken: vToken,
+    });
   } catch (error: any) {
     console.error("Verify phone error:", error);
-    res.status(500).json({ message: "Failed to verify phone number" });
+    res.status(500).json({ message: GENERIC_ERROR });
   }
 });
 
