@@ -106,49 +106,49 @@ const HeroBlock = ({ data, settings, onAddToCart }: { data: Record<string, any>;
   
   return (
     <section 
-      className={cn("relative min-h-screen flex items-center justify-center overflow-hidden pt-20", getLayoutClasses(settings))}
+      className={cn("relative min-h-[80vh] sm:min-h-screen flex items-center justify-center overflow-hidden", getLayoutClasses(settings))}
       data-testid="block-hero"
     >
       {backgroundImage && (
         <div className="absolute inset-0">
           <img src={backgroundImage} alt="" className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-background/50 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-background/90 sm:from-background/80 via-background/60 sm:via-background/50 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
         </div>
       )}
-      <div className="relative z-10 max-w-7xl mx-auto px-6 py-24 text-center">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-24 text-center">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
         >
           <div className={cn(
-            "grid gap-8",
+            "grid gap-6 sm:gap-8",
             splitLayout === 'left' ? 'md:grid-cols-2' : '',
             splitLayout === 'right' ? 'md:grid-cols-2' : ''
           )}>
             <div className={cn(splitLayout === 'right' ? 'order-2 md:order-1' : '')}>
               {badge && (
-                <p className="text-primary font-medium tracking-widest uppercase mb-4">
+                <p className="text-primary font-medium tracking-widest uppercase mb-3 sm:mb-4 text-sm sm:text-base">
                   {badge}
                 </p>
               )}
-              <h1 className="font-display text-5xl md:text-7xl lg:text-8xl font-bold mb-6 leading-tight">
+              <h1 className="font-display text-3xl sm:text-5xl md:text-7xl lg:text-8xl font-bold mb-4 sm:mb-6 leading-tight">
                 {title}
                 {titleHighlight && (
                   <span className="block text-gradient-ice">{titleHighlight}</span>
                 )}
               </h1>
               {subtitle && (
-                <p className="text-muted-foreground text-lg md:text-xl max-w-2xl mx-auto mb-10">
+                <p className="text-muted-foreground text-base sm:text-lg md:text-xl max-w-2xl mx-auto mb-6 sm:mb-10">
                   {subtitle}
                 </p>
               )}
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
                 {primaryButtonText && (
                   <Button 
                     size="lg" 
-                    className="glow-ice-sm text-lg px-8"
+                    className="glow-ice-sm text-base sm:text-lg px-6 sm:px-8 h-12 sm:h-auto w-full sm:w-auto"
                     onClick={handlePrimaryClick}
                     data-testid="button-hero-primary"
                   >
@@ -160,7 +160,7 @@ const HeroBlock = ({ data, settings, onAddToCart }: { data: Record<string, any>;
                   <Button 
                     size="lg" 
                     variant="outline"
-                    className="text-lg px-8"
+                    className="text-base sm:text-lg px-6 sm:px-8 h-12 sm:h-auto w-full sm:w-auto"
                     onClick={() => secondaryButtonLink && (window.location.href = secondaryButtonLink)}
                   >
                     {secondaryButtonText}
@@ -394,11 +394,11 @@ const FAQBlock = ({ data, settings }: { data: Record<string, any>; settings?: Bl
         {faqs.map((faq: { question: string; answer: string }, idx: number) => (
           <div key={idx} className="border border-slate-700 rounded-lg overflow-hidden" data-testid={`faq-item-${idx}`}>
             <button
-              className="w-full flex items-center justify-between p-4 text-left bg-slate-800/50 hover:bg-slate-800 transition-colors"
+              className="w-full flex items-center justify-between p-4 sm:p-4 text-left bg-slate-800/50 hover:bg-slate-800 transition-colors min-h-[48px]"
               onClick={() => setOpenIndex(openIndex === idx ? null : idx)}
               data-testid={`faq-toggle-${idx}`}
             >
-              <span className="font-medium text-white">{faq.question}</span>
+              <span className="font-medium text-white text-sm sm:text-base pr-2">{faq.question}</span>
               {openIndex === idx ? (
                 <ChevronUp className="w-5 h-5 text-cyan-400" />
               ) : (
@@ -440,22 +440,22 @@ const CTABlock = ({ data, settings, onAddToCart }: { data: Record<string, any>; 
   };
 
   return (
-    <section className={cn("py-24 bg-card/30 border-t border-border", getLayoutClasses(settings))} data-testid="block-cta">
-      <div className="max-w-4xl mx-auto px-6 text-center">
+    <section className={cn("py-12 sm:py-24 bg-card/30 border-t border-border", getLayoutClasses(settings))} data-testid="block-cta">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
         >
-          <h2 className="font-display text-4xl md:text-5xl font-bold mb-6">
+          <h2 className="font-display text-2xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6">
             {title} {titleHighlight && <span className="text-gradient-ice">{titleHighlight}</span>}
           </h2>
-          {subtitle && <p className="text-muted-foreground text-lg mb-10 max-w-2xl mx-auto">{subtitle}</p>}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          {subtitle && <p className="text-muted-foreground text-base sm:text-lg mb-6 sm:mb-10 max-w-2xl mx-auto">{subtitle}</p>}
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
             {buttonText && (
               <Button 
                 size="lg"
-                className="glow-ice text-lg px-10 py-6"
+                className="glow-ice text-base sm:text-lg px-6 sm:px-10 py-4 sm:py-6 h-12 sm:h-auto w-full sm:w-auto"
                 onClick={handleButtonClick}
                 data-testid="cta-primary-button"
               >
@@ -467,7 +467,7 @@ const CTABlock = ({ data, settings, onAddToCart }: { data: Record<string, any>; 
               <Button 
                 size="lg"
                 variant="outline"
-                className="text-lg px-8"
+                className="text-base sm:text-lg px-6 sm:px-8 h-12 sm:h-auto w-full sm:w-auto"
                 onClick={() => secondaryLink && (window.location.href = secondaryLink)}
               >
                 {secondaryButton}
@@ -780,29 +780,29 @@ const FeatureGridBlock = ({ data, settings }: { data: Record<string, any>; setti
   const features = data.features || [];
   
   return (
-    <section className={cn("py-24", getLayoutClasses(settings))} id={sectionId} data-testid="block-featuregrid">
-      <div className="max-w-7xl mx-auto px-6">
+    <section className={cn("py-12 sm:py-24", getLayoutClasses(settings))} id={sectionId} data-testid="block-featuregrid">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-center mb-16"
+          className="text-center mb-8 sm:mb-16"
         >
-          <h2 className="font-display text-4xl md:text-5xl font-bold mb-4">
+          <h2 className="font-display text-2xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4">
             {title} <span className="text-gradient-ice">{titleHighlight}</span>{titleSuffix}
           </h2>
           {subtitle && (
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto">
               {subtitle}
             </p>
           )}
         </motion.div>
 
-        <div className={cn("grid gap-8", 
-          columns === 3 ? "md:grid-cols-3" : 
-          columns === 2 ? "md:grid-cols-2" : 
-          columns === 4 ? "md:grid-cols-4" : 
-          "md:grid-cols-3"
+        <div className={cn("grid gap-4 sm:gap-8", 
+          columns === 3 ? "sm:grid-cols-2 md:grid-cols-3" : 
+          columns === 2 ? "sm:grid-cols-2" : 
+          columns === 4 ? "sm:grid-cols-2 md:grid-cols-4" : 
+          "sm:grid-cols-2 md:grid-cols-3"
         )}>
           {features.map((feature: { icon?: string; title: string; description: string }, i: number) => {
             const Icon = getIconWithFallback(feature.icon, Check);
@@ -813,13 +813,13 @@ const FeatureGridBlock = ({ data, settings }: { data: Record<string, any>; setti
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
                 viewport={{ once: true }}
-                className="bg-gradient-card border-gradient-ice rounded-2xl p-8 relative group hover:scale-[1.02] transition-transform duration-300"
+                className="bg-gradient-card border-gradient-ice rounded-2xl p-5 sm:p-8 relative group hover:scale-[1.02] transition-transform duration-300"
               >
-                <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mb-6 group-hover:glow-ice-sm transition-shadow">
-                  <Icon className="w-7 h-7 text-primary" />
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-primary/10 flex items-center justify-center mb-4 sm:mb-6 group-hover:glow-ice-sm transition-shadow">
+                  <Icon className="w-6 h-6 sm:w-7 sm:h-7 text-primary" />
                 </div>
-                <h3 className="font-display text-xl font-semibold mb-3">{feature.title}</h3>
-                <p className="text-muted-foreground leading-relaxed">{feature.description}</p>
+                <h3 className="font-display text-lg sm:text-xl font-semibold mb-2 sm:mb-3">{feature.title}</h3>
+                <p className="text-muted-foreground text-sm sm:text-base leading-relaxed">{feature.description}</p>
               </motion.div>
             );
           })}
@@ -886,20 +886,20 @@ const FeaturedProductBlock = ({ data, settings, onAddToCart }: { data: Record<st
 
   return (
     <section className={cn("bg-card/30 border-y border-border", getLayoutClasses(settings))} data-testid="block-featuredproduct">
-      <div className="max-w-7xl mx-auto px-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-center mb-16"
+          className="text-center mb-8 sm:mb-16"
         >
-          <h2 className="text-4xl md:text-5xl font-bold mb-4">
+          <h2 className="text-2xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4">
             {title.replace(titleHighlight, '')} <span className="text-gradient-ice">{titleHighlight}</span>
           </h2>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">{subtitle}</p>
+          <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto">{subtitle}</p>
         </motion.div>
 
-        <div className="grid lg:grid-cols-2 gap-12 items-start">
+        <div className="grid lg:grid-cols-2 gap-6 sm:gap-12 items-start">
           <motion.div
             initial={{ opacity: 0, x: -40 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -950,33 +950,33 @@ const FeaturedProductBlock = ({ data, settings, onAddToCart }: { data: Record<st
               </div>
             )}
 
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 pt-4 border-t border-border">
+            <div className="flex flex-col gap-4 sm:gap-6 pt-4 border-t border-border">
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Complete System Price</p>
                 {isOnSale && saleDisplayPrice ? (
                   <div className="flex flex-col gap-1">
                     <div className="flex items-baseline gap-3">
-                      <span className="text-muted-foreground line-through text-xl">${displayPrice.toLocaleString()}</span>
-                      <span className="text-4xl font-bold text-red-500">${saleDisplayPrice.toLocaleString()}</span>
+                      <span className="text-muted-foreground line-through text-lg sm:text-xl">${displayPrice.toLocaleString()}</span>
+                      <span className="text-3xl sm:text-4xl font-bold text-red-500">${saleDisplayPrice.toLocaleString()}</span>
                     </div>
                   </div>
                 ) : (
-                  <p className="text-4xl font-bold text-gradient-ice">${displayPrice.toLocaleString()}</p>
+                  <p className="text-3xl sm:text-4xl font-bold text-gradient-ice">${displayPrice.toLocaleString()}</p>
                 )}
               </div>
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2 bg-muted/50 rounded-xl p-1">
-                  <Button variant="ghost" size="icon" className="w-10 h-10" onClick={() => setQuantity(Math.max(1, quantity - 1))} disabled={quantity <= 1}>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
+                <div className="flex items-center justify-center gap-2 bg-muted/50 rounded-xl p-1">
+                  <Button variant="ghost" size="icon" className="w-11 h-11 min-w-[44px] min-h-[44px]" onClick={() => setQuantity(Math.max(1, quantity - 1))} disabled={quantity <= 1}>
                     <ChevronDown className="w-4 h-4" />
                   </Button>
                   <span className="font-medium w-8 text-center text-lg">{quantity}</span>
-                  <Button variant="ghost" size="icon" className="w-10 h-10" onClick={() => setQuantity(quantity + 1)}>
+                  <Button variant="ghost" size="icon" className="w-11 h-11 min-w-[44px] min-h-[44px]" onClick={() => setQuantity(quantity + 1)}>
                     <ChevronUp className="w-4 h-4" />
                   </Button>
                 </div>
                 <Button
                   size="lg"
-                  className="glow-ice-sm text-lg px-8"
+                  className="glow-ice-sm text-base sm:text-lg px-6 sm:px-8 h-12 sm:h-auto w-full sm:w-auto"
                   onClick={() => onAddToCart?.(featuredProduct.id, quantity)}
                 >
                   Add to Cart
@@ -998,25 +998,25 @@ const IconGridBlock = ({ data, settings }: { data: Record<string, any>; settings
   
   return (
     <section className={getLayoutClasses(settings)} data-testid="block-icongrid">
-      <div className="max-w-7xl mx-auto px-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
         {title && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-center mb-16"
+            className="text-center mb-8 sm:mb-16"
           >
-            <h2 className="text-4xl md:text-5xl font-bold mb-4">
+            <h2 className="text-2xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4">
               {title.replace(titleHighlight, '')} <span className="text-gradient-ice">{titleHighlight}</span>
             </h2>
           </motion.div>
         )}
 
-        <div className={cn("grid gap-6", 
-          columns === 5 ? "sm:grid-cols-2 lg:grid-cols-5" : 
-          columns === 4 ? "sm:grid-cols-2 lg:grid-cols-4" : 
-          columns === 3 ? "sm:grid-cols-2 lg:grid-cols-3" : 
-          "sm:grid-cols-2"
+        <div className={cn("grid gap-3 sm:gap-6", 
+          columns === 5 ? "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5" : 
+          columns === 4 ? "grid-cols-2 lg:grid-cols-4" : 
+          columns === 3 ? "grid-cols-2 lg:grid-cols-3" : 
+          "grid-cols-2"
         )}>
           {items.map((item: { icon?: string; title: string }, i: number) => {
             const Icon = getIconWithFallback(item.icon, Star);
@@ -1027,10 +1027,10 @@ const IconGridBlock = ({ data, settings }: { data: Record<string, any>; settings
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
                 viewport={{ once: true }}
-                className="bg-gradient-card border border-border rounded-2xl p-6 text-center hover:border-primary/50 transition-colors"
+                className="bg-gradient-card border border-border rounded-2xl p-4 sm:p-6 text-center hover:border-primary/50 transition-colors"
               >
-                <Icon className="w-10 h-10 text-primary mx-auto mb-4" />
-                <p className="font-medium">{item.title}</p>
+                <Icon className="w-8 h-8 sm:w-10 sm:h-10 text-primary mx-auto mb-3 sm:mb-4" />
+                <p className="font-medium text-sm sm:text-base">{item.title}</p>
               </motion.div>
             );
           })}

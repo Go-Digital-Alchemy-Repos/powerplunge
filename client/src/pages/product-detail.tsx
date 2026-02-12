@@ -311,7 +311,7 @@ export default function ProductDetail() {
                 <div className="flex items-center border border-slate-700 rounded-lg">
                   <button
                     onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                    className="p-2 hover:bg-slate-800 transition-colors rounded-l-lg"
+                    className="p-2.5 sm:p-2 hover:bg-slate-800 transition-colors rounded-l-lg min-w-[44px] min-h-[44px] flex items-center justify-center"
                     disabled={quantity <= 1}
                     data-testid="button-quantity-decrease"
                   >
@@ -322,7 +322,7 @@ export default function ProductDetail() {
                   </span>
                   <button
                     onClick={() => setQuantity(q => q + 1)}
-                    className="p-2 hover:bg-slate-800 transition-colors rounded-r-lg"
+                    className="p-2.5 sm:p-2 hover:bg-slate-800 transition-colors rounded-r-lg min-w-[44px] min-h-[44px] flex items-center justify-center"
                     data-testid="button-quantity-increase"
                   >
                     <Plus className="w-4 h-4" />
@@ -331,7 +331,7 @@ export default function ProductDetail() {
               </div>
               <Button
                 size="lg"
-                className="w-full bg-cyan-500 hover:bg-cyan-600 text-black font-semibold text-lg h-14"
+                className="w-full bg-cyan-500 hover:bg-cyan-600 text-black font-semibold text-base sm:text-lg h-12 sm:h-14"
                 onClick={handleAddToCart}
                 data-testid="button-add-to-cart"
               >

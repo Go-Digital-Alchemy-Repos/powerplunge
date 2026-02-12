@@ -807,31 +807,31 @@ export default function Checkout() {
 
   return (
     <SiteLayout>
-      <div className="max-w-4xl mx-auto px-6 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <Link href="/">
-          <Button variant="ghost" size="sm" className="mb-6 gap-2" data-testid="button-back">
+          <Button variant="ghost" size="sm" className="mb-4 sm:mb-6 gap-2 h-10" data-testid="button-back">
             <ArrowLeft className="w-4 h-4" />
             Back to Store
           </Button>
         </Link>
 
-        <div className="flex items-center justify-center gap-4 mb-8">
+        <div className="flex items-center justify-center gap-3 sm:gap-4 mb-6 sm:mb-8">
           <div className={`flex items-center gap-2 ${step === "shipping" ? "text-primary" : "text-muted-foreground"}`}>
             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step === "shipping" ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
               1
             </div>
-            <span className="hidden sm:inline font-medium">Shipping</span>
+            <span className="text-sm sm:text-base font-medium">Shipping</span>
           </div>
-          <div className="w-12 h-0.5 bg-muted" />
+          <div className="w-8 sm:w-12 h-0.5 bg-muted" />
           <div className={`flex items-center gap-2 ${step === "payment" ? "text-primary" : "text-muted-foreground"}`}>
             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step === "payment" ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
               2
             </div>
-            <span className="hidden sm:inline font-medium">Payment</span>
+            <span className="text-sm sm:text-base font-medium">Payment</span>
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid lg:grid-cols-3 gap-6 sm:gap-8">
           <div className="lg:col-span-2">
             {step === "shipping" ? (
               <Card>
@@ -1093,7 +1093,7 @@ export default function Checkout() {
                           type="button"
                           onClick={() => updateCartItem(item.id, item.quantity - 1)}
                           disabled={item.quantity <= 1}
-                          className="w-7 h-7 flex items-center justify-center rounded-md border border-border hover:bg-accent disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                          className="w-8 h-8 sm:w-7 sm:h-7 flex items-center justify-center rounded-md border border-border hover:bg-accent disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                           data-testid={`button-decrease-${item.id}`}
                           aria-label="Decrease quantity"
                         >
@@ -1103,7 +1103,7 @@ export default function Checkout() {
                         <button
                           type="button"
                           onClick={() => updateCartItem(item.id, item.quantity + 1)}
-                          className="w-7 h-7 flex items-center justify-center rounded-md border border-border hover:bg-accent transition-colors"
+                          className="w-8 h-8 sm:w-7 sm:h-7 flex items-center justify-center rounded-md border border-border hover:bg-accent transition-colors"
                           data-testid={`button-increase-${item.id}`}
                           aria-label="Increase quantity"
                         >
@@ -1113,7 +1113,7 @@ export default function Checkout() {
                       <button
                         type="button"
                         onClick={() => removeCartItem(item.id)}
-                        className="text-muted-foreground hover:text-destructive transition-colors p-1"
+                        className="text-muted-foreground hover:text-destructive transition-colors p-2 sm:p-1"
                         data-testid={`button-remove-${item.id}`}
                         aria-label={`Remove ${item.name}`}
                       >

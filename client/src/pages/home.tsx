@@ -3,8 +3,9 @@ import { useLocation, Link } from "wouter";
 import { openConsentPreferences } from "@/components/ConsentBanner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Check, ShoppingCart, Zap, Shield, Snowflake, Timer, X, Plus, Minus, Truck, Award, HeartPulse, Dumbbell, Building2, Sparkles, ThermometerSnowflake, Volume2, Filter, Gauge, User, LogOut, Settings, Link2, Headphones, LayoutDashboard } from "lucide-react";
+import { Check, ShoppingCart, Zap, Shield, Snowflake, Timer, X, Plus, Minus, Truck, Award, HeartPulse, Dumbbell, Building2, Sparkles, ThermometerSnowflake, Volume2, Filter, Gauge, User, LogOut, Settings, Link2, Headphones, LayoutDashboard, Menu } from "lucide-react";
 import DynamicNav from "@/components/DynamicNav";
+import MobileNav from "@/components/MobileNav";
 import CartUpsells from "@/components/CartUpsells";
 import PageRenderer from "@/components/PageRenderer";
 import SeoHead from "@/components/SeoHead";
@@ -105,6 +106,7 @@ export default function Home() {
     return [];
   });
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState(0);
   const [product, setProduct] = useState<Product>(fallbackProduct);
   const [quantity, setQuantity] = useState(1);
@@ -171,6 +173,15 @@ export default function Home() {
   useEffect(() => {
     localStorage.setItem("cart", JSON.stringify(cart));
   }, [cart]);
+
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [mobileMenuOpen]);
 
   useEffect(() => {
     if (siteSettings?.featuredProductId && allProducts.length > 0) {
@@ -249,15 +260,25 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
       <nav className="fixed top-0 left-0 right-0 z-50 bg-card border-b border-border">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center">
-            <img src={logoSrc} alt={companyName} className="h-10" data-testid="img-logo" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button
+              className="md:hidden flex items-center justify-center w-10 h-10 -ml-1 rounded-lg hover:bg-accent transition-colors"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Toggle menu"
+              data-testid="button-mobile-menu"
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+            <img src={logoSrc} alt={companyName} className="h-8 sm:h-10" data-testid="img-logo" />
           </div>
-          <div className="flex items-center gap-2">
-            <DynamicNav location="main" />
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="hidden md:flex">
+              <DynamicNav location="main" />
+            </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-2" data-testid="button-my-account">
+                <Button variant="outline" size="sm" className="gap-2 h-10 min-w-[40px] px-2.5 sm:px-3" data-testid="button-my-account">
                   <User className="w-4 h-4" />
                   <span className="hidden sm:inline">My Account</span>
                 </Button>
@@ -321,7 +342,7 @@ export default function Home() {
             <Button
               variant="outline"
               size="sm"
-              className="relative gap-2"
+              className="relative gap-2 h-10 min-w-[40px] px-2.5 sm:px-3"
               onClick={() => setIsCartOpen(true)}
               data-testid="button-cart"
             >
@@ -336,6 +357,17 @@ export default function Home() {
           </div>
         </div>
       </nav>
+
+      <MobileNav
+        isOpen={mobileMenuOpen}
+        onClose={() => setMobileMenuOpen(false)}
+        isAuthenticated={isAuthenticated}
+        isAffiliate={!!isAffiliate}
+        isAdminEligible={isAdminEligible}
+        customerEmail={customer?.email}
+        onNavigate={(path: string) => { setLocation(path); setMobileMenuOpen(false); }}
+        onLogout={() => { logout(); setMobileMenuOpen(false); }}
+      />
 
       {/* Show loading state while fetching CMS content */}
       {isHomePageLoading && (
@@ -378,36 +410,36 @@ export default function Home() {
       {/* Fallback to hardcoded content if CMS content not available */}
       {showFallbackPage && !isHomePageLoading && (
         <>
-        <section className="relative min-h-screen flex items-center justify-center pt-20">
+        <section className="relative min-h-[80vh] sm:min-h-screen flex items-center justify-center pt-16 sm:pt-20">
           <div className="absolute inset-0">
             <img src={heroImage} alt="" className="w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-background/50 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-r from-background/90 sm:from-background/80 via-background/60 sm:via-background/50 to-transparent" />
             <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
           </div>
           
-          <div className="relative z-10 max-w-7xl mx-auto px-6 py-24 text-center">
+          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-24 text-center">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
             >
-              <p className="text-primary font-medium tracking-widest uppercase mb-4" data-testid="text-tagline">
+              <p className="text-primary font-medium tracking-widest uppercase mb-3 sm:mb-4 text-sm sm:text-base" data-testid="text-tagline">
                 Mind + Body + Spirit
               </p>
-              <h1 className="font-display text-5xl md:text-7xl lg:text-8xl font-bold mb-6 leading-tight">
+              <h1 className="font-display text-3xl sm:text-5xl md:text-7xl lg:text-8xl font-bold mb-4 sm:mb-6 leading-tight">
                 Cold. Consistent.
                 <span className="block text-gradient-ice">Powerful.</span>
               </h1>
-              <p className="text-muted-foreground text-lg md:text-xl max-w-2xl mx-auto mb-10">
+              <p className="text-muted-foreground text-base sm:text-lg md:text-xl max-w-2xl mx-auto mb-6 sm:mb-10">
                 Skip the ice bags and inconsistency. The Power Plunge™ Portable Tub delivers reliable, 
                 professional-level cold therapy whenever you need it.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button size="lg" className="glow-ice-sm text-lg px-8" onClick={addToCart} data-testid="button-shop-now">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
+                <Button size="lg" className="glow-ice-sm text-base sm:text-lg px-6 sm:px-8 h-12 sm:h-auto w-full sm:w-auto" onClick={addToCart} data-testid="button-shop-now">
                   Order Now
                   <Zap className="w-5 h-5 ml-2" />
                 </Button>
-                <Button size="lg" variant="outline" className="text-lg px-8" data-testid="button-learn-more">
+                <Button size="lg" variant="outline" className="text-base sm:text-lg px-6 sm:px-8 h-12 sm:h-auto w-full sm:w-auto" data-testid="button-learn-more">
                   Learn More
                 </Button>
               </div>
@@ -415,9 +447,9 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="py-20 border-t border-border bg-card/30">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+        <section className="py-12 sm:py-20 border-t border-border bg-card/30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-8">
             {[
               { icon: Snowflake, label: "Ice Cold", value: "Down to 30°F" },
               { icon: Timer, label: "No Ice Required", value: "Always Ready" },
@@ -441,24 +473,24 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="py-24" id="why-power-plunge">
-        <div className="max-w-7xl mx-auto px-6">
+      <section className="py-12 sm:py-24" id="why-power-plunge">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-center mb-16"
+            className="text-center mb-8 sm:mb-16"
           >
-            <h2 className="font-display text-4xl md:text-5xl font-bold mb-4">
+            <h2 className="font-display text-2xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4">
               Why Choose <span className="text-gradient-ice">Power Plunge™</span>?
             </h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto">
               Whether you're optimizing recovery, reducing inflammation, or building mental resilience, 
               Power Plunge gives you reliable cold exposure—on demand.
             </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-8">
             {[
               {
                 icon: ThermometerSnowflake,
@@ -497,36 +529,36 @@ export default function Home() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
                 viewport={{ once: true }}
-                className="bg-gradient-card border-gradient-ice rounded-2xl p-8 relative group hover:scale-[1.02] transition-transform duration-300"
+                className="bg-gradient-card border-gradient-ice rounded-2xl p-5 sm:p-8 relative group hover:scale-[1.02] transition-transform duration-300"
               >
-                <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mb-6 group-hover:glow-ice-sm transition-shadow">
-                  <feature.icon className="w-7 h-7 text-primary" />
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-primary/10 flex items-center justify-center mb-4 sm:mb-6 group-hover:glow-ice-sm transition-shadow">
+                  <feature.icon className="w-6 h-6 sm:w-7 sm:h-7 text-primary" />
                 </div>
-                <h3 className="font-display text-xl font-semibold mb-3" data-testid={`text-feature-title-${i}`}>{feature.title}</h3>
-                <p className="text-muted-foreground leading-relaxed">{feature.description}</p>
+                <h3 className="font-display text-lg sm:text-xl font-semibold mb-2 sm:mb-3" data-testid={`text-feature-title-${i}`}>{feature.title}</h3>
+                <p className="text-muted-foreground text-sm sm:text-base leading-relaxed">{feature.description}</p>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="py-24 bg-card/30 border-y border-border" id="product">
-        <div className="max-w-7xl mx-auto px-6">
+      <section className="py-12 sm:py-24 bg-card/30 border-y border-border" id="product">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-center mb-16"
+            className="text-center mb-8 sm:mb-16"
           >
-            <h2 className="font-display text-4xl md:text-5xl font-bold mb-4">
+            <h2 className="font-display text-2xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4">
               The Complete <span className="text-gradient-ice">System</span>
             </h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto">
               Everything you need for professional-grade cold therapy at home.
             </p>
           </motion.div>
 
-          <div className="grid lg:grid-cols-2 gap-12 items-start">
+          <div className="grid lg:grid-cols-2 gap-6 sm:gap-12 items-start">
             <motion.div
               initial={{ opacity: 0, x: -40 }}
               whileInView={{ opacity: 1, x: 0 }}
@@ -547,12 +579,12 @@ export default function Home() {
                   data-testid="img-product-main"
                 />
               </div>
-              <div className="flex gap-3">
+              <div className="flex gap-2 sm:gap-3">
                 {productImages.map((img, i) => (
                   <button
                     key={i}
                     onClick={() => setSelectedImage(i)}
-                    className={`w-24 h-24 rounded-xl overflow-hidden border-2 transition-all p-2 bg-black/50 ${
+                    className={`w-16 h-16 sm:w-24 sm:h-24 rounded-xl overflow-hidden border-2 transition-all p-1.5 sm:p-2 bg-black/50 ${
                       selectedImage === i ? "border-primary glow-ice-sm" : "border-border hover:border-muted-foreground"
                     }`}
                     data-testid={`button-thumbnail-${i}`}
@@ -602,16 +634,16 @@ export default function Home() {
                 </ul>
               </div>
 
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 pt-4 border-t border-border">
+              <div className="flex flex-col gap-4 sm:gap-6 pt-4 border-t border-border">
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">Complete System Price</p>
                   {isOnSale && saleDisplayPrice ? (
                     <div className="flex flex-col gap-1">
                       <div className="flex items-baseline gap-3">
-                        <span className="text-muted-foreground line-through text-xl">
+                        <span className="text-muted-foreground line-through text-lg sm:text-xl">
                           ${displayPrice.toLocaleString()}
                         </span>
-                        <span className="font-display text-4xl font-bold text-red-500" data-testid="text-product-price">
+                        <span className="font-display text-3xl sm:text-4xl font-bold text-red-500" data-testid="text-product-price">
                           ${saleDisplayPrice.toLocaleString()}
                         </span>
                       </div>
@@ -620,17 +652,17 @@ export default function Home() {
                       </span>
                     </div>
                   ) : (
-                    <p className="font-display text-4xl font-bold text-gradient-ice" data-testid="text-product-price">
+                    <p className="font-display text-3xl sm:text-4xl font-bold text-gradient-ice" data-testid="text-product-price">
                       ${displayPrice.toLocaleString()}
                     </p>
                   )}
                 </div>
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2 bg-muted/50 rounded-xl p-1">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
+                  <div className="flex items-center justify-center gap-2 bg-muted/50 rounded-xl p-1">
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="w-10 h-10"
+                      className="w-11 h-11 min-w-[44px] min-h-[44px]"
                       onClick={() => setQuantity(Math.max(1, quantity - 1))}
                       disabled={quantity <= 1}
                       data-testid="button-quantity-decrease"
@@ -641,7 +673,7 @@ export default function Home() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="w-10 h-10"
+                      className="w-11 h-11 min-w-[44px] min-h-[44px]"
                       onClick={() => setQuantity(quantity + 1)}
                       data-testid="button-quantity-increase"
                     >
@@ -650,7 +682,7 @@ export default function Home() {
                   </div>
                   <Button
                     size="lg"
-                    className="glow-ice-sm text-lg px-8"
+                    className="glow-ice-sm text-base sm:text-lg px-6 sm:px-8 h-12 sm:h-auto w-full sm:w-auto"
                     onClick={addToCart}
                     data-testid="button-add-to-cart"
                   >
@@ -664,20 +696,20 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="py-24" id="perfect-for">
-        <div className="max-w-7xl mx-auto px-6">
+      <section className="py-12 sm:py-24" id="perfect-for">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-center mb-16"
+            className="text-center mb-8 sm:mb-16"
           >
-            <h2 className="font-display text-4xl md:text-5xl font-bold mb-4">
+            <h2 className="font-display text-2xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4">
               Perfect <span className="text-gradient-ice">For</span>
             </h2>
           </motion.div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-6">
             {[
               { icon: Snowflake, title: "Home Cold Plunge Setups" },
               { icon: Dumbbell, title: "Athletes & Fitness Enthusiasts" },
@@ -691,31 +723,31 @@ export default function Home() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
                 viewport={{ once: true }}
-                className="bg-gradient-card border border-border rounded-2xl p-6 text-center hover:border-primary/50 transition-colors"
+                className="bg-gradient-card border border-border rounded-2xl p-4 sm:p-6 text-center hover:border-primary/50 transition-colors"
               >
-                <item.icon className="w-10 h-10 text-primary mx-auto mb-4" />
-                <p className="font-medium" data-testid={`text-perfect-for-${i}`}>{item.title}</p>
+                <item.icon className="w-8 h-8 sm:w-10 sm:h-10 text-primary mx-auto mb-3 sm:mb-4" />
+                <p className="font-medium text-sm sm:text-base" data-testid={`text-perfect-for-${i}`}>{item.title}</p>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="py-24 bg-card/30 border-t border-border">
-        <div className="max-w-4xl mx-auto px-6 text-center">
+      <section className="py-12 sm:py-24 bg-card/30 border-t border-border">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
-            <h2 className="font-display text-4xl md:text-5xl font-bold mb-6">
+            <h2 className="font-display text-2xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6">
               Elevate Your <span className="text-gradient-ice">Recovery</span>
             </h2>
-            <p className="text-muted-foreground text-lg mb-10 max-w-2xl mx-auto">
+            <p className="text-muted-foreground text-base sm:text-lg mb-6 sm:mb-10 max-w-2xl mx-auto">
               Skip the ice bags and inconsistency. The Power Plunge™ Portable Tub delivers reliable, 
               professional-level cold therapy whenever you need it—built for performance, convenience, and long-term use.
             </p>
-            <Button size="lg" className="glow-ice text-lg px-10 py-6" onClick={addToCart} data-testid="button-get-started">
+            <Button size="lg" className="glow-ice text-base sm:text-lg px-6 sm:px-10 py-4 sm:py-6 h-12 sm:h-auto w-full sm:w-auto" onClick={addToCart} data-testid="button-get-started">
               Order Your Power Plunge™
               <Zap className="w-5 h-5 ml-2" />
             </Button>
@@ -725,25 +757,25 @@ export default function Home() {
         </>
       )}
 
-      <footer className="py-12 border-t border-border bg-card/30">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+      <footer className="py-8 sm:py-12 border-t border-border bg-card/30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="flex flex-col items-center gap-6 md:flex-row md:justify-between">
             <div className="flex items-center">
               <img src={logoSrc} alt={companyName} className="h-8" />
             </div>
             <div className="flex flex-col items-center gap-3 md:items-end">
-              <div className="flex items-center gap-4">
-                <Link href="/privacy-policy" className="text-muted-foreground text-sm hover:text-foreground transition-colors" data-testid="link-privacy-policy">
+              <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4">
+                <Link href="/privacy-policy" className="text-muted-foreground text-sm hover:text-foreground transition-colors py-1" data-testid="link-privacy-policy">
                   Privacy Policy
                 </Link>
-                <Link href="/terms-and-conditions" className="text-muted-foreground text-sm hover:text-foreground transition-colors" data-testid="link-terms">
+                <Link href="/terms-and-conditions" className="text-muted-foreground text-sm hover:text-foreground transition-colors py-1" data-testid="link-terms">
                   Terms & Conditions
                 </Link>
-                <button onClick={openConsentPreferences} className="text-muted-foreground text-sm hover:text-foreground transition-colors" data-testid="link-cookie-preferences">
+                <button onClick={openConsentPreferences} className="text-muted-foreground text-sm hover:text-foreground transition-colors py-1" data-testid="link-cookie-preferences">
                   Cookie Preferences
                 </button>
               </div>
-              <p className="text-muted-foreground text-sm">
+              <p className="text-muted-foreground text-xs sm:text-sm text-center">
                 Mind + Body + Spirit | © 2026 Power Plunge. All rights reserved.
               </p>
             </div>
