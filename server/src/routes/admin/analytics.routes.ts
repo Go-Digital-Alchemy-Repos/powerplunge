@@ -1,12 +1,38 @@
 import { Router } from "express";
 import { BetaAnalyticsDataClient } from "@google-analytics/data";
+import { storage } from "../../../storage";
+import { encrypt, decrypt, maskSecret, isEncryptionConfigured } from "../../utils/encryption";
 
 const router = Router();
 
-function getAnalyticsClient(): BetaAnalyticsDataClient | null {
-  const email = process.env.GA_SERVICE_ACCOUNT_EMAIL;
-  const privateKey = process.env.GA_SERVICE_ACCOUNT_PRIVATE_KEY;
+async function getGa4Credentials(): Promise<{
+  email: string | null;
+  privateKey: string | null;
+  propertyId: string | null;
+}> {
+  const settings = await storage.getIntegrationSettings();
 
+  let email = settings?.ga4ServiceAccountEmail || null;
+  let privateKey: string | null = null;
+  let propertyId = settings?.ga4PropertyId || null;
+
+  if (settings?.ga4ServiceAccountPrivateKeyEncrypted) {
+    try {
+      privateKey = decrypt(settings.ga4ServiceAccountPrivateKeyEncrypted);
+    } catch {
+      privateKey = null;
+    }
+  }
+
+  if (!email) email = process.env.GA_SERVICE_ACCOUNT_EMAIL || null;
+  if (!privateKey) privateKey = process.env.GA_SERVICE_ACCOUNT_PRIVATE_KEY || null;
+  if (!propertyId) propertyId = process.env.GA4_PROPERTY_ID || null;
+
+  return { email, privateKey, propertyId };
+}
+
+async function getAnalyticsClient(): Promise<BetaAnalyticsDataClient | null> {
+  const { email, privateKey } = await getGa4Credentials();
   if (!email || !privateKey) return null;
 
   return new BetaAnalyticsDataClient({
@@ -17,13 +43,77 @@ function getAnalyticsClient(): BetaAnalyticsDataClient | null {
   });
 }
 
-function getPropertyId(): string | null {
-  return process.env.GA4_PROPERTY_ID || null;
+async function getPropertyId(): Promise<string | null> {
+  const { propertyId } = await getGa4Credentials();
+  return propertyId;
 }
 
+router.get("/settings", async (_req, res) => {
+  try {
+    const settings = await storage.getIntegrationSettings();
+    const { email, privateKey, propertyId } = await getGa4Credentials();
+
+    const hasDbCredentials = !!(
+      settings?.ga4PropertyId ||
+      settings?.ga4ServiceAccountEmail ||
+      settings?.ga4ServiceAccountPrivateKeyEncrypted
+    );
+
+    res.json({
+      ga4PropertyId: settings?.ga4PropertyId || "",
+      ga4ServiceAccountEmail: settings?.ga4ServiceAccountEmail || "",
+      hasPrivateKey: !!settings?.ga4ServiceAccountPrivateKeyEncrypted,
+      configured: !!(email && privateKey && propertyId),
+      source: hasDbCredentials ? "database" : "environment",
+      encryptionAvailable: isEncryptionConfigured(),
+    });
+  } catch (err: any) {
+    console.error("[GA4] Settings fetch error:", err.message);
+    res.status(500).json({ error: "Failed to fetch GA4 settings" });
+  }
+});
+
+router.patch("/settings", async (req, res) => {
+  try {
+    const { ga4PropertyId, ga4ServiceAccountEmail, ga4ServiceAccountPrivateKey } = req.body;
+
+    const existing = await storage.getIntegrationSettings();
+
+    const updateData: Record<string, any> = {};
+
+    if (ga4PropertyId !== undefined) {
+      updateData.ga4PropertyId = ga4PropertyId || null;
+    }
+    if (ga4ServiceAccountEmail !== undefined) {
+      updateData.ga4ServiceAccountEmail = ga4ServiceAccountEmail || null;
+    }
+    if (ga4ServiceAccountPrivateKey !== undefined && ga4ServiceAccountPrivateKey !== "") {
+      if (!isEncryptionConfigured()) {
+        return res.status(400).json({ error: "Encryption is not configured. Set APP_SECRETS_ENCRYPTION_KEY first." });
+      }
+      updateData.ga4ServiceAccountPrivateKeyEncrypted = encrypt(ga4ServiceAccountPrivateKey);
+    }
+
+    const mergedPropertyId = ga4PropertyId !== undefined ? ga4PropertyId : existing?.ga4PropertyId;
+    const mergedEmail = ga4ServiceAccountEmail !== undefined ? ga4ServiceAccountEmail : existing?.ga4ServiceAccountEmail;
+    const mergedHasKey = ga4ServiceAccountPrivateKey
+      ? true
+      : !!existing?.ga4ServiceAccountPrivateKeyEncrypted;
+
+    updateData.ga4Configured = !!(mergedPropertyId && mergedEmail && mergedHasKey);
+
+    await storage.updateIntegrationSettings(updateData);
+
+    res.json({ success: true, configured: updateData.ga4Configured });
+  } catch (err: any) {
+    console.error("[GA4] Settings save error:", err.message);
+    res.status(500).json({ error: "Failed to save GA4 settings", details: err.message });
+  }
+});
+
 router.get("/status", async (_req, res) => {
-  const client = getAnalyticsClient();
-  const propertyId = getPropertyId();
+  const client = await getAnalyticsClient();
+  const propertyId = await getPropertyId();
   res.json({
     configured: !!(client && propertyId),
     hasCredentials: !!client,
@@ -33,10 +123,10 @@ router.get("/status", async (_req, res) => {
 
 router.get("/overview", async (req, res) => {
   try {
-    const client = getAnalyticsClient();
-    const propertyId = getPropertyId();
+    const client = await getAnalyticsClient();
+    const propertyId = await getPropertyId();
     if (!client || !propertyId) {
-      return res.status(400).json({ error: "Google Analytics not configured. Set GA_SERVICE_ACCOUNT_EMAIL, GA_SERVICE_ACCOUNT_PRIVATE_KEY, and GA4_PROPERTY_ID." });
+      return res.status(400).json({ error: "Google Analytics not configured. Set credentials in Analytics settings." });
     }
 
     const startDate = (req.query.startDate as string) || "30daysAgo";
@@ -78,8 +168,8 @@ router.get("/overview", async (req, res) => {
 
 router.get("/traffic-over-time", async (req, res) => {
   try {
-    const client = getAnalyticsClient();
-    const propertyId = getPropertyId();
+    const client = await getAnalyticsClient();
+    const propertyId = await getPropertyId();
     if (!client || !propertyId) {
       return res.status(400).json({ error: "Google Analytics not configured" });
     }
@@ -115,8 +205,8 @@ router.get("/traffic-over-time", async (req, res) => {
 
 router.get("/top-pages", async (req, res) => {
   try {
-    const client = getAnalyticsClient();
-    const propertyId = getPropertyId();
+    const client = await getAnalyticsClient();
+    const propertyId = await getPropertyId();
     if (!client || !propertyId) {
       return res.status(400).json({ error: "Google Analytics not configured" });
     }
@@ -153,8 +243,8 @@ router.get("/top-pages", async (req, res) => {
 
 router.get("/devices", async (req, res) => {
   try {
-    const client = getAnalyticsClient();
-    const propertyId = getPropertyId();
+    const client = await getAnalyticsClient();
+    const propertyId = await getPropertyId();
     if (!client || !propertyId) {
       return res.status(400).json({ error: "Google Analytics not configured" });
     }
@@ -185,8 +275,8 @@ router.get("/devices", async (req, res) => {
 
 router.get("/traffic-sources", async (req, res) => {
   try {
-    const client = getAnalyticsClient();
-    const propertyId = getPropertyId();
+    const client = await getAnalyticsClient();
+    const propertyId = await getPropertyId();
     if (!client || !propertyId) {
       return res.status(400).json({ error: "Google Analytics not configured" });
     }
@@ -219,8 +309,8 @@ router.get("/traffic-sources", async (req, res) => {
 
 router.get("/ecommerce", async (req, res) => {
   try {
-    const client = getAnalyticsClient();
-    const propertyId = getPropertyId();
+    const client = await getAnalyticsClient();
+    const propertyId = await getPropertyId();
     if (!client || !propertyId) {
       return res.status(400).json({ error: "Google Analytics not configured" });
     }

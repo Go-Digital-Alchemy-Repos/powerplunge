@@ -330,6 +330,11 @@ export const integrationSettings = pgTable("integration_settings", {
   googlePlacesConfigured: boolean("google_places_configured").default(false),
   googlePlacesApiKeyEncrypted: text("google_places_api_key_encrypted"),
   googlePlacesId: text("google_places_id"),
+  // Google Analytics 4 Data API integration
+  ga4Configured: boolean("ga4_configured").default(false),
+  ga4PropertyId: text("ga4_property_id"),
+  ga4ServiceAccountEmail: text("ga4_service_account_email"),
+  ga4ServiceAccountPrivateKeyEncrypted: text("ga4_service_account_private_key_encrypted"),
   // Twilio SMS integration (for affiliate invite phone verification)
   twilioEnabled: boolean("twilio_enabled").default(false),
   twilioAccountSid: text("twilio_account_sid"),

@@ -99,8 +99,12 @@ export default function AdminAnalytics() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [gaMeasurementId, setGaMeasurementId] = useState("");
+  const [ga4PropertyId, setGa4PropertyId] = useState("");
+  const [ga4ServiceAccountEmail, setGa4ServiceAccountEmail] = useState("");
+  const [ga4PrivateKey, setGa4PrivateKey] = useState("");
   const [dateRange, setDateRange] = useState("30d");
   const [showSettings, setShowSettings] = useState(false);
+  const [activeSettingsTab, setActiveSettingsTab] = useState<"tracking" | "api">("api");
 
   const selectedRange = DATE_RANGES.find((r) => r.value === dateRange) || DATE_RANGES[2];
 
@@ -112,9 +116,27 @@ export default function AdminAnalytics() {
     queryKey: ["/api/admin/analytics/status"],
   });
 
+  const { data: ga4Settings } = useQuery<{
+    ga4PropertyId: string;
+    ga4ServiceAccountEmail: string;
+    hasPrivateKey: boolean;
+    configured: boolean;
+    source: string;
+    encryptionAvailable: boolean;
+  }>({
+    queryKey: ["/api/admin/analytics/settings"],
+  });
+
   useEffect(() => {
     if (settings) setGaMeasurementId(settings.gaMeasurementId || "");
   }, [settings]);
+
+  useEffect(() => {
+    if (ga4Settings) {
+      setGa4PropertyId(ga4Settings.ga4PropertyId || "");
+      setGa4ServiceAccountEmail(ga4Settings.ga4ServiceAccountEmail || "");
+    }
+  }, [ga4Settings]);
 
   const queryParams = `?startDate=${selectedRange.startDate}&endDate=today`;
 
@@ -160,7 +182,7 @@ export default function AdminAnalytics() {
     retry: 1,
   });
 
-  const updateMutation = useMutation({
+  const updateMeasurementMutation = useMutation({
     mutationFn: async () => {
       const res = await fetch("/api/admin/settings", {
         method: "PATCH",
@@ -174,10 +196,42 @@ export default function AdminAnalytics() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/settings"] });
       queryClient.invalidateQueries({ queryKey: ["/api/site-settings"] });
-      toast({ title: "Analytics settings saved" });
+      toast({ title: "Tracking settings saved" });
     },
     onError: () => {
-      toast({ title: "Error saving settings", variant: "destructive" });
+      toast({ title: "Error saving tracking settings", variant: "destructive" });
+    },
+  });
+
+  const updateGa4Mutation = useMutation({
+    mutationFn: async () => {
+      const body: Record<string, string> = {
+        ga4PropertyId,
+        ga4ServiceAccountEmail,
+      };
+      if (ga4PrivateKey) {
+        body.ga4ServiceAccountPrivateKey = ga4PrivateKey;
+      }
+      const res = await fetch("/api/admin/analytics/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to save");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      setGa4PrivateKey("");
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/analytics/settings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/analytics/status"] });
+      toast({ title: "GA4 API credentials saved" });
+    },
+    onError: (err: Error) => {
+      toast({ title: err.message || "Error saving GA4 credentials", variant: "destructive" });
     },
   });
 
@@ -243,35 +297,113 @@ export default function AdminAnalytics() {
                 Google Analytics Configuration
               </CardTitle>
               <CardDescription>
-                Connect your GA4 property. You need a service account with access to your GA4 property.
-                Set GA_SERVICE_ACCOUNT_EMAIL, GA_SERVICE_ACCOUNT_PRIVATE_KEY, and GA4_PROPERTY_ID in your secrets.
+                Configure your GA4 credentials for live analytics data and frontend event tracking.
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <form onSubmit={(e) => { e.preventDefault(); updateMutation.mutate(); }} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="gaMeasurementId">GA4 Measurement ID (for frontend tracking)</Label>
-                  <Input
-                    id="gaMeasurementId"
-                    value={gaMeasurementId}
-                    onChange={(e) => setGaMeasurementId(e.target.value)}
-                    placeholder="G-XXXXXXXXXX"
-                    data-testid="input-ga-measurement-id"
-                  />
-                </div>
-                <div className="flex items-center gap-4">
-                  <Button type="submit" size="sm" className="gap-2" disabled={updateMutation.isPending} data-testid="button-save-analytics-settings">
-                    <Save className="w-4 h-4" />
-                    {updateMutation.isPending ? "Saving..." : "Save"}
-                  </Button>
-                  <div className="flex items-center gap-2 text-sm">
-                    <div className={`w-2 h-2 rounded-full ${isConfigured ? "bg-green-500" : "bg-yellow-500"}`} />
-                    <span className="text-muted-foreground">
-                      {isConfigured ? "GA4 Data API connected" : "GA4 Data API not configured"}
-                    </span>
+            <CardContent className="space-y-4">
+              <div className="flex gap-2 border-b border-border pb-2">
+                <button
+                  onClick={() => setActiveSettingsTab("api")}
+                  className={`px-3 py-1.5 text-sm rounded-md transition-colors ${activeSettingsTab === "api" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                  data-testid="tab-api-credentials"
+                >
+                  API Credentials
+                </button>
+                <button
+                  onClick={() => setActiveSettingsTab("tracking")}
+                  className={`px-3 py-1.5 text-sm rounded-md transition-colors ${activeSettingsTab === "tracking" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                  data-testid="tab-frontend-tracking"
+                >
+                  Frontend Tracking
+                </button>
+              </div>
+
+              {activeSettingsTab === "api" && (
+                <form onSubmit={(e) => { e.preventDefault(); updateGa4Mutation.mutate(); }} className="space-y-4">
+                  <p className="text-xs text-muted-foreground">
+                    These credentials connect to the GA4 Data API for the analytics dashboard. They are stored encrypted in the database and portable across deployments.
+                  </p>
+                  <div className="space-y-2">
+                    <Label htmlFor="ga4PropertyId">GA4 Property ID</Label>
+                    <Input
+                      id="ga4PropertyId"
+                      value={ga4PropertyId}
+                      onChange={(e) => setGa4PropertyId(e.target.value)}
+                      placeholder="e.g. 524119104"
+                      data-testid="input-ga4-property-id"
+                    />
+                    <p className="text-xs text-muted-foreground">Numeric ID found in GA4 Admin &gt; Property Settings</p>
                   </div>
-                </div>
-              </form>
+                  <div className="space-y-2">
+                    <Label htmlFor="ga4Email">Service Account Email</Label>
+                    <Input
+                      id="ga4Email"
+                      value={ga4ServiceAccountEmail}
+                      onChange={(e) => setGa4ServiceAccountEmail(e.target.value)}
+                      placeholder="e.g. my-service@project.iam.gserviceaccount.com"
+                      data-testid="input-ga4-service-email"
+                    />
+                    <p className="text-xs text-muted-foreground">The email from your Google Cloud service account JSON key file</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="ga4PrivateKey">Service Account Private Key</Label>
+                    <textarea
+                      id="ga4PrivateKey"
+                      value={ga4PrivateKey}
+                      onChange={(e) => setGa4PrivateKey(e.target.value)}
+                      placeholder={ga4Settings?.hasPrivateKey ? "Key is saved (enter new value to replace)" : "Paste the private_key from your service account JSON file"}
+                      className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring font-mono"
+                      data-testid="input-ga4-private-key"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {ga4Settings?.hasPrivateKey
+                        ? "Private key is saved and encrypted. Leave blank to keep current key."
+                        : "The private_key field from your service account JSON (starts with -----BEGIN PRIVATE KEY-----)"
+                      }
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <Button type="submit" size="sm" className="gap-2" disabled={updateGa4Mutation.isPending} data-testid="button-save-ga4-credentials">
+                      <Save className="w-4 h-4" />
+                      {updateGa4Mutation.isPending ? "Saving..." : "Save API Credentials"}
+                    </Button>
+                    <div className="flex items-center gap-2 text-sm">
+                      <div className={`w-2 h-2 rounded-full ${isConfigured ? "bg-green-500" : "bg-yellow-500"}`} />
+                      <span className="text-muted-foreground">
+                        {isConfigured ? "GA4 Data API connected" : "GA4 Data API not configured"}
+                      </span>
+                    </div>
+                  </div>
+                  {ga4Settings?.source === "environment" && isConfigured && (
+                    <p className="text-xs text-yellow-500/80">
+                      Currently using environment variables. Save credentials here to use database-stored values instead (recommended for portability).
+                    </p>
+                  )}
+                </form>
+              )}
+
+              {activeSettingsTab === "tracking" && (
+                <form onSubmit={(e) => { e.preventDefault(); updateMeasurementMutation.mutate(); }} className="space-y-4">
+                  <p className="text-xs text-muted-foreground">
+                    The Measurement ID is used for frontend event tracking (page views, ecommerce events, etc.).
+                  </p>
+                  <div className="space-y-2">
+                    <Label htmlFor="gaMeasurementId">GA4 Measurement ID</Label>
+                    <Input
+                      id="gaMeasurementId"
+                      value={gaMeasurementId}
+                      onChange={(e) => setGaMeasurementId(e.target.value)}
+                      placeholder="G-XXXXXXXXXX"
+                      data-testid="input-ga-measurement-id"
+                    />
+                    <p className="text-xs text-muted-foreground">Found in GA4 Admin &gt; Data Streams &gt; Web stream details</p>
+                  </div>
+                  <Button type="submit" size="sm" className="gap-2" disabled={updateMeasurementMutation.isPending} data-testid="button-save-analytics-settings">
+                    <Save className="w-4 h-4" />
+                    {updateMeasurementMutation.isPending ? "Saving..." : "Save Tracking ID"}
+                  </Button>
+                </form>
+              )}
             </CardContent>
           </Card>
         )}
