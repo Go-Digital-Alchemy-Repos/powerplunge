@@ -630,12 +630,16 @@ function PreviewButton({ pageSlug, isHomePage, isShopPage }: { pageSlug?: string
   );
 }
 
-function SaveDraftButton({ pageId, pageTitle, seoData, onDone }: { pageId: string; pageTitle: string; seoData: SeoData; onDone: () => void }) {
+function SaveButton({ pageId, pageTitle, seoData, pageStatus, scheduledAt, onDone }: { pageId: string; pageTitle: string; seoData: SeoData; pageStatus: string; scheduledAt: string | null; onDone: () => void }) {
   const { appState } = usePuck();
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
 
   const handleSave = async () => {
+    if (pageStatus === "scheduled" && !scheduledAt) {
+      toast({ title: "Schedule date required", description: "Please pick a publish date and time before saving.", variant: "destructive" });
+      return;
+    }
     setSaving(true);
     try {
       const contentJson = puckDataToContentJson(appState.data);
@@ -651,6 +655,8 @@ function SaveDraftButton({ pageId, pageTitle, seoData, onDone }: { pageId: strin
         body: JSON.stringify({
           contentJson,
           title,
+          status: pageStatus,
+          scheduledAt: pageStatus === "scheduled" && scheduledAt ? new Date(scheduledAt).toISOString() : null,
           metaTitle: seoData.metaTitle || null,
           metaDescription: seoData.metaDescription || null,
           canonicalUrl: seoData.canonicalUrl || null,
@@ -666,10 +672,10 @@ function SaveDraftButton({ pageId, pageTitle, seoData, onDone }: { pageId: strin
         }),
       });
       if (!res.ok) throw new Error("Save failed");
-      toast({ title: "Draft saved", description: "Content and SEO settings saved." });
+      toast({ title: "Saved", description: "Page content and settings saved." });
       onDone();
     } catch {
-      toast({ title: "Error", description: "Failed to save draft.", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to save.", variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -681,71 +687,11 @@ function SaveDraftButton({ pageId, pageTitle, seoData, onDone }: { pageId: strin
       variant="outline"
       className="border-primary/30 text-primary hover:bg-primary/10"
       disabled={saving}
-      data-testid="button-save-draft"
+      data-testid="button-save"
       onClick={handleSave}
     >
       <Save className="w-4 h-4 mr-1" />
-      {saving ? "Saving..." : "Save Draft"}
-    </Button>
-  );
-}
-
-function PublishButton({ pageId, pageTitle, seoData, onDone }: { pageId: string; pageTitle: string; seoData: SeoData; onDone: () => void }) {
-  const { appState } = usePuck();
-  const [publishing, setPublishing] = useState(false);
-  const { toast } = useToast();
-
-  const handlePublish = async () => {
-    setPublishing(true);
-    try {
-      const contentJson = puckDataToContentJson(appState.data);
-      const title = (appState.data.root as any)?.props?.title || pageTitle;
-      let parsedJsonLd: any = null;
-      if (seoData.jsonLd) {
-        try { parsedJsonLd = JSON.parse(seoData.jsonLd); } catch {}
-      }
-      await fetch(`/api/admin/cms/pages/${pageId}`, {
-        credentials: "include",
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contentJson,
-          title,
-          metaTitle: seoData.metaTitle || null,
-          metaDescription: seoData.metaDescription || null,
-          canonicalUrl: seoData.canonicalUrl || null,
-          robots: seoData.robots || "index, follow",
-          ogTitle: seoData.ogTitle || null,
-          ogDescription: seoData.ogDescription || null,
-          ogImage: seoData.ogImage || null,
-          twitterCard: seoData.twitterCard || "summary_large_image",
-          twitterTitle: seoData.twitterTitle || null,
-          twitterDescription: seoData.twitterDescription || null,
-          twitterImage: seoData.twitterImage || null,
-          jsonLd: parsedJsonLd,
-        }),
-      });
-      const pubRes = await fetch(`/api/admin/cms/pages/${pageId}/publish`, { credentials: "include", method: "POST" });
-      if (!pubRes.ok) throw new Error("Publish failed");
-      toast({ title: "Published", description: "Page and SEO settings are now live." });
-      onDone();
-    } catch {
-      toast({ title: "Error", description: "Failed to publish.", variant: "destructive" });
-    } finally {
-      setPublishing(false);
-    }
-  };
-
-  return (
-    <Button
-      size="sm"
-      className="bg-green-600 hover:bg-green-700 text-foreground"
-      disabled={publishing}
-      data-testid="button-publish"
-      onClick={handlePublish}
-    >
-      <Globe className="w-4 h-4 mr-1" />
-      {publishing ? "Publishing..." : "Publish"}
+      {saving ? "Saving..." : "Save"}
     </Button>
   );
 }
@@ -1087,6 +1033,8 @@ export default function AdminCmsBuilder() {
   const [puckKey, setPuckKey] = useState(0);
   const [seoOpen, setSeoOpen] = useState(false);
   const [viewportMode, setViewportMode] = useState<ViewportMode>("desktop");
+  const [pageStatus, setPageStatus] = useState<string>("draft");
+  const [scheduledAt, setScheduledAt] = useState<string | null>(null);
   const [seoData, setSeoData] = useState<SeoData>({
     metaTitle: "",
     metaDescription: "",
@@ -1109,6 +1057,8 @@ export default function AdminCmsBuilder() {
 
   useEffect(() => {
     if (page) {
+      setPageStatus(page.status || "draft");
+      setScheduledAt(page.scheduledAt ? new Date(page.scheduledAt).toISOString().slice(0, 16) : null);
       setSeoData({
         metaTitle: page.metaTitle || "",
         metaDescription: page.metaDescription || "",
@@ -1207,11 +1157,31 @@ export default function AdminCmsBuilder() {
               Back
             </Button>
             <span className="text-sm font-semibold text-foreground truncate max-w-[200px]" data-testid="text-page-title">{page?.title}</span>
-            <Badge variant="outline" className={
-              page?.status === "published" ? "border-green-700 text-green-400 text-[10px]" : "border-yellow-700 text-yellow-400 text-[10px]"
-            } data-testid="badge-page-status">
-              {page?.status}
-            </Badge>
+            <div className="flex items-center gap-2" data-testid="status-dropdown-container">
+              <Select value={pageStatus} onValueChange={(v) => setPageStatus(v)}>
+                <SelectTrigger className={`h-7 text-[11px] w-auto min-w-[110px] gap-1 px-2 border ${
+                  pageStatus === "published" ? "border-green-700 text-green-400 bg-green-950/30" :
+                  pageStatus === "scheduled" ? "border-blue-700 text-blue-400 bg-blue-950/30" :
+                  "border-yellow-700 text-yellow-400 bg-yellow-950/30"
+                }`} data-testid="select-page-status">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="draft">Draft</SelectItem>
+                  <SelectItem value="published">Published</SelectItem>
+                  <SelectItem value="scheduled">Schedule</SelectItem>
+                </SelectContent>
+              </Select>
+              {pageStatus === "scheduled" && (
+                <input
+                  type="datetime-local"
+                  value={scheduledAt || ""}
+                  onChange={(e) => setScheduledAt(e.target.value || null)}
+                  className="h-7 text-[11px] px-2 bg-gray-900 border border-blue-700/50 rounded-md text-blue-300 focus:outline-none focus:border-blue-500"
+                  data-testid="input-scheduled-at"
+                />
+              )}
+            </div>
           </div>
 
           <div className="flex items-center gap-2">
@@ -1239,12 +1209,10 @@ export default function AdminCmsBuilder() {
           config={puckConfig}
           data={initialData}
           overrides={{
-            headerActions: ({ children }) => (
+            headerActions: () => (
               <>
-                {children}
                 <PreviewButton pageSlug={page?.slug} isHomePage={page?.isHome} isShopPage={page?.isShop} />
-                <DetachSectionButton pageId={pageId!} pageTitle={page?.title || ""} onDone={invalidateQueries} />
-                <SaveDraftButton pageId={pageId!} pageTitle={page?.title || ""} seoData={seoData} onDone={invalidateQueries} />
+                <SaveButton pageId={pageId!} pageTitle={page?.title || ""} seoData={seoData} pageStatus={pageStatus} scheduledAt={scheduledAt} onDone={invalidateQueries} />
               </>
             ),
             drawer: () => <EnhancedBlockPicker />,

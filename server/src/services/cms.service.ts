@@ -35,19 +35,22 @@ export class CmsService {
   async updatePage(id: string, data: Partial<InsertPage>) {
     const existing = await cmsRepository.findById(id);
     if (!existing) return undefined;
+    if (data.status && data.status !== "scheduled") {
+      data.scheduledAt = null;
+    }
     return cmsRepository.update(id, data);
   }
 
   async publishPage(id: string) {
     const existing = await cmsRepository.findById(id);
     if (!existing) return undefined;
-    return cmsRepository.update(id, { status: "published" });
+    return cmsRepository.update(id, { status: "published", scheduledAt: null });
   }
 
   async unpublishPage(id: string) {
     const existing = await cmsRepository.findById(id);
     if (!existing) return undefined;
-    return cmsRepository.update(id, { status: "draft" });
+    return cmsRepository.update(id, { status: "draft", scheduledAt: null });
   }
 
   async setHomePage(id: string) {

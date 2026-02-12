@@ -765,7 +765,8 @@ export const pages = pgTable("pages", {
   robots: text("robots").default("index, follow"),
   jsonLd: jsonb("json_ld"), // JSON-LD structured data for SEO
   featuredImage: text("featured_image"), // OG image for social sharing
-  status: text("status").notNull().default("draft"), // draft, published
+  status: text("status").notNull().default("draft"), // draft, published, scheduled
+  scheduledAt: timestamp("scheduled_at"),
   showInNav: boolean("show_in_nav").default(false),
   navOrder: integer("nav_order").default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),

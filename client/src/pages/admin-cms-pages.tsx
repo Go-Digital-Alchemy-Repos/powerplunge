@@ -4,7 +4,7 @@ import { Link, useLocation, useSearch } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import CmsLayout from "@/components/admin/CmsLayout";
-import { FileText, Home, ShoppingBag, Plus, Globe, GlobeLock, MoreHorizontal, Pencil, Eye, ArrowRightLeft, Search, Filter, Sparkles, Layers, Trash2, Blocks } from "lucide-react";
+import { FileText, Home, ShoppingBag, Plus, Globe, GlobeLock, MoreHorizontal, Pencil, Eye, ArrowRightLeft, Search, Filter, Sparkles, Layers, Trash2, Blocks, Clock } from "lucide-react";
 import { CMS_TEMPLATES, templateToContentJson, type CmsTemplate } from "@/cms/templates/templateLibrary";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -60,7 +60,7 @@ export default function AdminCmsPages() {
   const [selectedTemplate, setSelectedTemplate] = useState<string>("blank");
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "published" | "draft">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "published" | "draft" | "scheduled">("all");
 
   const searchString = useSearch();
   useEffect(() => {
@@ -187,6 +187,7 @@ export default function AdminCmsPages() {
 
   const publishedCount = pages?.filter((p: any) => p.status === "published").length ?? 0;
   const draftCount = pages?.filter((p: any) => p.status === "draft").length ?? 0;
+  const scheduledCount = pages?.filter((p: any) => p.status === "scheduled").length ?? 0;
 
   return (
     <CmsLayout activeNav="pages" breadcrumbs={[{ label: "Pages" }]}>
@@ -222,7 +223,7 @@ export default function AdminCmsPages() {
             />
           </div>
           <div className="flex items-center gap-1">
-            {(["all", "published", "draft"] as const).map((status) => (
+            {(["all", "published", "draft", "scheduled"] as const).map((status) => (
               <Button
                 key={status}
                 size="sm"
@@ -233,7 +234,7 @@ export default function AdminCmsPages() {
                 onClick={() => setStatusFilter(status)}
                 data-testid={`filter-${status}`}
               >
-                {status === "all" ? "All" : status === "published" ? `Published (${publishedCount})` : `Drafts (${draftCount})`}
+                {status === "all" ? "All" : status === "published" ? `Published (${publishedCount})` : status === "draft" ? `Drafts (${draftCount})` : `Scheduled (${scheduledCount})`}
               </Button>
             ))}
           </div>
@@ -296,11 +297,15 @@ export default function AdminCmsPages() {
                         variant="outline"
                         className={page.status === "published"
                           ? "border-green-800/60 text-green-400 text-[10px]"
+                          : page.status === "scheduled"
+                          ? "border-blue-800/60 text-blue-400 text-[10px]"
                           : "border-yellow-800/60 text-yellow-400 text-[10px]"}
                         data-testid={`badge-status-${page.id}`}
                       >
                         {page.status === "published" ? (
                           <span className="flex items-center gap-1"><Globe className="w-2.5 h-2.5" /> Published</span>
+                        ) : page.status === "scheduled" ? (
+                          <span className="flex items-center gap-1"><Clock className="w-2.5 h-2.5" /> Scheduled</span>
                         ) : (
                           <span className="flex items-center gap-1"><GlobeLock className="w-2.5 h-2.5" /> Draft</span>
                         )}
@@ -392,7 +397,7 @@ export default function AdminCmsPages() {
                               </>
                             )}
                             <DropdownMenuSeparator className="bg-gray-700" />
-                            {page.status === "draft" ? (
+                            {page.status !== "published" && (
                               <DropdownMenuItem
                                 className="cursor-pointer text-green-400 hover:!bg-gray-700/70 focus:!bg-gray-700/70 focus:!text-green-400 text-xs"
                                 onClick={() => publishMutation.mutate({ id: page.id, action: "publish" })}
@@ -401,14 +406,15 @@ export default function AdminCmsPages() {
                                 <Globe className="w-3.5 h-3.5 mr-2" />
                                 Publish
                               </DropdownMenuItem>
-                            ) : (
+                            )}
+                            {page.status !== "draft" && (
                               <DropdownMenuItem
                                 className="cursor-pointer text-yellow-400 hover:!bg-gray-700/70 focus:!bg-gray-700/70 focus:!text-yellow-400 text-xs"
                                 onClick={() => publishMutation.mutate({ id: page.id, action: "unpublish" })}
                                 data-testid={`action-unpublish-${page.id}`}
                               >
                                 <GlobeLock className="w-3.5 h-3.5 mr-2" />
-                                Unpublish
+                                Set to Draft
                               </DropdownMenuItem>
                             )}
                             <DropdownMenuSeparator className="bg-gray-700" />

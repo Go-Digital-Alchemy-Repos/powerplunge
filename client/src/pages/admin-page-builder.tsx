@@ -279,6 +279,7 @@ export default function AdminPageBuilder() {
         twitterImage: null,
         robots: 'index, follow',
         status: 'draft',
+        scheduledAt: null,
         showInNav: false,
         navOrder: 0,
       });
@@ -471,12 +472,16 @@ export default function AdminPageBuilder() {
 
   const handleSave = () => {
     if (!page) return;
+    if (page.status === "scheduled" && !page.scheduledAt) {
+      toast({ title: "Schedule date required", description: "Please pick a publish date and time before saving.", variant: "destructive" });
+      return;
+    }
     const contentJson: PageContentJson = { version: 1, blocks };
-    // Exclude createdAt and updatedAt - these are managed by the server
     const { createdAt, updatedAt, ...pageWithoutDates } = page;
     saveMutation.mutate({
       ...pageWithoutDates,
       contentJson,
+      scheduledAt: page.status === "scheduled" ? page.scheduledAt : null,
       slug: page.slug || page.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
     });
   };
@@ -866,15 +871,36 @@ export default function AdminPageBuilder() {
                   </div>
                   <div>
                     <Label>Status</Label>
-                    <Select value={page.status} onValueChange={(v) => { setPage({ ...page, status: v }); setIsDirty(true); }}>
+                    <Select value={page.status} onValueChange={(v) => {
+                      const updates: any = { ...page, status: v };
+                      if (v !== "scheduled") updates.scheduledAt = null;
+                      setPage(updates);
+                      setIsDirty(true);
+                    }}>
                       <SelectTrigger className="bg-muted border-border mt-1" data-testid="settings-status">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="draft">Draft</SelectItem>
                         <SelectItem value="published">Published</SelectItem>
+                        <SelectItem value="scheduled">Schedule</SelectItem>
                       </SelectContent>
                     </Select>
+                    {page.status === "scheduled" && (
+                      <div className="mt-2">
+                        <Label className="text-xs text-muted-foreground">Publish Date & Time</Label>
+                        <input
+                          type="datetime-local"
+                          value={page.scheduledAt ? new Date(page.scheduledAt).toISOString().slice(0, 16) : ""}
+                          onChange={(e) => {
+                            setPage({ ...page, scheduledAt: e.target.value ? new Date(e.target.value).toISOString() : null });
+                            setIsDirty(true);
+                          }}
+                          className="w-full mt-1 h-9 px-3 text-sm bg-muted border border-border rounded-md text-foreground focus:outline-none focus:border-primary"
+                          data-testid="settings-scheduled-at"
+                        />
+                      </div>
+                    )}
                   </div>
                   <div>
                     <Label>Page Type</Label>

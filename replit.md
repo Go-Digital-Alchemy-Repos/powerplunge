@@ -58,6 +58,14 @@ The Power Plunge e-commerce platform utilizes a modern full-stack architecture.
 
 ## Recent Changes
 
+### Page Builder Status Dropdown (Feb 12, 2026)
+- **Status Dropdown**: Replaced "Publish" button in both page builders with a status dropdown offering Draft, Published, and Schedule options. "Save" and "Preview" are now the only action buttons.
+- **Scheduled Publishing**: When "Schedule" is selected, a date/time picker appears for setting the future publish date. Validation prevents saving without a scheduled date.
+- **Schema**: Added `scheduledAt` column to `pages` table. Server clears `scheduledAt` when status changes away from "scheduled" (including publish/unpublish actions).
+- **Pages List**: Added "Scheduled" filter tab, blue badge for scheduled pages, and updated action menus to show contextual Publish/Set to Draft options.
+- **CMS Builder**: Puck editor header now shows only Preview and Save buttons. Status dropdown is in the top header bar next to the page title. Puck's built-in Publish button is suppressed.
+- **Page Builder**: Status dropdown in sidebar Settings tab now includes "Schedule" with inline datetime picker.
+
 ### Twilio SMS Integration Settings (Feb 11, 2026)
 - **Admin UI**: Added Twilio SMS card in Admin > Settings > Integrations with configure dialog (enable toggle, Account SID, Auth Token, From Phone Number, Test SMS).
 - **Encrypted Storage**: Auth token stored encrypted via AES-256-GCM (`APP_SECRETS_ENCRYPTION_KEY`). Never returned via API — only `authTokenSet: boolean`.
