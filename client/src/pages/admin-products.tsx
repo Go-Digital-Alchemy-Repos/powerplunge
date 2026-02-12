@@ -464,7 +464,7 @@ export default function AdminProducts() {
               const isOnSale = product.discountType !== "NONE" && product.salePrice;
               
               return (
-                <Card key={product.id} className={!product.active ? "opacity-60" : ""} data-testid={`product-card-${product.id}`}>
+                <Card key={product.id} className={`cursor-pointer transition-colors hover:border-primary/50 ${!product.active ? "opacity-60" : ""}`} onClick={() => openPanel(product)} data-testid={`product-card-${product.id}`}>
                   <div className="aspect-video w-full overflow-hidden rounded-t-lg bg-muted relative">
                     {displayImage ? (
                       <>
@@ -528,7 +528,7 @@ export default function AdminProducts() {
                         </p>
                       )}
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                       <Button
                         variant="outline"
                         size="sm"
