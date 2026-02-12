@@ -21,19 +21,17 @@ The Power Plunge e-commerce platform utilizes a modern full-stack architecture.
 - Core pages include product display, checkout, order success, and a customer dashboard with order history and an affiliate portal.
 - Admin interface pages provide comprehensive management tools.
 - Upsell components are integrated for enhancing sales.
-- Customer accounts use a custom authentication system with email/password and magic link login options, branded for Power Plunge. Session tokens are stored in localStorage and passed as Bearer tokens.
+- Customer accounts use a custom authentication system with email/password and magic link login options. Session tokens are stored in localStorage and passed as Bearer tokens.
 - VIP customer program includes auto-promotion triggers, configurable benefits, and progress tracking.
 
 **Admin UI Design System:**
-- Admin pages use a dark design system: bg-gray-950 (page), bg-gray-900/50 (cards), border-gray-800/60
-- CMS pages use `CmsLayout` for consistent sidebar + topbar chrome
-- Reusable primitives in `client/src/components/admin/AdminPagePrimitives.tsx`: AdminPage, AdminSection, AdminCard, AdminToolbar, AdminStat
-- Theme preview is isolated — never modifies `:root` CSS variables from admin pages
-- Full rules documented in `docs/architecture/ADMIN_UI_RULES.md`
+- Admin pages use a dark design system: bg-gray-950 (page), bg-gray-900/50 (cards), border-gray-800/60.
+- CMS pages use `CmsLayout` for consistent sidebar + topbar chrome.
+- Reusable primitives in `client/src/components/admin/AdminPagePrimitives.tsx`.
 
 **Backend:**
 - Developed with Express, adopting a layered, modular architecture.
-- **Route Architecture:** API routes are organized into dedicated router files grouped by domain (admin, customer, public, webhooks) under `server/src/routes/{admin,public,customer,webhooks}/` with a slim orchestrator `server/routes.ts`. Middleware (e.g., `requireAdmin`, `isAuthenticated`) is applied at the mount level. Root-level re-export stubs exist for backward compatibility.
+- **Route Architecture:** API routes are organized into dedicated router files grouped by domain (admin, customer, public, webhooks) under `server/src/routes/{admin,public,customer,webhooks}/`. Middleware is applied at the mount level.
 - Includes dedicated modules for configuration, database interactions, middleware (logging, error handling, authentication), and custom error handling.
 - Integrations with external services are encapsulated.
 - Database operations are managed via Drizzle ORM, connected to a PostgreSQL database.
@@ -41,79 +39,26 @@ The Power Plunge e-commerce platform utilizes a modern full-stack architecture.
 - An internal documentation library, accessible via `/admin/docs`, supports Markdown editing, versioning, and search.
 
 **Key Features:**
-- **Admin CMS:** Comprehensive dashboards for order, product, team, customer, and affiliate management, including a Customer Profile Drawer, manual order creation, and searchable customer list.
+- **Admin CMS:** Comprehensive dashboards for order, product, team, customer, and affiliate management, including manual order creation and searchable customer list.
 - **Role-Based Access Control:** Three admin roles (admin, store_manager, fulfillment) with enforced permissions at both API and UI levels.
-- **Affiliate Program:** Invite-only signup with a 5-step onboarding wizard (Welcome, Account, Agreement, Payout, Complete) including Stripe Connect setup. Affiliate code viewing and customization is available post-signup in the affiliate portal. Features include configurable commission rates, customer discount percentage (applied at checkout when affiliate code is used, tax calculated on post-discount amount, commissions on pre-discount subtotal), minimum payout thresholds, cookie-based referral tracking, admin payout management, and fraud/compliance guardrails.
+- **Affiliate Program:** Invite-only signup with a 5-step onboarding wizard, configurable commission rates, customer discount percentage, minimum payout thresholds, cookie-based referral tracking, admin payout management, and fraud/compliance guardrails.
 - **PWA Support:** Web app manifest and Apple mobile meta tags.
 - **Upsell/Cross-sell System:** Product relationships, cart upsells, one-click post-purchase offers, and analytics tracking.
 - **Revenue-Aware Coupons:** Performance analytics, affiliate overlap detection, stacking rules, and auto-expiration.
 - **Checkout Recovery System:** Tracks abandoned carts and failed payments, triggers recovery emails, and provides analytics.
 - **Revenue Guardrails:** Monitors critical metrics, provides alerts with configurable thresholds, and includes an admin dashboard.
-- **Security Hardening:** Security headers middleware (X-Content-Type-Options, Referrer-Policy, X-Frame-Options, Permissions-Policy) and CORS middleware (dev: all origins allowed; production: allowlist from `PUBLIC_SITE_URL` + `CORS_ALLOWED_ORIGINS`).
+- **Security Hardening:** Security headers middleware and CORS middleware.
 - **Developer Observability:** Request logging with correlation IDs, centralized error handling, and environment validation.
-- **Background Job System:** Lightweight in-process job runner for scheduled tasks (e.g., payouts, commission auto-approval, metrics aggregation) with duplicate prevention and logging.
+- **Background Job System:** Lightweight in-process job runner for scheduled tasks with duplicate prevention and logging.
 - **CMS Blog Posts & Navigation Menus:** Includes management for blog posts and navigation menus, with rich text editing, SEO fields, and drag-and-drop UI for menus.
-- **CMS Page Builder:** Supports block-based page builder architecture for custom landing pages, home page, and shop page, with uniqueness enforcement for home/shop pages and default page creation on server startup.
-- **App Docs System:** File-system-based read-only documentation browser in the admin area, with auto-generation of API reference docs from Express route files.
-
-## Recent Changes
-
-### Twilio Verify API Migration (Feb 12, 2026)
-- **Verify API**: Migrated affiliate phone verification from custom OTP generation/hashing to Twilio's managed Verify API (`TWILIO_VERIFY_SERVICE_SID`). Twilio handles code generation, expiry, delivery, and attempt limiting.
-- **SMS Service**: Added `startVerification()` and `checkVerification()` methods to `sms.service.ts`. Removed `sendVerificationCode()`.
-- **Schema**: Simplified `affiliate_invite_verifications` table — removed `codeHash`, `codeSalt`, `attempts`, `maxAttempts`, `expiresAt`, `twilioMessageSid`, `deliveryStatus`; added `twilioVerifySid`.
-- **Rate Limiting**: Layered rate limits preserved (per-phone daily cap, per-invite resend window, global SMS budget, IP middleware).
-- **Security**: Session nonce binding, verification tokens, anti-enumeration responses all maintained. Removed `otp-hash.ts` utility.
-
-### Page Builder Status Dropdown (Feb 12, 2026)
-- **Status Dropdown**: Replaced "Publish" button in both page builders with a status dropdown offering Draft, Published, and Schedule options. "Save" and "Preview" are now the only action buttons.
-- **Scheduled Publishing**: When "Schedule" is selected, a date/time picker appears for setting the future publish date. Validation prevents saving without a scheduled date.
-- **Schema**: Added `scheduledAt` column to `pages` table. Server clears `scheduledAt` when status changes away from "scheduled" (including publish/unpublish actions).
-- **Pages List**: Added "Scheduled" filter tab, blue badge for scheduled pages, and updated action menus to show contextual Publish/Set to Draft options.
-- **CMS Builder**: Puck editor header now shows only Preview and Save buttons. Status dropdown is in the top header bar next to the page title. Puck's built-in Publish button is suppressed.
-- **Page Builder**: Status dropdown in sidebar Settings tab now includes "Schedule" with inline datetime picker.
-
-### Twilio SMS Integration Settings (Feb 11, 2026)
-- **Admin UI**: Added Twilio SMS card in Admin > Settings > Integrations with configure dialog (enable toggle, Account SID, Auth Token, From Phone Number, Test SMS).
-- **Encrypted Storage**: Auth token stored encrypted via AES-256-GCM (`APP_SECRETS_ENCRYPTION_KEY`). Never returned via API — only `authTokenSet: boolean`.
-- **DB + Env Fallback**: SMS service (`server/src/services/sms.service.ts`) loads DB Twilio settings first (if enabled). Falls back to env vars `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER`.
-- **Cache Busting**: `smsService.clearCache()` called after admin updates settings to pick up new credentials immediately.
-- **API Endpoints**: `GET/PUT /api/admin/settings/twilio`, `POST /api/admin/settings/twilio/test-sms`.
-- **Schema**: Added `twilio_enabled`, `twilio_account_sid`, `twilio_auth_token_encrypted`, `twilio_phone_number` to `integration_settings` table.
-
-### Admin Settings & Branding (Feb 10, 2026)
-- **Themes Moved to Settings**: Themes page moved from CMS sidebar to main admin Settings dropdown. Route changed from `/admin/cms/themes` to `/admin/settings/themes`. Old route redirects automatically.
-- **Logo Branding**: Added `logoUrl` column to `site_settings`. Company Profile settings page now includes a Branding card with logo upload, preview, and remove functionality. Logos uploaded via R2 storage (with Object Storage fallback).
-- **Dynamic Logo**: All pages use `useBranding()` hook (`client/src/hooks/use-branding.ts`) which fetches logo from `/api/site-settings`. Falls back to the bundled default logo if no custom logo is set. Applied to SiteLayout nav/footer and all standalone pages (checkout, login, register, etc.).
-
-### Stabilization Sprint (Feb 10, 2026)
-- **TypeScript:** All 78 errors resolved. `npm run check` passes with 0 errors. tsconfig target set to ES2020. Temporary drizzle-zod patch (`shared/drizzle-zod-patch.d.ts`) for Zod 3.25 compat.
-- **Vitest:** Added `vitest.config.ts` with path aliases. Tests run via `npx vitest run`.
-- **CMS Posts:** Documented dual-stack (see `docs/architecture/CMS_POSTS_CONVERGENCE.md`). Stack B is dead code pending cleanup.
-- **Widget Templates:** Added tab in consolidated Templates page.
-- **Bug fixes:** Auth hook contract (loading→isLoading), checkout cart prop drilling, affiliate payout audit userId, RichTextEditor tiptap API, CMS menus null check, OpenAI generateText method.
-
-### Checkout Upgrade (Feb 2026)
-- **Stripe AddressElement**: Shipping address captured via Stripe `AddressElement` (mode: "shipping", US-only) instead of custom form. Provides autocomplete and validation by Stripe.
-- **Reprice Endpoint**: `POST /api/reprice-payment-intent` recalculates tax and updates PaymentIntent when shipping address changes after initial creation. Handles PI update or recreation.
-- **Repricing Flow**: When user edits shipping after initial intent creation, frontend calls reprice endpoint. `Elements` remounted with `key={clientSecret}` to handle stale intent state.
-- **Billing Address**: Custom `AddressForm` component retained for billing-differs-from-shipping case. Billing toggle prefills on first uncheck.
-- **Shared Validation**: `shared/validation.ts` provides reusable email, ZIP, phone, address, and state validation utilities used by both client and server.
-- **Express Checkout**: Stripe ExpressCheckoutElement (Apple Pay/Google Pay/Link) added above PaymentElement on payment step.
-- **Expanded Schema**: Orders table includes `shipping_company`, `shipping_line2`, `billing_company`, `billing_line2` columns for complete address persistence.
-- **Server Validation**: `server/src/routes/public/payments.routes.ts` uses shared validators and returns structured error arrays `{field, code, message}[]`.
-- **Idempotent Confirm**: `POST /api/confirm-payment` safely finalizes orders exactly once via pending-status guard.
-- **Checkout Analytics**: `client/src/lib/checkout-analytics.ts` tracks checkout funnel events (checkout_started, shipping_step_completed, payment_step_started, validation_error, payment_submitted, payment_succeeded, payment_failed) via beacon to `/api/analytics/checkout-event`.
-
-### Google Analytics Integration (Feb 2026)
-- **GA4 Setup**: `client/src/lib/analytics.ts` initializes GA via gtag.js with measurement ID from `VITE_GA_MEASUREMENT_ID` env var.
-- **Page View Tracking**: `client/src/hooks/use-analytics.ts` tracks page views on route changes via wouter's `useLocation`.
-- **E-commerce Events**: GA4 e-commerce events tracked across the funnel:
-  - `view_item_list` on Shop page load
-  - `add_to_cart` on Home and Shop product add
-  - `begin_checkout` on Checkout page mount
-  - `purchase` on successful payment (inline flow in checkout.tsx, Stripe redirect flow in order-success.tsx)
-- **No Double-Fire**: Inline payment fires purchase in checkout before redirect with `order_id`; Stripe redirect fires purchase in order-success via `session_id` fetch. Each path is mutually exclusive.
+- **CMS Page Builder:** Supports block-based page builder architecture for custom landing pages, home page, and shop page.
+- **Checkout Upgrade:** Uses Stripe `AddressElement` for shipping, reprice endpoint for tax recalculation, and Stripe ExpressCheckoutElement (Apple Pay/Google Pay/Link).
+- **Google Analytics Integration:** GA4 setup for page view and e-commerce event tracking.
+- **Legal Pages:** Dynamic privacy policy and terms and conditions pages with rich text editing in admin and public routes.
+- **Twilio Verify API Migration:** Affiliate phone verification uses Twilio's managed Verify API.
+- **Page Builder Status Dropdown:** Replaced "Publish" button with a status dropdown offering Draft, Published, and Schedule options.
+- **Twilio SMS Integration Settings:** Admin UI for configuring Twilio SMS, with encrypted storage for auth token.
+- **Admin Settings & Branding:** Themes moved to main admin settings. Logo branding with upload, preview, and dynamic display from R2 storage.
 
 ## External Dependencies
 - **Google Analytics 4:** For product performance and customer behavior analytics.
@@ -124,4 +69,3 @@ The Power Plunge e-commerce platform utilizes a modern full-stack architecture.
 - **PostgreSQL:** Primary database.
 - **Drizzle ORM:** Used for database interaction.
 - **Twilio:** For SMS verification in affiliate invite flows.
-- **Better Auth:** Feature-flagged authentication system being integrated.
