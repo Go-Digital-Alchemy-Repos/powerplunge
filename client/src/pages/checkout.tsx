@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, ArrowRight, CreditCard, Loader2, ShoppingBag, Lock, Shield, CheckCircle, XCircle, Users } from "lucide-react";
+import { ArrowLeft, ArrowRight, CreditCard, Loader2, ShoppingBag, Lock, Shield, CheckCircle, XCircle, Users, Plus, Minus, Trash2 } from "lucide-react";
 import { AddressForm, emptyAddress, type AddressFormData } from "@/components/checkout/AddressForm";
 import { validateEmail, validatePhone, validateRequired } from "@shared/validation";
 import { trackCheckoutEvent } from "@/lib/checkout-analytics";
@@ -504,7 +504,7 @@ export default function Checkout() {
     }
   };
 
-  const [cart] = useState<CartItem[]>(() => {
+  const [cart, setCart] = useState<CartItem[]>(() => {
     try {
       const cartString = typeof window !== "undefined" ? localStorage.getItem("cart") : null;
       return cartString ? JSON.parse(cartString) : [];
@@ -513,6 +513,39 @@ export default function Checkout() {
     }
   });
   const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+  const updateCartItem = (itemId: string, newQuantity: number) => {
+    if (newQuantity < 1) return;
+    setCart((prev) => {
+      const updated = prev.map((item) =>
+        item.id === itemId ? { ...item, quantity: newQuantity } : item
+      );
+      localStorage.setItem("cart", JSON.stringify(updated));
+      window.dispatchEvent(new Event("cartUpdated"));
+      return updated;
+    });
+    if (orderId && clientSecret) {
+      setOrderId(null);
+      setClientSecret(null);
+      setTaxInfo(null);
+      setStep("shipping");
+    }
+  };
+
+  const removeCartItem = (itemId: string) => {
+    setCart((prev) => {
+      const updated = prev.filter((item) => item.id !== itemId);
+      localStorage.setItem("cart", JSON.stringify(updated));
+      window.dispatchEvent(new Event("cartUpdated"));
+      return updated;
+    });
+    if (orderId && clientSecret) {
+      setOrderId(null);
+      setClientSecret(null);
+      setTaxInfo(null);
+      setStep("shipping");
+    }
+  };
 
   useEffect(() => {
     if (cart.length > 0) {
@@ -1060,12 +1093,44 @@ export default function Checkout() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {cart.map((item) => (
-                  <div key={item.id} className="flex justify-between py-2 border-b border-border" data-testid={`cart-item-${item.id}`}>
-                    <div>
-                      <p className="font-medium text-sm">{item.name}</p>
-                      <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
+                  <div key={item.id} className="py-3 border-b border-border" data-testid={`cart-item-${item.id}`}>
+                    <div className="flex justify-between items-start mb-2">
+                      <p className="font-medium text-sm flex-1 pr-2">{item.name}</p>
+                      <p className="font-medium whitespace-nowrap">${((item.price * item.quantity) / 100).toLocaleString()}</p>
                     </div>
-                    <p className="font-medium">${((item.price * item.quantity) / 100).toLocaleString()}</p>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => updateCartItem(item.id, item.quantity - 1)}
+                          disabled={item.quantity <= 1}
+                          className="w-7 h-7 flex items-center justify-center rounded-md border border-border hover:bg-accent disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                          data-testid={`button-decrease-${item.id}`}
+                          aria-label="Decrease quantity"
+                        >
+                          <Minus className="w-3 h-3" />
+                        </button>
+                        <span className="w-8 text-center text-sm font-medium" data-testid={`text-qty-${item.id}`}>{item.quantity}</span>
+                        <button
+                          type="button"
+                          onClick={() => updateCartItem(item.id, item.quantity + 1)}
+                          className="w-7 h-7 flex items-center justify-center rounded-md border border-border hover:bg-accent transition-colors"
+                          data-testid={`button-increase-${item.id}`}
+                          aria-label="Increase quantity"
+                        >
+                          <Plus className="w-3 h-3" />
+                        </button>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeCartItem(item.id)}
+                        className="text-muted-foreground hover:text-destructive transition-colors p-1"
+                        data-testid={`button-remove-${item.id}`}
+                        aria-label={`Remove ${item.name}`}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 ))}
                 <div className="space-y-2 pt-4 border-t border-border">
