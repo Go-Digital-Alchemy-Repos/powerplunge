@@ -122,8 +122,15 @@ export function validateEnv(): ValidationResult {
   const warnings: ValidationResult["warnings"] = [];
   const disabledFeaturesSet = new Set<string>();
 
+  const FALLBACK_KEYS: Record<string, string[]> = {
+    STRIPE_SECRET_KEY: ["STRIPE_SECRET_KEY_LIVE", "STRIPE_SECRET_KEY_TEST"],
+    STRIPE_PUBLISHABLE_KEY: ["STRIPE_PUBLISHABLE_KEY_LIVE", "STRIPE_PUBLISHABLE_KEY_TEST"],
+  };
+
   for (const [name, spec] of Object.entries(ENV_VARS)) {
-    if (!process.env[name]) {
+    const hasValue = !!process.env[name] ||
+      (FALLBACK_KEYS[name] || []).some((fb) => !!process.env[fb]);
+    if (!hasValue) {
       if (spec.level === "required") {
         missing.push({ name, spec });
       } else {
