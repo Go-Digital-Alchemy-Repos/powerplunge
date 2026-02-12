@@ -36,7 +36,7 @@ interface PageContentJson {
 interface Product {
   id: string;
   name: string;
-  slug?: string;
+  urlSlug?: string;
   tagline?: string;
   description?: string;
   price: number;
@@ -324,7 +324,7 @@ const ProductGridBlock = ({ data, settings, onAddToCart }: {
             animate={{ opacity: 1, y: 0 }}
             className="bg-slate-800/50 backdrop-blur border border-slate-700 rounded-xl p-6 hover:border-cyan-500/50 transition-colors cursor-pointer"
             onClick={() => {
-              const productUrl = `/products/${product.slug || product.id}`;
+              const productUrl = `/products/${product.urlSlug || product.id}`;
               window.location.href = productUrl;
             }}
             data-testid={`card-product-${product.id}`}
