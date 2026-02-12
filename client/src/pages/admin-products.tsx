@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AmountTypeInput } from "@/components/ui/amount-type-input";
 import { SlideOutPanel, PanelFooter } from "@/components/ui/slide-out-panel";
 import { useToast } from "@/hooks/use-toast";
 import { useAdmin } from "@/hooks/use-admin";
@@ -1054,86 +1055,42 @@ export default function AdminProducts() {
                     <div className="space-y-6 border border-border rounded-lg p-4">
                       <div className="space-y-4">
                         <h4 className="font-medium text-sm">Commission Override</h4>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label>Type</Label>
-                            <Select
-                              value={formData.affiliateCommissionType}
-                              onValueChange={(value) => {
-                                setFormData(prev => ({ ...prev, affiliateCommissionType: value, affiliateCommissionValue: "" }));
-                                setIsDirty(true);
-                              }}
-                            >
-                              <SelectTrigger data-testid="select-product-commission-type">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="PERCENT">Percentage (%)</SelectItem>
-                                <SelectItem value="FIXED">Fixed ($)</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="space-y-2">
-                            <Label>{formData.affiliateCommissionType === "FIXED" ? "Amount ($)" : "Percentage"}</Label>
-                            <Input
-                              type="number"
-                              min="0"
-                              step={formData.affiliateCommissionType === "FIXED" ? "0.01" : "1"}
-                              max={formData.affiliateCommissionType === "PERCENT" ? 100 : undefined}
-                              value={formData.affiliateCommissionValue}
-                              onChange={(e) => {
-                                setFormData(prev => ({ ...prev, affiliateCommissionValue: e.target.value }));
-                                setIsDirty(true);
-                              }}
-                              data-testid="input-product-commission-value"
-                            />
-                            <p className="text-xs text-muted-foreground">
-                              {formData.affiliateCommissionType === "FIXED" ? "e.g. 5.00 = $5.00" : "0-100"}
-                            </p>
-                          </div>
-                        </div>
+                        <AmountTypeInput
+                          value={formData.affiliateCommissionValue ? parseFloat(formData.affiliateCommissionValue) : 0}
+                          onChange={(v) => {
+                            setFormData(prev => ({ ...prev, affiliateCommissionValue: v === 0 ? "" : String(v) }));
+                            setIsDirty(true);
+                          }}
+                          type={formData.affiliateCommissionType === "FIXED" ? "fixed" : "percent"}
+                          onTypeChange={(t) => {
+                            setFormData(prev => ({ ...prev, affiliateCommissionType: t === "fixed" ? "FIXED" : "PERCENT", affiliateCommissionValue: "" }));
+                            setIsDirty(true);
+                          }}
+                          data-testid="input-product-commission-value"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          {formData.affiliateCommissionType === "FIXED" ? "Flat commission in dollars" : "Percentage of the net sale amount"}
+                        </p>
                       </div>
 
                       <div className="space-y-4">
                         <h4 className="font-medium text-sm">Customer Discount Override</h4>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label>Type</Label>
-                            <Select
-                              value={formData.affiliateDiscountType}
-                              onValueChange={(value) => {
-                                setFormData(prev => ({ ...prev, affiliateDiscountType: value, affiliateDiscountValue: "" }));
-                                setIsDirty(true);
-                              }}
-                            >
-                              <SelectTrigger data-testid="select-product-discount-type">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="PERCENT">Percentage (%)</SelectItem>
-                                <SelectItem value="FIXED">Fixed ($)</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="space-y-2">
-                            <Label>{formData.affiliateDiscountType === "FIXED" ? "Amount ($)" : "Percentage"}</Label>
-                            <Input
-                              type="number"
-                              min="0"
-                              step={formData.affiliateDiscountType === "FIXED" ? "0.01" : "1"}
-                              max={formData.affiliateDiscountType === "PERCENT" ? 100 : undefined}
-                              value={formData.affiliateDiscountValue}
-                              onChange={(e) => {
-                                setFormData(prev => ({ ...prev, affiliateDiscountValue: e.target.value }));
-                                setIsDirty(true);
-                              }}
-                              data-testid="input-product-discount-value"
-                            />
-                            <p className="text-xs text-muted-foreground">
-                              {formData.affiliateDiscountType === "FIXED" ? "e.g. 5.00 = $5.00" : "0-100"}
-                            </p>
-                          </div>
-                        </div>
+                        <AmountTypeInput
+                          value={formData.affiliateDiscountValue ? parseFloat(formData.affiliateDiscountValue) : 0}
+                          onChange={(v) => {
+                            setFormData(prev => ({ ...prev, affiliateDiscountValue: v === 0 ? "" : String(v) }));
+                            setIsDirty(true);
+                          }}
+                          type={formData.affiliateDiscountType === "FIXED" ? "fixed" : "percent"}
+                          onTypeChange={(t) => {
+                            setFormData(prev => ({ ...prev, affiliateDiscountType: t === "fixed" ? "FIXED" : "PERCENT", affiliateDiscountValue: "" }));
+                            setIsDirty(true);
+                          }}
+                          data-testid="input-product-discount-value"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          {formData.affiliateDiscountType === "FIXED" ? "Flat discount in dollars" : "Percentage off for referred customers"}
+                        </p>
                       </div>
                     </div>
                   )}
