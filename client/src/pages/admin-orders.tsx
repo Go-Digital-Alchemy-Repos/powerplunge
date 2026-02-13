@@ -14,6 +14,7 @@ import { useAdmin } from "@/hooks/use-admin";
 import { Package, Calendar, User, ChevronRight, Truck, Mail, RefreshCw, ExternalLink, Search, Download, Filter } from "lucide-react";
 import { format } from "date-fns";
 import AdminNav from "@/components/admin/AdminNav";
+import { ManualOrderWizard } from "@/components/admin/ManualOrderWizard";
 import { useBulkSelection } from "@/hooks/use-bulk-selection";
 import { useSavedFilters } from "@/hooks/use-saved-filters";
 import { BulkActionsBar } from "@/components/admin/BulkActionsBar";
@@ -83,6 +84,7 @@ export default function AdminOrders() {
   const { role } = useAdmin();
   const [selectedOrder, setSelectedOrder] = useState<string | null>(null);
   const [filters, setFilters] = useState<OrderFilters>(defaultFilters);
+  const [showNewOrder, setShowNewOrder] = useState(false);
   const [bulkShipDialogOpen, setBulkShipDialogOpen] = useState(false);
   const [bulkShipData, setBulkShipData] = useState({
     carrier: "",
@@ -356,6 +358,11 @@ export default function AdminOrders() {
     <div className="min-h-screen bg-background">
       <AdminNav currentPage="orders" role={role} />
 
+      <ManualOrderWizard
+        open={showNewOrder}
+        onOpenChange={setShowNewOrder}
+      />
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         <div className="flex items-center justify-between mb-6">
           <h2 className="font-display text-3xl font-bold">Orders</h2>
@@ -370,6 +377,10 @@ export default function AdminOrders() {
               currentFilters={filters}
               hasActiveFilters={hasActiveFilters}
             />
+            <Button onClick={() => setShowNewOrder(true)} variant="outline" size="sm" className="gap-2" data-testid="button-new-order">
+              <Plus className="w-4 h-4" />
+              Manual Order
+            </Button>
             <Button variant="outline" size="sm" onClick={exportCSV} data-testid="button-export-all">
               <Download className="w-4 h-4 mr-2" />
               Export All

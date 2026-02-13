@@ -14,6 +14,7 @@ import { useAdmin } from "@/hooks/use-admin";
 import { Package, Search, Mail, Phone, MapPin, DollarSign, Calendar, Plus, User } from "lucide-react";
 import { format } from "date-fns";
 import { CustomerProfileDrawer } from "@/components/admin/CustomerProfileDrawer";
+import { ManualOrderWizard } from "@/components/admin/ManualOrderWizard";
 import AdminNav from "@/components/admin/AdminNav";
 
 interface Customer {
@@ -75,9 +76,6 @@ export default function AdminCustomers() {
   const [showNewCustomer, setShowNewCustomer] = useState(false);
   const [showNewOrder, setShowNewOrder] = useState(false);
   const [newCustomer, setNewCustomer] = useState({ name: "", email: "", phone: "", address: "", city: "", state: "", zipCode: "" });
-  const [orderCustomerId, setOrderCustomerId] = useState("");
-  const [orderItems, setOrderItems] = useState<Array<{ productId: string; quantity: number }>>([]);
-  const [orderStep, setOrderStep] = useState<"choice" | "select" | "create" | "products">("choice");
 
   const { data: customers, isLoading } = useQuery<Customer[]>({
     queryKey: ["/api/admin/customers"],
@@ -479,220 +477,10 @@ export default function AdminCustomers() {
         </DialogContent>
       </Dialog>
 
-      {/* Manual Order Dialog */}
-      <Dialog open={showNewOrder} onOpenChange={(open) => {
-        setShowNewOrder(open);
-        if (!open) {
-          setOrderStep("choice");
-          setOrderCustomerId("");
-          setOrderItems([]);
-        }
-      }}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>
-              {orderStep === "choice" && "Manual Order: Customer Selection"}
-              {orderStep === "select" && "Select Existing Customer"}
-              {orderStep === "create" && "Create New Customer"}
-              {orderStep === "products" && "Add Products to Order"}
-            </DialogTitle>
-          </DialogHeader>
-
-          {orderStep === "choice" && (
-            <div className="grid grid-cols-2 gap-4 py-4">
-              <Button
-                variant="outline"
-                className="h-32 flex flex-col gap-2"
-                onClick={() => setOrderStep("select")}
-                data-testid="button-select-existing-customer"
-              >
-                <Search className="w-8 h-8" />
-                Select Existing Customer
-              </Button>
-              <Button
-                variant="outline"
-                className="h-32 flex flex-col gap-2"
-                onClick={() => {
-                  setNewCustomer({ name: "", email: "", phone: "", address: "", city: "", state: "", zipCode: "" });
-                  setOrderStep("create");
-                }}
-                data-testid="button-create-new-customer-order"
-              >
-                <Plus className="w-8 h-8" />
-                Create New Customer
-              </Button>
-            </div>
-          )}
-
-          {orderStep === "select" && (
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label>Search & Select Customer *</Label>
-                <Select value={orderCustomerId} onValueChange={(val) => {
-                  setOrderCustomerId(val);
-                  setOrderStep("products");
-                  if (orderItems.length === 0) setOrderItems([{ productId: "", quantity: 1 }]);
-                }}>
-                  <SelectTrigger data-testid="select-order-customer">
-                    <SelectValue placeholder="Select a customer" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {customers?.map((customer) => (
-                      <SelectItem key={customer.id} value={customer.id}>
-                        {customer.name} ({customer.email})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button variant="ghost" onClick={() => setOrderStep("choice")}>Back</Button>
-            </div>
-          )}
-
-          {orderStep === "create" && (
-            <form
-              onSubmit={async (e) => {
-                e.preventDefault();
-                try {
-                  const customer = await createCustomerMutation.mutateAsync(newCustomer);
-                  setOrderCustomerId(customer.id);
-                  setOrderStep("products");
-                  if (orderItems.length === 0) setOrderItems([{ productId: "", quantity: 1 }]);
-                } catch (err) {
-                  // Error handled by mutation
-                }
-              }}
-              className="space-y-6 py-4"
-            >
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="order-cust-name">Name *</Label>
-                  <Input
-                    id="order-cust-name"
-                    value={newCustomer.name}
-                    onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="order-cust-email">Email *</Label>
-                  <Input
-                    id="order-cust-email"
-                    type="email"
-                    value={newCustomer.email}
-                    onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })}
-                    required
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4 pt-4 border-t">
-                <Button type="button" variant="outline" className="w-full" onClick={() => setOrderStep("choice")}>
-                  Back
-                </Button>
-                <Button type="submit" className="w-full" disabled={createCustomerMutation.isPending}>
-                  {createCustomerMutation.isPending ? "Creating..." : "Continue to Products"}
-                </Button>
-              </div>
-            </form>
-          )}
-
-          {orderStep === "products" && (
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (!orderCustomerId || orderItems.length === 0) return;
-                createOrderMutation.mutate({ customerId: orderCustomerId, items: orderItems });
-              }}
-              className="space-y-4 py-4"
-            >
-              <div className="space-y-2">
-                <Label>Products *</Label>
-                {orderItems.map((item, index) => (
-                  <div key={index} className="flex gap-2 items-center">
-                    <Select
-                      value={item.productId}
-                      onValueChange={(value) => {
-                        const newItems = [...orderItems];
-                        newItems[index].productId = value;
-                        setOrderItems(newItems);
-                      }}
-                    >
-                      <SelectTrigger className="flex-1" data-testid={`select-product-${index}`}>
-                        <SelectValue placeholder="Select product" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {products?.filter(p => p.active !== false).map((product) => (
-                          <SelectItem key={product.id} value={product.id}>
-                            {product.name} - ${(product.price / 100).toFixed(2)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Input
-                      type="number"
-                      min="1"
-                      value={item.quantity}
-                      onChange={(e) => {
-                        const newItems = [...orderItems];
-                        newItems[index].quantity = parseInt(e.target.value) || 1;
-                        setOrderItems(newItems);
-                      }}
-                      className="w-20"
-                      data-testid={`input-quantity-${index}`}
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setOrderItems(orderItems.filter((_, i) => i !== index))}
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                ))}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setOrderItems([...orderItems, { productId: "", quantity: 1 }])}
-                  className="w-full mt-2"
-                  data-testid="button-add-product"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Product
-                </Button>
-              </div>
-
-              <div className="flex flex-col gap-4 pt-4 border-t border-border">
-                <div className="p-4 bg-muted/50 rounded-lg flex justify-between items-center">
-                  <span className="text-sm font-medium text-muted-foreground">Order Total</span>
-                  <span className="text-xl font-bold text-primary">
-                    $
-                    {(
-                      orderItems.reduce((sum, item) => {
-                        const product = products?.find((p) => p.id === item.productId);
-                        return sum + (product?.price || 0) * item.quantity;
-                      }, 0) / 100
-                    ).toLocaleString()}
-                  </span>
-                </div>
-                <div className="flex justify-end gap-2">
-                  <Button type="button" variant="outline" onClick={() => setOrderStep("choice")}>
-                    Back
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={createOrderMutation.isPending || orderItems.length === 0 || !orderItems.every(i => i.productId)}
-                    data-testid="button-create-order"
-                  >
-                    {createOrderMutation.isPending ? "Creating..." : "Create Order"}
-                  </Button>
-                </div>
-              </div>
-            </form>
-          )}
-        </DialogContent>
-      </Dialog>
+      <ManualOrderWizard
+        open={showNewOrder}
+        onOpenChange={setShowNewOrder}
+      />
 
       <CustomerProfileDrawer
         customerId={profileDrawerCustomerId}
