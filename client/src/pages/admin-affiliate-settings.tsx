@@ -357,7 +357,7 @@ export default function AdminAffiliateSettings() {
                   id="agreementText"
                   value={formData.agreementText}
                   onChange={(e) => setFormData({ ...formData, agreementText: e.target.value })}
-                  className="min-h-[400px] font-mono text-sm"
+                  className="min-h-[400px] text-sm"
                   placeholder="Enter the affiliate agreement text..."
                   data-testid="textarea-agreement"
                 />

@@ -714,7 +714,7 @@ export function ManualOrderWizard({ open, onOpenChange }: ManualOrderWizardProps
               </div>
               <h3 className="text-lg font-bold">Payment Successful</h3>
               <p className="text-sm text-muted-foreground text-center">
-                Order <span className="font-mono font-medium text-foreground">{orderId}</span> has been created and paid.
+                Order <span className="font-medium text-foreground">{orderId}</span> has been created and paid.
               </p>
               {selectedCustomer && (
                 <p className="text-sm text-muted-foreground">

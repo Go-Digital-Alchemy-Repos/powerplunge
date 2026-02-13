@@ -209,7 +209,7 @@ function CollapsiblePayoutNotes({ notes }: { notes: string | null | undefined })
         </button>
       </div>
       {expanded && (
-        <div className="mt-2 p-2 bg-muted/50 rounded text-xs font-mono break-all max-h-32 overflow-y-auto">
+        <div className="mt-2 p-2 bg-muted/50 rounded text-xs break-all max-h-32 overflow-y-auto">
           {parsedNotes.referralIds.map((id, idx) => (
             <div key={id} className="truncate">
               {id}
@@ -861,7 +861,7 @@ export default function AdminAffiliates() {
                           <div>
                             <p className="font-medium">{affiliate.customerName}</p>
                             <p className="text-sm text-muted-foreground">{affiliate.email}</p>
-                            <p className="text-xs font-mono text-muted-foreground">{affiliate.affiliateCode}</p>
+                            <p className="text-xs text-muted-foreground">{affiliate.affiliateCode}</p>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -927,7 +927,7 @@ export default function AdminAffiliates() {
                   <div>
                     <h3 className="text-xl font-bold">{affiliateProfile.customerName}</h3>
                     <p className="text-muted-foreground">{affiliateProfile.customerEmail}</p>
-                    <p className="text-sm font-mono mt-1">Code: {affiliateProfile.affiliateCode}</p>
+                    <p className="text-sm mt-1">Code: {affiliateProfile.affiliateCode}</p>
                     {affiliateProfile.paypalEmail && (
                       <p className="text-sm mt-1">PayPal: {affiliateProfile.paypalEmail}</p>
                     )}
@@ -1086,7 +1086,7 @@ export default function AdminAffiliates() {
                           {commissions.map((commission) => (
                             <TableRow key={commission.id} data-testid={`commission-${commission.id}`}>
                               <TableCell>{format(new Date(commission.createdAt), "MMM d, yyyy")}</TableCell>
-                              <TableCell className="font-mono text-xs">{commission.orderId.slice(0, 8)}...</TableCell>
+                              <TableCell className="text-xs">{commission.orderId.slice(0, 8)}...</TableCell>
                               <TableCell>
                                 <div>
                                   <p className="font-medium">{commission.customerName}</p>
@@ -1257,7 +1257,7 @@ export default function AdminAffiliates() {
                       <div className="grid grid-cols-4 gap-6 text-sm">
                         <div>
                           <p className="text-muted-foreground">Batch ID</p>
-                          <p className="font-mono font-medium">{batchResult.batchId?.slice(0, 8) || "N/A"}...</p>
+                          <p className="font-medium">{batchResult.batchId?.slice(0, 8) || "N/A"}...</p>
                         </div>
                         <div>
                           <p className="text-muted-foreground">Payout Count</p>
@@ -1398,14 +1398,14 @@ export default function AdminAffiliates() {
                           <TableCell>{payout.paymentMethod}</TableCell>
                           <TableCell>
                             {payout.payoutBatchId ? (
-                              <span className="font-mono text-xs">{payout.payoutBatchId.slice(0, 8)}...</span>
+                              <span className="text-xs">{payout.payoutBatchId.slice(0, 8)}...</span>
                             ) : (
                               <span className="text-muted-foreground">-</span>
                             )}
                           </TableCell>
                           <TableCell>
                             {payout.stripeTransferId ? (
-                              <span className="font-mono text-xs">{payout.stripeTransferId.slice(0, 12)}...</span>
+                              <span className="text-xs">{payout.stripeTransferId.slice(0, 12)}...</span>
                             ) : (
                               <span className="text-muted-foreground">-</span>
                             )}
@@ -1523,7 +1523,7 @@ export default function AdminAffiliates() {
                               </div>
                               <div>
                                 <span className="text-muted-foreground">Order:</span>{" "}
-                                <span className="font-mono text-xs">{flagged.orderId.slice(0, 8)}...</span>
+                                <span className="text-xs">{flagged.orderId.slice(0, 8)}...</span>
                                 <span className="text-muted-foreground ml-1">
                                   (${(flagged.orderAmount / 100).toFixed(2)})
                                 </span>
@@ -1531,7 +1531,7 @@ export default function AdminAffiliates() {
                               {flagged.customerIp && (
                                 <div>
                                   <span className="text-muted-foreground">Customer IP:</span>{" "}
-                                  <span className="font-mono text-xs">{flagged.customerIp}</span>
+                                  <span className="text-xs">{flagged.customerIp}</span>
                                 </div>
                               )}
                             </div>
@@ -1679,7 +1679,7 @@ export default function AdminAffiliates() {
                             )}
                           </TableCell>
                           <TableCell>
-                            <span className="font-mono">{invite.timesUsed}</span>
+                            <span className="">{invite.timesUsed}</span>
                             <span className="text-muted-foreground">/{invite.maxUses ?? "∞"}</span>
                           </TableCell>
                           <TableCell>

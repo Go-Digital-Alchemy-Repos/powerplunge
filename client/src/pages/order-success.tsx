@@ -150,7 +150,7 @@ export default function OrderSuccess() {
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-muted-foreground">Order ID</p>
-                  <p className="font-mono text-sm" data-testid="text-order-id">
+                  <p className="text-sm" data-testid="text-order-id">
                     {orderData.order.id.slice(0, 8)}...
                   </p>
                 </div>
@@ -196,7 +196,7 @@ export default function OrderSuccess() {
           <Card className="mb-8">
             <CardContent className="py-8 text-center">
               <p className="text-muted-foreground mb-2">Order ID</p>
-              <p className="font-mono text-lg" data-testid="text-order-id">{orderId.slice(0, 8)}...</p>
+              <p className="text-lg" data-testid="text-order-id">{orderId.slice(0, 8)}...</p>
               <p className="text-sm text-muted-foreground mt-4">
                 We'll send you an email confirmation shortly.
               </p>

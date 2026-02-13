@@ -1140,7 +1140,7 @@ function StripeEnvPanel({ env, stripeSettings, onSaved }: {
             {env === "live" ? "Live" : "Test"} keys configured
           </div>
           {envStatus.publishableKeyMasked && (
-            <p className="text-xs text-muted-foreground mt-1 font-mono">{envStatus.publishableKeyMasked}</p>
+            <p className="text-xs text-muted-foreground mt-1">{envStatus.publishableKeyMasked}</p>
           )}
           <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
             <span>Webhook: {envStatus.hasWebhookSecret ? "configured" : "not set"}</span>
@@ -1192,7 +1192,7 @@ function StripeEnvPanel({ env, stripeSettings, onSaved }: {
           Payment Webhook URL
         </div>
         <div className="flex items-center gap-2">
-          <code className="flex-1 text-xs bg-background px-2 py-1.5 rounded border font-mono break-all" data-testid={`text-webhook-url-${env}`}>
+          <code className="flex-1 text-xs bg-background px-2 py-1.5 rounded border break-all" data-testid={`text-webhook-url-${env}`}>
             {window.location.origin}/api/webhook/stripe
           </code>
           <Button
@@ -1466,7 +1466,7 @@ function StripeConfigDialog({ open, onOpenChange, onSuccess }: {
                     Connect Webhook URL
                   </div>
                   <div className="flex items-center gap-2">
-                    <code className="flex-1 text-xs bg-background px-2 py-1.5 rounded border font-mono break-all" data-testid="text-connect-webhook-url">
+                    <code className="flex-1 text-xs bg-background px-2 py-1.5 rounded border break-all" data-testid="text-connect-webhook-url">
                       {window.location.origin}/api/webhook/stripe-connect
                     </code>
                     <Button

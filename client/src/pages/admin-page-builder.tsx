@@ -1133,7 +1133,7 @@ export default function AdminPageBuilder() {
                         value={page.customCss || ''}
                         onChange={(e) => { setPage({ ...page, customCss: e.target.value }); setIsDirty(true); }}
                         placeholder=".my-class { color: red; }"
-                        className="bg-muted border-border font-mono text-xs min-h-[120px]"
+                        className="bg-muted border-border text-xs min-h-[120px]"
                         data-testid="settings-custom-css"
                       />
                       <p className="text-xs text-muted-foreground">Add custom CSS that will be injected on this page only. Use standard CSS syntax.</p>
@@ -1825,7 +1825,7 @@ function BlockContentEditor({ block, onUpdate }: { block: PageBlock; onUpdate: (
       );
     case 'richText':
       return (
-        <div><Label>HTML Content</Label><Textarea value={block.data.content || ''} onChange={(e) => onUpdate({ content: e.target.value })} className="bg-muted border-border mt-1 min-h-[200px] font-mono text-sm" /></div>
+        <div><Label>HTML Content</Label><Textarea value={block.data.content || ''} onChange={(e) => onUpdate({ content: e.target.value })} className="bg-muted border-border mt-1 min-h-[200px] text-sm" /></div>
       );
     case 'image':
       return (

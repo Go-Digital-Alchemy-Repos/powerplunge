@@ -401,14 +401,14 @@ export default function AdminSupport() {
                       <TableCell>
                         <div>
                           <p className="font-medium line-clamp-1">{ticket.subject}</p>
-                          <p className="text-xs text-muted-foreground font-mono">#{ticket.id.slice(0, 8)}</p>
+                          <p className="text-xs text-muted-foreground">#{ticket.id.slice(0, 8)}</p>
                         </div>
                       </TableCell>
                       <TableCell>
                         <div>
                           <p className="font-medium">{ticket.customerName || "Unknown"}</p>
                           <p className="text-xs text-muted-foreground">{ticket.customerEmail}</p>
-                          <p className="text-xs text-muted-foreground font-mono">ID: {ticket.customerId.slice(0, 8)}</p>
+                          <p className="text-xs text-muted-foreground">ID: {ticket.customerId.slice(0, 8)}</p>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -469,11 +469,11 @@ export default function AdminSupport() {
                 <h4 className="text-sm font-medium text-muted-foreground mb-2">Customer</h4>
                 <p className="font-medium">{selectedTicket.customerName || "Unknown"}</p>
                 <p className="text-sm text-muted-foreground">{selectedTicket.customerEmail}</p>
-                <p className="text-sm font-mono text-muted-foreground mt-1">Client ID: {selectedTicket.customerId.slice(0, 8)}</p>
+                <p className="text-sm text-muted-foreground mt-1">Client ID: {selectedTicket.customerId.slice(0, 8)}</p>
                 {selectedTicket.orderId && (
                   <p className="text-sm mt-2">
                     <span className="text-muted-foreground">Related Order:</span>{" "}
-                    <span className="font-mono">#{selectedTicket.orderId.slice(0, 8)}</span>
+                    <span className="">#{selectedTicket.orderId.slice(0, 8)}</span>
                   </p>
                 )}
               </div>
@@ -600,7 +600,7 @@ export default function AdminSupport() {
                   <div className="flex-1">
                     <p className="font-medium">{selectedCustomer.name}</p>
                     <p className="text-sm text-muted-foreground">{selectedCustomer.email}</p>
-                    <p className="text-xs text-muted-foreground font-mono">Client ID: {selectedCustomer.id.slice(0, 8)}</p>
+                    <p className="text-xs text-muted-foreground">Client ID: {selectedCustomer.id.slice(0, 8)}</p>
                   </div>
                   <Button
                     type="button"
@@ -655,7 +655,7 @@ export default function AdminSupport() {
                               <p className="text-xs text-muted-foreground">{customer.phone}</p>
                             )}
                           </div>
-                          <p className="text-xs text-muted-foreground font-mono ml-auto shrink-0">
+                          <p className="text-xs text-muted-foreground ml-auto shrink-0">
                             {customer.id.slice(0, 8)}
                           </p>
                         </button>

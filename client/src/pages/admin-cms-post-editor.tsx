@@ -707,7 +707,7 @@ export default function AdminCmsPostEditor() {
                 value={customCss}
                 onChange={(e) => { setCustomCss(e.target.value); setDirty(true); }}
                 placeholder=".my-class { color: red; }"
-                className="bg-muted border-border text-foreground font-mono text-xs min-h-[100px]"
+                className="bg-muted border-border text-foreground text-xs min-h-[100px]"
                 data-testid="textarea-custom-css"
               />
               <p className="text-[10px] text-muted-foreground">Add custom CSS that will be injected on this post only.</p>

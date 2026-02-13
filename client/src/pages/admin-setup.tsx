@@ -432,7 +432,7 @@ export default function AdminSetup() {
                 "Invite team members if needed",
               ].map((item, i) => (
                 <div key={item} className="flex items-start gap-2">
-                  <span className="text-xs font-mono text-amber-400 mt-0.5 shrink-0">
+                  <span className="text-xs text-amber-400 mt-0.5 shrink-0">
                     {i + 1}.
                   </span>
                   <span className="text-sm text-gray-400">{item}</span>

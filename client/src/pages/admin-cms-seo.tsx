@@ -87,7 +87,7 @@ export default function AdminCmsSeo() {
                     <td className="px-4 py-3">
                       <div>
                         <span className="text-sm text-foreground font-medium">{page.title}</span>
-                        <p className="text-[11px] text-muted-foreground font-mono">/{page.slug}</p>
+                        <p className="text-[11px] text-muted-foreground">/{page.slug}</p>
                       </div>
                     </td>
                     <td className="px-4 py-3 text-center">

@@ -508,7 +508,7 @@ export default function AdminCmsPageEdit() {
                 value={formData.content || ""}
                 onChange={(e) => updateField("content", e.target.value)}
                 placeholder="Enter page content (HTML supported)..."
-                className="min-h-[200px] font-mono text-sm"
+                className="min-h-[200px] text-sm"
                 data-testid="textarea-page-content"
               />
               {!hasBlocks && (

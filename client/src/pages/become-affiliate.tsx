@@ -554,7 +554,7 @@ export default function BecomeAffiliate() {
                       placeholder="000000"
                       value={verificationCode}
                       onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                      className="h-14 text-center text-2xl tracking-[0.5em] font-mono"
+                      className="h-14 text-center text-2xl tracking-[0.5em]"
                       autoFocus
                       data-testid="input-verification-code"
                     />

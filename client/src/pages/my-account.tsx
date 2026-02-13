@@ -678,7 +678,7 @@ export default function MyAccount() {
                                       </div>
                                       <div>
                                         <p className="font-medium text-sm">{shipment.carrier}</p>
-                                        <p className="text-xs text-muted-foreground font-mono">
+                                        <p className="text-xs text-muted-foreground">
                                           {shipment.trackingNumber}
                                         </p>
                                       </div>
@@ -761,7 +761,7 @@ export default function MyAccount() {
               {authCustomer?.id && (
                 <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-muted/50 border" data-testid="text-customer-client-id">
                   <span className="text-sm text-muted-foreground">Client ID:</span>
-                  <span className="font-mono font-semibold text-primary">{authCustomer.id.slice(0, 8).toUpperCase()}</span>
+                  <span className="font-semibold text-primary">{authCustomer.id.slice(0, 8).toUpperCase()}</span>
                 </div>
               )}
             </div>
@@ -1186,7 +1186,7 @@ export default function MyAccount() {
                           <Input 
                             value={`${window.location.origin}?ref=${affiliateData.affiliate.code}`}
                             readOnly
-                            className="font-mono text-sm"
+                            className="text-sm"
                             data-testid="input-referral-link"
                           />
                           <Button onClick={copyReferralLink} className="gap-2" data-testid="button-copy-link">

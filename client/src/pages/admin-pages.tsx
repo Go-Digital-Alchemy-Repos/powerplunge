@@ -413,7 +413,7 @@ export default function AdminPages() {
                   value={formData.content}
                   onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                   placeholder="<h1>About Us</h1><p>Write your page content here...</p>"
-                  className="min-h-[200px] font-mono text-sm"
+                  className="min-h-[200px] text-sm"
                   data-testid="input-content"
                 />
               </div>

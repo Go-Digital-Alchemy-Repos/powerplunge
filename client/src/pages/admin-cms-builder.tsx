@@ -429,7 +429,7 @@ function SeoPanel({ open, onOpenChange, seo, onSeoChange }: {
                 value={seo.jsonLd}
                 onChange={(e) => update("jsonLd", e.target.value)}
                 placeholder={'{\n  "@context": "https://schema.org",\n  "@type": "WebPage",\n  "name": "..."\n}'}
-                className="bg-muted border-border text-foreground font-mono text-xs"
+                className="bg-muted border-border text-foreground text-xs"
                 rows={8}
                 data-testid="input-seo-json-ld"
               />

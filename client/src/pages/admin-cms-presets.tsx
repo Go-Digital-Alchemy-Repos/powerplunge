@@ -268,7 +268,7 @@ function ImportModal({ open, onClose }: { open: boolean; onClose: () => void }) 
               value={jsonText}
               onChange={(e) => { setJsonText(e.target.value); setError(null); }}
               placeholder='{"version": 1, "preset": {...}}'
-              className="h-40 bg-muted border-border text-foreground font-mono text-xs"
+              className="h-40 bg-muted border-border text-foreground text-xs"
               data-testid="textarea-import-json"
             />
           </div>

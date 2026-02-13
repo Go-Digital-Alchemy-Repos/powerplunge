@@ -535,7 +535,7 @@ export default function AdminOrders() {
                   <CardContent className="space-y-6">
                     <div>
                       <p className="text-sm text-muted-foreground mb-1">Order ID</p>
-                      <p className="font-mono text-sm">{currentOrder.id}</p>
+                      <p className="text-sm">{currentOrder.id}</p>
                     </div>
 
                     <div>
@@ -633,7 +633,7 @@ export default function AdminOrders() {
                                 </p>
                               )}
                               {shipment.trackingNumber && (
-                                <p className="text-sm font-mono">
+                                <p className="text-sm">
                                   <span className="text-muted-foreground">Tracking:</span> {shipment.trackingNumber}
                                 </p>
                               )}

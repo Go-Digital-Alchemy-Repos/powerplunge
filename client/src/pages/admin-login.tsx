@@ -161,7 +161,7 @@ export default function AdminLogin() {
                 className="flex items-center justify-between rounded-md border border-border/50 px-3 py-2 text-sm"
               >
                 <div className="flex flex-col gap-0.5">
-                  <span className="font-mono text-xs">{user.email}</span>
+                  <span className="text-xs">{user.email}</span>
                   <span className="text-muted-foreground text-xs">pw: {user.password}</span>
                 </div>
                 <div className="flex items-center gap-2">

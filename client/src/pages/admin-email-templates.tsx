@@ -232,7 +232,7 @@ export default function AdminEmailTemplates() {
                     <div className="flex items-center justify-between">
                       <div>
                         <CardTitle>{selectedTemplate.name}</CardTitle>
-                        <CardDescription className="font-mono text-xs mt-1">
+                        <CardDescription className="text-xs mt-1">
                           Key: {selectedTemplate.key}
                         </CardDescription>
                       </div>
@@ -272,7 +272,7 @@ export default function AdminEmailTemplates() {
                             key={tag.tag}
                             variant="outline"
                             size="sm"
-                            className="text-xs font-mono h-7"
+                            className="text-xs h-7"
                             onClick={() => insertMergeTag(tag.tag)}
                             title={tag.description}
                           >
@@ -305,7 +305,7 @@ export default function AdminEmailTemplates() {
                         <Textarea
                           value={editedTemplate.bodyHtml || ""}
                           onChange={(e) => setEditedTemplate({ ...editedTemplate, bodyHtml: e.target.value })}
-                          className="font-mono text-sm min-h-[300px]"
+                          className="text-sm min-h-[300px]"
                           placeholder="HTML email body..."
                           data-testid="textarea-body-html"
                         />
@@ -314,7 +314,7 @@ export default function AdminEmailTemplates() {
                         <Textarea
                           value={editedTemplate.bodyText || ""}
                           onChange={(e) => setEditedTemplate({ ...editedTemplate, bodyText: e.target.value })}
-                          className="font-mono text-sm min-h-[300px]"
+                          className="text-sm min-h-[300px]"
                           placeholder="Plain text email body (optional fallback)..."
                           data-testid="textarea-body-text"
                         />

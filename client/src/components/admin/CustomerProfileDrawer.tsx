@@ -465,7 +465,7 @@ export function CustomerProfileDrawer({
                   {profile?.customer.email}
                 </SheetDescription>
                 {profile?.customer.id && (
-                  <p className="text-xs font-mono text-primary mt-1" data-testid="text-client-id">
+                  <p className="text-xs text-primary mt-1" data-testid="text-client-id">
                     Client ID: {profile.customer.id.slice(0, 8).toUpperCase()}
                   </p>
                 )}
@@ -833,7 +833,7 @@ export function CustomerProfileDrawer({
                             <Badge className={getStatusColor(order.status)}>
                               {order.status}
                             </Badge>
-                            <span className="font-mono text-sm">
+                            <span className="text-sm">
                               #{order.id.slice(0, 8)}
                             </span>
                           </div>
@@ -856,7 +856,7 @@ export function CustomerProfileDrawer({
                             <div className="grid grid-cols-2 gap-4 text-sm">
                               <div>
                                 <span className="text-muted-foreground">Order ID:</span>
-                                <span className="ml-2 font-mono">{order.id}</span>
+                                <span className="ml-2">{order.id}</span>
                               </div>
                               <div>
                                 <span className="text-muted-foreground">Manual Order:</span>

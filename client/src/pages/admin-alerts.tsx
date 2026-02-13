@@ -352,7 +352,7 @@ export default function AdminAlerts() {
                                 {alert.severity}
                               </span>
                             </td>
-                            <td className="p-4 font-mono">
+                            <td className="p-4">
                               {alert.currentValue.toFixed(1)} / {alert.thresholdValue}
                             </td>
                             <td className="p-4 text-sm text-slate-400">{formatDate(alert.createdAt)}</td>

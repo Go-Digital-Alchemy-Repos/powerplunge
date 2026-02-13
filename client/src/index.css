@@ -290,7 +290,7 @@
   border-radius: 3px;
   padding: 0.15em 0.35em;
   font-size: 0.875em;
-  font-family: monospace;
+  font-family: 'Inter', sans-serif;
 }
 .tiptap.ProseMirror pre {
   background: hsl(var(--muted));

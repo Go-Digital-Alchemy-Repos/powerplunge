@@ -420,7 +420,7 @@ export default function AffiliatePortal() {
                     <Input 
                       value={`${window.location.origin}?ref=${affiliateData.affiliate.code}`}
                       readOnly
-                      className="font-mono text-sm"
+                      className="text-sm"
                       data-testid="input-referral-link"
                     />
                     <Button onClick={copyReferralLink} className="gap-2" data-testid="button-copy-link">
@@ -437,7 +437,7 @@ export default function AffiliatePortal() {
                             value={customCode}
                             onChange={(e) => setCustomCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))}
                             placeholder="e.g. TOMMY"
-                            className="font-mono uppercase"
+                            className="uppercase"
                             maxLength={20}
                             data-testid="input-custom-code"
                           />

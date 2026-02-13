@@ -290,7 +290,7 @@ export default function AdminCmsPages() {
                       <span className="text-sm text-foreground font-medium" data-testid={`text-page-title-${page.id}`}>{page.title}</span>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="text-xs text-muted-foreground font-mono">/{page.slug}</span>
+                      <span className="text-xs text-muted-foreground">/{page.slug}</span>
                     </td>
                     <td className="px-4 py-3">
                       <Badge

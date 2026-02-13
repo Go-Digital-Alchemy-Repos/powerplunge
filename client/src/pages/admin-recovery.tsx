@@ -374,7 +374,7 @@ export default function AdminRecovery() {
                         {failedPayments.map((payment) => (
                           <tr key={payment.id} className="border-b border-slate-700/50 hover:bg-slate-700/30">
                             <td className="p-4">
-                              <div className="font-mono text-sm text-white">{payment.orderNumber || payment.orderId.slice(0, 8)}</div>
+                              <div className="text-sm text-white">{payment.orderNumber || payment.orderId.slice(0, 8)}</div>
                             </td>
                             <td className="p-4">
                               <div className="font-bold text-white">{payment.customerName || "Guest"}</div>
@@ -384,7 +384,7 @@ export default function AdminRecovery() {
                             <td className="p-4 text-sm">
                               <div className="text-slate-300">{payment.failureReason || "Unknown"}</div>
                               {payment.failureCode && (
-                                <div className="text-xs text-slate-500 font-mono">{payment.failureCode}</div>
+                                <div className="text-xs text-slate-500">{payment.failureCode}</div>
                               )}
                             </td>
                             <td className="p-4">

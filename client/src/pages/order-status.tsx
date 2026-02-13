@@ -176,7 +176,7 @@ export default function OrderStatus() {
                 <div key={shipment.id} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg" data-testid={`shipment-${shipment.id}`}>
                   <div>
                     <p className="font-medium" data-testid={`text-carrier-${shipment.id}`}>{shipment.carrier}</p>
-                    <p className="text-sm text-muted-foreground font-mono" data-testid={`text-tracking-${shipment.id}`}>{shipment.trackingNumber}</p>
+                    <p className="text-sm text-muted-foreground" data-testid={`text-tracking-${shipment.id}`}>{shipment.trackingNumber}</p>
                     <p className="text-xs text-muted-foreground mt-1" data-testid={`text-ship-date-${shipment.id}`}>
                       Shipped {formatDate(shipment.createdAt)}
                     </p>

@@ -518,7 +518,7 @@ function CategoriesTab() {
                     </div>
                   </td>
                   <td className="py-3 px-3">
-                    <span className="text-xs text-muted-foreground font-mono">{cat.slug}</span>
+                    <span className="text-xs text-muted-foreground">{cat.slug}</span>
                   </td>
                   <td className="py-3 px-3 hidden md:table-cell">
                     <span className="text-xs text-muted-foreground truncate block max-w-[200px]">{cat.description || "-"}</span>
@@ -590,7 +590,7 @@ function CategoriesTab() {
                 value={slug}
                 onChange={(e) => { setSlug(e.target.value); setSlugManual(true); }}
                 placeholder="e.g. health-benefits"
-                className="bg-muted border-border text-foreground mt-1 font-mono text-sm"
+                className="bg-muted border-border text-foreground mt-1 text-sm"
                 data-testid="input-category-slug"
               />
             </div>
@@ -751,7 +751,7 @@ function TagsTab() {
                     </div>
                   </td>
                   <td className="py-3 px-3">
-                    <span className="text-xs text-muted-foreground font-mono">{tag.slug}</span>
+                    <span className="text-xs text-muted-foreground">{tag.slug}</span>
                   </td>
                   <td className="py-3 px-3">
                     <span className="text-xs text-muted-foreground">{formatDate(tag.createdAt)}</span>
@@ -823,7 +823,7 @@ function TagsTab() {
                 value={slug}
                 onChange={(e) => { setSlug(e.target.value); setSlugManual(true); }}
                 placeholder="e.g. cold-therapy"
-                className="bg-muted border-border text-foreground mt-1 font-mono text-sm"
+                className="bg-muted border-border text-foreground mt-1 text-sm"
                 data-testid="input-tag-slug"
               />
             </div>
