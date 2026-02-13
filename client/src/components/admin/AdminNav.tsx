@@ -408,14 +408,14 @@ export default function AdminNav({ currentPage, role = "admin" }: AdminNavProps)
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
                   <DropdownMenuItem asChild>
-                    <Link href="/admin/orders" className="flex items-center gap-2 cursor-pointer">
+                    <Link href="/admin/orders" className="relative select-none rounded-sm px-2 py-1.5 outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0 flex items-center gap-2 cursor-pointer text-[13px]">
                       <Package className="w-4 h-4" />
                       Orders
                     </Link>
                   </DropdownMenuItem>
                   {hasFullAccess && (
                     <DropdownMenuItem asChild>
-                      <Link href="/admin/products" className="flex items-center gap-2 cursor-pointer">
+                      <Link href="/admin/products" className="relative select-none rounded-sm px-2 py-1.5 outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0 flex items-center gap-2 cursor-pointer text-[13px]">
                         <ShoppingBag className="w-4 h-4" />
                         Products
                       </Link>
@@ -454,25 +454,25 @@ export default function AdminNav({ currentPage, role = "admin" }: AdminNavProps)
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start">
                     <DropdownMenuItem asChild>
-                      <Link href="/admin/customers" className="flex items-center gap-2 cursor-pointer">
+                      <Link href="/admin/customers" className="relative select-none rounded-sm px-2 py-1.5 outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0 flex items-center gap-2 cursor-pointer text-[13px]">
                         <Users className="w-4 h-4" />
                         Customers
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href="/admin/affiliates" className="flex items-center gap-2 cursor-pointer">
+                      <Link href="/admin/affiliates" className="relative select-none rounded-sm px-2 py-1.5 outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0 flex items-center gap-2 cursor-pointer text-[13px]">
                         <Link2 className="w-4 h-4" />
                         Affiliates
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href="/admin/affiliate-invite-sender" className="flex items-center gap-2 cursor-pointer" data-testid="link-invite-affiliates">
+                      <Link href="/admin/affiliate-invite-sender" className="relative select-none rounded-sm px-2 py-1.5 outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0 flex items-center gap-2 cursor-pointer text-[13px]" data-testid="link-invite-affiliates">
                         <UserPlus className="w-4 h-4" />
                         Invite Affiliates
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href="/admin/support" className="flex items-center gap-2 cursor-pointer" data-testid="link-support">
+                      <Link href="/admin/support" className="relative select-none rounded-sm px-2 py-1.5 outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0 flex items-center gap-2 cursor-pointer text-[13px]" data-testid="link-support">
                         <Headset className="w-4 h-4" />
                         Support Tickets
                       </Link>
@@ -511,49 +511,49 @@ export default function AdminNav({ currentPage, role = "admin" }: AdminNavProps)
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem asChild>
-                      <Link href="/admin/settings" className="flex items-center gap-2 cursor-pointer">
+                      <Link href="/admin/settings" className="relative select-none rounded-sm px-2 py-1.5 outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0 flex items-center gap-2 cursor-pointer text-[13px]">
                         <Building2 className="w-4 h-4" />
                         Site Settings
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href="/admin/analytics" className="flex items-center gap-2 cursor-pointer" data-testid="link-analytics">
+                      <Link href="/admin/analytics" className="relative select-none rounded-sm px-2 py-1.5 outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0 flex items-center gap-2 cursor-pointer text-[13px]" data-testid="link-analytics">
                         <BarChart3 className="w-4 h-4" />
                         Analytics
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href="/admin/team" className="flex items-center gap-2 cursor-pointer">
+                      <Link href="/admin/team" className="relative select-none rounded-sm px-2 py-1.5 outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0 flex items-center gap-2 cursor-pointer text-[13px]">
                         <UserPlus className="w-4 h-4" />
                         Team
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href="/admin/email-templates" className="flex items-center gap-2 cursor-pointer">
+                      <Link href="/admin/email-templates" className="relative select-none rounded-sm px-2 py-1.5 outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0 flex items-center gap-2 cursor-pointer text-[13px]">
                         <FileText className="w-4 h-4" />
                         Email Templates
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href="/admin/integrations" className="flex items-center gap-2 cursor-pointer">
+                      <Link href="/admin/integrations" className="relative select-none rounded-sm px-2 py-1.5 outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0 flex items-center gap-2 cursor-pointer text-[13px]">
                         <Key className="w-4 h-4" />
                         Integrations
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href="/admin/settings/themes" className="flex items-center gap-2 cursor-pointer">
+                      <Link href="/admin/settings/themes" className="relative select-none rounded-sm px-2 py-1.5 outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0 flex items-center gap-2 cursor-pointer text-[13px]">
                         <Palette className="w-4 h-4" />
                         Themes
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href="/admin/docs" className="flex items-center gap-2 cursor-pointer">
+                      <Link href="/admin/docs" className="relative select-none rounded-sm px-2 py-1.5 outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0 flex items-center gap-2 cursor-pointer text-[13px]">
                         <FileText className="w-4 h-4" />
                         Docs Library
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href="/admin/docs-coverage" className="flex items-center gap-2 cursor-pointer">
+                      <Link href="/admin/docs-coverage" className="relative select-none rounded-sm px-2 py-1.5 outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0 flex items-center gap-2 cursor-pointer text-[13px]">
                         <FileText className="w-4 h-4" />
                         Docs Coverage
                       </Link>
