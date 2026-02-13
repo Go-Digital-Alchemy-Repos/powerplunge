@@ -284,18 +284,28 @@ export default function AdminNav({ currentPage, role = "admin" }: AdminNavProps)
 
   const mainItems: DrawerNavItem[] = [
     { label: "Dashboard", icon: Home, href: "/admin/dashboard", active: isActive("home") },
-    { label: "Orders", icon: Package, href: "/admin/orders", active: isActive("orders") },
   ];
+
+  const groups: DrawerNavGroup[] = [];
+
+  groups.push({
+    label: "E-Commerce",
+    icon: ShoppingBag,
+    defaultOpen: isActive("orders") || isActive("products") || isActive("coupons"),
+    items: [
+      { label: "Orders", icon: Package, href: "/admin/orders", active: isActive("orders") },
+      ...(hasFullAccess ? [
+        { label: "Products", icon: ShoppingBag, href: "/admin/products", active: isActive("products") },
+        { label: "Coupons", icon: Tag, href: "/admin/coupons", active: isActive("coupons") },
+      ] : []),
+    ],
+  });
 
   if (hasFullAccess) {
     mainItems.push(
-      { label: "Products", icon: ShoppingBag, href: "/admin/products", active: isActive("products") },
-      { label: "Coupons", icon: Tag, href: "/admin/coupons", active: isActive("coupons") },
       { label: "Insights", icon: BarChart3, href: "/admin/revenue", active: isActive("insights") },
     );
   }
-
-  const groups: DrawerNavGroup[] = [];
 
   if (hasFullAccess) {
     groups.push({
@@ -383,30 +393,36 @@ export default function AdminNav({ currentPage, role = "admin" }: AdminNavProps)
                   Home
                 </Button>
               </Link>
-              <Link href="/admin/orders">
-                <Button
-                  variant={isActive("orders") ? "secondary" : "ghost"}
-                  size="sm"
-                  className="gap-2"
-                  data-testid="link-orders"
-                >
-                  <Package className="w-4 h-4" />
-                  Orders
-                </Button>
-              </Link>
-              {hasFullAccess && (
-                <Link href="/admin/products">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
                   <Button
-                    variant={isActive("products") ? "secondary" : "ghost"}
+                    variant={isActive("orders") || isActive("products") ? "secondary" : "ghost"}
                     size="sm"
                     className="gap-2"
-                    data-testid="link-products"
+                    data-testid="dropdown-ecommerce"
                   >
                     <ShoppingBag className="w-4 h-4" />
-                    Products
+                    E-Commerce
+                    <ChevronDown className="w-3 h-3" />
                   </Button>
-                </Link>
-              )}
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuItem asChild>
+                    <Link href="/admin/orders" className="flex items-center gap-2 cursor-pointer">
+                      <Package className="w-4 h-4" />
+                      Orders
+                    </Link>
+                  </DropdownMenuItem>
+                  {hasFullAccess && (
+                    <DropdownMenuItem asChild>
+                      <Link href="/admin/products" className="flex items-center gap-2 cursor-pointer">
+                        <ShoppingBag className="w-4 h-4" />
+                        Products
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
 
               {hasFullAccess && (
                 <Link href="/admin/cms">
