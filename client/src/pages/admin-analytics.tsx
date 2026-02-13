@@ -351,7 +351,7 @@ export default function AdminAnalytics() {
                       value={ga4PrivateKey}
                       onChange={(e) => setGa4PrivateKey(e.target.value)}
                       placeholder={ga4Settings?.hasPrivateKey ? "Key is saved (enter new value to replace)" : "Paste the private_key from your service account JSON file"}
-                      className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring font-mono"
+                      className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       data-testid="input-ga4-private-key"
                     />
                     <p className="text-xs text-muted-foreground">
@@ -673,7 +673,7 @@ export default function AdminAnalytics() {
                         <div key={i} className="grid grid-cols-12 items-center text-sm py-2 px-2 rounded-lg hover:bg-muted/50 transition-colors relative" data-testid={`top-page-${i}`}>
                           <div className="col-span-6 relative z-10">
                             <div className="absolute inset-y-0 left-0 bg-primary/10 rounded" style={{ width: `${barWidth}%` }} />
-                            <span className="relative font-mono text-xs truncate block">{page.page}</span>
+                            <span className="relative text-xs truncate block">{page.page}</span>
                           </div>
                           <span className="col-span-2 text-right font-medium">{formatNumber(page.pageViews)}</span>
                           <span className="col-span-2 text-right text-muted-foreground">{formatNumber(page.users)}</span>

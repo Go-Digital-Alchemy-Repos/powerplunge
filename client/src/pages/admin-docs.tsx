@@ -76,7 +76,7 @@ function InlineContent({ text }: { text: string }) {
     const codeMatch = remaining.match(/^`([^`]+)`/);
     if (codeMatch) {
       parts.push(
-        <code key={key++} className="bg-theme-bg-elevated text-theme-primary px-1.5 py-0.5 rounded text-sm font-mono" style={{ color: "var(--theme-primary)" }}>
+        <code key={key++} className="bg-theme-bg-elevated text-theme-primary px-1.5 py-0.5 rounded text-sm" style={{ color: "var(--theme-primary)" }}>
           {codeMatch[1]}
         </code>
       );
@@ -139,9 +139,9 @@ function MarkdownRenderer({ content }: { content: string }) {
       i++;
       elements.push(
         <div key={elements.length} className="my-3">
-          {lang && <div className="text-xs text-gray-500 bg-gray-900 px-3 py-1 rounded-t border border-b-0 border-gray-700 font-mono">{lang}</div>}
+          {lang && <div className="text-xs text-gray-500 bg-gray-900 px-3 py-1 rounded-t border border-b-0 border-gray-700">{lang}</div>}
           <pre className={`bg-gray-900 p-4 rounded${lang ? "-b" : ""} overflow-x-auto border border-gray-700 text-sm`}>
-            <code className="text-green-300 font-mono">{codeLines.join("\n")}</code>
+            <code className="text-green-300">{codeLines.join("\n")}</code>
           </pre>
         </div>
       );
