@@ -489,7 +489,7 @@ export default function AdminCoupons() {
         </div>
 
         {/* Filters */}
-        <Card className="mb-6 bg-slate-800 border-slate-700">
+        <Card className="mb-6 bg-card border-border">
           <CardContent className="p-4">
             <div className="flex flex-wrap items-end gap-4">
               <div className="flex-1 min-w-[200px]">
@@ -500,7 +500,7 @@ export default function AdminCoupons() {
                     placeholder="Search by code or description..."
                     value={filters.search}
                     onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-                    className="pl-9 bg-slate-900 border-slate-700"
+                    className="pl-9 bg-background border-border"
                     data-testid="input-search"
                   />
                 </div>
@@ -511,7 +511,7 @@ export default function AdminCoupons() {
                   value={filters.status}
                   onValueChange={(v) => setFilters({ ...filters, status: v })}
                 >
-                  <SelectTrigger className="bg-slate-900 border-slate-700" data-testid="select-filter-status">
+                  <SelectTrigger className="bg-background border-border" data-testid="select-filter-status">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -528,7 +528,7 @@ export default function AdminCoupons() {
                   value={filters.type}
                   onValueChange={(v) => setFilters({ ...filters, type: v })}
                 >
-                  <SelectTrigger className="bg-slate-900 border-slate-700" data-testid="select-filter-type">
+                  <SelectTrigger className="bg-background border-border" data-testid="select-filter-type">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -555,47 +555,47 @@ export default function AdminCoupons() {
 
         {analytics && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-            <Card className="bg-slate-800 border-slate-700">
+            <Card className="bg-card border-border">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-slate-400 text-sm">Net Revenue</p>
-                    <p className="text-2xl font-bold text-green-400">{formatCurrency(analytics.totalNetRevenue)}</p>
+                    <p className="text-muted-foreground text-sm">Net Revenue</p>
+                    <p className="text-2xl font-bold text-green-500">{formatCurrency(analytics.totalNetRevenue)}</p>
                   </div>
-                  <TrendingUp className="w-8 h-8 text-green-400" />
+                  <TrendingUp className="w-8 h-8 text-green-500" />
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-slate-800 border-slate-700">
+            <Card className="bg-card border-border">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-slate-400 text-sm">Discount Cost</p>
-                    <p className="text-2xl font-bold text-red-400">{formatCurrency(analytics.totalDiscountCost)}</p>
+                    <p className="text-muted-foreground text-sm">Discount Cost</p>
+                    <p className="text-2xl font-bold text-red-500">{formatCurrency(analytics.totalDiscountCost)}</p>
                   </div>
-                  <TrendingDown className="w-8 h-8 text-red-400" />
+                  <TrendingDown className="w-8 h-8 text-red-500" />
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-slate-800 border-slate-700">
+            <Card className="bg-card border-border">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-slate-400 text-sm">Avg Margin</p>
-                    <p className="text-2xl font-bold text-cyan-400">{analytics.averageMarginPercent.toFixed(1)}%</p>
+                    <p className="text-muted-foreground text-sm">Avg Margin</p>
+                    <p className="text-2xl font-bold text-primary">{analytics.averageMarginPercent.toFixed(1)}%</p>
                   </div>
-                  <BarChart3 className="w-8 h-8 text-cyan-400" />
+                  <BarChart3 className="w-8 h-8 text-primary" />
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-slate-800 border-slate-700">
+            <Card className="bg-card border-border">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-slate-400 text-sm">Affiliate Overlap</p>
-                    <p className="text-2xl font-bold text-yellow-400">{analytics.affiliateOverlapCount}</p>
+                    <p className="text-muted-foreground text-sm">Affiliate Overlap</p>
+                    <p className="text-2xl font-bold text-yellow-500">{analytics.affiliateOverlapCount}</p>
                   </div>
-                  <Users className="w-8 h-8 text-yellow-400" />
+                  <Users className="w-8 h-8 text-yellow-500" />
                 </div>
               </CardContent>
             </Card>
@@ -603,12 +603,12 @@ export default function AdminCoupons() {
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="bg-slate-800 border-slate-700">
-            <TabsTrigger value="coupons" className="data-[state=active]:bg-cyan-500">
+          <TabsList className="bg-card border border-border">
+            <TabsTrigger value="coupons" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <Tag className="w-4 h-4 mr-2" />
               All Coupons
             </TabsTrigger>
-            <TabsTrigger value="performance" className="data-[state=active]:bg-cyan-500">
+            <TabsTrigger value="performance" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <BarChart3 className="w-4 h-4 mr-2" />
               Performance
             </TabsTrigger>
@@ -617,15 +617,15 @@ export default function AdminCoupons() {
           <TabsContent value="coupons">
             {isLoading ? (
               <div className="flex justify-center py-12">
-                <div className="animate-spin w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full" />
+                <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full" />
               </div>
             ) : filteredCoupons.length === 0 ? (
-              <Card className="bg-slate-800 border-slate-700">
+              <Card className="bg-card border-border">
                 <CardContent className="py-12 text-center">
-                  <Tag className="w-12 h-12 text-slate-500 mx-auto mb-4" />
-                  <p className="text-slate-400 mb-4">{coupons.length === 0 ? "No coupons created yet" : "No coupons match your filters"}</p>
+                  <Tag className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground mb-4">{coupons.length === 0 ? "No coupons created yet" : "No coupons match your filters"}</p>
                   {coupons.length === 0 && (
-                    <Button onClick={() => openPanel()} className="bg-cyan-500 hover:bg-cyan-600">
+                    <Button onClick={() => openPanel()} className="bg-primary hover:bg-primary/90">
                       Create Your First Coupon
                     </Button>
                   )}
@@ -647,7 +647,7 @@ export default function AdminCoupons() {
 
                 <div className="grid gap-4">
                   {filteredCoupons.map((coupon) => (
-                    <Card key={coupon.id} className={`bg-slate-800 border-slate-700 ${!coupon.active || isExpired(coupon) ? "opacity-60" : ""} ${isSelected(coupon.id) ? "ring-2 ring-primary" : ""}`} data-testid={`coupon-${coupon.id}`}>
+                    <Card key={coupon.id} className={`bg-card border-border ${!coupon.active || isExpired(coupon) ? "opacity-60" : ""} ${isSelected(coupon.id) ? "ring-2 ring-primary" : ""}`} data-testid={`coupon-${coupon.id}`}>
                       <CardContent className="p-6">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-4">
@@ -657,37 +657,37 @@ export default function AdminCoupons() {
                               onClick={(e) => e.stopPropagation()}
                               data-testid={`checkbox-coupon-${coupon.id}`}
                             />
-                            <div className={`p-3 rounded-lg ${coupon.type === "percentage" ? "bg-purple-500/20" : "bg-green-500/20"}`}>
+                            <div className={`p-3 rounded-lg ${coupon.type === "percentage" ? "bg-primary/20" : "bg-green-500/20"}`}>
                               {coupon.type === "percentage" ? (
-                                <Percent className="w-6 h-6 text-purple-400" />
+                                <Percent className="w-6 h-6 text-primary" />
                               ) : (
-                                <DollarSign className="w-6 h-6 text-green-400" />
+                                <DollarSign className="w-6 h-6 text-green-500" />
                               )}
                             </div>
                             <div>
                               <div className="flex items-center gap-2">
-                                <h3 className="font-bold text-lg text-white">{coupon.code}</h3>
-                                <span className={`text-xs px-2 py-1 rounded ${coupon.active && !isExpired(coupon) ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}`}>
+                                <h3 className="font-bold text-lg text-foreground">{coupon.code}</h3>
+                                <span className={`text-xs px-2 py-1 rounded ${coupon.active && !isExpired(coupon) ? "bg-green-500/20 text-green-500" : "bg-red-500/20 text-red-500"}`}>
                                   {coupon.autoExpiredAt ? "Auto-Expired" : isExpired(coupon) ? "Expired" : coupon.active ? "Active" : "Inactive"}
                                 </span>
                                 {coupon.blockAffiliateCommission && (
-                                  <span className="text-xs px-2 py-1 rounded bg-yellow-500/20 text-yellow-400">No Affiliate</span>
+                                  <span className="text-xs px-2 py-1 rounded bg-yellow-500/20 text-yellow-500">No Affiliate</span>
                                 )}
                               </div>
-                              <p className="text-slate-400 text-sm">{coupon.description || "No description"}</p>
+                              <p className="text-muted-foreground text-sm">{coupon.description || "No description"}</p>
                             </div>
                           </div>
                           <div className="flex items-center gap-6">
                             <div className="text-right">
-                              <p className="text-2xl font-bold text-cyan-400">{formatValue(coupon)}</p>
-                              <p className="text-sm text-slate-400">{coupon.timesUsed} uses</p>
+                              <p className="text-2xl font-bold text-primary">{formatValue(coupon)}</p>
+                              <p className="text-sm text-muted-foreground">{coupon.timesUsed} uses</p>
                             </div>
                             <div className="flex gap-2">
                               <Button 
                                 variant="ghost" 
                                 size="sm" 
                                 onClick={() => coupon.active ? disableMutation.mutate(coupon.id) : enableMutation.mutate(coupon.id)}
-                                className={coupon.active ? "text-yellow-400 hover:text-yellow-300" : "text-green-400 hover:text-green-300"}
+                                className={coupon.active ? "text-yellow-500 hover:text-yellow-400" : "text-green-500 hover:text-green-400"}
                                 title={coupon.active ? "Disable" : "Enable"}
                                 data-testid={`toggle-${coupon.id}`}
                               >
@@ -696,14 +696,14 @@ export default function AdminCoupons() {
                               <Button variant="ghost" size="sm" onClick={() => openPanel(coupon)} data-testid={`edit-${coupon.id}`}>
                                 <Edit className="w-4 h-4" />
                               </Button>
-                              <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300" onClick={() => deleteMutation.mutate(coupon.id)} data-testid={`delete-${coupon.id}`}>
+                              <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-400" onClick={() => deleteMutation.mutate(coupon.id)} data-testid={`delete-${coupon.id}`}>
                                 <Trash2 className="w-4 h-4" />
                               </Button>
                             </div>
                           </div>
                         </div>
                       {(coupon.minOrderAmount || coupon.maxRedemptions || coupon.endDate) && (
-                        <div className="mt-4 pt-4 border-t border-slate-700 flex gap-4 text-sm text-slate-400">
+                        <div className="mt-4 pt-4 border-t border-border flex gap-4 text-sm text-muted-foreground">
                           {coupon.minOrderAmount && <span>Min. order: ${(coupon.minOrderAmount / 100).toFixed(2)}</span>}
                           {coupon.maxRedemptions && <span>Max uses: {coupon.maxRedemptions}</span>}
                           {coupon.endDate && <span>Expires: {new Date(coupon.endDate).toLocaleDateString()}</span>}
@@ -724,7 +724,7 @@ export default function AdminCoupons() {
                 variant="outline" 
                 onClick={() => autoExpireMutation.mutate()}
                 disabled={autoExpireMutation.isPending}
-                className="border-yellow-500 text-yellow-400 hover:bg-yellow-500/10"
+                className="border-yellow-500 text-yellow-500 hover:bg-yellow-500/10"
               >
                 <AlertTriangle className="w-4 h-4 mr-2" />
                 Run Auto-Expire
@@ -732,19 +732,19 @@ export default function AdminCoupons() {
             </div>
 
             {performance.length === 0 ? (
-              <Card className="bg-slate-800 border-slate-700">
+              <Card className="bg-card border-border">
                 <CardContent className="py-12 text-center">
-                  <BarChart3 className="w-12 h-12 text-slate-500 mx-auto mb-4" />
-                  <p className="text-slate-400">No performance data available yet</p>
+                  <BarChart3 className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">No performance data available yet</p>
                 </CardContent>
               </Card>
             ) : (
-              <Card className="bg-slate-800 border-slate-700">
+              <Card className="bg-card border-border">
                 <CardContent className="p-0">
                   <div className="overflow-x-auto">
                     <table className="w-full">
-                      <thead className="border-b border-slate-700">
-                        <tr className="text-left text-slate-400 text-sm">
+                      <thead className="border-b border-border">
+                        <tr className="text-left text-muted-foreground text-sm">
                           <th className="p-4">Coupon</th>
                           <th className="p-4">Revenue</th>
                           <th className="p-4">Discount Cost</th>
@@ -758,35 +758,35 @@ export default function AdminCoupons() {
                       </thead>
                       <tbody>
                         {performance.map((p) => (
-                          <tr key={p.couponId} className="border-b border-slate-700/50 hover:bg-slate-700/30">
+                          <tr key={p.couponId} className="border-b border-border hover:bg-muted/50">
                             <td className="p-4">
-                              <div className="font-bold text-white">{p.code}</div>
-                              <div className="text-sm text-slate-400">{formatValue(p)}</div>
+                              <div className="font-bold text-foreground">{p.code}</div>
+                              <div className="text-sm text-muted-foreground">{formatValue(p)}</div>
                             </td>
-                            <td className="p-4 text-green-400">{formatCurrency(p.totalOrderRevenue)}</td>
-                            <td className="p-4 text-red-400">{formatCurrency(p.totalDiscountGiven)}</td>
-                            <td className="p-4 font-bold text-cyan-400">{formatCurrency(p.netRevenue)}</td>
+                            <td className="p-4 text-green-500">{formatCurrency(p.totalOrderRevenue)}</td>
+                            <td className="p-4 text-red-500">{formatCurrency(p.totalDiscountGiven)}</td>
+                            <td className="p-4 font-bold text-primary">{formatCurrency(p.netRevenue)}</td>
                             <td className="p-4">
-                              <span className={`px-2 py-1 rounded text-sm ${p.marginPercent >= 50 ? "bg-green-500/20 text-green-400" : p.marginPercent >= 25 ? "bg-yellow-500/20 text-yellow-400" : "bg-red-500/20 text-red-400"}`}>
+                              <span className={`px-2 py-1 rounded text-sm ${p.marginPercent >= 50 ? "bg-green-500/20 text-green-500" : p.marginPercent >= 25 ? "bg-yellow-500/20 text-yellow-500" : "bg-red-500/20 text-red-500"}`}>
                                 {p.marginPercent.toFixed(1)}%
                               </span>
                             </td>
                             <td className="p-4">{p.timesUsed}</td>
                             <td className="p-4">
                               {p.affiliateOverlap > 0 && (
-                                <span className="text-yellow-400">{p.affiliateOverlap} orders</span>
+                                <span className="text-yellow-500">{p.affiliateOverlap} orders</span>
                               )}
                               {p.affiliateCommissionBlocked > 0 && (
-                                <div className="text-xs text-slate-400">{p.affiliateCommissionBlocked} blocked</div>
+                                <div className="text-xs text-muted-foreground">{p.affiliateCommissionBlocked} blocked</div>
                               )}
                             </td>
                             <td className="p-4">
                               {p.isUnderperforming ? (
-                                <span className="px-2 py-1 rounded text-xs bg-red-500/20 text-red-400">Underperforming</span>
+                                <span className="px-2 py-1 rounded text-xs bg-red-500/20 text-red-500">Underperforming</span>
                               ) : p.active ? (
-                                <span className="px-2 py-1 rounded text-xs bg-green-500/20 text-green-400">Active</span>
+                                <span className="px-2 py-1 rounded text-xs bg-green-500/20 text-green-500">Active</span>
                               ) : (
-                                <span className="px-2 py-1 rounded text-xs bg-slate-500/20 text-slate-400">Inactive</span>
+                                <span className="px-2 py-1 rounded text-xs bg-muted text-muted-foreground">Inactive</span>
                               )}
                             </td>
                             <td className="p-4">
@@ -794,7 +794,7 @@ export default function AdminCoupons() {
                                 variant="ghost" 
                                 size="sm"
                                 onClick={() => p.active ? disableMutation.mutate(p.couponId) : enableMutation.mutate(p.couponId)}
-                                className={p.active ? "text-yellow-400" : "text-green-400"}
+                                className={p.active ? "text-yellow-500" : "text-green-500"}
                               >
                                 <Power className="w-4 h-4" />
                               </Button>
@@ -821,7 +821,7 @@ export default function AdminCoupons() {
             <Button variant="outline" onClick={closePanel}>Cancel</Button>
             <Button 
               onClick={handleSubmit} 
-              className="bg-cyan-500 hover:bg-cyan-600"
+              className="bg-primary hover:bg-primary/90"
               disabled={!formData.code || isSaving}
             >
               {isSaving ? "Saving..." : editingCoupon ? "Update Coupon" : "Create Coupon"}
@@ -837,7 +837,7 @@ export default function AdminCoupons() {
                 value={formData.code}
                 onChange={(e) => { setFormData({ ...formData, code: e.target.value.toUpperCase() }); setIsDirty(true); }}
                 placeholder="SUMMER20"
-                className="bg-slate-900 border-slate-700 flex-1"
+                className="bg-background border-border flex-1"
                 data-testid="input-code"
               />
               <Button
@@ -866,7 +866,7 @@ export default function AdminCoupons() {
               value={formData.description}
               onChange={(e) => { setFormData({ ...formData, description: e.target.value }); setIsDirty(true); }}
               placeholder="Summer sale discount"
-              className="bg-slate-900 border-slate-700"
+              className="bg-background border-border"
               data-testid="input-description"
             />
           </div>
@@ -945,7 +945,7 @@ export default function AdminCoupons() {
                 value={formData.minOrderAmount}
                 onChange={(e) => { setFormData({ ...formData, minOrderAmount: e.target.value }); setIsDirty(true); }}
                 placeholder="0.00"
-                className="bg-slate-900 border-slate-700"
+                className="bg-background border-border"
               />
             </div>
             <div className="space-y-2">
@@ -955,7 +955,7 @@ export default function AdminCoupons() {
                 value={formData.maxDiscountAmount}
                 onChange={(e) => { setFormData({ ...formData, maxDiscountAmount: e.target.value }); setIsDirty(true); }}
                 placeholder="No limit"
-                className="bg-slate-900 border-slate-700"
+                className="bg-background border-border"
               />
             </div>
           </div>
@@ -968,7 +968,7 @@ export default function AdminCoupons() {
                 value={formData.maxRedemptions}
                 onChange={(e) => { setFormData({ ...formData, maxRedemptions: e.target.value }); setIsDirty(true); }}
                 placeholder="Unlimited"
-                className="bg-slate-900 border-slate-700"
+                className="bg-background border-border"
               />
             </div>
             <div className="space-y-2">
@@ -977,7 +977,7 @@ export default function AdminCoupons() {
                 type="number"
                 value={formData.perCustomerLimit}
                 onChange={(e) => { setFormData({ ...formData, perCustomerLimit: e.target.value }); setIsDirty(true); }}
-                className="bg-slate-900 border-slate-700"
+                className="bg-background border-border"
               />
             </div>
           </div>
@@ -989,7 +989,7 @@ export default function AdminCoupons() {
                 type="date"
                 value={formData.startDate}
                 onChange={(e) => { setFormData({ ...formData, startDate: e.target.value }); setIsDirty(true); }}
-                className="bg-slate-900 border-slate-700"
+                className="bg-background border-border"
               />
             </div>
             <div className="space-y-2">
@@ -998,19 +998,19 @@ export default function AdminCoupons() {
                 type="date"
                 value={formData.endDate}
                 onChange={(e) => { setFormData({ ...formData, endDate: e.target.value }); setIsDirty(true); }}
-                className="bg-slate-900 border-slate-700"
+                className="bg-background border-border"
               />
             </div>
           </div>
 
-          <div className="border-t border-slate-700 pt-6 mt-6">
+          <div className="border-t border-border pt-6 mt-6">
             <h3 className="text-lg font-semibold mb-4">Stacking Rules</h3>
             
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
                   <Label>Block Affiliate Commission</Label>
-                  <p className="text-sm text-slate-400">No affiliate payout when this coupon is used</p>
+                  <p className="text-sm text-muted-foreground">No affiliate payout when this coupon is used</p>
                 </div>
                 <Switch
                   checked={formData.blockAffiliateCommission}
@@ -1021,7 +1021,7 @@ export default function AdminCoupons() {
               <div className="flex items-center justify-between">
                 <div>
                   <Label>Block VIP Discount</Label>
-                  <p className="text-sm text-slate-400">Cannot be combined with VIP discounts</p>
+                  <p className="text-sm text-muted-foreground">Cannot be combined with VIP discounts</p>
                 </div>
                 <Switch
                   checked={formData.blockVipDiscount}
@@ -1031,7 +1031,7 @@ export default function AdminCoupons() {
 
               <div className="space-y-2">
                 <Label>Minimum Margin (%)</Label>
-                <p className="text-sm text-slate-400 mb-2">Block affiliate commission if margin falls below this</p>
+                <p className="text-sm text-muted-foreground mb-2">Block affiliate commission if margin falls below this</p>
                 <Input
                   type="number"
                   value={formData.minMarginPercent}
@@ -1039,20 +1039,20 @@ export default function AdminCoupons() {
                   placeholder="0"
                   min="0"
                   max="100"
-                  className="bg-slate-900 border-slate-700"
+                  className="bg-background border-border"
                 />
               </div>
             </div>
           </div>
 
-          <div className="border-t border-slate-700 pt-6 mt-6">
+          <div className="border-t border-border pt-6 mt-6">
             <h3 className="text-lg font-semibold mb-4">Auto-Expire Settings</h3>
             
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
                   <Label>Enable Auto-Expire</Label>
-                  <p className="text-sm text-slate-400">Automatically disable if underperforming</p>
+                  <p className="text-sm text-muted-foreground">Automatically disable if underperforming</p>
                 </div>
                 <Switch
                   checked={formData.autoExpireEnabled}
@@ -1069,7 +1069,7 @@ export default function AdminCoupons() {
                       value={formData.autoExpireThreshold}
                       onChange={(e) => { setFormData({ ...formData, autoExpireThreshold: e.target.value }); setIsDirty(true); }}
                       placeholder="0.00"
-                      className="bg-slate-900 border-slate-700"
+                      className="bg-background border-border"
                     />
                   </div>
                   <div className="space-y-2">
@@ -1078,7 +1078,7 @@ export default function AdminCoupons() {
                       type="number"
                       value={formData.autoExpireAfterDays}
                       onChange={(e) => { setFormData({ ...formData, autoExpireAfterDays: e.target.value }); setIsDirty(true); }}
-                      className="bg-slate-900 border-slate-700"
+                      className="bg-background border-border"
                     />
                   </div>
                 </>
