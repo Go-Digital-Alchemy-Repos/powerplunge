@@ -220,7 +220,7 @@ export async function registerRoutes(
   app.use("/api/admin/shipping", requireFullAccess, adminShippingRoutes);
   app.use("/api/admin", requireFullAccess, adminOperationsRoutes);
   app.use("/api/admin/orders", requireFullAccess, refundOrderRoutes);
-  app.use("/api/admin/customers", requireFullAccess, adminCustomerMgmtRoutes);
+  app.use("/api/admin/customers", requireOrderAccess, adminCustomerMgmtRoutes);
   app.use("/api/admin/reports", requireFullAccess, adminReportsRoutes);
   app.use("/api/admin/analytics", requireFullAccess, adminAnalyticsRoutes);
 

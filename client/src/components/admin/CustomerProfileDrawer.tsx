@@ -146,12 +146,22 @@ export function CustomerProfileDrawer({
   const [editingContact, setEditingContact] = useState(false);
   const [contactForm, setContactForm] = useState({
     name: "",
+    email: "",
     phone: "",
     address: "",
     city: "",
     state: "",
     zipCode: "",
     country: "",
+  });
+  const [editingShipping, setEditingShipping] = useState(false);
+  const [shippingForm, setShippingForm] = useState({
+    address: "",
+    city: "",
+    state: "",
+    zipCode: "",
+    country: "",
+    phone: "",
   });
   const [showPasswordReset, setShowPasswordReset] = useState(false);
   const [showManualOrder, setShowManualOrder] = useState(false);
@@ -169,12 +179,21 @@ export function CustomerProfileDrawer({
       setTagInput(profile.tags);
       setContactForm({
         name: profile.customer.name || "",
+        email: profile.customer.email || "",
         phone: profile.customer.phone || "",
         address: profile.customer.address || "",
         city: profile.customer.city || "",
         state: profile.customer.state || "",
         zipCode: profile.customer.zipCode || "",
         country: profile.customer.country || "",
+      });
+      setShippingForm({
+        address: profile.customer.address || "",
+        city: profile.customer.city || "",
+        state: profile.customer.state || "",
+        zipCode: profile.customer.zipCode || "",
+        country: profile.customer.country || "",
+        phone: profile.customer.phone || "",
       });
     }
   }, [profile]);
@@ -268,6 +287,24 @@ export function CustomerProfileDrawer({
       }
     } catch (error) {
       console.error("Failed to update customer:", error);
+    }
+  };
+
+  const handleSaveShipping = async () => {
+    if (!customerId) return;
+    try {
+      const res = await fetch(`/api/admin/customers/${customerId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(shippingForm),
+      });
+      if (res.ok) {
+        setEditingShipping(false);
+        fetchCustomerData();
+      }
+    } catch (error) {
+      console.error("Failed to update shipping:", error);
     }
   };
 
@@ -587,6 +624,7 @@ export function CustomerProfileDrawer({
                               if (profile) {
                                 setContactForm({
                                   name: profile.customer.name || "",
+                                  email: profile.customer.email || "",
                                   phone: profile.customer.phone || "",
                                   address: profile.customer.address || "",
                                   city: profile.customer.city || "",
@@ -623,6 +661,16 @@ export function CustomerProfileDrawer({
                             value={contactForm.name}
                             onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
                             data-testid="input-edit-name"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="edit-email">Email</Label>
+                          <Input
+                            id="edit-email"
+                            type="email"
+                            value={contactForm.email}
+                            onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
+                            data-testid="input-edit-email"
                           />
                         </div>
                         <div>
@@ -987,13 +1035,118 @@ export function CustomerProfileDrawer({
             <TabsContent value="shipping" className="m-0 space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MapPin className="w-5 h-5" />
-                    Shipping Address
+                  <CardTitle className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-5 h-5" />
+                      Shipping Address
+                    </div>
+                    {!editingShipping ? (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setEditingShipping(true)}
+                        data-testid="button-edit-shipping"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                    ) : (
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setEditingShipping(false);
+                            if (profile) {
+                              setShippingForm({
+                                address: profile.customer.address || "",
+                                city: profile.customer.city || "",
+                                state: profile.customer.state || "",
+                                zipCode: profile.customer.zipCode || "",
+                                country: profile.customer.country || "",
+                                phone: profile.customer.phone || "",
+                              });
+                            }
+                          }}
+                          data-testid="button-cancel-shipping"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={handleSaveShipping}
+                          className="text-green-500"
+                          data-testid="button-save-shipping"
+                        >
+                          <Save className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {profile?.customer.address ? (
+                  {editingShipping ? (
+                    <div className="space-y-3">
+                      <div>
+                        <Label htmlFor="ship-address">Address</Label>
+                        <Input
+                          id="ship-address"
+                          value={shippingForm.address}
+                          onChange={(e) => setShippingForm({ ...shippingForm, address: e.target.value })}
+                          data-testid="input-ship-address"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label htmlFor="ship-city">City</Label>
+                          <Input
+                            id="ship-city"
+                            value={shippingForm.city}
+                            onChange={(e) => setShippingForm({ ...shippingForm, city: e.target.value })}
+                            data-testid="input-ship-city"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="ship-state">State</Label>
+                          <Input
+                            id="ship-state"
+                            value={shippingForm.state}
+                            onChange={(e) => setShippingForm({ ...shippingForm, state: e.target.value })}
+                            data-testid="input-ship-state"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label htmlFor="ship-zip">Zip Code</Label>
+                          <Input
+                            id="ship-zip"
+                            value={shippingForm.zipCode}
+                            onChange={(e) => setShippingForm({ ...shippingForm, zipCode: e.target.value })}
+                            data-testid="input-ship-zip"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="ship-country">Country</Label>
+                          <Input
+                            id="ship-country"
+                            value={shippingForm.country}
+                            onChange={(e) => setShippingForm({ ...shippingForm, country: e.target.value })}
+                            data-testid="input-ship-country"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <Label htmlFor="ship-phone">Phone</Label>
+                        <Input
+                          id="ship-phone"
+                          value={shippingForm.phone}
+                          onChange={(e) => setShippingForm({ ...shippingForm, phone: e.target.value })}
+                          data-testid="input-ship-phone"
+                        />
+                      </div>
+                    </div>
+                  ) : profile?.customer.address ? (
                     <div className="space-y-1" data-testid="shipping-address">
                       <p className="font-medium">{profile.customer.name}</p>
                       <p>{profile.customer.address}</p>

@@ -81,6 +81,61 @@ router.put("/:customerId/tags", async (req: any, res) => {
   }
 });
 
+router.patch("/:customerId", async (req: any, res) => {
+  try {
+    const customer = await storage.getCustomer(req.params.customerId);
+    if (!customer) {
+      return res.status(404).json({ message: "Customer not found" });
+    }
+
+    const allowedFields = ["name", "email", "phone", "address", "city", "state", "zipCode", "country"] as const;
+    const updateData: Record<string, string> = {};
+    for (const field of allowedFields) {
+      if (req.body[field] !== undefined) {
+        const val = String(req.body[field]).trim();
+        if (val.length > 500) {
+          return res.status(400).json({ message: `${field} is too long` });
+        }
+        updateData[field] = val;
+      }
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({ message: "No valid fields to update" });
+    }
+
+    if (updateData.email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(updateData.email)) {
+        return res.status(400).json({ message: "Invalid email format" });
+      }
+      if (updateData.email !== customer.email) {
+        const existing = await storage.getCustomerByEmail(updateData.email);
+        if (existing && existing.id !== customer.id) {
+          return res.status(409).json({ message: "A customer with this email already exists" });
+        }
+      }
+    }
+
+    const updated = await storage.updateCustomer(req.params.customerId, updateData);
+
+    const adminId = (req as any).adminUser?.id;
+    await storage.createAdminAuditLog({
+      adminId: adminId || "system",
+      action: "update_customer_profile",
+      targetType: "customer",
+      targetId: req.params.customerId,
+      details: { updatedFields: Object.keys(updateData) },
+      ipAddress: req.ip || null,
+    });
+
+    res.json(updated);
+  } catch (error) {
+    console.error("Failed to update customer:", error);
+    res.status(500).json({ message: "Failed to update customer" });
+  }
+});
+
 router.get("/:customerId/orders", async (req, res) => {
   try {
     const allOrders = await storage.getOrders();
