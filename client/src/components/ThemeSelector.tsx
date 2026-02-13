@@ -13,6 +13,7 @@ import { Sun, Check, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { applyThemeVariables } from "@/components/ThemeProvider";
 import type { ThemePreset } from "@shared/themePresets";
+import { themePresets } from "@shared/themePresets";
 import type { ThemePackPreset } from "@shared/themePackPresets";
 
 interface UnifiedTheme {
@@ -84,11 +85,14 @@ export function ThemeSelector({
     })),
   ];
 
-  // If no themes from API (public user), use presets from shared
-  if (unifiedThemes.length === 0) {
-    // We could import themePresets here but it might bloat bundle if not careful
-    // For now, let's assume the API provides them or we can just show a limited set
-  }
+  // If no themes from API (public user or Safari issue), use presets from shared
+  const displayThemes = unifiedThemes.length > 0 ? unifiedThemes : themePresets.map(t => ({
+    id: t.id,
+    name: t.name,
+    colors: [t.variables["--theme-bg"], t.variables["--theme-bg-card"], t.variables["--theme-primary"], t.variables["--theme-accent"], t.variables["--theme-text"]].filter(Boolean),
+    isPack: false,
+    variables: t.variables,
+  }));
 
   const handleSelect = (theme: UnifiedTheme) => {
     localStorage.setItem("user-theme-preference", theme.id);
@@ -115,7 +119,7 @@ export function ThemeSelector({
       <DropdownMenuContent align="end" className="w-56 max-h-80 overflow-y-auto">
         <DropdownMenuLabel className="text-xs text-muted-foreground">Select Theme</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {unifiedThemes.map((theme) => {
+        {displayThemes.map((theme) => {
           const isActive = activeThemeId === theme.id;
           return (
             <DropdownMenuItem
@@ -132,11 +136,6 @@ export function ThemeSelector({
             </DropdownMenuItem>
           );
         })}
-        {unifiedThemes.length === 0 && (
-          <div className="p-4 text-center text-xs text-muted-foreground">
-            Loading themes...
-          </div>
-        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

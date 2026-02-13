@@ -1,6 +1,13 @@
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import type { ThemePreset } from "@shared/themePresets";
+import { themePresets } from "@shared/themePresets";
+
+interface ThemePreset {
+  id: string;
+  name: string;
+  description: string;
+  variables: Record<string, string>;
+}
 
 function hexToHsl(hex: string): string | null {
   hex = hex.replace(/^#/, "");
@@ -186,8 +193,11 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
   useEffect(() => {
     // Check local storage preference
     const localPref = localStorage.getItem("user-theme-preference");
-    if (localPref && allThemes) {
-      const preferred = allThemes.find(t => t.id === localPref);
+    
+    // Always prefer local preference if it matches a known theme
+    if (localPref) {
+      const preferred = (allThemes || []).find(t => t.id === localPref) || 
+                        themePresets.find(t => t.id === localPref);
       if (preferred) {
         applyThemeVariables(preferred.variables);
         return;
