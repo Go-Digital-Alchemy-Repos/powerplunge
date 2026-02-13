@@ -8,7 +8,7 @@ import DynamicNav from "@/components/DynamicNav";
 import MobileNav from "@/components/MobileNav";
 import UserAvatar from "@/components/UserAvatar";
 import { useCustomerAuth } from "@/hooks/use-customer-auth";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useBranding } from "@/hooks/use-branding";
 import { CustomerAuthModal } from "@/components/CustomerAuthModal";
 import { ThemeSelector } from "@/components/ThemeSelector";
@@ -28,8 +28,10 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
 
+  const queryClient = useQueryClient();
+
   const { data: adminEligibility } = useQuery<{ eligible: boolean }>({
-    queryKey: ["/api/customer/auth/check-admin-eligible"],
+    queryKey: ["/api/customer/auth/check-admin-eligible", customer?.id],
     queryFn: async () => {
       const res = await fetch("/api/customer/auth/check-admin-eligible", {
         headers: { ...getAuthHeader() },
@@ -38,9 +40,18 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
       return res.json();
     },
     enabled: isAuthenticated,
-    staleTime: 1000 * 60 * 5,
+    staleTime: 0,
   });
   const isAdminEligible = adminEligibility?.eligible ?? false;
+
+  useEffect(() => {
+    if (isAuthenticated && customer?.id) {
+      queryClient.invalidateQueries({ queryKey: ["/api/customer/auth/check-admin-eligible"] });
+    }
+    if (!isAuthenticated) {
+      queryClient.removeQueries({ queryKey: ["/api/customer/auth/check-admin-eligible"] });
+    }
+  }, [isAuthenticated, customer?.id, queryClient]);
 
   const [cart, setCart] = useState<CartItem[]>(() => {
     if (typeof window !== "undefined") {

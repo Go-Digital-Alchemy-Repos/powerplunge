@@ -119,8 +119,10 @@ export default function Home() {
   const { isAuthenticated: isAdminAuthenticated, role: adminRole } = useAdmin();
 
   // Check if this customer email has a corresponding admin account (without granting admin access)
+  const queryClient = useQueryClient();
+
   const { data: adminEligibility } = useQuery<{ eligible: boolean }>({
-    queryKey: ["/api/customer/auth/check-admin-eligible"],
+    queryKey: ["/api/customer/auth/check-admin-eligible", customer?.id],
     queryFn: async () => {
       const res = await fetch("/api/customer/auth/check-admin-eligible", {
         headers: { ...getAuthHeader() },
@@ -132,7 +134,6 @@ export default function Home() {
     staleTime: 0,
   });
   const isAdminEligible = adminEligibility?.eligible ?? false;
-  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (isAuthenticated && customer?.id) {
