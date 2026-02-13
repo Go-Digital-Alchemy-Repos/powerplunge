@@ -12,7 +12,6 @@ import OrdersTab from "./account/components/OrdersTab";
 import AccountTab from "./account/components/AccountTab";
 import AffiliateTab from "./account/components/AffiliateTab";
 import SupportTab from "./account/components/SupportTab";
-import AffiliateSignDialog from "./account/components/AffiliateSignDialog";
 
 export default function MyAccount() {
   const [, setLocation] = useLocation();
@@ -107,7 +106,6 @@ export default function MyAccount() {
         </Tabs>
       </main>
 
-      <AffiliateSignDialog />
     </div>
   );
 }

@@ -21,7 +21,7 @@ export function useAccountAffiliate() {
         headers: { ...getAuthHeader() },
       });
       if (!res.ok && res.status !== 404) throw new Error("Failed to fetch affiliate data");
-      if (res.status === 404) return { affiliate: null, referrals: [], stats: null };
+      if (res.status === 404) return { affiliate: null, referrals: [], stats: null, payouts: [], commissionRate: 10, approvalDays: 30, minimumPayout: 5000, agreementText: "" };
       return res.json();
     },
     enabled: isAuthenticated,
