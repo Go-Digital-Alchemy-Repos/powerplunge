@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Plus, Edit, Trash2, Tag, Percent, DollarSign, BarChart3, TrendingUp, TrendingDown, AlertTriangle, Power, Users, Search, ToggleLeft, ToggleRight, Truck } from "lucide-react";
+import { Plus, Edit, Trash2, Tag, Percent, DollarSign, BarChart3, TrendingUp, TrendingDown, AlertTriangle, Power, Users, Search, ToggleLeft, ToggleRight, Truck, Wand2 } from "lucide-react";
 import AdminNav from "@/components/admin/AdminNav";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -832,13 +832,32 @@ export default function AdminCoupons() {
         <div className="space-y-6 p-6">
           <div className="space-y-2">
             <Label>Coupon Code</Label>
-            <Input
-              value={formData.code}
-              onChange={(e) => { setFormData({ ...formData, code: e.target.value.toUpperCase() }); setIsDirty(true); }}
-              placeholder="SUMMER20"
-              className="bg-slate-900 border-slate-700"
-              data-testid="input-code"
-            />
+            <div className="flex gap-2">
+              <Input
+                value={formData.code}
+                onChange={(e) => { setFormData({ ...formData, code: e.target.value.toUpperCase() }); setIsDirty(true); }}
+                placeholder="SUMMER20"
+                className="bg-slate-900 border-slate-700 flex-1"
+                data-testid="input-code"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="shrink-0"
+                onClick={() => {
+                  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+                  let code = "";
+                  for (let i = 0; i < 8; i++) code += chars[Math.floor(Math.random() * chars.length)];
+                  setFormData({ ...formData, code });
+                  setIsDirty(true);
+                }}
+                data-testid="button-generate-code"
+              >
+                <Wand2 className="w-4 h-4 mr-1" />
+                Generate
+              </Button>
+            </div>
           </div>
 
           <div className="space-y-2">

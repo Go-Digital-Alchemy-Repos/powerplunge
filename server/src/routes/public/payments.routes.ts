@@ -72,7 +72,7 @@ router.get("/validate-referral-code/:code", async (req, res) => {
 
 router.post("/create-payment-intent", paymentLimiter, async (req: any, res) => {
   try {
-    const { items, customer, affiliateCode, billingAddress: billingInput, billingSameAsShipping: billingSame } = req.body;
+    const { items, customer, affiliateCode, billingAddress: billingInput, billingSameAsShipping: billingSame, couponCode } = req.body;
     const isBillingSame = billingSame !== false;
 
     const stripeClient = await stripeService.getClient();
@@ -218,7 +218,35 @@ router.post("/create-payment-intent", paymentLimiter, async (req: any, res) => {
       }
     }
 
-    const discountedSubtotal = Math.max(0, subtotalAmount - affiliateDiscountAmount);
+    let couponDiscountAmount = 0;
+    let validatedCoupon: any = null;
+    if (couponCode) {
+      const coupon = await storage.getCouponByCode(couponCode.toUpperCase());
+      if (coupon && coupon.active) {
+        const now = new Date();
+        const notExpired = !coupon.endDate || new Date(coupon.endDate) >= now;
+        const started = !coupon.startDate || new Date(coupon.startDate) <= now;
+        const hasUses = !coupon.maxRedemptions || coupon.timesUsed < coupon.maxRedemptions;
+        const meetsMin = !coupon.minOrderAmount || subtotalAmount >= coupon.minOrderAmount;
+
+        if (notExpired && started && hasUses && meetsMin) {
+          validatedCoupon = coupon;
+          if (coupon.type === "percentage") {
+            couponDiscountAmount = Math.round(subtotalAmount * (coupon.value / 100));
+            if (coupon.maxDiscountAmount) {
+              couponDiscountAmount = Math.min(couponDiscountAmount, coupon.maxDiscountAmount);
+            }
+          } else if (coupon.type === "fixed") {
+            couponDiscountAmount = Math.min(coupon.value, subtotalAmount);
+          }
+          if (coupon.blockAffiliateCommission && affiliate) {
+            console.log(`[COUPON] Coupon ${coupon.code} blocks affiliate commission for ${affiliate.affiliateCode}`);
+          }
+        }
+      }
+    }
+
+    const discountedSubtotal = Math.max(0, subtotalAmount - affiliateDiscountAmount - couponDiscountAmount);
 
     let taxAmount = 0;
     let taxCalculationId: string | null = null;
@@ -315,6 +343,9 @@ router.post("/create-payment-intent", paymentLimiter, async (req: any, res) => {
         taxAmount: taxAmount.toString(),
         taxCalculationId: taxCalculationId || "",
         affiliateDiscountAmount: affiliateDiscountAmount.toString(),
+        couponCode: validatedCoupon?.code || "",
+        couponId: validatedCoupon?.id || "",
+        couponDiscountAmount: couponDiscountAmount.toString(),
       },
     });
 
@@ -327,6 +358,7 @@ router.post("/create-payment-intent", paymentLimiter, async (req: any, res) => {
       orderId: order.id,
       subtotal: subtotalAmount,
       affiliateDiscount: affiliateDiscountAmount,
+      couponDiscount: couponDiscountAmount,
       taxAmount,
       total: totalAmount,
     });
@@ -338,7 +370,7 @@ router.post("/create-payment-intent", paymentLimiter, async (req: any, res) => {
 
 router.post("/reprice-payment-intent", paymentLimiter, async (req: any, res) => {
   try {
-    const { orderId, items, customer, billingAddress: billingInput, billingSameAsShipping: billingSame, affiliateCode } = req.body;
+    const { orderId, items, customer, billingAddress: billingInput, billingSameAsShipping: billingSame, affiliateCode, couponCode } = req.body;
     const isBillingSame = billingSame !== false;
 
     if (!orderId) {
@@ -494,7 +526,32 @@ router.post("/reprice-payment-intent", paymentLimiter, async (req: any, res) => 
       }
     }
 
-    const discountedSubtotal = Math.max(0, subtotalAmount - affiliateDiscountAmount);
+    let couponDiscountAmount = 0;
+    let validatedCoupon: any = null;
+    if (couponCode) {
+      const coupon = await storage.getCouponByCode(couponCode.toUpperCase());
+      if (coupon && coupon.active) {
+        const now = new Date();
+        const notExpired = !coupon.endDate || new Date(coupon.endDate) >= now;
+        const started = !coupon.startDate || new Date(coupon.startDate) <= now;
+        const hasUses = !coupon.maxRedemptions || coupon.timesUsed < coupon.maxRedemptions;
+        const meetsMin = !coupon.minOrderAmount || subtotalAmount >= coupon.minOrderAmount;
+
+        if (notExpired && started && hasUses && meetsMin) {
+          validatedCoupon = coupon;
+          if (coupon.type === "percentage") {
+            couponDiscountAmount = Math.round(subtotalAmount * (coupon.value / 100));
+            if (coupon.maxDiscountAmount) {
+              couponDiscountAmount = Math.min(couponDiscountAmount, coupon.maxDiscountAmount);
+            }
+          } else if (coupon.type === "fixed") {
+            couponDiscountAmount = Math.min(coupon.value, subtotalAmount);
+          }
+        }
+      }
+    }
+
+    const discountedSubtotal = Math.max(0, subtotalAmount - affiliateDiscountAmount - couponDiscountAmount);
 
     let taxAmount = 0;
     let taxCalculationId: string | null = null;
@@ -570,20 +627,24 @@ router.post("/reprice-payment-intent", paymentLimiter, async (req: any, res) => 
     });
 
     let clientSecret: string;
+    const repriceMetadata = {
+      orderId: order.id,
+      customerId: order.customerId,
+      affiliateCode: affiliate?.affiliateCode || "",
+      affiliateId: affiliate?.id || "",
+      affiliateSessionId: affiliateSessionId || "",
+      attributionType: affiliateCode ? "coupon" : (affiliateSessionId ? "cookie" : "direct"),
+      taxAmount: taxAmount.toString(),
+      taxCalculationId: taxCalculationId || "",
+      affiliateDiscountAmount: affiliateDiscountAmount.toString(),
+      couponCode: validatedCoupon?.code || "",
+      couponId: validatedCoupon?.id || "",
+      couponDiscountAmount: couponDiscountAmount.toString(),
+    };
     try {
       const updatedIntent = await stripeClient.paymentIntents.update(order.stripePaymentIntentId, {
         amount: totalAmount,
-        metadata: {
-          orderId: order.id,
-          customerId: order.customerId,
-          affiliateCode: affiliate?.affiliateCode || "",
-          affiliateId: affiliate?.id || "",
-          affiliateSessionId: affiliateSessionId || "",
-          attributionType: affiliateCode ? "coupon" : (affiliateSessionId ? "cookie" : "direct"),
-          taxAmount: taxAmount.toString(),
-          taxCalculationId: taxCalculationId || "",
-          affiliateDiscountAmount: affiliateDiscountAmount.toString(),
-        },
+        metadata: repriceMetadata,
       });
       clientSecret = updatedIntent.client_secret!;
     } catch (updateErr: any) {
@@ -591,17 +652,7 @@ router.post("/reprice-payment-intent", paymentLimiter, async (req: any, res) => 
       const newIntent = await stripeClient.paymentIntents.create({
         amount: totalAmount,
         currency: "usd",
-        metadata: {
-          orderId: order.id,
-          customerId: order.customerId,
-          affiliateCode: affiliate?.affiliateCode || "",
-          affiliateId: affiliate?.id || "",
-          affiliateSessionId: affiliateSessionId || "",
-          attributionType: affiliateCode ? "coupon" : (affiliateSessionId ? "cookie" : "direct"),
-          taxAmount: taxAmount.toString(),
-          taxCalculationId: taxCalculationId || "",
-          affiliateDiscountAmount: affiliateDiscountAmount.toString(),
-        },
+        metadata: repriceMetadata,
       });
       await storage.updateOrder(orderId, { stripePaymentIntentId: newIntent.id });
       clientSecret = newIntent.client_secret!;
@@ -612,6 +663,7 @@ router.post("/reprice-payment-intent", paymentLimiter, async (req: any, res) => 
       orderId: order.id,
       subtotal: subtotalAmount,
       affiliateDiscount: affiliateDiscountAmount,
+      couponDiscount: couponDiscountAmount,
       taxAmount,
       total: totalAmount,
     });

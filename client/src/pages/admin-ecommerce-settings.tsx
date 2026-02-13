@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -7,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAdmin } from "@/hooks/use-admin";
-import { CreditCard, ShoppingBag, Instagram, Send, Star, ExternalLink, CheckCircle2, XCircle, Link2, Youtube, Ghost } from "lucide-react";
+import { CreditCard, ShoppingBag, Instagram, Send, Star, ExternalLink, CheckCircle2, XCircle, Link2, Youtube, Ghost, Tag, ArrowRight } from "lucide-react";
 import AdminNav from "@/components/admin/AdminNav";
 
 function StatusBadge({ configured }: { configured?: boolean }) {
@@ -30,6 +31,7 @@ function StatusBadge({ configured }: { configured?: boolean }) {
 export default function AdminEcommerceSettings() {
   const { role, hasFullAccess } = useAdmin();
   const { toast } = useToast();
+  const [, navigate] = useLocation();
   
   const { data: integrations } = useQuery<any>({
     queryKey: ["/api/admin/integrations"],
@@ -38,6 +40,10 @@ export default function AdminEcommerceSettings() {
       if (!res.ok) throw new Error("Failed to fetch integrations");
       return res.json();
     },
+  });
+
+  const { data: couponStats } = useQuery<any>({
+    queryKey: ["/api/coupons/admin/analytics"],
   });
 
   return (
@@ -54,6 +60,7 @@ export default function AdminEcommerceSettings() {
         <Tabs defaultValue="integrations" className="space-y-6">
           <TabsList>
             <TabsTrigger value="integrations">Integrations</TabsTrigger>
+            <TabsTrigger value="coupons">Coupons</TabsTrigger>
           </TabsList>
 
           <TabsContent value="integrations" className="space-y-6">
@@ -181,6 +188,48 @@ export default function AdminEcommerceSettings() {
                   </div>
                   <Button variant="ghost" size="sm">Configure</Button>
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="coupons" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Tag className="w-5 h-5 text-primary" />
+                  Coupon Management
+                </CardTitle>
+                <CardDescription>Create and manage discount codes for your store</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {couponStats && (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div className="bg-muted/30 rounded-lg p-3 text-center">
+                      <p className="text-2xl font-bold">{couponStats.totalCoupons || 0}</p>
+                      <p className="text-xs text-muted-foreground">Total Coupons</p>
+                    </div>
+                    <div className="bg-muted/30 rounded-lg p-3 text-center">
+                      <p className="text-2xl font-bold text-green-400">{couponStats.activeCoupons || 0}</p>
+                      <p className="text-xs text-muted-foreground">Active</p>
+                    </div>
+                    <div className="bg-muted/30 rounded-lg p-3 text-center">
+                      <p className="text-2xl font-bold">{couponStats.totalRedemptions || 0}</p>
+                      <p className="text-xs text-muted-foreground">Redemptions</p>
+                    </div>
+                    <div className="bg-muted/30 rounded-lg p-3 text-center">
+                      <p className="text-2xl font-bold text-cyan-400">${((couponStats.totalNetRevenue || 0) / 100).toFixed(0)}</p>
+                      <p className="text-xs text-muted-foreground">Net Revenue</p>
+                    </div>
+                  </div>
+                )}
+                <Button
+                  onClick={() => navigate("/admin/coupons")}
+                  className="w-full"
+                  data-testid="button-manage-coupons"
+                >
+                  Manage Coupons
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
               </CardContent>
             </Card>
           </TabsContent>

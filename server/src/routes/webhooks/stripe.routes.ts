@@ -108,6 +108,29 @@ router.post("/stripe", async (req, res) => {
             }
           }
 
+          const couponId = paymentIntent.metadata?.couponId;
+          const couponDiscountAmountStr = paymentIntent.metadata?.couponDiscountAmount;
+          if (couponId && couponDiscountAmountStr && parseInt(couponDiscountAmountStr) > 0) {
+            try {
+              const couponDiscountAmt = parseInt(couponDiscountAmountStr);
+              await storage.createCouponRedemption({
+                couponId,
+                orderId,
+                customerId: order.customerId,
+                discountAmount: couponDiscountAmt,
+                orderSubtotal: order.subtotalAmount || order.totalAmount,
+                orderTotal: order.totalAmount,
+                netRevenue: order.totalAmount - couponDiscountAmt,
+                affiliateCode: order.affiliateCode || null,
+                affiliateCommissionBlocked: paymentIntent.metadata?.couponBlocksAffiliate === "true",
+              });
+              await storage.incrementCouponUsage(couponId);
+              console.log(`[WEBHOOK] Recorded coupon redemption for order ${orderId}, coupon ${couponId}`);
+            } catch (couponErr: any) {
+              console.error(`[WEBHOOK] Failed to record coupon redemption:`, couponErr.message);
+            }
+          }
+
           await sendOrderNotification(orderId);
         } else {
           console.error("Webhook: Amount mismatch for order", orderId, {

@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, ArrowRight, CreditCard, Loader2, ShoppingBag, Lock, Shield, CheckCircle, XCircle, Users, Plus, Minus, Trash2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, CreditCard, Loader2, ShoppingBag, Lock, Shield, CheckCircle, XCircle, Users, Plus, Minus, Trash2, Tag } from "lucide-react";
 import { AddressForm, emptyAddress, type AddressFormData } from "@/components/checkout/AddressForm";
 import { validateEmail, validatePhone, validateRequired } from "@shared/validation";
 import { trackCheckoutEvent } from "@/lib/checkout-analytics";
@@ -368,7 +368,7 @@ export default function Checkout() {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [stripePromise, setStripePromise] = useState<ReturnType<typeof loadStripe> | null>(null);
-  const [taxInfo, setTaxInfo] = useState<{ subtotal: number; affiliateDiscount: number; taxAmount: number; total: number } | null>(null);
+  const [taxInfo, setTaxInfo] = useState<{ subtotal: number; affiliateDiscount: number; couponDiscount: number; taxAmount: number; total: number } | null>(null);
 
   const [contactData, setContactData] = useState(() => {
     const defaults = { email: "", phone: "" };
@@ -475,6 +475,18 @@ export default function Checkout() {
   const [referralCode, setReferralCode] = useState("");
   const [referralStatus, setReferralStatus] = useState<"idle" | "checking" | "valid" | "invalid">("idle");
 
+  const [couponCode, setCouponCode] = useState("");
+  const [couponStatus, setCouponStatus] = useState<"idle" | "checking" | "valid" | "invalid">("idle");
+  const [couponError, setCouponError] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<{
+    id: string;
+    code: string;
+    type: string;
+    value: number;
+    discountAmount: number;
+    blockAffiliateCommission: boolean;
+  } | null>(null);
+
   useEffect(() => {
     const storedCode = localStorage.getItem("affiliateCode");
     const codeExpiry = localStorage.getItem("affiliateCodeExpiry");
@@ -503,6 +515,50 @@ export default function Checkout() {
       }
     } catch {
       setReferralStatus("invalid");
+    }
+  };
+
+  const validateCouponCode = async (code: string) => {
+    if (!code || code.length < 2) {
+      setCouponStatus("idle");
+      setCouponError("");
+      return;
+    }
+    setCouponStatus("checking");
+    setCouponError("");
+    try {
+      const res = await fetch("/api/coupons/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: code.toUpperCase(), orderAmount: cartTotal }),
+      });
+      const data = await res.json();
+      if (data.valid) {
+        setCouponStatus("valid");
+        setAppliedCoupon(data.coupon);
+        setCouponError("");
+      } else {
+        setCouponStatus("invalid");
+        setCouponError(data.message || "Invalid coupon code");
+        setAppliedCoupon(null);
+      }
+    } catch {
+      setCouponStatus("invalid");
+      setCouponError("Failed to validate coupon");
+      setAppliedCoupon(null);
+    }
+  };
+
+  const removeCoupon = () => {
+    setCouponCode("");
+    setCouponStatus("idle");
+    setCouponError("");
+    setAppliedCoupon(null);
+    if (orderId && clientSecret) {
+      setOrderId(null);
+      setClientSecret(null);
+      setTaxInfo(null);
+      setStep("shipping");
     }
   };
 
@@ -714,6 +770,7 @@ export default function Checkout() {
         billingAddress: billingPayload,
         billingSameAsShipping,
         affiliateCode,
+        couponCode: appliedCoupon?.code || null,
       };
 
       if (isReprice) {
@@ -765,6 +822,7 @@ export default function Checkout() {
       setTaxInfo({
         subtotal: data.subtotal,
         affiliateDiscount: data.affiliateDiscount || 0,
+        couponDiscount: data.couponDiscount || 0,
         taxAmount: data.taxAmount,
         total: data.total,
       });
@@ -1150,6 +1208,12 @@ export default function Checkout() {
                       <p>-${(taxInfo.affiliateDiscount / 100).toFixed(2)}</p>
                     </div>
                   )}
+                  {taxInfo && taxInfo.couponDiscount > 0 && (
+                    <div className="flex justify-between text-green-600" data-testid="text-coupon-discount">
+                      <p>Coupon ({appliedCoupon?.code})</p>
+                      <p>-${(taxInfo.couponDiscount / 100).toFixed(2)}</p>
+                    </div>
+                  )}
                   {taxInfo && taxInfo.taxAmount > 0 && (
                     <div className="flex justify-between" data-testid="text-tax">
                       <p className="text-muted-foreground">Sales Tax</p>
@@ -1162,6 +1226,66 @@ export default function Checkout() {
                       ${((taxInfo?.total ?? cartTotal) / 100).toLocaleString()}
                     </p>
                   </div>
+                </div>
+
+                <div className="pt-4 border-t border-border">
+                  {appliedCoupon ? (
+                    <div className="flex items-center justify-between bg-green-500/10 border border-green-500/20 rounded-lg px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        <Tag className="w-4 h-4 text-green-500" />
+                        <span className="text-sm font-medium text-green-500">{appliedCoupon.code}</span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-muted-foreground hover:text-destructive"
+                        onClick={removeCoupon}
+                        data-testid="button-remove-coupon"
+                      >
+                        <XCircle className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Label htmlFor="couponCode" className="flex items-center gap-2 text-sm">
+                        <Tag className="w-4 h-4 text-muted-foreground" />
+                        Have a coupon code?
+                      </Label>
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <Input
+                            id="couponCode"
+                            value={couponCode}
+                            onChange={(e) => {
+                              setCouponCode(e.target.value.toUpperCase());
+                              setCouponStatus("idle");
+                              setCouponError("");
+                            }}
+                            placeholder="Enter code"
+                            className="uppercase text-sm"
+                            data-testid="input-coupon-code"
+                          />
+                          {couponStatus === "checking" && (
+                            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
+                          )}
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => validateCouponCode(couponCode)}
+                          disabled={!couponCode || couponCode.length < 2 || couponStatus === "checking"}
+                          data-testid="button-apply-coupon"
+                        >
+                          Apply
+                        </Button>
+                      </div>
+                      {couponStatus === "invalid" && couponError && (
+                        <p className="text-xs text-red-500">{couponError}</p>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="pt-4 border-t border-border space-y-3">

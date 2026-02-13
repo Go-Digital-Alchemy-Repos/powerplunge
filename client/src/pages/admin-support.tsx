@@ -543,7 +543,7 @@ export default function AdminSupport() {
                         >
                           <p className="whitespace-pre-wrap">{note.text}</p>
                           <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1 border-t border-border/50">
-                            <span className="font-medium">{note.adminName}</span>
+                            <span className="font-medium">{note.adminName || "System"}</span>
                             <span>·</span>
                             <span>{new Date(note.createdAt).toLocaleString()}</span>
                           </div>
