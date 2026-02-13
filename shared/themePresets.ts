@@ -228,7 +228,7 @@ export const themePresets: ThemePreset[] = [
   },
   {
     id: "sun-stoppers",
-    name: "Sun Stoppers",
+    name: "Burke Orange",
     description: "Bold amber and golden tones radiating warmth on deep charcoal",
     variables: {
       "--theme-bg": "#0e0c08",
