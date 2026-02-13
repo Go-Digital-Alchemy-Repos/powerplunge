@@ -81,6 +81,60 @@ class MailchimpService {
     }
   }
 
+  async addSubscriber(email: string, firstName?: string, lastName?: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const settings = await storage.getIntegrationSettings();
+      if (!settings?.mailchimpConfigured || !settings?.mailchimpApiKeyEncrypted) {
+        return { success: false, error: "Mailchimp is not configured" };
+      }
+
+      const apiKey = decrypt(settings.mailchimpApiKeyEncrypted);
+      if (!apiKey) {
+        return { success: false, error: "Failed to decrypt API key" };
+      }
+
+      const serverPrefix = settings.mailchimpServerPrefix;
+      const audienceId = settings.mailchimpAudienceId;
+      if (!serverPrefix || !audienceId) {
+        return { success: false, error: "Mailchimp server prefix or audience ID not configured" };
+      }
+
+      const subscriberData: any = {
+        email_address: email,
+        status: "subscribed",
+        merge_fields: {},
+      };
+
+      if (firstName) subscriberData.merge_fields.FNAME = firstName;
+      if (lastName) subscriberData.merge_fields.LNAME = lastName;
+
+      const response = await fetch(
+        `https://${serverPrefix}.api.mailchimp.com/3.0/lists/${audienceId}/members`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Basic ${Buffer.from(`anystring:${apiKey}`).toString("base64")}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(subscriberData),
+        }
+      );
+
+      if (response.ok) {
+        return { success: true };
+      }
+
+      const errorData = await response.json();
+      if (errorData.title === "Member Exists") {
+        return { success: true };
+      }
+
+      return { success: false, error: errorData.detail || `Mailchimp API error: ${response.status}` };
+    } catch (error: any) {
+      return { success: false, error: error.message || "Failed to add subscriber" };
+    }
+  }
+
   clearCache(): void {
     this.configCache = null;
     this.lastConfigFetch = 0;

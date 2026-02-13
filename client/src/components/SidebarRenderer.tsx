@@ -21,9 +21,36 @@ interface SidebarData {
 }
 
 function NewsletterWidget({ widget }: { widget: SidebarWidget }) {
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
   const s = widget.settings;
+
+  const handleSubscribe = async () => {
+    if (!email) return;
+    setSubmitting(true);
+    setError("");
+    try {
+      const res = await fetch("/api/newsletter/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ firstName, lastName, email }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Something went wrong. Please try again.");
+      } else {
+        setSubmitted(true);
+      }
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="space-y-3" data-testid={`widget-newsletter-${widget.id}`}>
@@ -32,24 +59,45 @@ function NewsletterWidget({ widget }: { widget: SidebarWidget }) {
       {submitted ? (
         <p className="text-xs text-green-400">{s.successMessage || "Thanks for subscribing!"}</p>
       ) : (
-        <div className="flex gap-2">
-          <Input
-            type="email"
-            placeholder={s.placeholderText || "Enter your email"}
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="h-8 text-xs bg-muted border-border"
-            data-testid="input-newsletter-email"
-          />
-          <Button
-            size="sm"
-            className="h-8 text-xs whitespace-nowrap"
-            onClick={() => setSubmitted(true)}
-            disabled={!email}
-            data-testid="button-newsletter-subscribe"
-          >
-            {s.buttonText || "Subscribe"}
-          </Button>
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            <Input
+              type="text"
+              placeholder="First name"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              className="h-8 text-xs bg-muted border-border"
+              data-testid="input-newsletter-first-name"
+            />
+            <Input
+              type="text"
+              placeholder="Last name"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              className="h-8 text-xs bg-muted border-border"
+              data-testid="input-newsletter-last-name"
+            />
+          </div>
+          <div className="flex gap-2">
+            <Input
+              type="email"
+              placeholder={s.placeholderText || "Enter your email"}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="h-8 text-xs bg-muted border-border"
+              data-testid="input-newsletter-email"
+            />
+            <Button
+              size="sm"
+              className="h-8 text-xs whitespace-nowrap"
+              onClick={handleSubscribe}
+              disabled={!email || submitting}
+              data-testid="button-newsletter-subscribe"
+            >
+              {submitting ? "..." : (s.buttonText || "Subscribe")}
+            </Button>
+          </div>
+          {error && <p className="text-xs text-red-400">{error}</p>}
         </div>
       )}
     </div>
