@@ -19,6 +19,7 @@ export const adminUsers = pgTable("admin_users", {
   lastName: text("last_name").notNull().default(""),
   name: text("name").notNull(), // Legacy field: stores "firstName lastName" for backwards compatibility
   phone: text("phone").default(""),
+  avatarUrl: text("avatar_url"),
   role: text("role").notNull().default("admin"), // admin, store_manager, fulfillment
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -99,6 +100,7 @@ export const customers = pgTable("customers", {
   state: text("state"),
   zipCode: text("zip_code"),
   country: text("country").default("USA"),
+  avatarUrl: text("avatar_url"),
   isDisabled: boolean("is_disabled").default(false),
   passwordHash: text("password_hash"), // For email/password login
   sessionInvalidatedAt: timestamp("session_invalidated_at"), // For force logout

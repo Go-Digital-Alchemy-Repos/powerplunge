@@ -49,6 +49,8 @@ import {
 import { cn } from "@/lib/utils";
 import { applyThemeVariables } from "@/components/ThemeProvider";
 import { ThemeSelector as SharedThemeSelector } from "@/components/ThemeSelector";
+import UserAvatar from "@/components/UserAvatar";
+import { useAdmin } from "@/hooks/use-admin";
 import type { ThemePreset } from "@shared/themePresets";
 import type { ThemePackPreset } from "@shared/themePackPresets";
 import defaultAdminIcon from "@assets/powerplungeicon_1770929882628.png";
@@ -187,6 +189,7 @@ export default function AdminNav({ currentPage, role = "admin" }: AdminNavProps)
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const queryClient = useQueryClient();
+  const { admin } = useAdmin();
 
   const { data: legacyThemes } = useQuery<ThemePreset[]>({
     queryKey: ["/api/admin/cms/themes"],
@@ -589,10 +592,38 @@ export default function AdminNav({ currentPage, role = "admin" }: AdminNavProps)
             <SharedThemeSelector
               triggerClassName="h-8 w-8 p-0"
             />
-            <Button variant="ghost" size="sm" onClick={handleLogout} data-testid="button-logout">
-              <LogOut className="w-4 h-4 mr-2" />
-              Logout
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className="flex items-center gap-2 rounded-full border border-border hover:border-primary/50 p-0.5 pr-3 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  data-testid="button-admin-profile"
+                >
+                  <UserAvatar name={admin?.name} avatarUrl={admin?.avatarUrl} size="sm" />
+                  <span className="text-sm font-medium text-foreground truncate max-w-[100px]">
+                    {admin?.name?.split(" ")[0] || "Admin"}
+                  </span>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <div className="px-3 py-2.5 flex items-center gap-3">
+                  <UserAvatar name={admin?.name} avatarUrl={admin?.avatarUrl} size="md" />
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-sm font-medium text-foreground truncate">{admin?.name || "Admin"}</span>
+                    <span className="text-xs text-muted-foreground truncate">{admin?.email}</span>
+                  </div>
+                </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate("/admin/account")} data-testid="menu-admin-account">
+                  <Settings className="w-4 h-4 mr-2" />
+                  My Account
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive" data-testid="button-logout">
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
@@ -713,6 +744,21 @@ export default function AdminNav({ currentPage, role = "admin" }: AdminNavProps)
           </div>
 
           <div className="border-t border-border px-2 py-3 space-y-0.5">
+            <div className="px-3 py-2.5 flex items-center gap-3 mb-1">
+              <UserAvatar name={admin?.name} avatarUrl={admin?.avatarUrl} size="sm" />
+              <div className="flex flex-col min-w-0">
+                <span className="text-sm font-medium text-foreground truncate">{admin?.name || "Admin"}</span>
+                <span className="text-xs text-muted-foreground truncate">{admin?.email}</span>
+              </div>
+            </div>
+            <button
+              onClick={() => { setDrawerOpen(false); navigate("/admin/account"); }}
+              className="flex items-center gap-3 w-full px-3 py-2.5 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors text-left"
+              data-testid="admin-drawer-account"
+            >
+              <Settings className="w-4 h-4" />
+              My Account
+            </button>
             <ThemeSelectorDrawerItem
               activeThemeId={activeThemeId}
               themes={unifiedThemes}

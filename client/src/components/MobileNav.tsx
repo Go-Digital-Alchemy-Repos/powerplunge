@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ShoppingCart, User, UserPlus, LogOut, Settings, Link2, Headphones, LayoutDashboard, ChevronRight, Shield, FileText, Cookie } from "lucide-react";
 import { openConsentPreferences } from "@/components/ConsentBanner";
+import UserAvatar from "@/components/UserAvatar";
 
 interface NavMenuItem {
   id: string;
@@ -52,7 +53,9 @@ interface MobileNavProps {
   isAuthenticated: boolean;
   isAffiliate: boolean;
   isAdminEligible: boolean;
+  customerName?: string;
   customerEmail?: string;
+  customerAvatarUrl?: string | null;
   onNavigate: (path: string) => void;
   onLogout: () => void;
   onOpenAuth: () => void;
@@ -64,7 +67,9 @@ export default function MobileNav({
   isAuthenticated,
   isAffiliate,
   isAdminEligible,
+  customerName,
   customerEmail,
+  customerAvatarUrl,
   onNavigate,
   onLogout,
   onOpenAuth,
@@ -171,8 +176,12 @@ export default function MobileNav({
             </div>
             {isAuthenticated ? (
               <>
-                <div className="px-4 py-2 text-sm text-muted-foreground truncate">
-                  {customerEmail}
+                <div className="px-4 py-3 flex items-center gap-3">
+                  <UserAvatar name={customerName} avatarUrl={customerAvatarUrl} size="sm" />
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-sm font-medium text-foreground truncate">{customerName || "Customer"}</span>
+                    <span className="text-xs text-muted-foreground truncate">{customerEmail}</span>
+                  </div>
                 </div>
                 <button
                   onClick={() => onNavigate("/my-account")}

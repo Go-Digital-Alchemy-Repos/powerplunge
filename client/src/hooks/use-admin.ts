@@ -5,6 +5,7 @@ interface AdminUser {
   email: string;
   name: string;
   role: "super_admin" | "admin" | "store_manager" | "fulfillment";
+  avatarUrl?: string | null;
 }
 
 async function fetchAdminUser(): Promise<AdminUser | null> {

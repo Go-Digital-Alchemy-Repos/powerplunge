@@ -66,6 +66,7 @@ const AdminUserManagement = lazyRetry(() => import("@/pages/admin-user-managemen
 const AdminAffiliates = lazyRetry(() => import("@/pages/admin-affiliates"));
 const AdminAffiliateSettings = lazyRetry(() => import("@/pages/admin-affiliate-settings"));
 const AdminCoupons = lazyRetry(() => import("@/pages/admin-coupons"));
+const AdminAccount = lazyRetry(() => import("@/pages/admin-account"));
 const AdminReports = lazyRetry(() => import("@/pages/admin-reports"));
 const AdminTheme = lazyRetry(() => import("@/pages/admin-theme"));
 const AdminPages = lazyRetry(() => import("@/pages/admin-pages"));
@@ -181,6 +182,7 @@ function Router() {
         <Route path="/admin/dashboard">{() => <AdminGuard><AdminDashboard /></AdminGuard>}</Route>
         <Route path="/admin/orders">{() => <AdminGuard><AdminOrders /></AdminGuard>}</Route>
         <Route path="/admin/products">{() => <AdminGuard><AdminProducts /></AdminGuard>}</Route>
+        <Route path="/admin/account">{() => <AdminGuard><AdminAccount /></AdminGuard>}</Route>
         <Route path="/admin/settings">{() => <AdminGuard><AdminSettings /></AdminGuard>}</Route>
         <Route path="/admin/analytics">{() => <AdminGuard><AdminAnalytics /></AdminGuard>}</Route>
         <Route path="/admin/team">{() => <AdminGuard><AdminTeam /></AdminGuard>}</Route>

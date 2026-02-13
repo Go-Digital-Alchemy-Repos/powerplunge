@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import DynamicNav from "@/components/DynamicNav";
 import MobileNav from "@/components/MobileNav";
+import UserAvatar from "@/components/UserAvatar";
 import { useCustomerAuth } from "@/hooks/use-customer-auth";
 import { useQuery } from "@tanstack/react-query";
 import { useBranding } from "@/hooks/use-branding";
@@ -113,18 +114,27 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
             ) : (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="gap-2 h-10 min-w-[40px] px-2.5 sm:px-3" data-testid="button-my-account">
-                    <User className="w-4 h-4" />
-                    <span className="hidden sm:inline">My Account</span>
-                  </Button>
+                  <button
+                    className="flex items-center gap-2 rounded-full border border-border hover:border-primary/50 p-0.5 pr-2 sm:pr-3 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    data-testid="button-my-account"
+                  >
+                    <UserAvatar name={customer?.name} avatarUrl={customer?.avatarUrl} size="sm" />
+                    <span className="hidden sm:inline text-sm font-medium text-foreground truncate max-w-[100px]">
+                      {customer?.name?.split(" ")[0] || "Account"}
+                    </span>
+                  </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuContent align="end" className="w-56">
                   {authLoading ? (
                     <DropdownMenuItem disabled>Loading...</DropdownMenuItem>
                   ) : (
                     <>
-                      <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                        {customer?.email}
+                      <div className="px-3 py-2.5 flex items-center gap-3">
+                        <UserAvatar name={customer?.name} avatarUrl={customer?.avatarUrl} size="md" />
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-sm font-medium text-foreground truncate">{customer?.name || "Customer"}</span>
+                          <span className="text-xs text-muted-foreground truncate">{customer?.email}</span>
+                        </div>
                       </div>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={() => setLocation("/my-account")} data-testid="menu-my-orders">
@@ -196,7 +206,9 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
         isAuthenticated={isAuthenticated}
         isAffiliate={!!isAffiliate}
         isAdminEligible={isAdminEligible}
+        customerName={customer?.name}
         customerEmail={customer?.email}
+        customerAvatarUrl={customer?.avatarUrl}
         onNavigate={(path) => { setLocation(path); setMobileMenuOpen(false); }}
         onLogout={() => { logout(); setMobileMenuOpen(false); }}
         onOpenAuth={() => { setAuthModalOpen(true); setMobileMenuOpen(false); }}

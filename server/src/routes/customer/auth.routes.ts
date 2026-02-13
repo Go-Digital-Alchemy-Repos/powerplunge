@@ -236,6 +236,7 @@ router.get("/me", requireCustomerAuth, async (req: AuthenticatedRequest, res) =>
       state: customer.state,
       zipCode: customer.zipCode,
       country: customer.country,
+      avatarUrl: customer.avatarUrl || null,
     });
   } catch (error: any) {
     console.error("Get customer error:", error);
@@ -253,6 +254,7 @@ const updateProfileSchema = z.object({
   state: z.string().optional(),
   zipCode: z.string().optional(),
   country: z.string().optional(),
+  avatarUrl: z.string().nullable().optional(),
 });
 
 router.patch("/update-profile", requireCustomerAuth, async (req: AuthenticatedRequest, res) => {
@@ -271,6 +273,7 @@ router.patch("/update-profile", requireCustomerAuth, async (req: AuthenticatedRe
     if (data.state !== undefined) updateData.state = data.state;
     if (data.zipCode !== undefined) updateData.zipCode = data.zipCode;
     if (data.country !== undefined) updateData.country = data.country;
+    if (data.avatarUrl !== undefined) updateData.avatarUrl = data.avatarUrl;
     
     await storage.updateCustomer(customerId, updateData);
     
@@ -440,6 +443,7 @@ router.post("/verify-session", async (req, res) => {
         id: customer.id,
         email: customer.email,
         name: customer.name,
+        avatarUrl: customer.avatarUrl || null,
       }
     });
   } catch (error: any) {

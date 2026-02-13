@@ -244,7 +244,7 @@ export default function BlogPostPage() {
         </article>
 
         {relatedPosts.length > 0 && (
-          <section className={`${post.sidebarId ? '' : 'max-w-7xl mx-auto px-6'} py-12 border-t border-border`} data-testid="related-posts">
+          <section className={`${post.sidebarId ? '' : 'max-w-7xl mx-auto px-6'} mt-8 py-12 border-t border-border`} data-testid="related-posts">
             <h2 className="text-2xl font-bold text-foreground mb-6">Related Posts</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {relatedPosts.map((rp) => (

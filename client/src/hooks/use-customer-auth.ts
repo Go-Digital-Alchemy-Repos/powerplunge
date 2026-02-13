@@ -10,6 +10,7 @@ interface Customer {
   state?: string;
   zipCode?: string;
   country?: string;
+  avatarUrl?: string | null;
 }
 
 interface CustomerAuthState {

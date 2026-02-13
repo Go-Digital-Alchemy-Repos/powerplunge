@@ -13,8 +13,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Package, Truck, CheckCircle, Clock, ArrowLeft, LogOut, User, Link2, DollarSign, Users, Copy, QrCode, ExternalLink, FileText, Loader2, Settings, Save, MapPin, Mail, Phone, Lock, AlertCircle, Crown, Gift, Zap, Sparkles, CreditCard, AlertTriangle, Calendar, MapPinned, PackageCheck, Headset, Send, MessageSquare } from "lucide-react";
+import { Package, Truck, CheckCircle, Clock, ArrowLeft, LogOut, User, Link2, DollarSign, Users, Copy, QrCode, ExternalLink, FileText, Loader2, Settings, Save, MapPin, Mail, Phone, Lock, AlertCircle, Crown, Gift, Zap, Sparkles, CreditCard, AlertTriangle, Calendar, MapPinned, PackageCheck, Headset, Send, MessageSquare, Upload, Trash2 } from "lucide-react";
 import DynamicNav from "@/components/DynamicNav";
+import UserAvatar from "@/components/UserAvatar";
 import { useBranding } from "@/hooks/use-branding";
 
 interface OrderItem {
@@ -900,6 +901,82 @@ export default function MyAccount() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
+                    <div className="flex items-center gap-4 mb-6 pb-6 border-b border-border">
+                      <UserAvatar
+                        name={authCustomer?.name}
+                        avatarUrl={authCustomer?.avatarUrl}
+                        size="lg"
+                      />
+                      <div className="flex flex-col gap-2">
+                        <p className="font-medium">{authCustomer?.name || "Customer"}</p>
+                        <div className="flex gap-2">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            id="customer-avatar-upload"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              try {
+                                const fd = new FormData();
+                                fd.append("file", file);
+                                const res = await fetch("/api/uploads/upload", {
+                                  method: "POST",
+                                  body: fd,
+                                });
+                                if (!res.ok) throw new Error("Upload failed");
+                                const data = await res.json();
+                                const avatarUrl = data.objectPath || data.metadata?.publicUrl;
+                                await fetch("/api/customer/auth/update-profile", {
+                                  method: "PATCH",
+                                  headers: { "Content-Type": "application/json", ...getAuthHeader() },
+                                  body: JSON.stringify({ avatarUrl }),
+                                });
+                                queryClient.invalidateQueries({ queryKey: ["/api/customer/auth/me"] });
+                                toast({ title: "Avatar updated" });
+                              } catch {
+                                toast({ title: "Failed to upload avatar", variant: "destructive" });
+                              }
+                              e.target.value = "";
+                            }}
+                            data-testid="input-customer-avatar-upload"
+                          />
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => document.getElementById("customer-avatar-upload")?.click()}
+                            data-testid="button-upload-customer-avatar"
+                          >
+                            <Upload className="w-3.5 h-3.5 mr-1.5" />
+                            Upload Photo
+                          </Button>
+                          {authCustomer?.avatarUrl && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-destructive hover:text-destructive"
+                              onClick={async () => {
+                                try {
+                                  await fetch("/api/customer/auth/update-profile", {
+                                    method: "PATCH",
+                                    headers: { "Content-Type": "application/json", ...getAuthHeader() },
+                                    body: JSON.stringify({ avatarUrl: null }),
+                                  });
+                                  queryClient.invalidateQueries({ queryKey: ["/api/customer/auth/me"] });
+                                  toast({ title: "Avatar removed" });
+                                } catch {
+                                  toast({ title: "Failed to remove avatar", variant: "destructive" });
+                                }
+                              }}
+                              data-testid="button-remove-customer-avatar"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                     <form onSubmit={(e) => { e.preventDefault(); updateProfileMutation.mutate(profileForm); }} className="space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
