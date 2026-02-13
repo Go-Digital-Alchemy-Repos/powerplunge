@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -8,6 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import {
   Sheet,
@@ -40,14 +41,140 @@ import {
   ImageIcon,
   Palette,
   Sun,
-  Moon,
+  Check,
   Menu,
   Tag,
   Search,
 } from "lucide-react";
-import { useAdminTheme } from "@/hooks/use-admin-theme";
 import { cn } from "@/lib/utils";
+import { applyThemeVariables } from "@/components/ThemeProvider";
+import type { ThemePreset } from "@shared/themePresets";
+import type { ThemePackPreset } from "@shared/themePackPresets";
 import defaultAdminIcon from "@assets/powerplungeicon_1770929882628.png";
+
+interface UnifiedTheme {
+  id: string;
+  name: string;
+  colors: string[];
+  isPack: boolean;
+}
+
+function ColorPaletteBar({ colors }: { colors: string[] }) {
+  return (
+    <div className="flex h-3 w-full rounded-sm overflow-hidden border border-white/10">
+      {colors.map((color, i) => (
+        <div key={i} className="flex-1" style={{ backgroundColor: color }} />
+      ))}
+    </div>
+  );
+}
+
+function ThemeSelector({
+  activeThemeId,
+  themes,
+  onSelect,
+  isPending,
+  triggerClassName,
+  testIdSuffix,
+}: {
+  activeThemeId: string;
+  themes: UnifiedTheme[];
+  onSelect: (theme: UnifiedTheme) => void;
+  isPending: boolean;
+  triggerClassName?: string;
+  testIdSuffix?: string;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          className={triggerClassName || "h-8 w-8 p-0"}
+          data-testid={`button-theme-selector${testIdSuffix || ""}`}
+        >
+          <Sun className="w-4 h-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56 max-h-80 overflow-y-auto">
+        <DropdownMenuLabel className="text-xs text-muted-foreground">Select Theme</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        {themes.map((theme) => {
+          const isActive = activeThemeId === theme.id;
+          return (
+            <DropdownMenuItem
+              key={theme.id}
+              onClick={() => onSelect(theme)}
+              disabled={isPending}
+              className="flex flex-col items-start gap-1.5 py-2 cursor-pointer"
+              data-testid={`theme-option-${theme.id}`}
+            >
+              <div className="flex items-center justify-between w-full">
+                <span className={cn("text-xs font-medium", isActive && "text-primary")}>{theme.name}</span>
+                {isActive && <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />}
+              </div>
+              <ColorPaletteBar colors={theme.colors} />
+            </DropdownMenuItem>
+          );
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function ThemeSelectorDrawerItem({
+  activeThemeId,
+  themes,
+  onSelect,
+  isPending,
+}: {
+  activeThemeId: string;
+  themes: UnifiedTheme[];
+  onSelect: (theme: UnifiedTheme) => void;
+  isPending: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const activeTheme = themes.find((t) => t.id === activeThemeId);
+
+  return (
+    <div>
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-3 w-full px-3 py-2.5 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors text-left"
+        data-testid="admin-drawer-theme-selector"
+      >
+        <Sun className="w-4 h-4" />
+        <span className="flex-1">Theme{activeTheme ? `: ${activeTheme.name}` : ""}</span>
+        <ChevronDown className={cn("w-3 h-3 transition-transform", open && "rotate-180")} />
+      </button>
+      {open && (
+        <div className="px-2 pb-2 space-y-0.5 max-h-60 overflow-y-auto">
+          {themes.map((theme) => {
+            const isActive = activeThemeId === theme.id;
+            return (
+              <button
+                key={theme.id}
+                onClick={() => { onSelect(theme); setOpen(false); }}
+                disabled={isPending}
+                className={cn(
+                  "flex flex-col gap-1.5 w-full px-3 py-2 rounded-md text-left transition-colors",
+                  isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                )}
+                data-testid={`drawer-theme-option-${theme.id}`}
+              >
+                <div className="flex items-center justify-between w-full">
+                  <span className="text-xs font-medium">{theme.name}</span>
+                  {isActive && <Check className="w-3 h-3 flex-shrink-0" />}
+                </div>
+                <ColorPaletteBar colors={theme.colors} />
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface AdminNavProps {
   currentPage?: string;
@@ -56,9 +183,60 @@ interface AdminNavProps {
 
 export default function AdminNav({ currentPage, role = "admin" }: AdminNavProps) {
   const [location, navigate] = useLocation();
-  const { theme, toggleTheme } = useAdminTheme();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const queryClient = useQueryClient();
+
+  const { data: legacyThemes } = useQuery<ThemePreset[]>({
+    queryKey: ["/api/admin/cms/themes"],
+  });
+
+  const { data: packThemes } = useQuery<ThemePackPreset[]>({
+    queryKey: ["/api/admin/cms/theme-packs"],
+  });
+
+  const { data: activeThemeData } = useQuery<ThemePreset>({
+    queryKey: ["/api/admin/cms/themes/active"],
+  });
+
+  const activeThemeId = activeThemeData?.id || "arctic-default";
+
+  const unifiedThemes: UnifiedTheme[] = [
+    ...(legacyThemes || []).map((t) => ({
+      id: t.id,
+      name: t.name,
+      colors: [t.variables["--theme-bg"], t.variables["--theme-bg-card"], t.variables["--theme-primary"], t.variables["--theme-accent"], t.variables["--theme-text"]].filter(Boolean),
+      isPack: false,
+    })),
+    ...(packThemes || []).map((t) => ({
+      id: t.id,
+      name: t.name,
+      colors: [t.themeTokens["--theme-bg"], t.themeTokens["--theme-bg-card"], t.themeTokens["--theme-primary"], t.themeTokens["--theme-accent"], t.themeTokens["--theme-text"]].filter(Boolean),
+      isPack: true,
+    })),
+  ];
+
+  const activateThemeMutation = useMutation({
+    mutationFn: async (theme: UnifiedTheme) => {
+      const url = theme.isPack ? "/api/admin/cms/theme-packs/activate" : "/api/admin/cms/themes/activate";
+      const body = theme.isPack ? { packId: theme.id } : { themeId: theme.id };
+      const res = await fetch(url, {
+        credentials: "include",
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error("Failed to activate theme");
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/cms/themes/active"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/cms/theme-packs/active"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/theme/active"] });
+      const variables = data.variables || data.themeTokens;
+      if (variables) applyThemeVariables(variables);
+    },
+  });
 
   const { data: siteSettings } = useQuery<{ adminIconUrl?: string }>({
     queryKey: ["/api/admin/settings"],
@@ -374,19 +552,12 @@ export default function AdminNav({ currentPage, role = "admin" }: AdminNavProps)
                 Fulfillment
               </span>
             )}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={toggleTheme}
-              className="h-8 w-8 p-0"
-              data-testid="button-theme-toggle"
-            >
-              {theme === "dark" ? (
-                <Sun className="w-4 h-4" />
-              ) : (
-                <Moon className="w-4 h-4" />
-              )}
-            </Button>
+            <ThemeSelector
+              activeThemeId={activeThemeId}
+              themes={unifiedThemes}
+              onSelect={(t) => activateThemeMutation.mutate(t)}
+              isPending={activateThemeMutation.isPending}
+            />
             <Button variant="ghost" size="sm" onClick={handleLogout} data-testid="button-logout">
               <LogOut className="w-4 h-4 mr-2" />
               Logout
@@ -416,19 +587,14 @@ export default function AdminNav({ currentPage, role = "admin" }: AdminNavProps)
                 Fulfillment
               </span>
             )}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={toggleTheme}
-              className="h-9 w-9 p-0"
-              data-testid="button-theme-toggle-mobile"
-            >
-              {theme === "dark" ? (
-                <Sun className="w-4 h-4" />
-              ) : (
-                <Moon className="w-4 h-4" />
-              )}
-            </Button>
+            <ThemeSelector
+              activeThemeId={activeThemeId}
+              themes={unifiedThemes}
+              onSelect={(t) => activateThemeMutation.mutate(t)}
+              isPending={activateThemeMutation.isPending}
+              triggerClassName="h-9 w-9 p-0"
+              testIdSuffix="-mobile"
+            />
           </div>
         </div>
       </nav>
@@ -520,14 +686,12 @@ export default function AdminNav({ currentPage, role = "admin" }: AdminNavProps)
           </div>
 
           <div className="border-t border-border px-2 py-3 space-y-0.5">
-            <button
-              onClick={() => { toggleTheme(); }}
-              className="flex items-center gap-3 w-full px-3 py-2.5 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors text-left"
-              data-testid="admin-drawer-theme-toggle"
-            >
-              {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-              {theme === "dark" ? "Light Mode" : "Dark Mode"}
-            </button>
+            <ThemeSelectorDrawerItem
+              activeThemeId={activeThemeId}
+              themes={unifiedThemes}
+              onSelect={(t) => activateThemeMutation.mutate(t)}
+              isPending={activateThemeMutation.isPending}
+            />
             <button
               onClick={() => { setDrawerOpen(false); handleLogout(); }}
               className="flex items-center gap-3 w-full px-3 py-2.5 rounded-md text-sm text-destructive hover:bg-destructive/10 transition-colors text-left"
