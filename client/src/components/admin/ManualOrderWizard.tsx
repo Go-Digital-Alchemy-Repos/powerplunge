@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Plus } from "lucide-react";
+import { Search, Plus, ArrowRight, CreditCard, Ban } from "lucide-react";
 
 interface Product {
   id: string;
@@ -93,9 +93,14 @@ export function ManualOrderWizard({ open, onOpenChange }: ManualOrderWizardProps
       }
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/customers"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
+      
+      // If the user clicked "Proceed to Checkout", we'd ideally redirect to a checkout session
+      // For now, we'll create the order and inform them. 
+      // If we had a specific checkout URL from the backend, we could redirect here.
+      
       onOpenChange(false);
       resetWizard();
       toast({ title: "Order created successfully" });
@@ -318,18 +323,35 @@ export function ManualOrderWizard({ open, onOpenChange }: ManualOrderWizardProps
                   ).toLocaleString()}
                 </span>
               </div>
-              <div className="flex justify-end gap-2">
+              <div className="flex flex-col sm:flex-row justify-between gap-3">
                 <Button type="button" variant="outline" onClick={() => setOrderStep("choice")}>
                   Back
                 </Button>
-                <Button
-                  form="manual-order-form"
-                  type="submit"
-                  disabled={createOrderMutation.isPending || orderItems.length === 0 || !orderItems.every(i => i.productId)}
-                  data-testid="button-create-order"
-                >
-                  {createOrderMutation.isPending ? "Creating..." : "Create Order"}
-                </Button>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Button
+                    variant="secondary"
+                    className="gap-2"
+                    onClick={() => {
+                      if (!orderCustomerId || orderItems.length === 0) return;
+                      createOrderMutation.mutate({ customerId: orderCustomerId, items: orderItems });
+                    }}
+                    disabled={createOrderMutation.isPending || orderItems.length === 0 || !orderItems.every(i => i.productId)}
+                    data-testid="button-bypass-payment"
+                  >
+                    <Ban className="w-4 h-4" />
+                    Bypass Payment
+                  </Button>
+                  <Button
+                    form="manual-order-form"
+                    type="submit"
+                    className="gap-2"
+                    disabled={createOrderMutation.isPending || orderItems.length === 0 || !orderItems.every(i => i.productId)}
+                    data-testid="button-proceed-to-checkout"
+                  >
+                    Proceed to Checkout
+                    <ArrowRight className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
             </div>
           )}
