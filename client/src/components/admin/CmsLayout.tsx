@@ -27,7 +27,6 @@ import {
   PanelLeftClose,
   PanelLeft,
   ArrowLeft,
-  Globe,
   PenLine,
   Menu,
   ImageIcon,
@@ -63,7 +62,6 @@ const NAV_ITEMS: NavItem[] = [
   { id: "templates", label: "Templates", icon: BookTemplate, href: "/admin/cms/templates" },
   { id: "media", label: "Media Library", icon: ImageIcon, href: "/admin/media" },
   { id: "sidebars", label: "Sidebars & Widgets", icon: PanelRight, href: "/admin/cms/sidebars" },
-  { id: "presets", label: "Site Presets", icon: Globe, href: "/admin/cms/presets" },
   { id: "seo", label: "SEO", icon: Search, href: "/admin/cms/seo" },
   { id: "settings", label: "Settings", icon: Settings, href: "/admin/cms/settings" },
 ];

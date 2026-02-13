@@ -1,41 +1,38 @@
-import { sitePresetsRepo } from "../repositories/cms.sitePresets.repo";
 import { z } from "zod";
-import {
-  navPresetSchema,
-  footerPresetSchema,
-  seoDefaultsSchema,
-  globalCtaDefaultsSchema,
-} from "../schemas/cms.sitePresets.schema";
+import { storage } from "../../storage";
+
+const seoDefaultsSchema = z.object({
+  siteName: z.string().optional(),
+  titleSuffix: z.string().optional(),
+  defaultMetaDescription: z.string().optional(),
+  ogDefaultImage: z.string().optional(),
+}).optional().nullable();
+
+const globalCtaDefaultsSchema = z.object({
+  primaryCtaText: z.string().optional(),
+  primaryCtaHref: z.string().optional(),
+  secondaryCtaText: z.string().optional(),
+  secondaryCtaHref: z.string().optional(),
+}).optional().nullable();
 
 const updateSiteSettingsSchema = z.object({
   activeThemeId: z.string().min(1).optional(),
-  activePresetId: z.string().nullable().optional(),
-  navPreset: navPresetSchema.nullable().optional(),
-  footerPreset: footerPresetSchema.nullable().optional(),
-  seoDefaults: seoDefaultsSchema.nullable().optional(),
-  globalCtaDefaults: globalCtaDefaultsSchema.nullable().optional(),
+  seoDefaults: seoDefaultsSchema,
+  globalCtaDefaults: globalCtaDefaultsSchema,
 });
 
 class CmsSiteSettingsService {
   async get() {
-    return sitePresetsRepo.getCmsSettings();
+    return storage.getSiteSettings();
   }
 
-  async update(body: unknown, adminEmail?: string) {
+  async update(body: unknown, _adminEmail?: string) {
     const parsed = updateSiteSettingsSchema.safeParse(body);
     if (!parsed.success) {
       return { error: "Invalid site settings data", details: parsed.error.flatten() };
     }
 
-    const updated = await sitePresetsRepo.updateCmsSettings(parsed.data);
-
-    await sitePresetsRepo.logAudit(
-      adminEmail || "system",
-      "site_settings.updated",
-      "main",
-      { fields: Object.keys(parsed.data) },
-    );
-
+    const updated = await storage.updateSiteSettings(parsed.data);
     return { settings: updated };
   }
 }

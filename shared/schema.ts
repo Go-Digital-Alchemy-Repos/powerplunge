@@ -207,10 +207,6 @@ export const siteSettings = pgTable("site_settings", {
   featuredProductId: varchar("featured_product_id"),
   // CMS active theme
   activeThemeId: text("active_theme_id").default("arctic-default"),
-  // CMS site preset config (nav, footer, SEO, CTA defaults)
-  activePresetId: varchar("active_preset_id"),
-  navPreset: jsonb("nav_preset"),
-  footerPreset: jsonb("footer_preset"),
   seoDefaults: jsonb("seo_defaults"),
   globalCtaDefaults: jsonb("global_cta_defaults"),
   blogPageId: varchar("blog_page_id"),
@@ -846,49 +842,6 @@ export const insertSavedSectionSchema = createInsertSchema(savedSections).omit({
 
 export type InsertSavedSection = z.infer<typeof insertSavedSectionSchema>;
 export type SavedSection = typeof savedSections.$inferSelect;
-
-// Site Presets - Full site look + structure definitions
-export const sitePresets = pgTable("site_presets", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: text("name").notNull(),
-  description: text("description"),
-  tags: jsonb("tags"), // string[]
-  previewImage: text("preview_image"),
-  config: jsonb("config").notNull(), // Full SitePreset config (themePackId, nav, footer, seo, etc.)
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
-
-export const insertSitePresetDbSchema = createInsertSchema(sitePresets).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export type InsertSitePresetDb = z.infer<typeof insertSitePresetDbSchema>;
-export type SitePresetDb = typeof sitePresets.$inferSelect;
-
-// Preset Apply History - Snapshots for rollback
-export const presetApplyHistory = pgTable("preset_apply_history", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  presetId: varchar("preset_id").notNull(),
-  presetName: text("preset_name").notNull(),
-  snapshot: jsonb("snapshot").notNull(), // Previous siteSettings + home page reference
-  notes: text("notes"), // Optional admin notes for the apply action
-  appliedBy: text("applied_by"), // Admin email
-  appliedAt: timestamp("applied_at").notNull().defaultNow(),
-  rolledBack: boolean("rolled_back").notNull().default(false),
-  rolledBackAt: timestamp("rolled_back_at"),
-});
-
-export const insertPresetApplyHistorySchema = createInsertSchema(presetApplyHistory).omit({
-  id: true,
-  appliedAt: true,
-  rolledBack: true,
-  rolledBackAt: true,
-});
-export type InsertPresetApplyHistory = z.infer<typeof insertPresetApplyHistorySchema>;
-export type PresetApplyHistory = typeof presetApplyHistory.$inferSelect;
 
 // Media Library - Centralized media asset management
 export const mediaLibrary = pgTable("media_library", {

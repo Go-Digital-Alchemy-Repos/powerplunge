@@ -29,7 +29,6 @@ import docsRouter from "./src/routes/admin/docs.router";
 import cmsRouter from "./src/routes/admin/cms.router";
 import cmsSidebarsRouter from "./src/routes/admin/cms-sidebars.routes";
 import cmsMenusRoutes from "./src/routes/admin/cms-menus.routes";
-import sitePresetsRouter from "./src/routes/admin/cms-site-presets.routes";
 import siteSettingsRouter from "./src/routes/admin/cms-site-settings.routes";
 import cmsPostsRouter from "./src/routes/admin/cms-posts-v2.routes";
 import vipRoutes from "./src/routes/admin/vip.routes";
@@ -152,7 +151,6 @@ export async function registerRoutes(
   app.use("/api/admin/cms", requireFullAccess, cmsRouter);
   app.use("/api/admin/cms/menus", requireFullAccess, cmsMenusRoutes);
   app.use("/api/admin/cms/sidebars", requireFullAccess, cmsSidebarsRouter);
-  app.use("/api/admin/cms/site-presets", requireFullAccess, sitePresetsRouter);
   app.use("/api/admin/cms/site-settings", requireFullAccess, siteSettingsRouter);
   app.use("/api/customer/orders", orderTrackingRoutes);
   app.use("/api/customer/auth", customerAuthRoutes);

@@ -1,7 +1,7 @@
 import { useAdmin } from "@/hooks/use-admin";
 import { Link } from "wouter";
 import CmsLayout from "@/components/admin/CmsLayout";
-import { FileText, Layers, BookTemplate, Palette, Search, Globe, Plus, ArrowRight, Clock, Settings, Wand2, Package, PanelRight } from "lucide-react";
+import { FileText, Layers, BookTemplate, Palette, Search, Globe, Plus, ArrowRight, Clock, Settings, Wand2, PanelRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
@@ -46,14 +46,6 @@ const dashboardCards = [
     href: "/admin/cms/generator/landing",
     action: "Generate Landing Page",
     testId: "card-cms-generator-landing",
-  },
-  {
-    title: "Site Presets",
-    description: "Pre-configured site personalities",
-    icon: Package,
-    href: "/admin/cms/presets",
-    action: "Manage Presets",
-    testId: "card-cms-presets",
   },
   {
     title: "Sidebars & Widgets",

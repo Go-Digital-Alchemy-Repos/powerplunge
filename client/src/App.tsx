@@ -97,7 +97,6 @@ const AdminCmsSettings = lazyRetry(() => import("@/pages/admin-cms-settings"));
 const AdminCmsBuilder = lazyRetry(() => import("@/pages/admin-cms-builder"));
 const AdminCmsGeneratorLanding = lazyRetry(() => import("@/pages/admin-cms-generator-landing"));
 const AdminCmsGeneratorCampaigns = lazyRetry(() => import("@/pages/admin-cms-generator-campaigns"));
-const AdminCmsPresets = lazyRetry(() => import("@/pages/admin-cms-presets"));
 const AdminCmsPosts = lazyRetry(() => import("@/pages/admin-cms-posts"));
 const AdminCmsPostEditor = lazyRetry(() => import("@/pages/admin-cms-post-editor"));
 const AdminCmsPostBuilder = lazyRetry(() => import("@/pages/admin-cms-post-builder"));
@@ -217,7 +216,6 @@ function Router() {
         <Route path="/admin/cms/posts">{() => <AdminGuard><CmsErrorBoundary><AdminCmsPosts /></CmsErrorBoundary></AdminGuard>}</Route>
         <Route path="/admin/cms/menus">{() => <AdminGuard><CmsErrorBoundary><AdminCmsMenus /></CmsErrorBoundary></AdminGuard>}</Route>
         <Route path="/admin/cms/sidebars">{() => <AdminGuard><CmsErrorBoundary><AdminCmsSidebars /></CmsErrorBoundary></AdminGuard>}</Route>
-        <Route path="/admin/cms/presets">{() => <AdminGuard><CmsErrorBoundary><AdminCmsPresets /></CmsErrorBoundary></AdminGuard>}</Route>
         <Route path="/admin/cms/generator/campaigns">{() => <AdminGuard><CmsErrorBoundary><AdminCmsGeneratorCampaigns /></CmsErrorBoundary></AdminGuard>}</Route>
         <Route path="/admin/cms/generator/landing">{() => <AdminGuard><CmsErrorBoundary><AdminCmsGeneratorLanding /></CmsErrorBoundary></AdminGuard>}</Route>
         <Route path="/admin/cms/pages/:id/builder">{() => <AdminGuard><CmsErrorBoundary><AdminCmsBuilder /></CmsErrorBoundary></AdminGuard>}</Route>

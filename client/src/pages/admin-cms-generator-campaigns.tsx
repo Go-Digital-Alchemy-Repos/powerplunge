@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useAdmin } from "@/hooks/use-admin";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -7,14 +7,11 @@ import CmsLayout from "@/components/admin/CmsLayout";
 import { CAMPAIGN_PACKS, type CampaignPack } from "@/admin/cms/generator/campaignPacks";
 import { generateCampaignPack, type CampaignPackResult } from "@/admin/cms/generator/assembleCampaignPack";
 import type { SectionKitSource } from "@/admin/cms/generator/assembleCampaignPack";
-import type { PresetOverrides } from "@/admin/cms/generator/assembleLandingPage";
-import { Layers, Wand2, FileText, Palette, Package2, Loader2, CheckCircle2, XCircle, AlertTriangle, Globe, Sparkles } from "lucide-react";
+import { Layers, Wand2, FileText, Palette, Package2, Loader2, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -40,39 +37,6 @@ interface SavedSection {
   updatedAt: string;
 }
 
-interface SitePresetDb {
-  id: string;
-  name: string;
-  description: string | null;
-  tags: unknown;
-  previewImage: string | null;
-  config: {
-    themePackId?: string;
-    defaultThemePresetId?: string;
-    homepageTemplateId?: string;
-    defaultKitsSectionIds?: string[];
-    defaultInsertMode?: string;
-    globalCtaDefaults?: {
-      primaryCtaText?: string;
-      primaryCtaHref?: string;
-      secondaryCtaText?: string;
-      secondaryCtaHref?: string;
-    };
-    seoDefaults?: {
-      siteName?: string;
-      titleSuffix?: string;
-      defaultMetaDescription?: string;
-      ogDefaultImage?: string;
-    };
-    navPreset?: unknown;
-    footerPreset?: unknown;
-  };
-  isActive: boolean;
-  activatedAt: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
 interface GenerationLogEntry {
   title: string;
   slug: string;
@@ -89,8 +53,6 @@ export default function AdminCmsGeneratorCampaigns() {
 
   const [confirmPack, setConfirmPack] = useState<CampaignPack | null>(null);
   const [primaryProductId, setPrimaryProductId] = useState<string>("");
-  const [selectedPresetId, setSelectedPresetId] = useState<string>("");
-  const [prependPresetKits, setPrependPresetKits] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [generationLog, setGenerationLog] = useState<GenerationLogEntry[]>([]);
   const [showResults, setShowResults] = useState(false);
@@ -105,34 +67,7 @@ export default function AdminCmsGeneratorCampaigns() {
     enabled: hasFullAccess,
   });
 
-  const { data: presets } = useQuery<SitePresetDb[]>({
-    queryKey: ["/api/admin/cms/site-presets"],
-    enabled: hasFullAccess,
-  });
-
   const activeProducts = (products || []).filter((p) => p.isActive !== false);
-
-  const selectedPreset = useMemo(() => {
-    if (!selectedPresetId || !presets) return null;
-    return presets.find((p) => p.id === selectedPresetId) || null;
-  }, [selectedPresetId, presets]);
-
-  function buildPresetOverrides(preset: SitePresetDb | null): PresetOverrides | undefined {
-    if (!preset) return undefined;
-    const cfg = preset.config;
-    return {
-      themePackId: cfg.themePackId,
-      seoDefaults: cfg.seoDefaults,
-      globalCtaDefaults: cfg.globalCtaDefaults,
-    };
-  }
-
-  function getPresetKitNames(preset: SitePresetDb | null, secs: SavedSection[]): string[] {
-    if (!preset || !preset.config.defaultKitsSectionIds?.length) return [];
-    return preset.config.defaultKitsSectionIds
-      .map((id) => secs.find((s) => s.id === id)?.name)
-      .filter((n): n is string => Boolean(n));
-  }
 
   function sectionsToKitSource(secs: SavedSection[]): SectionKitSource[] {
     return secs.map((s) => ({
@@ -153,8 +88,6 @@ export default function AdminCmsGeneratorCampaigns() {
 
     const availableKits = sectionsToKitSource(sections || []);
     const resolvedProductId = primaryProductId === "none" ? "" : primaryProductId;
-    const presetOverrides = buildPresetOverrides(selectedPreset);
-    const presetKitNames = getPresetKitNames(selectedPreset, sections || []);
 
     let result: CampaignPackResult;
     try {
@@ -162,9 +95,6 @@ export default function AdminCmsGeneratorCampaigns() {
         primaryProductId: resolvedProductId,
         sectionMode: "detach",
         ctaDestination: "shop",
-        presetOverrides,
-        presetKitNames,
-        prependPresetKits,
       });
     } catch (err: any) {
       toast({ title: "Generation failed", description: err.message, variant: "destructive" });
@@ -346,68 +276,8 @@ export default function AdminCmsGeneratorCampaigns() {
                 </span>
               )}
 
-              <span className="block pt-2 border-t border-border">
-                <span className="block text-xs text-muted-foreground mb-1.5 flex items-center gap-1.5">
-                  <Globe className="w-3 h-3" />
-                  Apply Site Preset to Generated Pages:
-                </span>
-                <Select value={selectedPresetId || "none"} onValueChange={(v) => setSelectedPresetId(v === "none" ? "" : v)}>
-                  <SelectTrigger className="bg-muted border-border text-foreground/80 text-xs h-8" data-testid="select-preset">
-                    <SelectValue placeholder="None — use pack defaults" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-muted border-border">
-                    <SelectItem value="none" className="text-muted-foreground text-xs">None — use pack defaults</SelectItem>
-                    {(presets || []).map((preset) => (
-                      <SelectItem key={preset.id} value={preset.id} className="text-foreground/80 text-xs">
-                        {preset.name}
-                        {preset.isActive && " (active)"}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                {selectedPreset && (
-                  <span className="block mt-2 space-y-1.5">
-                    <span className="flex flex-wrap gap-1.5">
-                      {selectedPreset.config.themePackId && (
-                        <Badge variant="outline" className="border-primary/30/40 text-primary text-[10px]">
-                          <Palette className="w-3 h-3 mr-1" />
-                          Theme: {selectedPreset.config.themePackId}
-                        </Badge>
-                      )}
-                      {selectedPreset.config.seoDefaults?.titleSuffix && (
-                        <Badge variant="outline" className="border-primary/30/40 text-primary text-[10px]">
-                          <Sparkles className="w-3 h-3 mr-1" />
-                          SEO suffix
-                        </Badge>
-                      )}
-                      {selectedPreset.config.globalCtaDefaults?.primaryCtaText && (
-                        <Badge variant="outline" className="border-primary/30/40 text-primary text-[10px]">
-                          CTA: {selectedPreset.config.globalCtaDefaults.primaryCtaText}
-                        </Badge>
-                      )}
-                    </span>
-
-                    {(selectedPreset.config.defaultKitsSectionIds?.length ?? 0) > 0 && (
-                      <span className="flex items-center gap-2 pt-1">
-                        <Switch
-                          id="prepend-kits"
-                          checked={prependPresetKits}
-                          onCheckedChange={setPrependPresetKits}
-                          className="scale-75"
-                          data-testid="switch-prepend-kits"
-                        />
-                        <Label htmlFor="prepend-kits" className="text-[11px] text-muted-foreground cursor-pointer">
-                          Include preset default kits ({selectedPreset.config.defaultKitsSectionIds?.length})
-                        </Label>
-                      </span>
-                    )}
-                  </span>
-                )}
-              </span>
-
               <span className="block text-xs text-muted-foreground pt-1">
-                Theme: {selectedPreset?.config.themePackId || confirmPack?.recommendedThemePreset} &middot; Template: {confirmPack?.templateId}
+                Theme: {confirmPack?.recommendedThemePreset} &middot; Template: {confirmPack?.templateId}
               </span>
             </AlertDialogDescription>
           </AlertDialogHeader>
