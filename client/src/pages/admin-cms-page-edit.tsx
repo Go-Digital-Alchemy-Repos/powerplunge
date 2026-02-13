@@ -126,7 +126,14 @@ export default function AdminCmsPageEdit() {
 
   const saveMutation = useMutation({
     mutationFn: async (data: Record<string, any>) => {
-      const res = await apiRequest("PUT", `/api/admin/cms/pages/${pageId}`, data);
+      const enriched = { ...data };
+      if (!enriched.ogDescription && enriched.metaDescription) {
+        enriched.ogDescription = enriched.metaDescription;
+      }
+      if (!enriched.ogImage && enriched.featuredImage) {
+        enriched.ogImage = enriched.featuredImage;
+      }
+      const res = await apiRequest("PUT", `/api/admin/cms/pages/${pageId}`, enriched);
       return res.json();
     },
     onSuccess: () => {

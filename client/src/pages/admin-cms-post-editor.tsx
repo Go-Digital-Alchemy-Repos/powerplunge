@@ -288,7 +288,7 @@ export default function AdminCmsPostEditor() {
       excerpt: excerpt || null,
       legacyHtml: legacyHtml || null,
       canonicalUrl: canonicalUrl || null,
-      ogImageId: ogImageId || null,
+      ogImageId: (ogImageId || coverImageId) || null,
       coverImageId: coverImageId || null,
       allowIndex,
       allowFollow,
