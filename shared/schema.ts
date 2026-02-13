@@ -814,6 +814,7 @@ export const pages = pgTable("pages", {
   sidebarId: varchar("sidebar_id").references(() => sidebars.id, { onDelete: "set null" }),
   showInNav: boolean("show_in_nav").default(false),
   navOrder: integer("nav_order").default(0),
+  customCss: text("custom_css"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -1748,6 +1749,7 @@ export const posts = pgTable("posts", {
   allowIndex: boolean("allow_index").notNull().default(true),
   allowFollow: boolean("allow_follow").notNull().default(true),
   sidebarId: varchar("sidebar_id").references(() => sidebars.id, { onDelete: "set null" }),
+  customCss: text("custom_css"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

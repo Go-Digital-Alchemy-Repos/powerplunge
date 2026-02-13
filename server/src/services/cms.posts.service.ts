@@ -38,6 +38,7 @@ class PostsService {
     allowIndex?: boolean;
     allowFollow?: boolean;
     sidebarId?: string | null;
+    customCss?: string | null;
     categoryIds?: string[];
     tagIds?: string[];
   }) {
@@ -90,6 +91,7 @@ class PostsService {
       allowIndex?: boolean;
       allowFollow?: boolean;
       sidebarId?: string | null;
+      customCss?: string | null;
       categoryIds?: string[];
       tagIds?: string[];
     }

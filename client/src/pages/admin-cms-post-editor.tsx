@@ -164,11 +164,23 @@ function SortableSection({ id, children, ...props }: { id: string; children: Rea
 const SIDEBAR_ORDER_KEY = "cms-post-editor-sidebar-order";
 
 function getSidebarOrder(): string[] {
+  const defaultOrder = ["status", "featured-image", "categories", "tags", "sidebar", "custom-css", "options", "revisions"];
   try {
     const raw = localStorage.getItem(SIDEBAR_ORDER_KEY);
-    return raw ? JSON.parse(raw) : ["status", "featured-image", "categories", "tags", "sidebar", "options", "revisions"];
+    if (!raw) return defaultOrder;
+    const saved = JSON.parse(raw) as string[];
+    if (!saved.includes("custom-css")) {
+      const optIdx = saved.indexOf("options");
+      if (optIdx !== -1) {
+        saved.splice(optIdx, 0, "custom-css");
+      } else {
+        saved.push("custom-css");
+      }
+      saveSidebarOrder(saved);
+    }
+    return saved;
   } catch {
-    return ["status", "featured-image", "categories", "tags", "sidebar", "options", "revisions"];
+    return defaultOrder;
   }
 }
 
@@ -209,6 +221,7 @@ export default function AdminCmsPostEditor() {
   const [scheduleDate, setScheduleDate] = useState("");
   const [showRevisions, setShowRevisions] = useState(false);
   const [sidebarId, setSidebarId] = useState<string | null>(null);
+  const [customCss, setCustomCss] = useState("");
   const [sidebarInitialized, setSidebarInitialized] = useState(false);
   const [dirty, setDirty] = useState(false);
 
@@ -261,6 +274,7 @@ export default function AdminCmsPostEditor() {
       setSelectedCategoryIds((post.categories || []).map((c: any) => c.id));
       setSelectedTagIds((post.tags || []).map((t: any) => t.id));
       setSidebarId(post.sidebarId ?? null);
+      setCustomCss(post.customCss || "");
       setSidebarInitialized(true);
     }
   }, [post]);
@@ -359,6 +373,7 @@ export default function AdminCmsPostEditor() {
       featured,
       readingTimeMinutes: readingTimeMinutes || null,
       sidebarId: sidebarId || null,
+      customCss: customCss || null,
       categoryIds: selectedCategoryIds,
       tagIds: selectedTagIds,
     };
@@ -675,6 +690,27 @@ export default function AdminCmsPostEditor() {
                 </SelectContent>
               </Select>
               <p className="text-[10px] text-muted-foreground">Choose a sidebar to display alongside this post, or select "None" for a full-width layout.</p>
+            </div>
+          </CollapsibleCard>
+        );
+      case "custom-css":
+        return (
+          <CollapsibleCard
+            key="custom-css"
+            sectionKey="custom-css"
+            title="Custom CSS"
+            isCollapsed={isCollapsed("custom-css")}
+            onToggle={toggle}
+          >
+            <div className="space-y-2">
+              <Textarea
+                value={customCss}
+                onChange={(e) => { setCustomCss(e.target.value); setDirty(true); }}
+                placeholder=".my-class { color: red; }"
+                className="bg-muted border-border text-foreground font-mono text-xs min-h-[100px]"
+                data-testid="textarea-custom-css"
+              />
+              <p className="text-[10px] text-muted-foreground">Add custom CSS that will be injected on this post only.</p>
             </div>
           </CollapsibleCard>
         );

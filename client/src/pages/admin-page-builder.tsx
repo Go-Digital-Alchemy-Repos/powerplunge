@@ -79,6 +79,7 @@ interface Page {
   status: string;
   showInNav: boolean;
   navOrder: number;
+  customCss: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -282,6 +283,7 @@ export default function AdminPageBuilder() {
         scheduledAt: null,
         showInNav: false,
         navOrder: 0,
+        customCss: null,
       });
     }
   }, [fetchedPage, id]);
@@ -1122,6 +1124,20 @@ export default function AdminPageBuilder() {
                       onChange={(url) => { setPage({ ...page, featuredImage: url }); setIsDirty(true); }}
                       placeholder="Used as default OG/Twitter image"
                     />
+                  </div>
+
+                  <div className="border-t border-border pt-4">
+                    <h4 className="font-medium mb-3">Custom CSS</h4>
+                    <div className="space-y-2">
+                      <Textarea
+                        value={page.customCss || ''}
+                        onChange={(e) => { setPage({ ...page, customCss: e.target.value }); setIsDirty(true); }}
+                        placeholder=".my-class { color: red; }"
+                        className="bg-muted border-border font-mono text-xs min-h-[120px]"
+                        data-testid="settings-custom-css"
+                      />
+                      <p className="text-xs text-muted-foreground">Add custom CSS that will be injected on this page only. Use standard CSS syntax.</p>
+                    </div>
                   </div>
 
                   <div className="border-t border-border pt-4">

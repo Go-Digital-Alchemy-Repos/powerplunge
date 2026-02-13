@@ -22,6 +22,7 @@ const basePostFields = {
   allowIndex: z.boolean().default(true),
   allowFollow: z.boolean().default(true),
   sidebarId: z.string().nullish(),
+  customCss: z.string().nullish(),
   categoryIds: z.array(z.string()).default([]),
   tagIds: z.array(z.string()).default([]),
 };

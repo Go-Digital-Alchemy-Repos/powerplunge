@@ -129,6 +129,7 @@ class PostsRepository {
         updatedAt: posts.updatedAt,
         contentJson: posts.contentJson,
         legacyHtml: posts.legacyHtml,
+        customCss: posts.customCss,
       })
       .from(posts)
       .leftJoin(mediaLibrary, eq(posts.coverImageId, mediaLibrary.id))
