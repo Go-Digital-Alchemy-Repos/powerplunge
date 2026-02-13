@@ -361,21 +361,21 @@ export default function AdminRevenue() {
           </div>
         </div>
 
-        <Card className="bg-gray-900 border-gray-800 mb-6">
+        <Card className="mb-6">
           <CardHeader className="pb-4">
-            <CardTitle className="text-lg text-white">Filters</CardTitle>
+            <CardTitle className="text-lg">Filters</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-4">
               <div className="flex flex-col gap-2">
-                <Label className="text-gray-400 text-sm">Date Range</Label>
+                <Label className="text-muted-foreground text-sm">Date Range</Label>
                 <Select value={preset} onValueChange={(v) => setPreset(v as DatePreset)}>
-                  <SelectTrigger className="w-40 bg-gray-800 border-gray-700 text-white" data-testid="filter-preset">
+                  <SelectTrigger className="w-40" data-testid="filter-preset">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-gray-800 border-gray-700">
+                  <SelectContent>
                     {Object.entries(PRESET_LABELS).map(([key, label]) => (
-                      <SelectItem key={key} value={key} className="text-white">
+                      <SelectItem key={key} value={key}>
                         {label}
                       </SelectItem>
                     ))}
@@ -386,22 +386,22 @@ export default function AdminRevenue() {
               {preset === "custom" && (
                 <>
                   <div className="flex flex-col gap-2">
-                    <Label className="text-gray-400 text-sm">Start Date</Label>
+                    <Label className="text-muted-foreground text-sm">Start Date</Label>
                     <Input
                       type="date"
                       value={customStart}
                       onChange={(e) => setCustomStart(e.target.value)}
-                      className="w-40 bg-gray-800 border-gray-700 text-white"
+                      className="w-40"
                       data-testid="filter-start-date"
                     />
                   </div>
                   <div className="flex flex-col gap-2">
-                    <Label className="text-gray-400 text-sm">End Date</Label>
+                    <Label className="text-muted-foreground text-sm">End Date</Label>
                     <Input
                       type="date"
                       value={customEnd}
                       onChange={(e) => setCustomEnd(e.target.value)}
-                      className="w-40 bg-gray-800 border-gray-700 text-white"
+                      className="w-40"
                       data-testid="filter-end-date"
                     />
                   </div>
@@ -409,29 +409,29 @@ export default function AdminRevenue() {
               )}
 
               <div className="flex flex-col gap-2">
-                <Label className="text-gray-400 text-sm">Channel</Label>
+                <Label className="text-muted-foreground text-sm">Channel</Label>
                 <Select value={channel} onValueChange={setChannel}>
-                  <SelectTrigger className="w-36 bg-gray-800 border-gray-700 text-white" data-testid="filter-channel">
+                  <SelectTrigger className="w-36" data-testid="filter-channel">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-gray-800 border-gray-700">
-                    <SelectItem value="all" className="text-white">All Channels</SelectItem>
-                    <SelectItem value="affiliate" className="text-white">Affiliate</SelectItem>
-                    <SelectItem value="direct" className="text-white">Direct</SelectItem>
+                  <SelectContent>
+                    <SelectItem value="all">All Channels</SelectItem>
+                    <SelectItem value="affiliate">Affiliate</SelectItem>
+                    <SelectItem value="direct">Direct</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="flex flex-col gap-2">
-                <Label className="text-gray-400 text-sm">Product</Label>
+                <Label className="text-muted-foreground text-sm">Product</Label>
                 <Select value={productId || "all"} onValueChange={(v) => setProductId(v === "all" ? "" : v)}>
-                  <SelectTrigger className="w-48 bg-gray-800 border-gray-700 text-white" data-testid="filter-product">
+                  <SelectTrigger className="w-48" data-testid="filter-product">
                     <SelectValue placeholder="All Products" />
                   </SelectTrigger>
-                  <SelectContent className="bg-gray-800 border-gray-700">
-                    <SelectItem value="all" className="text-white">All Products</SelectItem>
+                  <SelectContent>
+                    <SelectItem value="all">All Products</SelectItem>
                     {availableProducts?.map((p) => (
-                      <SelectItem key={p.id} value={p.id} className="text-white">
+                      <SelectItem key={p.id} value={p.id}>
                         {p.name}
                       </SelectItem>
                     ))}
@@ -444,96 +444,96 @@ export default function AdminRevenue() {
 
         {metricsLoading ? (
           <div className="flex items-center justify-center py-12">
-            <RefreshCcw className="h-8 w-8 animate-spin text-cyan-400" />
+            <RefreshCcw className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              <Card className="bg-gray-900 border-gray-800" data-testid="card-gross-revenue">
+              <Card data-testid="card-gross-revenue">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-400">Gross Revenue</CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Gross Revenue</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-white">
+                  <div className="text-2xl font-bold text-foreground">
                     {formatCurrency(metrics?.grossRevenue || 0)}
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">{PRESET_LABELS[preset]}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{PRESET_LABELS[preset]}</p>
                 </CardContent>
               </Card>
 
-              <Card className="bg-gray-900 border-gray-800" data-testid="card-net-revenue">
+              <Card data-testid="card-net-revenue">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-400">Net Revenue</CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Net Revenue</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-green-400">
+                  <div className="text-2xl font-bold" style={{ color: tc.success }}>
                     {formatCurrency(metrics?.netRevenue || 0)}
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">After refunds</p>
+                  <p className="text-xs text-muted-foreground mt-1">After refunds</p>
                 </CardContent>
               </Card>
 
-              <Card className="bg-gray-900 border-gray-800" data-testid="card-aov">
+              <Card data-testid="card-aov">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-400">Average Order Value</CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Average Order Value</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-white">
+                  <div className="text-2xl font-bold text-foreground">
                     {formatCurrency(metrics?.averageOrderValue || 0)}
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">{formatNumber(metrics?.totalOrders || 0)} orders</p>
+                  <p className="text-xs text-muted-foreground mt-1">{formatNumber(metrics?.totalOrders || 0)} orders</p>
                 </CardContent>
               </Card>
 
-              <Card className="bg-gray-900 border-gray-800" data-testid="card-refund-rate">
+              <Card data-testid="card-refund-rate">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-400">Refund Rate</CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Refund Rate</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-orange-400">
+                  <div className="text-2xl font-bold" style={{ color: tc.warning }}>
                     {formatPercent(metrics?.refundRate || 0)}
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">{formatCurrency(metrics?.refundTotal || 0)} refunded</p>
+                  <p className="text-xs text-muted-foreground mt-1">{formatCurrency(metrics?.refundTotal || 0)} refunded</p>
                 </CardContent>
               </Card>
 
-              <Card className="bg-gray-900 border-gray-800" data-testid="card-affiliate-revenue">
+              <Card data-testid="card-affiliate-revenue">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-400">Affiliate Revenue</CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Affiliate Revenue</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-purple-400">
+                  <div className="text-2xl font-bold" style={{ color: tc.accent }}>
                     {formatCurrency(metrics?.affiliateRevenue || 0)}
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">{formatPercent(metrics?.affiliateRevenuePercent || 0)} of total</p>
+                  <p className="text-xs text-muted-foreground mt-1">{formatPercent(metrics?.affiliateRevenuePercent || 0)} of total</p>
                 </CardContent>
               </Card>
 
-              <Card className="bg-gray-900 border-gray-800" data-testid="card-total-orders">
+              <Card data-testid="card-total-orders">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-400">Total Orders</CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Total Orders</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-white">
+                  <div className="text-2xl font-bold text-foreground">
                     {formatNumber(metrics?.totalOrders || 0)}
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">Completed orders</p>
+                  <p className="text-xs text-muted-foreground mt-1">Completed orders</p>
                 </CardContent>
               </Card>
 
-              <Card className="bg-gray-900 border-gray-800 md:col-span-2" data-testid="card-top-product">
+              <Card className="md:col-span-2" data-testid="card-top-product">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-400">Top Product</CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Top Product</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="text-lg font-bold text-white">
+                      <div className="text-lg font-bold text-foreground">
                         {metrics?.topProductName || "No data"}
                       </div>
-                      <p className="text-xs text-gray-500 mt-1">Best seller by revenue</p>
+                      <p className="text-xs text-muted-foreground mt-1">Best seller by revenue</p>
                     </div>
-                    <Badge className="bg-cyan-400/20 text-cyan-400 border-cyan-400/30">
+                    <Badge className="bg-primary/20 text-primary border-primary/30">
                       {formatCurrency(metrics?.topProductRevenue || 0)}
                     </Badge>
                   </div>
@@ -541,71 +541,70 @@ export default function AdminRevenue() {
               </Card>
             </div>
 
-            {/* Upsell & VIP Section */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              <Card className="bg-gradient-to-br from-gray-900 to-purple-900/30 border-purple-800/30" data-testid="card-upsell-revenue">
+              <Card data-testid="card-upsell-revenue">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-400 flex items-center gap-2">
-                    <Link2 className="w-4 h-4 text-purple-400" />
+                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                    <Link2 className="w-4 h-4" style={{ color: tc.accent }} />
                     Upsell Revenue
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-purple-400">
+                  <div className="text-2xl font-bold" style={{ color: tc.accent }}>
                     {formatCurrency(upsellAnalytics?.upsellRevenue || 0)}
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     +{formatPercent((upsellAnalytics?.revenueUplift || 0) * 100)} uplift
                   </p>
                 </CardContent>
               </Card>
 
-              <Card className="bg-gray-900 border-gray-800" data-testid="card-upsell-conversion">
+              <Card data-testid="card-upsell-conversion">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-400 flex items-center gap-2">
-                    <Target className="w-4 h-4 text-green-400" />
+                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                    <Target className="w-4 h-4" style={{ color: tc.success }} />
                     Upsell Conversion
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-green-400">
+                  <div className="text-2xl font-bold" style={{ color: tc.success }}>
                     {formatPercent((upsellAnalytics?.conversionRate || 0) * 100)}
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     {formatNumber(upsellAnalytics?.totalConversions || 0)} conversions
                   </p>
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-to-br from-gray-900 to-amber-900/30 border-amber-800/30" data-testid="card-vip-revenue">
+              <Card data-testid="card-vip-revenue">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-400 flex items-center gap-2">
-                    <Crown className="w-4 h-4 text-amber-400" />
+                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                    <Crown className="w-4 h-4" style={{ color: tc.warning }} />
                     VIP Revenue
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-amber-400">
+                  <div className="text-2xl font-bold" style={{ color: tc.warning }}>
                     {formatCurrency(vipAnalytics?.vipRevenue || 0)}
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     {formatPercent((vipAnalytics?.vipRevenuePercent || 0) * 100)} of total
                   </p>
                 </CardContent>
               </Card>
 
-              <Card className="bg-gray-900 border-gray-800" data-testid="card-vip-aov">
+              <Card data-testid="card-vip-aov">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-400 flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-amber-400" />
+                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                    <Sparkles className="w-4 h-4" style={{ color: tc.warning }} />
                     VIP AOV Uplift
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-white">
+                  <div className="text-2xl font-bold text-foreground">
                     +{formatPercent((vipAnalytics?.aovUplift || 0) * 100)}
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     {formatCurrency(vipAnalytics?.vipAov || 0)} vs {formatCurrency(vipAnalytics?.nonVipAov || 0)}
                   </p>
                 </CardContent>
@@ -613,9 +612,9 @@ export default function AdminRevenue() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-              <Card className="bg-gray-900 border-gray-800">
+              <Card>
                 <CardHeader>
-                  <CardTitle className="text-white">Revenue Over Time</CardTitle>
+                  <CardTitle>Revenue Over Time</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="h-64">
@@ -636,9 +635,9 @@ export default function AdminRevenue() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-gray-900 border-gray-800">
+              <Card>
                 <CardHeader>
-                  <CardTitle className="text-white">Orders Over Time</CardTitle>
+                  <CardTitle>Orders Over Time</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="h-64">
@@ -658,9 +657,9 @@ export default function AdminRevenue() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-gray-900 border-gray-800">
+              <Card>
                 <CardHeader>
-                  <CardTitle className="text-white">Affiliate vs Direct Revenue</CardTitle>
+                  <CardTitle>Affiliate vs Direct Revenue</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="h-64 flex items-center justify-center">
@@ -688,15 +687,15 @@ export default function AdminRevenue() {
                         </RePieChart>
                       </ResponsiveContainer>
                     ) : (
-                      <p className="text-gray-500">No revenue data available</p>
+                      <p className="text-muted-foreground">No revenue data available</p>
                     )}
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-gray-900 border-gray-800">
+              <Card>
                 <CardHeader>
-                  <CardTitle className="text-white">AOV Trend</CardTitle>
+                  <CardTitle>AOV Trend</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="h-64">
@@ -717,9 +716,9 @@ export default function AdminRevenue() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-gray-900 border-gray-800 lg:col-span-2">
+              <Card className="lg:col-span-2">
                 <CardHeader>
-                  <CardTitle className="text-white">Refunds Over Time</CardTitle>
+                  <CardTitle>Refunds Over Time</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="h-48">
@@ -742,54 +741,54 @@ export default function AdminRevenue() {
             </div>
 
             <Tabs defaultValue="products" className="w-full">
-              <TabsList className="bg-gray-800 border-gray-700">
-                <TabsTrigger value="products" className="data-[state=active]:bg-cyan-400/20 data-[state=active]:text-cyan-400">
+              <TabsList>
+                <TabsTrigger value="products">
                   Top Products
                 </TabsTrigger>
-                <TabsTrigger value="affiliates" className="data-[state=active]:bg-cyan-400/20 data-[state=active]:text-cyan-400">
+                <TabsTrigger value="affiliates">
                   Top Affiliates
                 </TabsTrigger>
-                <TabsTrigger value="customers" className="data-[state=active]:bg-cyan-400/20 data-[state=active]:text-cyan-400">
+                <TabsTrigger value="customers">
                   Top Customers
                 </TabsTrigger>
-                <TabsTrigger value="upsells" className="data-[state=active]:bg-purple-400/20 data-[state=active]:text-purple-400">
+                <TabsTrigger value="upsells">
                   <Link2 className="w-4 h-4 mr-1" />
                   Top Upsells
                 </TabsTrigger>
-                <TabsTrigger value="vip" className="data-[state=active]:bg-amber-400/20 data-[state=active]:text-amber-400">
+                <TabsTrigger value="vip">
                   <Crown className="w-4 h-4 mr-1" />
                   VIP Stats
                 </TabsTrigger>
               </TabsList>
 
               <TabsContent value="products">
-                <Card className="bg-gray-900 border-gray-800">
+                <Card>
                   <CardHeader>
-                    <CardTitle className="text-white">Top Products by Revenue</CardTitle>
+                    <CardTitle>Top Products by Revenue</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <Table>
                       <TableHeader>
-                        <TableRow className="border-gray-800">
-                          <TableHead className="text-gray-400">Product</TableHead>
-                          <TableHead className="text-gray-400 text-right">Revenue</TableHead>
-                          <TableHead className="text-gray-400 text-right">Units Sold</TableHead>
-                          <TableHead className="text-gray-400 text-right">Orders</TableHead>
+                        <TableRow>
+                          <TableHead>Product</TableHead>
+                          <TableHead className="text-right">Revenue</TableHead>
+                          <TableHead className="text-right">Units Sold</TableHead>
+                          <TableHead className="text-right">Orders</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {topProducts?.length ? (
                           topProducts.map((product) => (
-                            <TableRow key={product.productId} className="border-gray-800" data-testid={`row-product-${product.productId}`}>
-                              <TableCell className="text-white font-medium">{product.productName}</TableCell>
-                              <TableCell className="text-right text-cyan-400">{formatCurrency(product.revenue)}</TableCell>
-                              <TableCell className="text-right text-gray-300">{formatNumber(product.unitsSold)}</TableCell>
-                              <TableCell className="text-right text-gray-300">{formatNumber(product.orderCount)}</TableCell>
+                            <TableRow key={product.productId} data-testid={`row-product-${product.productId}`}>
+                              <TableCell className="font-medium">{product.productName}</TableCell>
+                              <TableCell className="text-right text-primary">{formatCurrency(product.revenue)}</TableCell>
+                              <TableCell className="text-right text-muted-foreground">{formatNumber(product.unitsSold)}</TableCell>
+                              <TableCell className="text-right text-muted-foreground">{formatNumber(product.orderCount)}</TableCell>
                             </TableRow>
                           ))
                         ) : (
                           <TableRow>
-                            <TableCell colSpan={4} className="text-center text-gray-500 py-8">
+                            <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
                               No product data available for this period
                             </TableCell>
                           </TableRow>
@@ -801,39 +800,39 @@ export default function AdminRevenue() {
               </TabsContent>
 
               <TabsContent value="affiliates">
-                <Card className="bg-gray-900 border-gray-800">
+                <Card>
                   <CardHeader>
-                    <CardTitle className="text-white">Top Affiliates by Revenue Generated</CardTitle>
+                    <CardTitle>Top Affiliates by Revenue Generated</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <Table>
                       <TableHeader>
-                        <TableRow className="border-gray-800">
-                          <TableHead className="text-gray-400">Affiliate</TableHead>
-                          <TableHead className="text-gray-400">Code</TableHead>
-                          <TableHead className="text-gray-400 text-right">Revenue</TableHead>
-                          <TableHead className="text-gray-400 text-right">Commission</TableHead>
-                          <TableHead className="text-gray-400 text-right">Orders</TableHead>
+                        <TableRow>
+                          <TableHead>Affiliate</TableHead>
+                          <TableHead>Code</TableHead>
+                          <TableHead className="text-right">Revenue</TableHead>
+                          <TableHead className="text-right">Commission</TableHead>
+                          <TableHead className="text-right">Orders</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {topAffiliates?.length ? (
                           topAffiliates.map((affiliate) => (
-                            <TableRow key={affiliate.affiliateId} className="border-gray-800" data-testid={`row-affiliate-${affiliate.affiliateId}`}>
-                              <TableCell className="text-white font-medium">{affiliate.customerName}</TableCell>
+                            <TableRow key={affiliate.affiliateId} data-testid={`row-affiliate-${affiliate.affiliateId}`}>
+                              <TableCell className="font-medium">{affiliate.customerName}</TableCell>
                               <TableCell>
-                                <Badge variant="outline" className="border-purple-400/30 text-purple-400">
+                                <Badge variant="outline" className="border-primary/30 text-primary">
                                   {affiliate.affiliateCode}
                                 </Badge>
                               </TableCell>
-                              <TableCell className="text-right text-cyan-400">{formatCurrency(affiliate.revenue)}</TableCell>
-                              <TableCell className="text-right text-green-400">{formatCurrency(affiliate.commission)}</TableCell>
-                              <TableCell className="text-right text-gray-300">{formatNumber(affiliate.orderCount)}</TableCell>
+                              <TableCell className="text-right text-primary">{formatCurrency(affiliate.revenue)}</TableCell>
+                              <TableCell className="text-right" style={{ color: tc.success }}>{formatCurrency(affiliate.commission)}</TableCell>
+                              <TableCell className="text-right text-muted-foreground">{formatNumber(affiliate.orderCount)}</TableCell>
                             </TableRow>
                           ))
                         ) : (
                           <TableRow>
-                            <TableCell colSpan={5} className="text-center text-gray-500 py-8">
+                            <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                               No affiliate data available for this period
                             </TableCell>
                           </TableRow>
@@ -845,37 +844,37 @@ export default function AdminRevenue() {
               </TabsContent>
 
               <TabsContent value="customers">
-                <Card className="bg-gray-900 border-gray-800">
+                <Card>
                   <CardHeader>
-                    <CardTitle className="text-white">Top Customers by Lifetime Value</CardTitle>
+                    <CardTitle>Top Customers by Lifetime Value</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <Table>
                       <TableHeader>
-                        <TableRow className="border-gray-800">
-                          <TableHead className="text-gray-400">Customer</TableHead>
-                          <TableHead className="text-gray-400">Email</TableHead>
-                          <TableHead className="text-gray-400 text-right">Total Spent</TableHead>
-                          <TableHead className="text-gray-400 text-right">Orders</TableHead>
-                          <TableHead className="text-gray-400">First Order</TableHead>
+                        <TableRow>
+                          <TableHead>Customer</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead className="text-right">Total Spent</TableHead>
+                          <TableHead className="text-right">Orders</TableHead>
+                          <TableHead>First Order</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {topCustomers?.length ? (
                           topCustomers.map((customer) => (
-                            <TableRow key={customer.customerId} className="border-gray-800" data-testid={`row-customer-${customer.customerId}`}>
-                              <TableCell className="text-white font-medium">{customer.customerName}</TableCell>
-                              <TableCell className="text-gray-400">{customer.email}</TableCell>
-                              <TableCell className="text-right text-cyan-400">{formatCurrency(customer.totalSpent)}</TableCell>
-                              <TableCell className="text-right text-gray-300">{formatNumber(customer.orderCount)}</TableCell>
-                              <TableCell className="text-gray-400">
+                            <TableRow key={customer.customerId} data-testid={`row-customer-${customer.customerId}`}>
+                              <TableCell className="font-medium">{customer.customerName}</TableCell>
+                              <TableCell className="text-muted-foreground">{customer.email}</TableCell>
+                              <TableCell className="text-right text-primary">{formatCurrency(customer.totalSpent)}</TableCell>
+                              <TableCell className="text-right text-muted-foreground">{formatNumber(customer.orderCount)}</TableCell>
+                              <TableCell className="text-muted-foreground">
                                 {customer.firstOrderDate ? format(new Date(customer.firstOrderDate), "MMM d, yyyy") : "-"}
                               </TableCell>
                             </TableRow>
                           ))
                         ) : (
                           <TableRow>
-                            <TableCell colSpan={5} className="text-center text-gray-500 py-8">
+                            <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                               No customer data available for this period
                             </TableCell>
                           </TableRow>
@@ -887,56 +886,56 @@ export default function AdminRevenue() {
               </TabsContent>
 
               <TabsContent value="upsells">
-                <Card className="bg-gray-900 border-gray-800">
+                <Card>
                   <CardHeader>
-                    <CardTitle className="text-white flex items-center gap-2">
-                      <Link2 className="w-5 h-5 text-purple-400" />
+                    <CardTitle className="flex items-center gap-2">
+                      <Link2 className="w-5 h-5" style={{ color: tc.accent }} />
                       Top Performing Upsells
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                      <div className="bg-gray-800/50 rounded-lg p-4">
-                        <p className="text-gray-400 text-sm">Total Impressions</p>
-                        <p className="text-2xl font-bold text-white">
+                      <div className="bg-muted/50 rounded-lg p-4">
+                        <p className="text-muted-foreground text-sm">Total Impressions</p>
+                        <p className="text-2xl font-bold text-foreground">
                           {formatNumber(upsellAnalytics?.totalImpressions || 0)}
                         </p>
                       </div>
-                      <div className="bg-gray-800/50 rounded-lg p-4">
-                        <p className="text-gray-400 text-sm">Click Rate</p>
-                        <p className="text-2xl font-bold text-cyan-400">
+                      <div className="bg-muted/50 rounded-lg p-4">
+                        <p className="text-muted-foreground text-sm">Click Rate</p>
+                        <p className="text-2xl font-bold text-primary">
                           {formatPercent((upsellAnalytics?.clickRate || 0) * 100)}
                         </p>
                       </div>
-                      <div className="bg-gray-800/50 rounded-lg p-4">
-                        <p className="text-gray-400 text-sm">Attach Rate</p>
-                        <p className="text-2xl font-bold text-green-400">
+                      <div className="bg-muted/50 rounded-lg p-4">
+                        <p className="text-muted-foreground text-sm">Attach Rate</p>
+                        <p className="text-2xl font-bold" style={{ color: tc.success }}>
                           {formatPercent((upsellAnalytics?.conversionRate || 0) * 100)}
                         </p>
                       </div>
                     </div>
                     <Table>
                       <TableHeader>
-                        <TableRow className="border-gray-800">
-                          <TableHead className="text-gray-400">Product</TableHead>
-                          <TableHead className="text-gray-400">Upsell</TableHead>
-                          <TableHead className="text-gray-400 text-right">Conversions</TableHead>
-                          <TableHead className="text-gray-400 text-right">Revenue</TableHead>
+                        <TableRow>
+                          <TableHead>Product</TableHead>
+                          <TableHead>Upsell</TableHead>
+                          <TableHead className="text-right">Conversions</TableHead>
+                          <TableHead className="text-right">Revenue</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {upsellAnalytics?.topUpsells?.length ? (
                           upsellAnalytics.topUpsells.map((upsell, idx) => (
-                            <TableRow key={idx} className="border-gray-800">
-                              <TableCell className="text-white font-medium">{upsell.productName}</TableCell>
-                              <TableCell className="text-purple-400">{upsell.relatedProductName}</TableCell>
-                              <TableCell className="text-right text-gray-300">{formatNumber(upsell.conversions)}</TableCell>
-                              <TableCell className="text-right text-cyan-400">{formatCurrency(upsell.revenue)}</TableCell>
+                            <TableRow key={idx}>
+                              <TableCell className="font-medium">{upsell.productName}</TableCell>
+                              <TableCell style={{ color: tc.accent }}>{upsell.relatedProductName}</TableCell>
+                              <TableCell className="text-right text-muted-foreground">{formatNumber(upsell.conversions)}</TableCell>
+                              <TableCell className="text-right text-primary">{formatCurrency(upsell.revenue)}</TableCell>
                             </TableRow>
                           ))
                         ) : (
                           <TableRow>
-                            <TableCell colSpan={4} className="text-center text-gray-500 py-8">
+                            <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
                               No upsell data available for this period
                             </TableCell>
                           </TableRow>
@@ -948,61 +947,61 @@ export default function AdminRevenue() {
               </TabsContent>
 
               <TabsContent value="vip">
-                <Card className="bg-gray-900 border-gray-800">
+                <Card>
                   <CardHeader>
-                    <CardTitle className="text-white flex items-center gap-2">
-                      <Crown className="w-5 h-5 text-amber-400" />
+                    <CardTitle className="flex items-center gap-2">
+                      <Crown className="w-5 h-5" style={{ color: tc.warning }} />
                       VIP Customer Statistics
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                      <div className="bg-gradient-to-br from-amber-900/30 to-gray-800 rounded-lg p-4 border border-amber-800/30">
-                        <p className="text-gray-400 text-sm flex items-center gap-1">
-                          <Crown className="w-4 h-4 text-amber-400" />
+                      <div className="bg-muted/50 rounded-lg p-4 border border-border">
+                        <p className="text-muted-foreground text-sm flex items-center gap-1">
+                          <Crown className="w-4 h-4" style={{ color: tc.warning }} />
                           Active VIPs
                         </p>
-                        <p className="text-2xl font-bold text-amber-400">
+                        <p className="text-2xl font-bold" style={{ color: tc.warning }}>
                           {formatNumber(vipAnalytics?.activeVips || 0)}
                         </p>
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-muted-foreground mt-1">
                           of {formatNumber(vipAnalytics?.totalVips || 0)} total
                         </p>
                       </div>
-                      <div className="bg-gray-800/50 rounded-lg p-4">
-                        <p className="text-gray-400 text-sm">VIP Revenue Share</p>
-                        <p className="text-2xl font-bold text-cyan-400">
+                      <div className="bg-muted/50 rounded-lg p-4">
+                        <p className="text-muted-foreground text-sm">VIP Revenue Share</p>
+                        <p className="text-2xl font-bold text-primary">
                           {formatPercent((vipAnalytics?.vipRevenuePercent || 0) * 100)}
                         </p>
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-muted-foreground mt-1">
                           {formatCurrency(vipAnalytics?.vipRevenue || 0)}
                         </p>
                       </div>
-                      <div className="bg-gray-800/50 rounded-lg p-4">
-                        <p className="text-gray-400 text-sm">VIP Avg Order</p>
-                        <p className="text-2xl font-bold text-white">
+                      <div className="bg-muted/50 rounded-lg p-4">
+                        <p className="text-muted-foreground text-sm">VIP Avg Order</p>
+                        <p className="text-2xl font-bold text-foreground">
                           {formatCurrency(vipAnalytics?.vipAov || 0)}
                         </p>
-                        <p className="text-xs text-gray-500 mt-1">per order</p>
+                        <p className="text-xs text-muted-foreground mt-1">per order</p>
                       </div>
-                      <div className="bg-gray-800/50 rounded-lg p-4">
-                        <p className="text-gray-400 text-sm">Non-VIP Avg Order</p>
-                        <p className="text-2xl font-bold text-white">
+                      <div className="bg-muted/50 rounded-lg p-4">
+                        <p className="text-muted-foreground text-sm">Non-VIP Avg Order</p>
+                        <p className="text-2xl font-bold text-foreground">
                           {formatCurrency(vipAnalytics?.nonVipAov || 0)}
                         </p>
-                        <p className="text-xs text-gray-500 mt-1">per order</p>
+                        <p className="text-xs text-muted-foreground mt-1">per order</p>
                       </div>
                     </div>
-                    <div className="mt-6 p-4 bg-gradient-to-r from-purple-900/20 to-amber-900/20 rounded-lg border border-purple-800/30">
-                      <h4 className="text-white font-medium mb-2 flex items-center gap-2">
-                        <Sparkles className="w-4 h-4 text-amber-400" />
+                    <div className="mt-6 p-4 bg-muted/30 rounded-lg border border-border">
+                      <h4 className="text-foreground font-medium mb-2 flex items-center gap-2">
+                        <Sparkles className="w-4 h-4" style={{ color: tc.warning }} />
                         VIP Impact Summary
                       </h4>
-                      <p className="text-gray-300 text-sm">
-                        VIP customers spend <span className="text-amber-400 font-medium">
+                      <p className="text-muted-foreground text-sm">
+                        VIP customers spend <span className="font-medium" style={{ color: tc.warning }}>
                           {formatPercent((vipAnalytics?.aovUplift || 0) * 100)} more
                         </span> per order than regular customers and contribute{" "}
-                        <span className="text-cyan-400 font-medium">
+                        <span className="text-primary font-medium">
                           {formatPercent((vipAnalytics?.vipRevenuePercent || 0) * 100)}
                         </span> of your total revenue.
                       </p>
