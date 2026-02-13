@@ -80,6 +80,14 @@ app.use(requestLoggerMiddleware);
     async () => {
       log(`serving on port ${port}`);
 
+      // Run database migrations
+      try {
+        const { addOrderDiscountColumns } = await import("./src/migrations/addOrderDiscountColumns");
+        await addOrderDiscountColumns();
+      } catch (error) {
+        console.error("[MIGRATION] Failed to run order discount migration:", error);
+      }
+
       // Ensure default CMS pages exist
       try {
         const { ensureCmsDefaults } = await import("./seed");

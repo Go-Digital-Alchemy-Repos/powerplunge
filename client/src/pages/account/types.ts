@@ -31,6 +31,11 @@ export interface Order {
   id: string;
   status: string;
   totalAmount: number;
+  subtotalAmount?: number | null;
+  taxAmount?: number | null;
+  affiliateDiscountAmount?: number | null;
+  couponDiscountAmount?: number | null;
+  couponCode?: string | null;
   createdAt: string;
   items: OrderItem[];
   shipments?: Shipment[];

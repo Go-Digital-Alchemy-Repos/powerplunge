@@ -304,6 +304,9 @@ router.post("/create-payment-intent", paymentLimiter, async (req: any, res) => {
       taxAmount: taxAmount > 0 ? taxAmount : null,
       stripeTaxCalculationId: taxCalculationId,
       affiliateCode: affiliate?.affiliateCode,
+      affiliateDiscountAmount: affiliateDiscountAmount > 0 ? affiliateDiscountAmount : null,
+      couponDiscountAmount: couponDiscountAmount > 0 ? couponDiscountAmount : null,
+      couponCode: validatedCoupon?.code || null,
       shippingName: customerData.name,
       shippingCompany: shippingAddr.company || null,
       shippingAddress: customerData.address,
@@ -608,6 +611,9 @@ router.post("/reprice-payment-intent", paymentLimiter, async (req: any, res) => 
       totalAmount,
       stripeTaxCalculationId: taxCalculationId,
       affiliateCode: affiliate?.affiliateCode || null,
+      affiliateDiscountAmount: affiliateDiscountAmount > 0 ? affiliateDiscountAmount : null,
+      couponDiscountAmount: couponDiscountAmount > 0 ? couponDiscountAmount : null,
+      couponCode: validatedCoupon?.code || null,
       shippingName: customerData.name,
       shippingCompany: shippingAddr.company || null,
       shippingAddress: customerData.address,
@@ -855,6 +861,7 @@ router.post("/checkout", checkoutLimiter, async (req: any, res) => {
         totalAmount,
         notes: "Stripe not configured - manual payment required",
         affiliateCode: affiliate?.affiliateCode,
+        affiliateDiscountAmount: affiliateDiscountAmount > 0 ? affiliateDiscountAmount : null,
       });
 
       for (const item of orderItems) {
@@ -932,9 +939,11 @@ router.post("/checkout", checkoutLimiter, async (req: any, res) => {
     const order = await storage.createOrder({
       customerId: existingCustomer.id,
       status: "pending",
+      subtotalAmount,
       totalAmount,
       stripeSessionId: stripeSession.id,
       affiliateCode: affiliate?.affiliateCode,
+      affiliateDiscountAmount: affiliateDiscountAmount > 0 ? affiliateDiscountAmount : null,
     });
 
     for (const item of orderItems) {

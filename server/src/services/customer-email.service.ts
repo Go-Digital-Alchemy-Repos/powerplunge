@@ -167,6 +167,31 @@ class CustomerEmailService {
               </td>
             </tr>
           `).join("")}
+          ${!isPaymentBypassed(order) ? `
+          <tr>
+            <td colspan="2" style="padding: 0;"><div style="border-top: 2px solid #e5e7eb; margin: 4px 0;"></div></td>
+          </tr>
+          ${order.subtotalAmount != null ? `
+          <tr>
+            <td style="padding: 6px 0; color: #6b7280; font-size: 14px;">Subtotal</td>
+            <td style="padding: 6px 0; text-align: right; color: #374151; font-size: 14px;">${formatCurrency(order.subtotalAmount)}</td>
+          </tr>` : ''}
+          ${(order.affiliateDiscountAmount ?? 0) > 0 ? `
+          <tr>
+            <td style="padding: 6px 0; color: #6b7280; font-size: 14px;">Affiliate Discount</td>
+            <td style="padding: 6px 0; text-align: right; color: #059669; font-size: 14px;">-${formatCurrency(order.affiliateDiscountAmount!)}</td>
+          </tr>` : ''}
+          ${(order.couponDiscountAmount ?? 0) > 0 ? `
+          <tr>
+            <td style="padding: 6px 0; color: #6b7280; font-size: 14px;">Coupon${order.couponCode ? ` (${order.couponCode})` : ''}</td>
+            <td style="padding: 6px 0; text-align: right; color: #059669; font-size: 14px;">-${formatCurrency(order.couponDiscountAmount!)}</td>
+          </tr>` : ''}
+          ${(order.taxAmount ?? 0) > 0 ? `
+          <tr>
+            <td style="padding: 6px 0; color: #6b7280; font-size: 14px;">Tax</td>
+            <td style="padding: 6px 0; text-align: right; color: #374151; font-size: 14px;">${formatCurrency(order.taxAmount!)}</td>
+          </tr>` : ''}
+          ` : ''}
           <tr>
             <td style="padding: 16px 0 0; font-weight: 600; color: #111827; font-size: 16px;">Total</td>
             <td style="padding: 16px 0 0; text-align: right; font-weight: 700; color: #111827; font-size: 18px;">${formatOrderAmount(order)}</td>

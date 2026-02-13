@@ -36,6 +36,9 @@ interface OrderData {
   totalAmount: number;
   subtotalAmount: number | null;
   taxAmount: number | null;
+  affiliateDiscountAmount: number | null;
+  couponDiscountAmount: number | null;
+  couponCode: string | null;
   createdAt: string;
   items: OrderItem[];
   customer: Customer;
@@ -220,17 +223,29 @@ export default function OrderStatus() {
             <Separator className="my-4" />
 
             <div className="space-y-2">
-              {order.subtotalAmount != null && order.taxAmount != null && (
-                <>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Subtotal</span>
-                    <span data-testid="text-subtotal">{formatCurrency(order.subtotalAmount)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Tax</span>
-                    <span data-testid="text-tax">{formatCurrency(order.taxAmount)}</span>
-                  </div>
-                </>
+              {order.subtotalAmount != null && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Subtotal</span>
+                  <span data-testid="text-subtotal">{formatCurrency(order.subtotalAmount)}</span>
+                </div>
+              )}
+              {(order.affiliateDiscountAmount ?? 0) > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Affiliate Discount</span>
+                  <span className="text-green-500" data-testid="text-affiliate-discount">-{formatCurrency(order.affiliateDiscountAmount!)}</span>
+                </div>
+              )}
+              {(order.couponDiscountAmount ?? 0) > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Coupon{order.couponCode ? ` (${order.couponCode})` : ""}</span>
+                  <span className="text-green-500" data-testid="text-coupon-discount">-{formatCurrency(order.couponDiscountAmount!)}</span>
+                </div>
+              )}
+              {(order.taxAmount ?? 0) > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Tax</span>
+                  <span data-testid="text-tax">{formatCurrency(order.taxAmount!)}</span>
+                </div>
               )}
               <div className="flex justify-between items-center pt-2">
                 <span className="font-semibold">Total</span>

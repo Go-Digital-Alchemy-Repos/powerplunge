@@ -129,9 +129,37 @@ export default function OrdersTab() {
                         <p className="font-medium">${((item.unitPrice * item.quantity) / 100).toLocaleString()}</p>
                       </div>
                     ))}
+                    {(order.subtotalAmount != null || (order.affiliateDiscountAmount ?? 0) > 0 || (order.couponDiscountAmount ?? 0) > 0 || (order.taxAmount ?? 0) > 0) && (
+                      <div className="space-y-1 pt-3 border-t border-border">
+                        {order.subtotalAmount != null && (
+                          <div className="flex justify-between text-sm text-muted-foreground">
+                            <span>Subtotal</span>
+                            <span>${(order.subtotalAmount / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                          </div>
+                        )}
+                        {(order.affiliateDiscountAmount ?? 0) > 0 && (
+                          <div className="flex justify-between text-sm text-muted-foreground">
+                            <span>Affiliate Discount</span>
+                            <span className="text-green-500">-${(order.affiliateDiscountAmount! / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                          </div>
+                        )}
+                        {(order.couponDiscountAmount ?? 0) > 0 && (
+                          <div className="flex justify-between text-sm text-muted-foreground">
+                            <span>Coupon{order.couponCode ? ` (${order.couponCode})` : ""}</span>
+                            <span className="text-green-500">-${(order.couponDiscountAmount! / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                          </div>
+                        )}
+                        {(order.taxAmount ?? 0) > 0 && (
+                          <div className="flex justify-between text-sm text-muted-foreground">
+                            <span>Tax</span>
+                            <span>${(order.taxAmount! / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
                     <div className="flex justify-between pt-4 font-semibold">
                       <span>Total</span>
-                      <span className="text-primary">{order.isManualOrder && !order.stripePaymentIntentId ? "FREE" : `$${(order.totalAmount / 100).toLocaleString()}`}</span>
+                      <span className="text-primary">{order.isManualOrder && !order.stripePaymentIntentId ? "FREE" : `$${(order.totalAmount / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}</span>
                     </div>
                   </div>
 

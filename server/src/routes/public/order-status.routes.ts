@@ -21,6 +21,9 @@ router.get("/:orderId/status", async (req, res) => {
       totalAmount: order.totalAmount,
       subtotalAmount: order.subtotalAmount || null,
       taxAmount: order.taxAmount || null,
+      affiliateDiscountAmount: order.affiliateDiscountAmount || null,
+      couponDiscountAmount: order.couponDiscountAmount || null,
+      couponCode: order.couponCode || null,
       createdAt: order.createdAt,
       items,
       customer: customer ? {
@@ -31,6 +34,8 @@ router.get("/:orderId/status", async (req, res) => {
         country: customer.country,
       } : null,
       shipments,
+      isManualOrder: order.isManualOrder,
+      stripePaymentIntentId: order.stripePaymentIntentId,
     });
   } catch (error) {
     console.error("Public order status error:", error);
