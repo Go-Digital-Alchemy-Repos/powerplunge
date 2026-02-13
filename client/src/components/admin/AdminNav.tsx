@@ -312,7 +312,7 @@ export default function AdminNav({ currentPage, role = "admin" }: AdminNavProps)
 
   if (hasFullAccess) {
     groups.push({
-      label: "Content Management",
+      label: "CMS",
       icon: LayoutGrid,
       defaultOpen: isCms,
       items: [
@@ -450,7 +450,7 @@ export default function AdminNav({ currentPage, role = "admin" }: AdminNavProps)
                     data-testid="link-cms"
                   >
                     <LayoutGrid className="w-4 h-4" />
-                    Content Management
+                    CMS
                   </Button>
                 </Link>
               )}
