@@ -121,7 +121,7 @@ export default function ProductDetail() {
     return (
       <SiteLayout>
         <div className="min-h-[60vh] flex items-center justify-center">
-          <div className="animate-spin w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full" />
+          <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full" />
         </div>
       </SiteLayout>
     );
@@ -135,7 +135,7 @@ export default function ProductDetail() {
           <p className="text-muted-foreground mb-8">The product you're looking for doesn't exist or has been removed.</p>
           <Button
             onClick={() => navigate("/shop")}
-            className="bg-cyan-500 hover:bg-cyan-600 text-black"
+            className="bg-primary hover:bg-primary/80 text-primary-foreground"
             data-testid="button-back-to-shop"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -153,7 +153,7 @@ export default function ProductDetail() {
           <Button
             variant="ghost"
             onClick={() => navigate("/shop")}
-            className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-400/10 -ml-2"
+            className="text-primary hover:text-primary/80 hover:bg-primary/10 -ml-2"
             data-testid="button-back-to-shop"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -162,7 +162,7 @@ export default function ProductDetail() {
           <Button
             onClick={() => navigate("/checkout")}
             variant="outline"
-            className="border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10"
+            className="border-primary/30 text-primary hover:bg-primary/10"
             disabled={cart.length === 0}
             data-testid="button-cart"
           >
@@ -181,7 +181,7 @@ export default function ProductDetail() {
             {allImages.length > 0 ? (
               <div>
                 <div
-                  className="relative rounded-xl overflow-hidden bg-slate-800/50 border border-slate-700 mb-4 cursor-pointer group"
+                  className="relative rounded-xl overflow-hidden bg-card/50 border border-border mb-4 cursor-pointer group"
                   onClick={() => setLightboxOpen(true)}
                   data-testid="button-open-lightbox"
                 >
@@ -229,8 +229,8 @@ export default function ProductDetail() {
                         onClick={() => setSelectedImageIndex(idx)}
                         className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-colors ${
                           idx === selectedImageIndex
-                            ? "border-cyan-400"
-                            : "border-slate-700 hover:border-slate-500"
+                            ? "border-primary"
+                            : "border-border hover:border-border"
                         }`}
                         data-testid={`button-thumbnail-${idx}`}
                       >
@@ -241,8 +241,8 @@ export default function ProductDetail() {
                 )}
               </div>
             ) : (
-              <div className="rounded-xl bg-slate-800/50 border border-slate-700 h-[400px] sm:h-[500px] flex items-center justify-center">
-                <span className="text-slate-500 text-lg">No image available</span>
+              <div className="rounded-xl bg-card/50 border border-border h-[400px] sm:h-[500px] flex items-center justify-center">
+                <span className="text-muted-foreground text-lg">No image available</span>
               </div>
             )}
           </motion.div>
@@ -257,7 +257,7 @@ export default function ProductDetail() {
               {product.name}
             </h1>
             {product.tagline && (
-              <p className="text-lg text-cyan-400 mb-4" data-testid="text-product-tagline">
+              <p className="text-lg text-primary mb-4" data-testid="text-product-tagline">
                 {product.tagline}
               </p>
             )}
@@ -265,15 +265,15 @@ export default function ProductDetail() {
             <div className="flex items-baseline gap-3 mb-6">
               {product.salePrice ? (
                 <>
-                  <span className="text-4xl font-bold text-cyan-400" data-testid="text-product-price">
+                  <span className="text-4xl font-bold text-primary" data-testid="text-product-price">
                     ${(product.salePrice / 100).toLocaleString()}
                   </span>
-                  <span className="text-xl text-slate-500 line-through" data-testid="text-product-original-price">
+                  <span className="text-xl text-muted-foreground line-through" data-testid="text-product-original-price">
                     ${(product.price / 100).toLocaleString()}
                   </span>
                 </>
               ) : (
-                <span className="text-4xl font-bold text-cyan-400" data-testid="text-product-price">
+                <span className="text-4xl font-bold text-primary" data-testid="text-product-price">
                   ${(product.price / 100).toLocaleString()}
                 </span>
               )}
@@ -283,7 +283,7 @@ export default function ProductDetail() {
               <div
                 className="prose prose-invert prose-sm max-w-none mb-6 text-muted-foreground
                   prose-headings:text-foreground prose-strong:text-foreground
-                  prose-a:text-cyan-400 prose-a:no-underline hover:prose-a:underline"
+                  prose-a:text-primary prose-a:no-underline hover:prose-a:underline"
                 dangerouslySetInnerHTML={{ __html: product.description }}
                 data-testid="text-product-description"
               />
@@ -295,7 +295,7 @@ export default function ProductDetail() {
                 <ul className="space-y-2">
                   {product.features.map((feature, idx) => (
                     <li key={idx} className="flex items-start gap-3 text-muted-foreground" data-testid={`text-feature-${idx}`}>
-                      <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
+                      <Check className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
                       <span>{feature}</span>
                     </li>
                   ))}
@@ -317,13 +317,13 @@ export default function ProductDetail() {
               </div>
             )}
 
-            <div className="mt-auto pt-6 border-t border-slate-700/50">
+            <div className="mt-auto pt-6 border-t border-border/50">
               <div className="flex items-center gap-4 mb-4">
                 <span className="text-sm text-muted-foreground">Quantity:</span>
-                <div className="flex items-center border border-slate-700 rounded-lg">
+                <div className="flex items-center border border-border rounded-lg">
                   <button
                     onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                    className="p-2.5 sm:p-2 hover:bg-slate-800 transition-colors rounded-l-lg min-w-[44px] min-h-[44px] flex items-center justify-center"
+                    className="p-2.5 sm:p-2 hover:bg-card transition-colors rounded-l-lg min-w-[44px] min-h-[44px] flex items-center justify-center"
                     disabled={quantity <= 1}
                     data-testid="button-quantity-decrease"
                   >
@@ -334,7 +334,7 @@ export default function ProductDetail() {
                   </span>
                   <button
                     onClick={() => setQuantity(q => q + 1)}
-                    className="p-2.5 sm:p-2 hover:bg-slate-800 transition-colors rounded-r-lg min-w-[44px] min-h-[44px] flex items-center justify-center"
+                    className="p-2.5 sm:p-2 hover:bg-card transition-colors rounded-r-lg min-w-[44px] min-h-[44px] flex items-center justify-center"
                     data-testid="button-quantity-increase"
                   >
                     <Plus className="w-4 h-4" />
@@ -343,7 +343,7 @@ export default function ProductDetail() {
               </div>
               <Button
                 size="lg"
-                className="w-full bg-cyan-500 hover:bg-cyan-600 text-black font-semibold text-base sm:text-lg h-12 sm:h-14"
+                className="w-full bg-primary hover:bg-primary/80 text-primary-foreground font-semibold text-base sm:text-lg h-12 sm:h-14"
                 onClick={handleAddToCart}
                 data-testid="button-add-to-cart"
               >

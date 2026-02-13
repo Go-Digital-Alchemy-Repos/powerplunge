@@ -689,7 +689,7 @@ export default function MyAccount() {
                                         className={
                                           shipment.status === "delivered" ? "border-emerald-500 text-emerald-500" :
                                           shipment.status === "in_transit" ? "border-blue-500 text-blue-500" :
-                                          shipment.status === "shipped" ? "border-cyan-500 text-cyan-500" :
+                                          shipment.status === "shipped" ? "border-primary text-primary" :
                                           "border-yellow-500 text-yellow-500"
                                         }
                                         data-testid={`badge-shipment-status-${shipment.id}`}

@@ -45,7 +45,7 @@ const BlogFeaturedPostBlock: React.FC<BlockRenderProps> = ({ data }) => {
     return (
       <section className="max-w-6xl mx-auto px-4 py-12" data-testid="block-blogFeaturedPost">
         <div className="flex items-center justify-center py-16">
-          <div className="animate-spin w-7 h-7 border-2 border-cyan-400 border-t-transparent rounded-full" />
+          <div className="animate-spin w-7 h-7 border-2 border-primary border-t-transparent rounded-full" />
         </div>
       </section>
     );
@@ -56,14 +56,14 @@ const BlogFeaturedPostBlock: React.FC<BlockRenderProps> = ({ data }) => {
   return (
     <section className="max-w-6xl mx-auto px-4 py-12" data-testid="block-blogFeaturedPost">
       {title && (
-        <h2 className="text-3xl font-bold text-white mb-8 text-center">{title}</h2>
+        <h2 className="text-3xl font-bold text-foreground mb-8 text-center">{title}</h2>
       )}
       <article
-        className="group relative grid grid-cols-1 lg:grid-cols-2 gap-0 bg-slate-800/60 border border-slate-700/50 rounded-2xl overflow-hidden hover:border-cyan-500/50 transition-all duration-300 cursor-pointer"
+        className="group relative grid grid-cols-1 lg:grid-cols-2 gap-0 bg-card/60 border border-border/50 rounded-2xl overflow-hidden hover:border-primary/50 transition-all duration-300 cursor-pointer"
         onClick={() => navigate(`/blog/${post.slug}`)}
         data-testid={`featured-card-${post.slug}`}
       >
-        <div className="relative aspect-[16/10] lg:aspect-auto overflow-hidden bg-slate-700">
+        <div className="relative aspect-[16/10] lg:aspect-auto overflow-hidden bg-muted">
           {post.coverImageId ? (
             <img
               src={`/api/object-storage/${post.coverImageId}`}
@@ -71,12 +71,12 @@ const BlogFeaturedPostBlock: React.FC<BlockRenderProps> = ({ data }) => {
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
             />
           ) : (
-            <div className="w-full h-full bg-gradient-to-br from-cyan-900/40 to-slate-800 flex items-center justify-center">
-              <span className="text-6xl text-cyan-500/20 font-bold">PP</span>
+            <div className="w-full h-full bg-gradient-to-br from-primary/20 to-card flex items-center justify-center">
+              <span className="text-6xl text-primary/20 font-bold">PP</span>
             </div>
           )}
           <div className="absolute top-4 left-4">
-            <span className="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-cyan-500 text-slate-950">
+            <span className="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-primary text-primary-foreground">
               Featured
             </span>
           </div>
@@ -88,7 +88,7 @@ const BlogFeaturedPostBlock: React.FC<BlockRenderProps> = ({ data }) => {
               {post.categories.map((c) => (
                 <span
                   key={c.id}
-                  className="text-xs font-medium px-2.5 py-1 rounded-full bg-cyan-500/15 text-cyan-400"
+                  className="text-xs font-medium px-2.5 py-1 rounded-full bg-primary/15 text-primary"
                 >
                   {c.name}
                 </span>
@@ -96,17 +96,17 @@ const BlogFeaturedPostBlock: React.FC<BlockRenderProps> = ({ data }) => {
             </div>
           )}
 
-          <h3 className="text-2xl lg:text-3xl font-bold text-white group-hover:text-cyan-400 transition-colors leading-tight">
+          <h3 className="text-2xl lg:text-3xl font-bold text-foreground group-hover:text-primary transition-colors leading-tight">
             {post.title}
           </h3>
 
           {post.excerpt && (
-            <p className="text-slate-400 text-base lg:text-lg leading-relaxed line-clamp-4">
+            <p className="text-muted-foreground text-base lg:text-lg leading-relaxed line-clamp-4">
               {post.excerpt}
             </p>
           )}
 
-          <div className="flex items-center gap-4 text-slate-500 text-sm mt-2">
+          <div className="flex items-center gap-4 text-muted-foreground/70 text-sm mt-2">
             {post.publishedAt && (
               <span>
                 {new Date(post.publishedAt).toLocaleDateString("en-US", {
@@ -125,7 +125,7 @@ const BlogFeaturedPostBlock: React.FC<BlockRenderProps> = ({ data }) => {
           </div>
 
           <div className="mt-2">
-            <span className="inline-flex items-center gap-1.5 text-cyan-400 font-medium text-sm group-hover:gap-3 transition-all">
+            <span className="inline-flex items-center gap-1.5 text-primary font-medium text-sm group-hover:gap-3 transition-all">
               Read Article <ArrowRight className="w-4 h-4" />
             </span>
           </div>

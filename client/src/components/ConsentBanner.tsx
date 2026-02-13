@@ -159,7 +159,7 @@ export default function ConsentBanner() {
           </div>
           <div className="flex gap-3 mt-6">
             <Button onClick={handleRejectAll} variant="outline" className="flex-1" data-testid="consent-reject-all">{config.rejectAllText}</Button>
-            <Button onClick={handleSavePreferences} className="flex-1 bg-cyan-500 hover:bg-cyan-600 text-black" data-testid="consent-save-preferences">{config.savePreferencesText}</Button>
+            <Button onClick={handleSavePreferences} className="flex-1 bg-primary hover:bg-primary/80 text-primary-foreground" data-testid="consent-save-preferences">{config.savePreferencesText}</Button>
           </div>
           {config.policyLinks.privacyPolicyPath && (
             <div className={cn("text-center mt-3 text-xs", mutedText)}>
@@ -188,7 +188,7 @@ export default function ConsentBanner() {
           <h3 className="text-lg font-semibold mb-2">{config.title}</h3>
           <p className={cn("text-sm mb-4", mutedText)}>{config.messageHtml}</p>
           <div className="flex flex-wrap gap-3">
-            <Button onClick={handleAcceptAll} className="bg-cyan-500 hover:bg-cyan-600 text-black" data-testid="consent-accept-all">{config.acceptAllText}</Button>
+            <Button onClick={handleAcceptAll} className="bg-primary hover:bg-primary/80 text-primary-foreground" data-testid="consent-accept-all">{config.acceptAllText}</Button>
             <Button onClick={handleRejectAll} variant="outline" data-testid="consent-reject-all-banner">{config.rejectAllText}</Button>
             <Button onClick={() => setShowPreferences(true)} variant="ghost" data-testid="consent-manage">{config.manageText}</Button>
           </div>

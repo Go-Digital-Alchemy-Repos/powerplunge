@@ -373,7 +373,7 @@ export default function ImageLightbox({
                     onClick={() => goTo(idx)}
                     className={`flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 transition-all ${
                       idx === currentIndex
-                        ? "border-cyan-400 opacity-100"
+                        ? "border-primary opacity-100"
                         : "border-white/20 opacity-50 hover:opacity-80"
                     }`}
                     data-testid={`button-lightbox-thumb-${idx}`}

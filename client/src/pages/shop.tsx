@@ -113,8 +113,8 @@ export default function Shop() {
 
   if (pageLoading || productsLoading) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full" />
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -156,7 +156,7 @@ function FallbackShopContent({
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
       <section className="mb-12 sm:mb-16">
-        <h2 className="text-2xl sm:text-3xl font-bold text-white mb-6 sm:mb-8 text-center">Our Products</h2>
+        <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-6 sm:mb-8 text-center">Our Products</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
           {products.map((product) => {
             const productUrl = product.urlSlug ? `/products/${product.urlSlug}` : null;
@@ -165,7 +165,7 @@ function FallbackShopContent({
                 key={product.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-slate-800/50 backdrop-blur border border-slate-700 rounded-xl overflow-hidden hover:border-cyan-500/50 transition-colors group"
+                className="bg-card/50 backdrop-blur border border-border rounded-xl overflow-hidden hover:border-primary/50 transition-colors group"
                 data-testid={`product-card-${product.id}`}
               >
                 {productUrl ? (
@@ -178,9 +178,9 @@ function FallbackShopContent({
                       />
                     )}
                     <div className="p-4 sm:p-6 pb-2 sm:pb-3">
-                      <h3 className="text-lg sm:text-xl font-semibold text-white mb-1 sm:mb-2 group-hover:text-cyan-400 transition-colors">{product.name}</h3>
+                      <h3 className="text-lg sm:text-xl font-semibold text-white mb-1 sm:mb-2 group-hover:text-primary transition-colors">{product.name}</h3>
                       {product.tagline && (
-                        <p className="text-slate-400 text-sm mb-1 sm:mb-2 line-clamp-2">{product.tagline}</p>
+                        <p className="text-muted-foreground text-sm mb-1 sm:mb-2 line-clamp-2">{product.tagline}</p>
                       )}
                     </div>
                   </Link>
@@ -194,9 +194,9 @@ function FallbackShopContent({
                       />
                     )}
                     <div className="p-4 sm:p-6 pb-2 sm:pb-3">
-                      <h3 className="text-lg sm:text-xl font-semibold text-white mb-1 sm:mb-2">{product.name}</h3>
+                      <h3 className="text-lg sm:text-xl font-semibold text-white mb-1 sm:mb-2 group-hover:text-primary transition-colors">{product.name}</h3>
                       {product.tagline && (
-                        <p className="text-slate-400 text-sm mb-1 sm:mb-2 line-clamp-2">{product.tagline}</p>
+                        <p className="text-muted-foreground text-sm mb-1 sm:mb-2 line-clamp-2">{product.tagline}</p>
                       )}
                     </div>
                   </>
@@ -206,21 +206,21 @@ function FallbackShopContent({
                     <div>
                       {product.salePrice ? (
                         <div className="flex items-center gap-2">
-                          <span className="text-xl sm:text-2xl font-bold text-cyan-400">
+                          <span className="text-xl sm:text-2xl font-bold text-primary">
                             ${(product.salePrice / 100).toLocaleString()}
                           </span>
-                          <span className="text-sm text-slate-500 line-through">
+                          <span className="text-sm text-muted-foreground line-through">
                             ${(product.price / 100).toLocaleString()}
                           </span>
                         </div>
                       ) : (
-                        <span className="text-xl sm:text-2xl font-bold text-cyan-400">
+                        <span className="text-xl sm:text-2xl font-bold text-primary">
                           ${(product.price / 100).toLocaleString()}
                         </span>
                       )}
                     </div>
                     <Button 
-                      className="bg-cyan-500 hover:bg-cyan-600 text-black w-full sm:w-auto h-11"
+                      className="bg-primary hover:bg-primary/80 text-primary-foreground w-full sm:w-auto h-11"
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
@@ -240,7 +240,7 @@ function FallbackShopContent({
 
       {products.length === 0 && (
         <div className="text-center py-16">
-          <p className="text-slate-400 text-lg">No products available yet.</p>
+          <p className="text-muted-foreground text-lg">No products available yet.</p>
         </div>
       )}
     </div>

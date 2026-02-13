@@ -26,7 +26,7 @@ export default function LegalPage() {
         <Button
           variant="ghost"
           onClick={() => window.history.back()}
-          className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-400/10 mb-6 -ml-2"
+          className="text-primary hover:text-primary/80 hover:bg-primary/10 mb-6 -ml-2"
           data-testid="button-back"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
@@ -39,9 +39,9 @@ export default function LegalPage() {
           <div
             className="prose prose-invert prose-lg max-w-none
               prose-headings:text-foreground prose-p:text-muted-foreground
-              prose-a:text-cyan-400 prose-a:no-underline hover:prose-a:underline
+              prose-a:text-primary prose-a:no-underline hover:prose-a:underline
               prose-strong:text-foreground prose-li:text-muted-foreground
-              prose-blockquote:border-cyan-500/30 prose-blockquote:text-muted-foreground"
+              prose-blockquote:border-primary/30 prose-blockquote:text-muted-foreground"
             dangerouslySetInnerHTML={{ __html: data.content }}
             data-testid="legal-content"
           />
