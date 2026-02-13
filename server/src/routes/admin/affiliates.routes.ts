@@ -288,6 +288,86 @@ router.post("/affiliate-invites", async (req: any, res) => {
   }
 });
 
+router.post("/affiliate-invites/:id/resend", async (req: any, res) => {
+  try {
+    const invite = await storage.getAffiliateInvite(req.params.id);
+    if (!invite) {
+      return res.status(404).json({ message: "Invite not found" });
+    }
+
+    if (!invite.targetEmail) {
+      return res.status(400).json({ message: "Invite has no email address" });
+    }
+
+    if (invite.expiresAt && new Date(invite.expiresAt) < new Date()) {
+      return res.status(400).json({ message: "Invite has expired" });
+    }
+
+    if (invite.maxUses !== null && invite.timesUsed >= (invite.maxUses ?? 1)) {
+      return res.status(400).json({ message: "Invite has been fully used" });
+    }
+
+    const baseUrl = getBaseUrl(req);
+    const inviteUrl = `${baseUrl}/become-affiliate?code=${invite.inviteCode}`;
+    const recipientName = invite.targetName || invite.targetEmail.split("@")[0];
+
+    let emailResult = { success: false, error: "Failed to send" } as any;
+    try {
+      const { escapeHtml } = await import("../../utils/html-escape");
+      const safeRecipientName = escapeHtml(recipientName);
+      const safeInviteUrl = escapeHtml(inviteUrl);
+      const expirationDate = invite.expiresAt ? new Date(invite.expiresAt) : null;
+      emailResult = await emailService.sendEmail({
+        to: invite.targetEmail,
+        subject: `${recipientName}, you're invited to partner with Power Plunge`,
+        html: `<div style="font-family: sans-serif; max-width: 560px; margin: 0 auto;">
+<p>Hi ${safeRecipientName},</p>
+
+<p>I wanted to reach out personally — we'd love to have you as a Power Plunge affiliate partner.</p>
+
+<p>You can sign up and get started here:<br>
+<a href="${safeInviteUrl}">${safeInviteUrl}</a></p>
+
+${expirationDate ? `<p style="color: #666; font-size: 13px;">This link expires on ${escapeHtml(expirationDate.toLocaleDateString())}.</p>` : ""}
+
+<p>Let us know if you have any questions.</p>
+
+<p>Thanks,<br>The Power Plunge Team</p>
+</div>`,
+        text: `Hi ${recipientName},\n\nI wanted to reach out personally — we'd love to have you as a Power Plunge affiliate partner.\n\nYou can sign up and get started here:\n${inviteUrl}\n\n${expirationDate ? `This link expires on ${expirationDate.toLocaleDateString()}.\n\n` : ""}Let us know if you have any questions.\n\nThanks,\nThe Power Plunge Team`,
+      });
+    } catch (emailError: any) {
+      console.error("Failed to resend affiliate invite email:", emailError);
+      emailResult = { success: false, error: emailError.message || "Failed to send email" };
+    }
+
+    const adminEmail = req.adminUser?.email || req.session?.adminEmail || "admin";
+    await storage.createAuditLog({
+      actor: adminEmail,
+      action: "affiliate_invite.resent",
+      entityType: "affiliate_invite",
+      entityId: invite.id,
+      metadata: {
+        inviteCode: invite.inviteCode,
+        targetEmail: invite.targetEmail,
+        emailSent: emailResult.success,
+        emailError: emailResult.error || null,
+        inviteUrl,
+      },
+    });
+
+    res.json({
+      invite,
+      inviteUrl,
+      emailSent: emailResult.success,
+      emailError: emailResult.success ? null : (emailResult.error || null),
+    });
+  } catch (error: any) {
+    console.error("Failed to resend affiliate invite:", error);
+    res.status(500).json({ message: "Failed to resend affiliate invite" });
+  }
+});
+
 router.delete("/affiliate-invites/:id", async (req: any, res) => {
   try {
     const invite = await storage.getAffiliateInvite(req.params.id);

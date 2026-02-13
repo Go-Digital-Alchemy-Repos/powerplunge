@@ -342,32 +342,58 @@ export default function AdminAffiliates() {
     enabled: activeTab === "invites",
   });
 
-  // Create invite mutation
+  // Create invite mutation — uses /send endpoint so the email is delivered
   const createInviteMutation = useMutation({
     mutationFn: async (data: typeof inviteForm) => {
-      const expiresAt = data.expiresInDays > 0 
-        ? new Date(Date.now() + data.expiresInDays * 24 * 60 * 60 * 1000).toISOString() 
-        : null;
-      const res = await fetch("/api/admin/affiliate-invites", {
+      const res = await fetch("/api/admin/affiliate-invites/send", {
         credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          targetEmail: data.targetEmail || null,
-          targetName: data.targetName || null,
+          targetEmail: data.targetEmail || undefined,
+          targetName: data.targetName || undefined,
           maxUses: data.maxUses,
-          expiresAt,
-          notes: data.notes || null,
+          expiresInDays: data.expiresInDays > 0 ? data.expiresInDays : undefined,
+          notes: data.notes || undefined,
         }),
       });
-      if (!res.ok) throw new Error("Failed to create invite");
-      return res.json();
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.message || "Failed to create invite");
+      return result;
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/affiliate-invites"] });
       setShowCreateInvite(false);
       setInviteForm({ targetEmail: "", targetName: "", maxUses: 1, expiresInDays: 7, notes: "" });
-      toast({ title: "Invite created" });
+      if (data.emailSent) {
+        toast({ title: "Invite created & sent", description: `Email sent to ${data.invite?.targetEmail}` });
+      } else {
+        toast({ title: "Invite created", description: data.emailError ? `Email could not be sent: ${data.emailError}` : "Invite link created (no email sent)" });
+      }
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  // Resend invite email for an existing invite
+  const resendInviteMutation = useMutation({
+    mutationFn: async (invite: AffiliateInvite) => {
+      const res = await fetch(`/api/admin/affiliate-invites/${invite.id}/resend`, {
+        credentials: "include",
+        method: "POST",
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.message || "Failed to resend invite");
+      return result;
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/affiliate-invites"] });
+      if (data.emailSent) {
+        toast({ title: "Invite resent", description: `Email sent to ${data.invite?.targetEmail}` });
+      } else {
+        toast({ title: "Failed to send", description: data.emailError || "Email could not be sent", variant: "destructive" });
+      }
     },
     onError: (error: Error) => {
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -1721,19 +1747,33 @@ export default function AdminAffiliates() {
                             )}
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => {
-                                if (window.confirm("Delete this invite?")) {
-                                  deleteInviteMutation.mutate(invite.id);
-                                }
-                              }}
-                              disabled={deleteInviteMutation.isPending}
-                              data-testid={`button-delete-invite-${invite.id}`}
-                            >
-                              <Trash2 className="w-4 h-4 text-destructive" />
-                            </Button>
+                            <div className="flex items-center justify-end gap-1">
+                              {invite.targetEmail && !invite.isExpired && !invite.isExhausted && !invite.usedByAffiliate && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => resendInviteMutation.mutate(invite)}
+                                  disabled={resendInviteMutation.isPending}
+                                  title="Resend invite email"
+                                  data-testid={`button-resend-invite-${invite.id}`}
+                                >
+                                  <Mail className="w-4 h-4" />
+                                </Button>
+                              )}
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => {
+                                  if (window.confirm("Delete this invite?")) {
+                                    deleteInviteMutation.mutate(invite.id);
+                                  }
+                                }}
+                                disabled={deleteInviteMutation.isPending}
+                                data-testid={`button-delete-invite-${invite.id}`}
+                              >
+                                <Trash2 className="w-4 h-4 text-destructive" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}

@@ -18,6 +18,8 @@ import { ThemeSelector } from "@/components/ThemeSelector";
 import chillerImage from "@assets/power_plunge_1hp_chiller_mockup_1767902865789.png";
 import tubImage from "@assets/power_plunge_portable_tub_mockup_1767902865790.png";
 import { useBranding } from "@/hooks/use-branding";
+import { useAdmin } from "@/hooks/use-admin";
+import AdminNav from "@/components/admin/AdminNav";
 import heroImage from "@assets/hero_1767910221674.jpg";
 
 interface PageContentJson {
@@ -114,6 +116,7 @@ export default function Home() {
   const [product, setProduct] = useState<Product>(fallbackProduct);
   const [quantity, setQuantity] = useState(1);
   const { customer, isLoading: authLoading, isAuthenticated, logout, getAuthHeader } = useCustomerAuth();
+  const { isAuthenticated: isAdminAuthenticated, role: adminRole } = useAdmin();
 
   // Check if this customer email has a corresponding admin account (without granting admin access)
   const { data: adminEligibility } = useQuery<{ eligible: boolean }>({
@@ -262,7 +265,10 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-card border-b border-border">
+      {isAdminAuthenticated && (
+        <AdminNav currentPage="storefront" role={adminRole} />
+      )}
+      <nav className={`fixed left-0 right-0 z-50 bg-card border-b border-border ${isAdminAuthenticated ? "top-[57px] lg:top-[65px]" : "top-0"}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
@@ -389,14 +395,14 @@ export default function Home() {
 
       {/* Show loading state while fetching CMS content */}
       {isHomePageLoading && (
-        <div className="min-h-screen flex items-center justify-center pt-20">
+        <div className={`min-h-screen flex items-center justify-center ${isAdminAuthenticated ? "pt-32" : "pt-20"}`}>
           <div className="animate-pulse text-muted-foreground">Loading...</div>
         </div>
       )}
 
       {/* Render CMS content if available */}
       {hasCmsContent && (
-        <div className="pt-20">
+        <div className={isAdminAuthenticated ? "pt-32" : "pt-20"}>
           <PageRenderer
             contentJson={homePage?.contentJson}
             legacyContent={homePage?.content}
@@ -428,7 +434,7 @@ export default function Home() {
       {/* Fallback to hardcoded content if CMS content not available */}
       {showFallbackPage && !isHomePageLoading && (
         <>
-        <section className="relative min-h-[80vh] sm:min-h-screen flex items-center justify-center pt-16 sm:pt-20">
+        <section className={`relative min-h-[80vh] sm:min-h-screen flex items-center justify-center ${isAdminAuthenticated ? "pt-28 sm:pt-32" : "pt-16 sm:pt-20"}`}>
           <div className="absolute inset-0">
             <img src={heroImage} alt="" className="w-full h-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-r from-background/90 sm:from-background/80 via-background/60 sm:via-background/50 to-transparent" />
