@@ -562,9 +562,9 @@ export default function AdminCustomers() {
                   // Error handled by mutation
                 }
               }}
-              className="space-y-4 py-4"
+              className="space-y-6 py-4"
             >
-              <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="order-cust-name">Name *</Label>
                   <Input
@@ -585,7 +585,7 @@ export default function AdminCustomers() {
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4 pt-4 border-t">
                 <Button type="button" variant="outline" className="w-full" onClick={() => setOrderStep("choice")}>
                   Back
                 </Button>
@@ -663,17 +663,20 @@ export default function AdminCustomers() {
                 </Button>
               </div>
 
-              <div className="flex justify-between items-center pt-4 border-t border-border">
-                <div className="text-lg font-bold">
-                  Total: $
-                  {(
-                    orderItems.reduce((sum, item) => {
-                      const product = products?.find((p) => p.id === item.productId);
-                      return sum + (product?.price || 0) * item.quantity;
-                    }, 0) / 100
-                  ).toLocaleString()}
+              <div className="flex flex-col gap-4 pt-4 border-t border-border">
+                <div className="p-4 bg-muted/50 rounded-lg flex justify-between items-center">
+                  <span className="text-sm font-medium text-muted-foreground">Order Total</span>
+                  <span className="text-xl font-bold text-primary">
+                    $
+                    {(
+                      orderItems.reduce((sum, item) => {
+                        const product = products?.find((p) => p.id === item.productId);
+                        return sum + (product?.price || 0) * item.quantity;
+                      }, 0) / 100
+                    ).toLocaleString()}
+                  </span>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex justify-end gap-2">
                   <Button type="button" variant="outline" onClick={() => setOrderStep("choice")}>
                     Back
                   </Button>
