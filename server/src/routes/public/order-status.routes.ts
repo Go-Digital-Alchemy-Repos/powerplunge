@@ -13,8 +13,6 @@ router.get("/:orderId/status", async (req, res) => {
     const customer = await storage.getCustomer(order.customerId);
     const shipments = await storage.getShipments(order.id);
 
-    const maskedEmail = customer ? maskEmail(customer.email) : null;
-
     res.json({
       id: order.id,
       status: order.status,
@@ -27,11 +25,14 @@ router.get("/:orderId/status", async (req, res) => {
       createdAt: order.createdAt,
       items,
       customer: customer ? {
-        name: customer.name,
-        email: maskedEmail,
-        city: customer.city,
-        state: customer.state,
-        country: customer.country,
+        name: order.shippingName || customer.name,
+        email: customer.email,
+        address: order.shippingAddress || customer.address || null,
+        addressLine2: order.shippingLine2 || null,
+        city: order.shippingCity || customer.city,
+        state: order.shippingState || customer.state,
+        zipCode: order.shippingZip || customer.zipCode || null,
+        country: order.shippingCountry || customer.country,
       } : null,
       shipments,
       isManualOrder: order.isManualOrder,
@@ -42,12 +43,5 @@ router.get("/:orderId/status", async (req, res) => {
     res.status(500).json({ message: "Failed to fetch order" });
   }
 });
-
-function maskEmail(email: string): string {
-  const [local, domain] = email.split("@");
-  if (!domain) return "***";
-  const visibleChars = Math.min(2, local.length);
-  return `${local.slice(0, visibleChars)}${"*".repeat(Math.max(0, local.length - visibleChars))}@${domain}`;
-}
 
 export default router;

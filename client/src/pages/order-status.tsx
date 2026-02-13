@@ -25,8 +25,11 @@ interface Shipment {
 interface Customer {
   name: string;
   email: string;
+  address: string | null;
+  addressLine2: string | null;
   city: string | null;
   state: string | null;
+  zipCode: string | null;
   country: string | null;
 }
 
@@ -265,15 +268,21 @@ export default function OrderStatus() {
             <CardContent>
               <p className="font-medium" data-testid="text-customer-name">{order.customer.name}</p>
               <p className="text-sm text-muted-foreground" data-testid="text-customer-email">{order.customer.email}</p>
-              {order.customer.city && (
-                <div className="mt-2 text-sm text-muted-foreground">
+              <div className="mt-2 text-sm text-muted-foreground">
+                {order.customer.address && (
+                  <p data-testid="text-customer-address">{order.customer.address}</p>
+                )}
+                {order.customer.addressLine2 && (
+                  <p data-testid="text-customer-address2">{order.customer.addressLine2}</p>
+                )}
+                {(order.customer.city || order.customer.state || order.customer.zipCode) && (
                   <p data-testid="text-customer-location">
-                    {order.customer.city}
-                    {order.customer.state ? `, ${order.customer.state}` : ""}
+                    {[order.customer.city, order.customer.state].filter(Boolean).join(", ")}
+                    {order.customer.zipCode ? ` ${order.customer.zipCode}` : ""}
                   </p>
-                  {order.customer.country && <p data-testid="text-customer-country">{order.customer.country}</p>}
-                </div>
-              )}
+                )}
+                {order.customer.country && <p data-testid="text-customer-country">{order.customer.country}</p>}
+              </div>
             </CardContent>
           </Card>
         )}
