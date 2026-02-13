@@ -48,6 +48,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { applyThemeVariables } from "@/components/ThemeProvider";
+import { ThemeSelector as SharedThemeSelector } from "@/components/ThemeSelector";
 import type { ThemePreset } from "@shared/themePresets";
 import type { ThemePackPreset } from "@shared/themePackPresets";
 import defaultAdminIcon from "@assets/powerplungeicon_1770929882628.png";
@@ -552,11 +553,8 @@ export default function AdminNav({ currentPage, role = "admin" }: AdminNavProps)
                 Fulfillment
               </span>
             )}
-            <ThemeSelector
-              activeThemeId={activeThemeId}
-              themes={unifiedThemes}
-              onSelect={(t) => activateThemeMutation.mutate(t)}
-              isPending={activateThemeMutation.isPending}
+            <SharedThemeSelector
+              triggerClassName="h-8 w-8 p-0"
             />
             <Button variant="ghost" size="sm" onClick={handleLogout} data-testid="button-logout">
               <LogOut className="w-4 h-4 mr-2" />
@@ -587,11 +585,7 @@ export default function AdminNav({ currentPage, role = "admin" }: AdminNavProps)
                 Fulfillment
               </span>
             )}
-            <ThemeSelector
-              activeThemeId={activeThemeId}
-              themes={unifiedThemes}
-              onSelect={(t) => activateThemeMutation.mutate(t)}
-              isPending={activateThemeMutation.isPending}
+            <SharedThemeSelector
               triggerClassName="h-9 w-9 p-0"
               testIdSuffix="-mobile"
             />

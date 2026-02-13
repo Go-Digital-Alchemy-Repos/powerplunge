@@ -178,11 +178,26 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
     refetchInterval: 30000,
   });
 
+  const { data: allThemes } = useQuery<ThemePreset[]>({
+    queryKey: ["/api/admin/cms/themes"],
+    retry: false,
+  });
+
   useEffect(() => {
+    // Check local storage preference
+    const localPref = localStorage.getItem("user-theme-preference");
+    if (localPref && allThemes) {
+      const preferred = allThemes.find(t => t.id === localPref);
+      if (preferred) {
+        applyThemeVariables(preferred.variables);
+        return;
+      }
+    }
+
     if (theme?.variables) {
       applyThemeVariables(theme.variables);
     }
-  }, [theme]);
+  }, [theme, allThemes]);
 
   return <>{children}</>;
 }

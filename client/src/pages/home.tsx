@@ -14,6 +14,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { useCustomerAuth } from "@/hooks/use-customer-auth";
 import { trackAddToCart, trackViewItem, trackViewItemList } from "@/lib/analytics";
 import { CustomerAuthModal } from "@/components/CustomerAuthModal";
+import { ThemeSelector } from "@/components/ThemeSelector";
 import chillerImage from "@assets/power_plunge_1hp_chiller_mockup_1767902865789.png";
 import tubImage from "@assets/power_plunge_portable_tub_mockup_1767902865790.png";
 import { useBranding } from "@/hooks/use-branding";
@@ -364,6 +365,7 @@ export default function Home() {
                 </span>
               )}
             </Button>
+            <ThemeSelector />
           </div>
         </div>
       </nav>
