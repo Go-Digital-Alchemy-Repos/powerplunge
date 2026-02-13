@@ -59,6 +59,7 @@ The Power Plunge e-commerce platform utilizes a modern full-stack architecture.
 - **Page Builder Status Dropdown:** Replaced "Publish" button with a status dropdown offering Draft, Published, and Schedule options.
 - **Twilio SMS Integration Settings:** Admin UI for configuring Twilio SMS, with encrypted storage for auth token.
 - **Admin Settings & Branding:** Themes moved to main admin settings. Logo branding with upload, preview, and dynamic display from R2 storage.
+- **Site Presets Removed:** The Site Presets feature (pre-configured site personalities) was removed in favor of the simpler theme selector under System Settings. Related database tables (`site_presets`, `preset_apply_history`), schema fields (`activePresetId`, `navPreset`, `footerPreset`), routes, services, repositories, and UI components were all removed. Campaign generator was simplified to use pack defaults only.
 
 ## External Dependencies
 - **Google Analytics 4:** For product performance and customer behavior analytics.

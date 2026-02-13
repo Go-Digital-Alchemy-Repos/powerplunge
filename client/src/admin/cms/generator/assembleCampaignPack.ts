@@ -1,5 +1,5 @@
 import { getTemplate } from "../../../cms/templates/templateLibrary";
-import { assembleLandingPage, type AssemblyResult, type AssemblySection, type PresetOverrides } from "./assembleLandingPage";
+import { assembleLandingPage, type AssemblyResult, type AssemblySection } from "./assembleLandingPage";
 import { CAMPAIGN_PACKS, type CampaignPack, type CampaignPageDef } from "./campaignPacks";
 
 export interface SectionKitSource {
@@ -85,9 +85,6 @@ export function generateCampaignPack(
     sectionMode?: "sectionRef" | "detach";
     ctaDestination?: "shop" | "product" | "quote";
     idGenerator?: () => string;
-    presetOverrides?: PresetOverrides;
-    presetKitNames?: string[];
-    prependPresetKits?: boolean;
   },
 ): CampaignPackResult {
   const pack = CAMPAIGN_PACKS.find((p) => p.id === packId);
@@ -107,20 +104,12 @@ export function generateCampaignPack(
   const sectionMode = options?.sectionMode ?? "detach";
   const ctaDestination = options?.ctaDestination ?? "shop";
   const idGenerator = options?.idGenerator;
-  const presetOverrides = options?.presetOverrides;
-  const presetKitNames = options?.presetKitNames ?? [];
-  const prependPresetKits = options?.prependPresetKits ?? false;
 
   const pages: CampaignPageResult[] = [];
 
   for (const pageDef of pack.pages) {
-    const campaignKitNames = mergeKitNames(pack.defaultKits, pageDef.recommendedKits);
-
-    const allKitNames = prependPresetKits && presetKitNames.length > 0
-      ? mergeKitNames(campaignKitNames, presetKitNames)
-      : campaignKitNames;
-
-    const sections = resolveKitsByName(allKitNames, availableKits);
+    const kitNames = mergeKitNames(pack.defaultKits, pageDef.recommendedKits);
+    const sections = resolveKitsByName(kitNames, availableKits);
 
     const assembly = assembleLandingPage({
       template,
@@ -135,7 +124,6 @@ export function generateCampaignPack(
       metaTitle: pageDef.defaultSeoTitle,
       metaDescription: pageDef.defaultSeoDescription,
       ...(idGenerator ? { idGenerator } : {}),
-      presetOverrides,
     });
 
     const pagePayload: CampaignPageResult["pagePayload"] = {

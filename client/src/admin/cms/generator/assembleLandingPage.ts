@@ -6,22 +6,6 @@ export interface AssemblySection {
   blocks: Array<{ type: string; data: Record<string, any>; settings?: Record<string, any> }>;
 }
 
-export interface PresetOverrides {
-  themePackId?: string;
-  seoDefaults?: {
-    siteName?: string;
-    titleSuffix?: string;
-    defaultMetaDescription?: string;
-    ogDefaultImage?: string;
-  };
-  globalCtaDefaults?: {
-    primaryCtaText?: string;
-    primaryCtaHref?: string;
-    secondaryCtaText?: string;
-    secondaryCtaHref?: string;
-  };
-}
-
 export interface AssemblyInput {
   template: CmsTemplate;
   primaryProductId: string;
@@ -35,7 +19,6 @@ export interface AssemblyInput {
   metaTitle: string;
   metaDescription: string;
   idGenerator?: () => string;
-  presetOverrides?: PresetOverrides;
 }
 
 export interface AssembledBlock {
@@ -175,33 +158,24 @@ function applyCtaOverrides(
   blocks: AssembledBlock[],
   ctaDestination: "shop" | "product" | "quote",
   primaryProductId: string,
-  presetCta?: PresetOverrides["globalCtaDefaults"],
 ): AssembledBlock[] {
   const ctaHrefMap: Record<string, string> = {
     shop: "/shop",
     product: primaryProductId ? `/products/${primaryProductId}` : "/shop",
     quote: "/contact",
   };
-  const ctaHref = presetCta?.primaryCtaHref || ctaHrefMap[ctaDestination];
-  const ctaText = presetCta?.primaryCtaText;
+  const ctaHref = ctaHrefMap[ctaDestination];
 
   return blocks.map((b) => {
     if (b.type === "hero") {
       const heroData: Record<string, any> = { ...b.data, ctaHref };
-      if (ctaText) {
-        heroData.ctaText = ctaText;
-      } else if (ctaDestination === "quote") {
+      if (ctaDestination === "quote") {
         heroData.ctaText = "Get a Quote";
       }
-      if (presetCta?.secondaryCtaText) heroData.secondaryCtaText = presetCta.secondaryCtaText;
-      if (presetCta?.secondaryCtaHref) heroData.secondaryCtaHref = presetCta.secondaryCtaHref;
       return { ...b, data: heroData };
     }
     if (b.type === "callToAction") {
       const ctaData: Record<string, any> = { ...b.data, primaryCtaHref: ctaHref };
-      if (ctaText) ctaData.primaryCtaText = ctaText;
-      if (presetCta?.secondaryCtaText) ctaData.secondaryCtaText = presetCta.secondaryCtaText;
-      if (presetCta?.secondaryCtaHref) ctaData.secondaryCtaHref = presetCta.secondaryCtaHref;
       return { ...b, data: ctaData };
     }
     return b;
@@ -242,17 +216,11 @@ function appendSections(
 }
 
 function deriveSeo(input: AssemblyInput): AssemblyResult["seo"] {
-  const presetSeo = input.presetOverrides?.seoDefaults;
-  const titleSuffix = presetSeo?.titleSuffix;
-
   const rawTitle = input.metaTitle.trim() || input.title.trim();
-  const metaTitle = titleSuffix && !rawTitle.includes(titleSuffix)
-    ? `${rawTitle} ${titleSuffix}`
-    : rawTitle;
+  const metaTitle = rawTitle;
 
   const metaDescription =
     input.metaDescription.trim() ||
-    presetSeo?.defaultMetaDescription ||
     `${input.title.trim()} — Power Plunge cold therapy.`;
 
   return {
@@ -265,7 +233,6 @@ function deriveSeo(input: AssemblyInput): AssemblyResult["seo"] {
 
 export function assembleLandingPage(input: AssemblyInput): AssemblyResult {
   const idGen = input.idGenerator ?? defaultIdGenerator;
-  const preset = input.presetOverrides;
 
   let blocks = cloneTemplateBlocks(input.template.blocks, idGen);
 
@@ -273,7 +240,7 @@ export function assembleLandingPage(input: AssemblyInput): AssemblyResult {
 
   blocks = injectSecondaryProducts(blocks, input.secondaryProductIds, idGen);
 
-  blocks = applyCtaOverrides(blocks, input.ctaDestination, input.primaryProductId, preset?.globalCtaDefaults);
+  blocks = applyCtaOverrides(blocks, input.ctaDestination, input.primaryProductId);
 
   blocks = appendSections(blocks, input.sections, input.sectionMode, idGen);
 
@@ -287,9 +254,8 @@ export function assembleLandingPage(input: AssemblyInput): AssemblyResult {
     blocks,
   };
 
-  const resolvedTheme = input.themeOverride || preset?.themePackId;
-  if (resolvedTheme) {
-    contentJson.themeOverride = resolvedTheme;
+  if (input.themeOverride) {
+    contentJson.themeOverride = input.themeOverride;
   }
 
   return {
