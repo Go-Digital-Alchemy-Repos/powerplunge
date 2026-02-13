@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useAdmin } from "@/hooks/use-admin";
-import { Package, Search, Mail, Phone, MapPin, DollarSign, Calendar, Plus, User } from "lucide-react";
+import { Package, Search, Mail, Phone, MapPin, DollarSign, Calendar, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { CustomerProfileDrawer } from "@/components/admin/CustomerProfileDrawer";
 import AdminNav from "@/components/admin/AdminNav";
@@ -224,12 +224,16 @@ export default function AdminCustomers() {
                   <th className="text-left px-6 py-3 text-sm font-medium text-muted-foreground">Contact</th>
                   <th className="text-center px-6 py-3 text-sm font-medium text-muted-foreground">Orders</th>
                   <th className="text-right px-6 py-3 text-sm font-medium text-muted-foreground">Total Spent</th>
-                  <th className="px-6 py-3"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {filteredCustomers?.map((customer) => (
-                  <tr key={customer.id} className="hover:bg-muted/30" data-testid={`row-customer-${customer.id}`}>
+                  <tr
+                    key={customer.id}
+                    className="hover:bg-muted/30 cursor-pointer"
+                    onClick={() => setProfileDrawerCustomerId(customer.id)}
+                    data-testid={`row-customer-${customer.id}`}
+                  >
                     <td className="px-6 py-4">
                       <p className="font-medium">{customer.name}</p>
                       {customer.city && customer.state && (
@@ -254,32 +258,11 @@ export default function AdminCustomers() {
                     <td className="px-6 py-4 text-right font-medium">
                       ${(customer.totalSpent / 100).toLocaleString()}
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setProfileDrawerCustomerId(customer.id)}
-                          data-testid={`button-profile-${customer.id}`}
-                        >
-                          <User className="w-4 h-4 mr-1" />
-                          Profile
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setSelectedCustomerId(customer.id)}
-                          data-testid={`button-view-${customer.id}`}
-                        >
-                          Quick View
-                        </Button>
-                      </div>
-                    </td>
                   </tr>
                 ))}
                 {filteredCustomers?.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-6 py-12 text-center text-muted-foreground">
+                    <td colSpan={4} className="px-6 py-12 text-center text-muted-foreground">
                       No customers found
                     </td>
                   </tr>
