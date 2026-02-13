@@ -14,7 +14,6 @@ import { useAdmin } from "@/hooks/use-admin";
 import { Package, Search, Mail, Phone, MapPin, DollarSign, Calendar, Plus, User } from "lucide-react";
 import { format } from "date-fns";
 import { CustomerProfileDrawer } from "@/components/admin/CustomerProfileDrawer";
-import { ManualOrderWizard } from "@/components/admin/ManualOrderWizard";
 import AdminNav from "@/components/admin/AdminNav";
 
 interface Customer {
@@ -74,7 +73,6 @@ export default function AdminCustomers() {
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [profileDrawerCustomerId, setProfileDrawerCustomerId] = useState<string | null>(null);
   const [showNewCustomer, setShowNewCustomer] = useState(false);
-  const [showNewOrder, setShowNewOrder] = useState(false);
   const [newCustomer, setNewCustomer] = useState({ name: "", email: "", phone: "", address: "", city: "", state: "", zipCode: "" });
 
   const { data: customers, isLoading } = useQuery<Customer[]>({
@@ -207,10 +205,6 @@ export default function AdminCustomers() {
             <Button onClick={() => setShowNewCustomer(true)} className="gap-2" data-testid="button-new-customer">
               <Plus className="w-4 h-4" />
               New Customer
-            </Button>
-            <Button onClick={() => setShowNewOrder(true)} variant="outline" className="gap-2" data-testid="button-new-order">
-              <Plus className="w-4 h-4" />
-              Manual Order
             </Button>
           </div>
         </div>
@@ -476,11 +470,6 @@ export default function AdminCustomers() {
           </form>
         </DialogContent>
       </Dialog>
-
-      <ManualOrderWizard
-        open={showNewOrder}
-        onOpenChange={setShowNewOrder}
-      />
 
       <CustomerProfileDrawer
         customerId={profileDrawerCustomerId}
