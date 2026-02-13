@@ -2,12 +2,22 @@ import Stripe from "stripe";
 import { storage } from "../../../storage";
 import { decrypt } from "../../utils/encryption";
 
+export type ConfigSource = "database" | "database_legacy" | "environment" | "none";
+
 export interface StripeConfig {
   publishableKey: string;
   secretKey: string;
   webhookSecret: string;
   mode: "test" | "live";
   configured: boolean;
+  source: ConfigSource;
+  resolvedMode: "test" | "live";
+}
+
+function detectKeyMode(secretKey: string): "test" | "live" | null {
+  if (secretKey.startsWith("sk_live_")) return "live";
+  if (secretKey.startsWith("sk_test_")) return "test";
+  return null;
 }
 
 class StripeService {
@@ -27,17 +37,25 @@ class StripeService {
     
     if (settings) {
       const activeMode = (settings.stripeActiveMode as "test" | "live") || "test";
+      const activeModeHasKeys = activeMode === "live"
+        ? !!(settings.stripePublishableKeyLive && settings.stripeSecretKeyLiveEncrypted)
+        : !!(settings.stripePublishableKeyTest && settings.stripeSecretKeyTestEncrypted);
 
-      const pkField = activeMode === "live" ? settings.stripePublishableKeyLive : settings.stripePublishableKeyTest;
-      const skField = activeMode === "live" ? settings.stripeSecretKeyLiveEncrypted : settings.stripeSecretKeyTestEncrypted;
-      const whField = activeMode === "live" ? settings.stripeWebhookSecretLiveEncrypted : settings.stripeWebhookSecretTestEncrypted;
+      const oppositeMode = activeMode === "live" ? "test" : "live";
+      const oppositeModeHasKeys = oppositeMode === "live"
+        ? !!(settings.stripePublishableKeyLive && settings.stripeSecretKeyLiveEncrypted)
+        : !!(settings.stripePublishableKeyTest && settings.stripeSecretKeyTestEncrypted);
 
-      if (pkField && skField) {
+      if (activeModeHasKeys) {
+        const pkField = activeMode === "live" ? settings.stripePublishableKeyLive : settings.stripePublishableKeyTest;
+        const skField = activeMode === "live" ? settings.stripeSecretKeyLiveEncrypted : settings.stripeSecretKeyTestEncrypted;
+        const whField = activeMode === "live" ? settings.stripeWebhookSecretLiveEncrypted : settings.stripeWebhookSecretTestEncrypted;
+
         let secretKey = "";
         let webhookSecret = "";
 
         try {
-          secretKey = decrypt(skField);
+          secretKey = decrypt(skField!);
         } catch (error) {
           console.error(`[STRIPE] Failed to decrypt ${activeMode} secret key`);
         }
@@ -51,17 +69,52 @@ class StripeService {
         }
 
         if (secretKey) {
+          const keyMode = detectKeyMode(secretKey);
+          if (keyMode && keyMode !== activeMode) {
+            console.error(`[STRIPE] CRITICAL: Mode/key mismatch! activeMode='${activeMode}' but decrypted secret key is for '${keyMode}' mode. Treating as unconfigured to prevent wrong-mode charges.`);
+            this.configCache = {
+              publishableKey: "",
+              secretKey: "",
+              webhookSecret: "",
+              mode: activeMode,
+              configured: false,
+              source: "none",
+              resolvedMode: activeMode,
+            };
+            this.lastConfigFetch = now;
+            this.stripeClient = null;
+            return this.configCache;
+          }
+
           this.configCache = {
-            publishableKey: pkField,
+            publishableKey: pkField!,
             secretKey,
             webhookSecret,
             mode: activeMode,
             configured: true,
+            source: "database",
+            resolvedMode: activeMode,
           };
           this.lastConfigFetch = now;
           this.stripeClient = null;
           return this.configCache;
         }
+      }
+
+      if (oppositeModeHasKeys) {
+        console.warn(`[STRIPE] Active mode is '${activeMode}' but only '${oppositeMode}' keys exist in DB. NOT falling back to '${oppositeMode}' keys to prevent mode mismatch. Stripe will be reported as unconfigured for '${activeMode}' mode.`);
+        this.configCache = {
+          publishableKey: "",
+          secretKey: "",
+          webhookSecret: "",
+          mode: activeMode,
+          configured: false,
+          source: "none",
+          resolvedMode: activeMode,
+        };
+        this.lastConfigFetch = now;
+        this.stripeClient = null;
+        return this.configCache;
       }
 
       if (settings.stripeConfigured && settings.stripeSecretKeyEncrypted) {
@@ -83,12 +136,22 @@ class StripeService {
         }
 
         if (secretKey) {
+          const legacyMode = (settings.stripeMode as "test" | "live") || "test";
+          const keyMode = detectKeyMode(secretKey);
+          if (keyMode && keyMode !== legacyMode) {
+            console.warn(`[STRIPE] Legacy config: stripeMode='${legacyMode}' but key is for '${keyMode}'. Using key's actual mode.`);
+          }
+          const resolvedMode = keyMode || legacyMode;
+
+          console.log(`[STRIPE] Using legacy DB config (source=database_legacy, mode=${resolvedMode})`);
           this.configCache = {
             publishableKey: settings.stripePublishableKey || "",
             secretKey,
             webhookSecret,
-            mode: (settings.stripeMode as "test" | "live") || "test",
+            mode: resolvedMode,
             configured: true,
+            source: "database_legacy",
+            resolvedMode,
           };
           this.lastConfigFetch = now;
           this.stripeClient = null;
@@ -102,48 +165,73 @@ class StripeService {
     let envSecretKey = "";
     let envPublishableKey = "";
     let envWebhookSecret = "";
-    let resolvedMode: "test" | "live" = "test";
+    let resolvedMode: "test" | "live" = configuredMode || "test";
 
-    if (configuredMode === "live") {
+    if (resolvedMode === "live") {
       envSecretKey = process.env.STRIPE_SECRET_KEY_LIVE || "";
       envPublishableKey = process.env.STRIPE_PUBLISHABLE_KEY_LIVE || "";
       envWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET_LIVE || "";
-      resolvedMode = "live";
       if (!envSecretKey) {
-        console.warn("[STRIPE] Mode set to 'live' but STRIPE_SECRET_KEY_LIVE is missing. Falling back to test keys.");
-        envSecretKey = process.env.STRIPE_SECRET_KEY_TEST || "";
-        envPublishableKey = process.env.STRIPE_PUBLISHABLE_KEY_TEST || "";
-        envWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET_TEST || "";
-        resolvedMode = "test";
+        console.warn("[STRIPE] ENV mode set to 'live' but STRIPE_SECRET_KEY_LIVE is missing. NOT falling back to test keys to prevent mode mismatch.");
+        this.configCache = {
+          publishableKey: "",
+          secretKey: "",
+          webhookSecret: "",
+          mode: "live",
+          configured: false,
+          source: "none",
+          resolvedMode: "live",
+        };
+        this.lastConfigFetch = now;
+        return this.configCache;
       }
     } else {
       envSecretKey = process.env.STRIPE_SECRET_KEY_TEST || "";
       envPublishableKey = process.env.STRIPE_PUBLISHABLE_KEY_TEST || "";
       envWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET_TEST || "";
-      resolvedMode = "test";
-      if (!envSecretKey && process.env.STRIPE_SECRET_KEY_LIVE) {
-        console.warn("[STRIPE] No test keys found. Falling back to live keys.");
-        envSecretKey = process.env.STRIPE_SECRET_KEY_LIVE;
-        envPublishableKey = process.env.STRIPE_PUBLISHABLE_KEY_LIVE || "";
-        envWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET_LIVE || "";
-        resolvedMode = "live";
+      if (!envSecretKey) {
+        console.warn("[STRIPE] ENV mode is 'test' but no test keys found. NOT falling back to live keys to prevent mode mismatch.");
+        this.configCache = {
+          publishableKey: "",
+          secretKey: "",
+          webhookSecret: "",
+          mode: "test",
+          configured: false,
+          source: "none",
+          resolvedMode: "test",
+        };
+        this.lastConfigFetch = now;
+        return this.configCache;
       }
     }
 
     if (envSecretKey) {
-      const keyMode = envSecretKey.startsWith("sk_live_") ? "live" : "test";
-      if (keyMode !== resolvedMode) {
-        console.warn(`[STRIPE] Key mode mismatch: resolved mode is '${resolvedMode}' but secret key is for '${keyMode}' mode.`);
-        resolvedMode = keyMode;
+      const keyMode = detectKeyMode(envSecretKey);
+      if (keyMode && keyMode !== resolvedMode) {
+        console.error(`[STRIPE] ENV key mode mismatch: STRIPE_MODE='${resolvedMode}' but secret key is for '${keyMode}'. Treating as unconfigured.`);
+        this.configCache = {
+          publishableKey: "",
+          secretKey: "",
+          webhookSecret: "",
+          mode: resolvedMode,
+          configured: false,
+          source: "none",
+          resolvedMode,
+        };
+        this.lastConfigFetch = now;
+        return this.configCache;
       }
     }
 
+    console.log(`[STRIPE] Using environment config (source=environment, mode=${resolvedMode})`);
     this.configCache = {
       publishableKey: envPublishableKey,
       secretKey: envSecretKey,
       webhookSecret: envWebhookSecret,
       mode: resolvedMode,
       configured: !!envSecretKey,
+      source: envSecretKey ? "environment" : "none",
+      resolvedMode,
     };
     this.lastConfigFetch = now;
     
@@ -182,7 +270,6 @@ class StripeService {
   }
 
   async validateKeys(publishableKey: string, secretKey: string): Promise<{ valid: boolean; error?: string; accountName?: string }> {
-    // Validate key formats
     if (!publishableKey.startsWith("pk_test_") && !publishableKey.startsWith("pk_live_")) {
       return { valid: false, error: "Publishable key must start with pk_test_ or pk_live_" };
     }
@@ -191,7 +278,6 @@ class StripeService {
       return { valid: false, error: "Secret key must start with sk_test_ or sk_live_" };
     }
 
-    // Check mode consistency
     const pkMode = publishableKey.startsWith("pk_live_") ? "live" : "test";
     const skMode = secretKey.startsWith("sk_live_") ? "live" : "test";
     
@@ -222,9 +308,8 @@ class StripeService {
     this.configCache = null;
     this.lastConfigFetch = 0;
     this.stripeClient = null;
+    console.log("[STRIPE] Cache cleared - next getConfig() will re-resolve from DB/env");
   }
-
-  // Stripe Connect Express methods
 
   async createExpressAccount(params: {
     email: string;
@@ -330,7 +415,6 @@ class StripeService {
     signature: string,
     secret: string
   ): Promise<Stripe.Event> {
-    // Use the configured Stripe client to ensure correct test/live mode
     const client = await this.getClient();
     if (!client) {
       throw new Error("Stripe client is not configured");

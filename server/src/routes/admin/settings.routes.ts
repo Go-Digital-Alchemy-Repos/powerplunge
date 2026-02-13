@@ -269,9 +269,18 @@ router.get("/stripe", async (req: any, res) => {
     const overallConfigured = testConfigured || liveConfigured || legacyConfigured;
     const source = overallConfigured && (testConfigured || liveConfigured) ? "database" : (legacyConfigured ? "database_legacy" : "environment");
 
+    const runtimeConfig = await stripeService.getConfig();
+    const activeModeFullyConfigured = activeMode === "test" ? testConfigured : liveConfigured;
+
     res.json({
       configured: overallConfigured,
       activeMode,
+      activeModeFullyConfigured,
+      runtime: {
+        resolvedMode: runtimeConfig.resolvedMode,
+        source: runtimeConfig.source,
+        configured: runtimeConfig.configured,
+      },
       test: {
         configured: testConfigured,
         publishableKeyMasked: settings?.stripePublishableKeyTest ? maskKey(settings.stripePublishableKeyTest) : null,
