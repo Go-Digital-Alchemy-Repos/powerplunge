@@ -1,11 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
-import { ArrowLeft, Share2 } from "lucide-react";
+import { ArrowLeft, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PageRenderer from "@/components/PageRenderer";
 import SiteLayout from "@/components/SiteLayout";
 import SeoHead from "@/components/SeoHead";
 import { ContentWithLeftSidebar } from "@/components/SidebarRenderer";
+import { useAdmin } from "@/hooks/use-admin";
 import PostMeta from "./components/PostMeta";
 import PostTaxonomy from "./components/PostTaxonomy";
 import PostCard from "./components/PostCard";
@@ -58,6 +59,7 @@ interface PostListItem {
 export default function BlogPostPage() {
   const params = useParams<{ slug: string }>();
   const [, navigate] = useLocation();
+  const { isAuthenticated: isAdmin } = useAdmin();
 
   const { data: post, isLoading, error } = useQuery<BlogPost>({
     queryKey: [`/api/blog/posts/${params.slug}`],
@@ -169,11 +171,21 @@ export default function BlogPostPage() {
               >
                 <ArrowLeft className="w-4 h-4 mr-2" /> Back to Blog
               </Button>
+              {isAdmin && (
+                <Button
+                  variant="ghost"
+                  onClick={(e) => { e.stopPropagation(); navigate(`/admin/cms/posts/${post.id}/edit`); }}
+                  className="absolute top-3 right-3 bg-black/50 backdrop-blur-sm text-white hover:bg-black/70 hover:text-white"
+                  data-testid="button-edit-post"
+                >
+                  <Pencil className="w-4 h-4 mr-2" /> Edit Post
+                </Button>
+              )}
             </div>
           )}
 
           {!coverSrc && (
-            <div className="mb-8">
+            <div className="mb-8 flex items-center justify-between">
               <Button
                 variant="ghost"
                 onClick={() => navigate("/blog")}
@@ -182,6 +194,16 @@ export default function BlogPostPage() {
               >
                 <ArrowLeft className="w-4 h-4 mr-2" /> Back to Blog
               </Button>
+              {isAdmin && (
+                <Button
+                  variant="ghost"
+                  onClick={() => navigate(`/admin/cms/posts/${post.id}/edit`)}
+                  className="text-muted-foreground hover:text-foreground"
+                  data-testid="button-edit-post"
+                >
+                  <Pencil className="w-4 h-4 mr-2" /> Edit Post
+                </Button>
+              )}
             </div>
           )}
 

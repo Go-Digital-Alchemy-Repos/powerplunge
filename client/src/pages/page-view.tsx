@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useParams } from "wouter";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PageRenderer from "@/components/PageRenderer";
 import SiteLayout from "@/components/SiteLayout";
 import { ContentWithLeftSidebar } from "@/components/SidebarRenderer";
+import { useAdmin } from "@/hooks/use-admin";
 import { sanitizeHtml } from "@/lib/sanitizeHtml";
 
 interface PageBlock {
@@ -34,6 +35,7 @@ interface Page {
 export default function PageView() {
   const [, navigate] = useLocation();
   const params = useParams<{ slug: string }>();
+  const { isAuthenticated: isAdmin } = useAdmin();
 
   const { data: page, isLoading, error } = useQuery<Page>({
     queryKey: [`/api/pages/${params.slug}`],
@@ -68,6 +70,18 @@ export default function PageView() {
 
   return (
     <SiteLayout>
+      {isAdmin && (
+        <div className="fixed top-20 right-4 z-50" data-testid="admin-edit-page-wrapper">
+          <Button
+            variant="ghost"
+            onClick={() => navigate(`/admin/cms/pages/${page.id}/edit`)}
+            className="bg-black/50 backdrop-blur-sm text-white hover:bg-black/70 hover:text-white shadow-lg"
+            data-testid="button-edit-page"
+          >
+            <Pencil className="w-4 h-4 mr-2" /> Edit Page
+          </Button>
+        </div>
+      )}
       <ContentWithLeftSidebar sidebarId={page.sidebarId}>
         <main data-testid="page-content">
           {hasBlocks ? (

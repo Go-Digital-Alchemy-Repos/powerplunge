@@ -94,6 +94,7 @@ export function registerCmsV1Blocks() {
       secondaryButtonText: textField("Secondary Button Text"),
       secondaryButtonLink: textField("Secondary Button Link"),
       productId: textField("Product ID (for Add to Cart action)"),
+      backgroundImage: imageField("Background Image (also used as video fallback)"),
       backgroundType: selectField("Background Type", [
         { label: "Photo", value: "image" },
         { label: "Video (YouTube / Vimeo)", value: "video" },

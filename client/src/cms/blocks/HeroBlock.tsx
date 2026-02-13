@@ -18,8 +18,10 @@ function parseVideoId(url: string): { provider: "youtube" | "vimeo"; id: string 
     /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/
   );
   if (ytMatch) return { provider: "youtube", id: ytMatch[1] };
-  const vimeoMatch = url.match(/(?:vimeo\.com\/)(\d+)/);
+  const vimeoMatch = url.match(/(?:vimeo\.com\/(?:video\/)?)(\d+)/);
   if (vimeoMatch) return { provider: "vimeo", id: vimeoMatch[1] };
+  const vimeoPlayerMatch = url.match(/player\.vimeo\.com\/video\/(\d+)/);
+  if (vimeoPlayerMatch) return { provider: "vimeo", id: vimeoPlayerMatch[1] };
   return null;
 }
 
@@ -172,7 +174,8 @@ export default function HeroBlock({ data, settings }: BlockRenderProps) {
 
   const isSplit = layout === "split-left" || layout === "split-right";
   const imageSide = layout === "split-right" ? "left" : "right";
-  const isVideo = backgroundType === "video" && !!videoUrl && !!parseVideoId(videoUrl);
+  const parsedVideo = backgroundType === "video" && videoUrl ? parseVideoId(videoUrl) : null;
+  const isVideo = !!parsedVideo;
   const hasBackground = isVideo || !!backgroundImage;
 
   return (
