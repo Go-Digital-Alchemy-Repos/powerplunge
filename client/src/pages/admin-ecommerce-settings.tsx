@@ -57,183 +57,134 @@ export default function AdminEcommerceSettings() {
           </p>
         </div>
 
-        <Tabs defaultValue="integrations" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="integrations">Integrations</TabsTrigger>
-            <TabsTrigger value="coupons">Coupons</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="integrations" className="space-y-6">
-            {/* Stripe Card */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <CreditCard className="w-5 h-5 text-primary" />
-                  Stripe Payments
-                </CardTitle>
-                <CardDescription>Accept payments and manage payouts</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between">
-                  <StatusBadge configured={integrations?.stripe} />
-                  <Button variant="outline" onClick={() => toast({ title: "Please use main Integrations page to reconfigure Stripe" })}>
-                    Configure
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* ShipStation API integration */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Send className="w-5 h-5 text-primary" />
-                  ShipStation
-                </CardTitle>
-                <CardDescription>Automate your shipping and fulfillment</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>API Key</Label>
-                    <Input placeholder="Enter ShipStation API Key" type="password" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>API Secret</Label>
-                    <Input placeholder="Enter ShipStation API Secret" type="password" />
-                  </div>
-                </div>
-                <Button className="w-full">Save ShipStation Configuration</Button>
-              </CardContent>
-            </Card>
-
-            {/* Shopping Integrations (Moved from main integrations) */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <ShoppingBag className="w-5 h-5 text-primary" />
-                  Shopping Channels
-                </CardTitle>
-                <CardDescription>Connect and sync your products across social platforms</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* TikTok Shop */}
-                <div className="flex items-center justify-between py-2 border-b">
-                  <div className="flex items-center gap-3">
-                    <ShoppingBag className="w-5 h-5" />
-                    <div>
-                      <p className="font-medium text-sm">TikTok Shop</p>
-                      <StatusBadge configured={integrations?.tiktokShop} />
-                    </div>
-                  </div>
-                  <Button variant="ghost" size="sm">Configure</Button>
-                </div>
-
-                {/* Instagram Shop */}
-                <div className="flex items-center justify-between py-2 border-b">
-                  <div className="flex items-center gap-3">
-                    <Instagram className="w-5 h-5" />
-                    <div>
-                      <p className="font-medium text-sm">Instagram Shop</p>
-                      <StatusBadge configured={integrations?.instagramShop} />
-                    </div>
-                  </div>
-                  <Button variant="ghost" size="sm">Configure</Button>
-                </div>
-
-                {/* YouTube Shopping */}
-                <div className="flex items-center justify-between py-2 border-b">
-                  <div className="flex items-center gap-3">
-                    <Youtube className="w-5 h-5" />
-                    <div>
-                      <p className="font-medium text-sm">YouTube Shopping</p>
-                      <StatusBadge configured={integrations?.youtubeShopping} />
-                    </div>
-                  </div>
-                  <Button variant="ghost" size="sm">Configure</Button>
-                </div>
-
-                {/* Snapchat Shopping */}
-                <div className="flex items-center justify-between py-2 border-b">
-                  <div className="flex items-center gap-3">
-                    <Ghost className="w-5 h-5" />
-                    <div>
-                      <p className="font-medium text-sm">Snapchat Shopping</p>
-                      <StatusBadge configured={integrations?.snapchatShopping} />
-                    </div>
-                  </div>
-                  <Button variant="ghost" size="sm">Configure</Button>
-                </div>
-
-                {/* X Shopping */}
-                <div className="flex items-center justify-between py-2 border-b">
-                  <div className="flex items-center gap-3">
-                    <Link2 className="w-5 h-5" />
-                    <div>
-                      <p className="font-medium text-sm">X Shopping</p>
-                      <StatusBadge configured={integrations?.xShopping} />
-                    </div>
-                  </div>
-                  <Button variant="ghost" size="sm">Configure</Button>
-                </div>
-
-                {/* Pinterest Shopping */}
-                <div className="flex items-center justify-between py-2">
-                  <div className="flex items-center gap-3">
-                    <ShoppingBag className="w-5 h-5" />
-                    <div>
-                      <p className="font-medium text-sm">Pinterest Shopping</p>
-                      <StatusBadge configured={integrations?.pinterestShopping} />
-                    </div>
-                  </div>
-                  <Button variant="ghost" size="sm">Configure</Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="coupons" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Tag className="w-5 h-5 text-primary" />
-                  Coupon Management
-                </CardTitle>
-                <CardDescription>Create and manage discount codes for your store</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {couponStats && (
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    <div className="bg-muted/30 rounded-lg p-3 text-center">
-                      <p className="text-2xl font-bold">{couponStats.totalCoupons || 0}</p>
-                      <p className="text-xs text-muted-foreground">Total Coupons</p>
-                    </div>
-                    <div className="bg-muted/30 rounded-lg p-3 text-center">
-                      <p className="text-2xl font-bold text-green-400">{couponStats.activeCoupons || 0}</p>
-                      <p className="text-xs text-muted-foreground">Active</p>
-                    </div>
-                    <div className="bg-muted/30 rounded-lg p-3 text-center">
-                      <p className="text-2xl font-bold">{couponStats.totalRedemptions || 0}</p>
-                      <p className="text-xs text-muted-foreground">Redemptions</p>
-                    </div>
-                    <div className="bg-muted/30 rounded-lg p-3 text-center">
-                      <p className="text-2xl font-bold text-cyan-400">${((couponStats.totalNetRevenue || 0) / 100).toFixed(0)}</p>
-                      <p className="text-xs text-muted-foreground">Net Revenue</p>
-                    </div>
-                  </div>
-                )}
-                <Button
-                  onClick={() => navigate("/admin/coupons")}
-                  className="w-full"
-                  data-testid="button-manage-coupons"
-                >
-                  Manage Coupons
-                  <ArrowRight className="w-4 h-4 ml-2" />
+        <div className="space-y-6">
+          {/* Stripe Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <CreditCard className="w-5 h-5 text-primary" />
+                Stripe Payments
+              </CardTitle>
+              <CardDescription>Accept payments and manage payouts</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <StatusBadge configured={integrations?.stripe} />
+                <Button variant="outline" onClick={() => toast({ title: "Please use main Integrations page to reconfigure Stripe" })}>
+                  Configure
                 </Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* ShipStation API integration */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Send className="w-5 h-5 text-primary" />
+                ShipStation
+              </CardTitle>
+              <CardDescription>Automate your shipping and fulfillment</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>API Key</Label>
+                  <Input placeholder="Enter ShipStation API Key" type="password" />
+                </div>
+                <div className="space-y-2">
+                  <Label>API Secret</Label>
+                  <Input placeholder="Enter ShipStation API Secret" type="password" />
+                </div>
+              </div>
+              <Button className="w-full">Save ShipStation Configuration</Button>
+            </CardContent>
+          </Card>
+
+          {/* Shopping Integrations (Moved from main integrations) */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <ShoppingBag className="w-5 h-5 text-primary" />
+                Shopping Channels
+              </CardTitle>
+              <CardDescription>Connect and sync your products across social platforms</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* TikTok Shop */}
+              <div className="flex items-center justify-between py-2 border-b">
+                <div className="flex items-center gap-3">
+                  <ShoppingBag className="w-5 h-5" />
+                  <div>
+                    <p className="font-medium text-sm">TikTok Shop</p>
+                    <StatusBadge configured={integrations?.tiktokShop} />
+                  </div>
+                </div>
+                <Button variant="ghost" size="sm">Configure</Button>
+              </div>
+
+              {/* Instagram Shop */}
+              <div className="flex items-center justify-between py-2 border-b">
+                <div className="flex items-center gap-3">
+                  <Instagram className="w-5 h-5" />
+                  <div>
+                    <p className="font-medium text-sm">Instagram Shop</p>
+                    <StatusBadge configured={integrations?.instagramShop} />
+                  </div>
+                </div>
+                <Button variant="ghost" size="sm">Configure</Button>
+              </div>
+
+              {/* YouTube Shopping */}
+              <div className="flex items-center justify-between py-2 border-b">
+                <div className="flex items-center gap-3">
+                  <Youtube className="w-5 h-5" />
+                  <div>
+                    <p className="font-medium text-sm">YouTube Shopping</p>
+                    <StatusBadge configured={integrations?.youtubeShopping} />
+                  </div>
+                </div>
+                <Button variant="ghost" size="sm">Configure</Button>
+              </div>
+
+              {/* Snapchat Shopping */}
+              <div className="flex items-center justify-between py-2 border-b">
+                <div className="flex items-center gap-3">
+                  <Ghost className="w-5 h-5" />
+                  <div>
+                    <p className="font-medium text-sm">Snapchat Shopping</p>
+                    <StatusBadge configured={integrations?.snapchatShopping} />
+                  </div>
+                </div>
+                <Button variant="ghost" size="sm">Configure</Button>
+              </div>
+
+              {/* X Shopping */}
+              <div className="flex items-center justify-between py-2 border-b">
+                <div className="flex items-center gap-3">
+                  <Link2 className="w-5 h-5" />
+                  <div>
+                    <p className="font-medium text-sm">X Shopping</p>
+                    <StatusBadge configured={integrations?.xShopping} />
+                  </div>
+                </div>
+                <Button variant="ghost" size="sm">Configure</Button>
+              </div>
+
+              {/* Pinterest Shopping */}
+              <div className="flex items-center justify-between py-2">
+                <div className="flex items-center gap-3">
+                  <ShoppingBag className="w-5 h-5" />
+                  <div>
+                    <p className="font-medium text-sm">Pinterest Shopping</p>
+                    <StatusBadge configured={integrations?.pinterestShopping} />
+                  </div>
+                </div>
+                <Button variant="ghost" size="sm">Configure</Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
