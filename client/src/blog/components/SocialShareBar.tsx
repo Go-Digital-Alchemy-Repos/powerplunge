@@ -17,7 +17,7 @@ function buildAbsoluteUrl(path: string | null | undefined): string {
 
 interface Platform {
   name: string;
-  icon: JSX.Element;
+  icon: React.ReactNode;
   getUrl: (url: string, title: string, excerpt: string, imageUrl: string) => string;
 }
 
