@@ -361,6 +361,279 @@ export default function AdminRevenue() {
           </div>
         </div>
 
+        {!metricsLoading && (
+          <Tabs defaultValue="products" className="w-full mb-8">
+            <TabsList>
+              <TabsTrigger value="products">
+                Top Products
+              </TabsTrigger>
+              <TabsTrigger value="affiliates">
+                Top Affiliates
+              </TabsTrigger>
+              <TabsTrigger value="customers">
+                Top Customers
+              </TabsTrigger>
+              <TabsTrigger value="upsells">
+                <Link2 className="w-4 h-4 mr-1" />
+                Top Upsells
+              </TabsTrigger>
+              <TabsTrigger value="vip">
+                <Crown className="w-4 h-4 mr-1" />
+                VIP Stats
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="products">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Top Products by Revenue</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Product</TableHead>
+                        <TableHead className="text-right">Revenue</TableHead>
+                        <TableHead className="text-right">Units Sold</TableHead>
+                        <TableHead className="text-right">Orders</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {topProducts?.length ? (
+                        topProducts.map((product) => (
+                          <TableRow key={product.productId} data-testid={`row-product-${product.productId}`}>
+                            <TableCell className="font-medium">{product.productName}</TableCell>
+                            <TableCell className="text-right text-primary">{formatCurrency(product.revenue)}</TableCell>
+                            <TableCell className="text-right text-muted-foreground">{formatNumber(product.unitsSold)}</TableCell>
+                            <TableCell className="text-right text-muted-foreground">{formatNumber(product.orderCount)}</TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                            No product data available for this period
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="affiliates">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Top Affiliates by Revenue Generated</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Affiliate</TableHead>
+                        <TableHead>Code</TableHead>
+                        <TableHead className="text-right">Revenue</TableHead>
+                        <TableHead className="text-right">Commission</TableHead>
+                        <TableHead className="text-right">Orders</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {topAffiliates?.length ? (
+                        topAffiliates.map((affiliate) => (
+                          <TableRow key={affiliate.affiliateId} data-testid={`row-affiliate-${affiliate.affiliateId}`}>
+                            <TableCell className="font-medium">{affiliate.customerName}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="border-primary/30 text-primary">
+                                {affiliate.affiliateCode}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right text-primary">{formatCurrency(affiliate.revenue)}</TableCell>
+                            <TableCell className="text-right" style={{ color: tc.success }}>{formatCurrency(affiliate.commission)}</TableCell>
+                            <TableCell className="text-right text-muted-foreground">{formatNumber(affiliate.orderCount)}</TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                            No affiliate data available for this period
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="customers">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Top Customers by Lifetime Value</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Customer</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead className="text-right">Total Spent</TableHead>
+                        <TableHead className="text-right">Orders</TableHead>
+                        <TableHead>First Order</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {topCustomers?.length ? (
+                        topCustomers.map((customer) => (
+                          <TableRow key={customer.customerId} data-testid={`row-customer-${customer.customerId}`}>
+                            <TableCell className="font-medium">{customer.customerName}</TableCell>
+                            <TableCell className="text-muted-foreground">{customer.email}</TableCell>
+                            <TableCell className="text-right text-primary">{formatCurrency(customer.totalSpent)}</TableCell>
+                            <TableCell className="text-right text-muted-foreground">{formatNumber(customer.orderCount)}</TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {customer.firstOrderDate ? format(new Date(customer.firstOrderDate), "MMM d, yyyy") : "-"}
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                            No customer data available for this period
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="upsells">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Link2 className="w-5 h-5" style={{ color: tc.accent }} />
+                    Top Performing Upsells
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div className="bg-muted/50 rounded-lg p-4">
+                      <p className="text-muted-foreground text-sm">Total Impressions</p>
+                      <p className="text-2xl font-bold text-foreground">
+                        {formatNumber(upsellAnalytics?.totalImpressions || 0)}
+                      </p>
+                    </div>
+                    <div className="bg-muted/50 rounded-lg p-4">
+                      <p className="text-muted-foreground text-sm">Click Rate</p>
+                      <p className="text-2xl font-bold text-primary">
+                        {formatPercent((upsellAnalytics?.clickRate || 0) * 100)}
+                      </p>
+                    </div>
+                    <div className="bg-muted/50 rounded-lg p-4">
+                      <p className="text-muted-foreground text-sm">Attach Rate</p>
+                      <p className="text-2xl font-bold" style={{ color: tc.success }}>
+                        {formatPercent((upsellAnalytics?.conversionRate || 0) * 100)}
+                      </p>
+                    </div>
+                  </div>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Product</TableHead>
+                        <TableHead>Upsell</TableHead>
+                        <TableHead className="text-right">Conversions</TableHead>
+                        <TableHead className="text-right">Revenue</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {upsellAnalytics?.topUpsells?.length ? (
+                        upsellAnalytics.topUpsells.map((upsell, idx) => (
+                          <TableRow key={idx}>
+                            <TableCell className="font-medium">{upsell.productName}</TableCell>
+                            <TableCell style={{ color: tc.accent }}>{upsell.relatedProductName}</TableCell>
+                            <TableCell className="text-right text-muted-foreground">{formatNumber(upsell.conversions)}</TableCell>
+                            <TableCell className="text-right text-primary">{formatCurrency(upsell.revenue)}</TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                            No upsell data available for this period
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="vip">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Crown className="w-5 h-5" style={{ color: tc.warning }} />
+                    VIP Customer Statistics
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="bg-muted/50 rounded-lg p-4 border border-border">
+                      <p className="text-muted-foreground text-sm flex items-center gap-1">
+                        <Crown className="w-4 h-4" style={{ color: tc.warning }} />
+                        Active VIPs
+                      </p>
+                      <p className="text-2xl font-bold" style={{ color: tc.warning }}>
+                        {formatNumber(vipAnalytics?.activeVips || 0)}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        of {formatNumber(vipAnalytics?.totalVips || 0)} total
+                      </p>
+                    </div>
+                    <div className="bg-muted/50 rounded-lg p-4">
+                      <p className="text-muted-foreground text-sm">VIP Revenue Share</p>
+                      <p className="text-2xl font-bold text-primary">
+                        {formatPercent((vipAnalytics?.vipRevenuePercent || 0) * 100)}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {formatCurrency(vipAnalytics?.vipRevenue || 0)}
+                      </p>
+                    </div>
+                    <div className="bg-muted/50 rounded-lg p-4">
+                      <p className="text-muted-foreground text-sm">VIP Avg Order</p>
+                      <p className="text-2xl font-bold text-foreground">
+                        {formatCurrency(vipAnalytics?.vipAov || 0)}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">per order</p>
+                    </div>
+                    <div className="bg-muted/50 rounded-lg p-4">
+                      <p className="text-muted-foreground text-sm">Non-VIP Avg Order</p>
+                      <p className="text-2xl font-bold text-foreground">
+                        {formatCurrency(vipAnalytics?.nonVipAov || 0)}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">per order</p>
+                    </div>
+                  </div>
+                  <div className="mt-6 p-4 bg-muted/30 rounded-lg border border-border">
+                    <h4 className="text-foreground font-medium mb-2 flex items-center gap-2">
+                      <Sparkles className="w-4 h-4" style={{ color: tc.warning }} />
+                      VIP Impact Summary
+                    </h4>
+                    <p className="text-muted-foreground text-sm">
+                      VIP customers spend <span className="font-medium" style={{ color: tc.warning }}>
+                        {formatPercent((vipAnalytics?.aovUplift || 0) * 100)} more
+                      </span> per order than regular customers and contribute{" "}
+                      <span className="text-primary font-medium">
+                        {formatPercent((vipAnalytics?.vipRevenuePercent || 0) * 100)}
+                      </span> of your total revenue.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        )}
+
         <Card className="mb-6">
           <CardHeader className="pb-4">
             <CardTitle className="text-lg">Filters</CardTitle>
@@ -739,277 +1012,6 @@ export default function AdminRevenue() {
                 </CardContent>
               </Card>
             </div>
-
-            <Tabs defaultValue="products" className="w-full">
-              <TabsList>
-                <TabsTrigger value="products">
-                  Top Products
-                </TabsTrigger>
-                <TabsTrigger value="affiliates">
-                  Top Affiliates
-                </TabsTrigger>
-                <TabsTrigger value="customers">
-                  Top Customers
-                </TabsTrigger>
-                <TabsTrigger value="upsells">
-                  <Link2 className="w-4 h-4 mr-1" />
-                  Top Upsells
-                </TabsTrigger>
-                <TabsTrigger value="vip">
-                  <Crown className="w-4 h-4 mr-1" />
-                  VIP Stats
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="products">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Top Products by Revenue</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Product</TableHead>
-                          <TableHead className="text-right">Revenue</TableHead>
-                          <TableHead className="text-right">Units Sold</TableHead>
-                          <TableHead className="text-right">Orders</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {topProducts?.length ? (
-                          topProducts.map((product) => (
-                            <TableRow key={product.productId} data-testid={`row-product-${product.productId}`}>
-                              <TableCell className="font-medium">{product.productName}</TableCell>
-                              <TableCell className="text-right text-primary">{formatCurrency(product.revenue)}</TableCell>
-                              <TableCell className="text-right text-muted-foreground">{formatNumber(product.unitsSold)}</TableCell>
-                              <TableCell className="text-right text-muted-foreground">{formatNumber(product.orderCount)}</TableCell>
-                            </TableRow>
-                          ))
-                        ) : (
-                          <TableRow>
-                            <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
-                              No product data available for this period
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="affiliates">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Top Affiliates by Revenue Generated</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Affiliate</TableHead>
-                          <TableHead>Code</TableHead>
-                          <TableHead className="text-right">Revenue</TableHead>
-                          <TableHead className="text-right">Commission</TableHead>
-                          <TableHead className="text-right">Orders</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {topAffiliates?.length ? (
-                          topAffiliates.map((affiliate) => (
-                            <TableRow key={affiliate.affiliateId} data-testid={`row-affiliate-${affiliate.affiliateId}`}>
-                              <TableCell className="font-medium">{affiliate.customerName}</TableCell>
-                              <TableCell>
-                                <Badge variant="outline" className="border-primary/30 text-primary">
-                                  {affiliate.affiliateCode}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-right text-primary">{formatCurrency(affiliate.revenue)}</TableCell>
-                              <TableCell className="text-right" style={{ color: tc.success }}>{formatCurrency(affiliate.commission)}</TableCell>
-                              <TableCell className="text-right text-muted-foreground">{formatNumber(affiliate.orderCount)}</TableCell>
-                            </TableRow>
-                          ))
-                        ) : (
-                          <TableRow>
-                            <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                              No affiliate data available for this period
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="customers">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Top Customers by Lifetime Value</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Customer</TableHead>
-                          <TableHead>Email</TableHead>
-                          <TableHead className="text-right">Total Spent</TableHead>
-                          <TableHead className="text-right">Orders</TableHead>
-                          <TableHead>First Order</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {topCustomers?.length ? (
-                          topCustomers.map((customer) => (
-                            <TableRow key={customer.customerId} data-testid={`row-customer-${customer.customerId}`}>
-                              <TableCell className="font-medium">{customer.customerName}</TableCell>
-                              <TableCell className="text-muted-foreground">{customer.email}</TableCell>
-                              <TableCell className="text-right text-primary">{formatCurrency(customer.totalSpent)}</TableCell>
-                              <TableCell className="text-right text-muted-foreground">{formatNumber(customer.orderCount)}</TableCell>
-                              <TableCell className="text-muted-foreground">
-                                {customer.firstOrderDate ? format(new Date(customer.firstOrderDate), "MMM d, yyyy") : "-"}
-                              </TableCell>
-                            </TableRow>
-                          ))
-                        ) : (
-                          <TableRow>
-                            <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                              No customer data available for this period
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="upsells">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Link2 className="w-5 h-5" style={{ color: tc.accent }} />
-                      Top Performing Upsells
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                      <div className="bg-muted/50 rounded-lg p-4">
-                        <p className="text-muted-foreground text-sm">Total Impressions</p>
-                        <p className="text-2xl font-bold text-foreground">
-                          {formatNumber(upsellAnalytics?.totalImpressions || 0)}
-                        </p>
-                      </div>
-                      <div className="bg-muted/50 rounded-lg p-4">
-                        <p className="text-muted-foreground text-sm">Click Rate</p>
-                        <p className="text-2xl font-bold text-primary">
-                          {formatPercent((upsellAnalytics?.clickRate || 0) * 100)}
-                        </p>
-                      </div>
-                      <div className="bg-muted/50 rounded-lg p-4">
-                        <p className="text-muted-foreground text-sm">Attach Rate</p>
-                        <p className="text-2xl font-bold" style={{ color: tc.success }}>
-                          {formatPercent((upsellAnalytics?.conversionRate || 0) * 100)}
-                        </p>
-                      </div>
-                    </div>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Product</TableHead>
-                          <TableHead>Upsell</TableHead>
-                          <TableHead className="text-right">Conversions</TableHead>
-                          <TableHead className="text-right">Revenue</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {upsellAnalytics?.topUpsells?.length ? (
-                          upsellAnalytics.topUpsells.map((upsell, idx) => (
-                            <TableRow key={idx}>
-                              <TableCell className="font-medium">{upsell.productName}</TableCell>
-                              <TableCell style={{ color: tc.accent }}>{upsell.relatedProductName}</TableCell>
-                              <TableCell className="text-right text-muted-foreground">{formatNumber(upsell.conversions)}</TableCell>
-                              <TableCell className="text-right text-primary">{formatCurrency(upsell.revenue)}</TableCell>
-                            </TableRow>
-                          ))
-                        ) : (
-                          <TableRow>
-                            <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
-                              No upsell data available for this period
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="vip">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Crown className="w-5 h-5" style={{ color: tc.warning }} />
-                      VIP Customer Statistics
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                      <div className="bg-muted/50 rounded-lg p-4 border border-border">
-                        <p className="text-muted-foreground text-sm flex items-center gap-1">
-                          <Crown className="w-4 h-4" style={{ color: tc.warning }} />
-                          Active VIPs
-                        </p>
-                        <p className="text-2xl font-bold" style={{ color: tc.warning }}>
-                          {formatNumber(vipAnalytics?.activeVips || 0)}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          of {formatNumber(vipAnalytics?.totalVips || 0)} total
-                        </p>
-                      </div>
-                      <div className="bg-muted/50 rounded-lg p-4">
-                        <p className="text-muted-foreground text-sm">VIP Revenue Share</p>
-                        <p className="text-2xl font-bold text-primary">
-                          {formatPercent((vipAnalytics?.vipRevenuePercent || 0) * 100)}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {formatCurrency(vipAnalytics?.vipRevenue || 0)}
-                        </p>
-                      </div>
-                      <div className="bg-muted/50 rounded-lg p-4">
-                        <p className="text-muted-foreground text-sm">VIP Avg Order</p>
-                        <p className="text-2xl font-bold text-foreground">
-                          {formatCurrency(vipAnalytics?.vipAov || 0)}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">per order</p>
-                      </div>
-                      <div className="bg-muted/50 rounded-lg p-4">
-                        <p className="text-muted-foreground text-sm">Non-VIP Avg Order</p>
-                        <p className="text-2xl font-bold text-foreground">
-                          {formatCurrency(vipAnalytics?.nonVipAov || 0)}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">per order</p>
-                      </div>
-                    </div>
-                    <div className="mt-6 p-4 bg-muted/30 rounded-lg border border-border">
-                      <h4 className="text-foreground font-medium mb-2 flex items-center gap-2">
-                        <Sparkles className="w-4 h-4" style={{ color: tc.warning }} />
-                        VIP Impact Summary
-                      </h4>
-                      <p className="text-muted-foreground text-sm">
-                        VIP customers spend <span className="font-medium" style={{ color: tc.warning }}>
-                          {formatPercent((vipAnalytics?.aovUplift || 0) * 100)} more
-                        </span> per order than regular customers and contribute{" "}
-                        <span className="text-primary font-medium">
-                          {formatPercent((vipAnalytics?.vipRevenuePercent || 0) * 100)}
-                        </span> of your total revenue.
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
           </>
         )}
       </main>
