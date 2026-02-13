@@ -77,6 +77,7 @@ interface Page {
   twitterImage: string | null;
   robots: string | null;
   status: string;
+  scheduledAt: string | null;
   showInNav: boolean;
   navOrder: number;
   customCss: string | null;

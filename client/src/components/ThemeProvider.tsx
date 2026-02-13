@@ -131,6 +131,13 @@ function mapThemeToShadcn(variables: Record<string, string>): Record<string, str
     const primaryFgHsl = hexToHsl(primaryFg);
     if (primaryFgHsl) root.style.setProperty("--primary-foreground", primaryFgHsl);
     root.style.setProperty("--pp-primary-text", primaryFg);
+
+    if (!variables["--theme-primary-hover"]) {
+      root.style.setProperty("--theme-primary-hover", darken(primary, 25));
+    }
+    if (!variables["--theme-primary-muted"]) {
+      root.style.setProperty("--theme-primary-muted", `${primary}26`);
+    }
   }
 
   if (accent && accent.startsWith("#")) {
@@ -138,11 +145,19 @@ function mapThemeToShadcn(variables: Record<string, string>): Record<string, str
     const accentFgHsl = hexToHsl(accentFg);
     if (accentFgHsl) root.style.setProperty("--accent-foreground", accentFgHsl);
     root.style.setProperty("--pp-accent-text", accentFg);
+  } else if (primary && primary.startsWith("#") && !variables["--theme-accent"]) {
+    root.style.setProperty("--theme-accent", darken(primary, 20));
+    root.style.setProperty("--pp-accent", darken(primary, 20));
+    const accentFg = isLight(darken(primary, 20)) ? "#0a0a0a" : "#fafafa";
+    const accentFgHsl = hexToHsl(accentFg);
+    if (accentFgHsl) root.style.setProperty("--accent-foreground", accentFgHsl);
+    root.style.setProperty("--pp-accent-text", accentFg);
   }
 
-  if (primary && primary.startsWith("#") && bg && bg.startsWith("#")) {
-    root.style.setProperty("--pp-secondary", darken(primary, 30));
-    root.style.setProperty("--pp-secondary-text", isLight(darken(primary, 30)) ? "#0a0a0a" : "#fafafa");
+  if (primary && primary.startsWith("#")) {
+    const secondary = bg && bg.startsWith("#") ? darken(primary, 30) : darken(primary, 30);
+    root.style.setProperty("--pp-secondary", secondary);
+    root.style.setProperty("--pp-secondary-text", isLight(secondary) ? "#0a0a0a" : "#fafafa");
   }
 
   const error = variables["--theme-error"];
