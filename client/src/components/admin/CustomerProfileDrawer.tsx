@@ -57,6 +57,7 @@ import {
   LogOut,
   Eye,
   EyeOff,
+  ExternalLink,
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { ManualOrderWizard } from "./ManualOrderWizard";
@@ -694,13 +695,32 @@ export function CustomerProfileDrawer({
                         </div>
                         <Separator />
                         <div className="space-y-1">
-                          <p data-testid="customer-address">{profile?.customer.address || "No address"}</p>
-                          <p>
-                            {[profile?.customer.city, profile?.customer.state, profile?.customer.zipCode]
-                              .filter(Boolean)
-                              .join(", ")}
-                          </p>
-                          <p>{profile?.customer.country}</p>
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p data-testid="customer-address">{profile?.customer.address || "No address"}</p>
+                              <p>
+                                {[profile?.customer.city, profile?.customer.state, profile?.customer.zipCode]
+                                  .filter(Boolean)
+                                  .join(", ")}
+                              </p>
+                              <p>{profile?.customer.country}</p>
+                            </div>
+                            {profile?.customer.address && (
+                              <a
+                                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                                  [profile.customer.address, profile.customer.city, profile.customer.state, profile.customer.zipCode, profile.customer.country]
+                                    .filter(Boolean)
+                                    .join(", ")
+                                )}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary hover:text-primary/80 shrink-0 mt-0.5"
+                                data-testid="link-google-maps"
+                              >
+                                <MapPin className="w-4 h-4" />
+                              </a>
+                            )}
+                          </div>
                         </div>
                       </>
                     )}
