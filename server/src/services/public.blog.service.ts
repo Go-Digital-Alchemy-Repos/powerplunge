@@ -9,6 +9,7 @@ import {
   mediaLibrary,
 } from "@shared/schema";
 import { eq, and, desc, or, ilike, inArray, count, lte } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 
 export interface PublicPostListFilters {
   page?: number;
@@ -117,13 +118,16 @@ class PublicBlogService {
   }
 
   async getPublishedBySlug(slug: string) {
+    const ogMedia = alias(mediaLibrary, "og_media");
     const [result] = await db
       .select({
         post: posts,
         coverImageUrl: mediaLibrary.publicUrl,
+        ogImageUrl: ogMedia.publicUrl,
       })
       .from(posts)
       .leftJoin(mediaLibrary, eq(posts.coverImageId, mediaLibrary.id))
+      .leftJoin(ogMedia, eq(posts.ogImageId, ogMedia.id))
       .where(
         and(
           eq(posts.slug, slug),
@@ -134,7 +138,7 @@ class PublicBlogService {
 
     if (!result) return undefined;
 
-    const post = { ...result.post, coverImageUrl: result.coverImageUrl };
+    const post = { ...result.post, coverImageUrl: result.coverImageUrl, ogImageUrl: result.ogImageUrl };
     const [categories, tags] = await Promise.all([
       this.getCategoriesForPost(post.id),
       this.getTagsForPost(post.id),

@@ -16,6 +16,7 @@ interface PostListItem {
   excerpt: string | null;
   publishedAt: string | null;
   coverImageId: string | null;
+  coverImageUrl: string | null;
   readingTimeMinutes: number | null;
   featured: boolean;
   categories: TaxonomyItem[];
@@ -64,9 +65,9 @@ const BlogFeaturedPostBlock: React.FC<BlockRenderProps> = ({ data }) => {
         data-testid={`featured-card-${post.slug}`}
       >
         <div className="relative aspect-[16/10] lg:aspect-auto overflow-hidden bg-muted">
-          {post.coverImageId ? (
+          {post.coverImageUrl ? (
             <img
-              src={`/api/object-storage/${post.coverImageId}`}
+              src={post.coverImageUrl}
               alt={post.title}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
             />

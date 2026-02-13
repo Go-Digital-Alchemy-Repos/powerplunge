@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { Search, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, X, ArrowRight, Clock } from "lucide-react";
 import type { BlockRenderProps } from "./types";
 
 interface TaxonomyItem {
@@ -16,6 +16,7 @@ interface PostListItem {
   excerpt: string | null;
   publishedAt: string | null;
   coverImageId: string | null;
+  coverImageUrl: string | null;
   readingTimeMinutes: number | null;
   featured: boolean;
   categories: TaxonomyItem[];
@@ -29,18 +30,85 @@ interface PostListResult {
   pageSize: number;
 }
 
+function getImageSrc(post: PostListItem): string | null {
+  return post.coverImageUrl || null;
+}
+
+function FeaturedPostHero({ post }: { post: PostListItem }) {
+  const [, navigate] = useLocation();
+  const imgSrc = getImageSrc(post);
+
+  return (
+    <article
+      className="group relative mb-10 rounded-2xl overflow-hidden border border-border/50 hover:border-primary/40 transition-all duration-500 cursor-pointer"
+      onClick={() => navigate(`/blog/${post.slug}`)}
+      data-testid={`feed-featured-${post.slug}`}
+    >
+      <div className="grid md:grid-cols-2 min-h-[320px]">
+        <div className="relative aspect-video md:aspect-auto overflow-hidden bg-muted">
+          {imgSrc ? (
+            <img
+              src={imgSrc}
+              alt={post.title}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+            />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-primary/20 via-primary/10 to-card flex items-center justify-center">
+              <span className="text-6xl text-primary/15 font-bold">PP</span>
+            </div>
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent md:hidden" />
+        </div>
+        <div className="flex flex-col justify-center p-6 md:p-8 lg:p-10 bg-card/80">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-xs font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full bg-primary/15 text-primary" data-testid="badge-featured">
+              Featured
+            </span>
+            {post.categories.length > 0 && (
+              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                {post.categories[0].name}
+              </span>
+            )}
+          </div>
+          <h2 className="text-2xl md:text-3xl font-bold text-foreground group-hover:text-primary transition-colors mb-3 line-clamp-3" data-testid="text-featured-title">
+            {post.title}
+          </h2>
+          {post.excerpt && (
+            <p className="text-muted-foreground text-base line-clamp-3 mb-4">{post.excerpt}</p>
+          )}
+          <div className="flex items-center gap-4 text-muted-foreground/70 text-sm mt-auto">
+            {post.publishedAt && (
+              <span>{new Date(post.publishedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+            )}
+            {post.readingTimeMinutes != null && post.readingTimeMinutes > 0 && (
+              <span className="flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5" /> {post.readingTimeMinutes} min read
+              </span>
+            )}
+            <span className="ml-auto flex items-center gap-1 text-primary font-medium group-hover:gap-2 transition-all">
+              Read more <ArrowRight className="w-4 h-4" />
+            </span>
+          </div>
+        </div>
+      </div>
+    </article>
+  );
+}
+
 function PostCardGrid({ post }: { post: PostListItem }) {
   const [, navigate] = useLocation();
+  const imgSrc = getImageSrc(post);
+
   return (
     <article
       className="group bg-card/60 border border-border/50 rounded-xl overflow-hidden hover:border-primary/50 transition-all duration-300 cursor-pointer flex flex-col"
       onClick={() => navigate(`/blog/${post.slug}`)}
       data-testid={`feed-card-${post.slug}`}
     >
-      {post.coverImageId ? (
+      {imgSrc ? (
         <div className="aspect-video bg-muted overflow-hidden">
           <img
-            src={`/api/object-storage/${post.coverImageId}`}
+            src={imgSrc}
             alt={post.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             loading="lazy"
@@ -80,16 +148,18 @@ function PostCardGrid({ post }: { post: PostListItem }) {
 
 function PostCardList({ post }: { post: PostListItem }) {
   const [, navigate] = useLocation();
+  const imgSrc = getImageSrc(post);
+
   return (
     <article
       className="group flex gap-5 bg-card/40 border border-border/50 rounded-xl overflow-hidden hover:border-primary/50 transition-all duration-300 cursor-pointer p-4"
       onClick={() => navigate(`/blog/${post.slug}`)}
       data-testid={`feed-card-${post.slug}`}
     >
-      {post.coverImageId ? (
+      {imgSrc ? (
         <div className="w-48 h-32 flex-shrink-0 rounded-lg overflow-hidden bg-muted">
           <img
-            src={`/api/object-storage/${post.coverImageId}`}
+            src={imgSrc}
             alt={post.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             loading="lazy"
@@ -137,6 +207,7 @@ const BlogPostFeedBlock: React.FC<BlockRenderProps> = ({ data }) => {
   const showTagFilter = data?.showTagFilter === "true" || data?.showTagFilter === true;
   const featuredOnly = data?.featuredOnly === "true" || data?.featuredOnly === true;
   const excludeFeatured = data?.excludeFeatured === "true" || data?.excludeFeatured === true;
+  const showFeaturedHero = data?.showFeaturedHero !== "false" && data?.showFeaturedHero !== false;
   const categorySlug = data?.categorySlug || "";
   const tagSlug = data?.tagSlug || "";
 
@@ -196,6 +267,13 @@ const BlogPostFeedBlock: React.FC<BlockRenderProps> = ({ data }) => {
 
   const posts = result?.data || [];
   const totalPages = result ? Math.ceil(result.total / result.pageSize) : 0;
+
+  const featuredPost = showFeaturedHero && page === 1 && !q && !featuredOnly
+    ? posts.find((p) => p.featured)
+    : null;
+  const gridPosts = featuredPost
+    ? posts.filter((p) => p.id !== featuredPost.id)
+    : posts;
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -289,18 +367,24 @@ const BlogPostFeedBlock: React.FC<BlockRenderProps> = ({ data }) => {
 
       {!loading && posts.length > 0 && (
         <>
-          {layout === "grid" ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" data-testid="feed-grid">
-              {posts.map((post) => (
-                <PostCardGrid key={post.id} post={post} />
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-col gap-4" data-testid="feed-list">
-              {posts.map((post) => (
-                <PostCardList key={post.id} post={post} />
-              ))}
-            </div>
+          {featuredPost && (
+            <FeaturedPostHero post={featuredPost} />
+          )}
+
+          {gridPosts.length > 0 && (
+            layout === "grid" ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" data-testid="feed-grid">
+                {gridPosts.map((post) => (
+                  <PostCardGrid key={post.id} post={post} />
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col gap-4" data-testid="feed-list">
+                {gridPosts.map((post) => (
+                  <PostCardList key={post.id} post={post} />
+                ))}
+              </div>
+            )
           )}
 
           {totalPages > 1 && (

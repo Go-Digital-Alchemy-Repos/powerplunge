@@ -125,8 +125,8 @@ export default function BlogPostPage() {
   if (!post.allowFollow) robotsDirectives.push("nofollow");
   const robotsMeta = robotsDirectives.length > 0 ? robotsDirectives.join(", ") : null;
 
-  const coverSrc = post.coverImageUrl || (post.coverImageId ? `/api/object-storage/${post.coverImageId}` : null);
-  const ogImage = post.ogImageId ? `/api/object-storage/${post.ogImageId}` : coverSrc;
+  const coverSrc = post.coverImageUrl || null;
+  const ogImage = post.ogImageUrl || coverSrc;
   const hasBlocks = post.contentJson?.blocks && post.contentJson.blocks.length > 0;
 
   return (
