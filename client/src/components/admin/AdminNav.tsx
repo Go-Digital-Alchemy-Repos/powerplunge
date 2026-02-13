@@ -260,8 +260,7 @@ export default function AdminNav({ currentPage, role = "admin" }: AdminNavProps)
   const isClientManagement = currentPage === "customers" || currentPage === "affiliates" || currentPage === "support" || currentPage === "affiliate-invite-sender";
   const isCms = currentPage === "media" || currentPage === "cms-settings" || currentPage === "cms" || currentPage?.startsWith("cms-");
   const isEcommerceSettings = currentPage === "ecommerce-settings";
-  const isEcommerce = isActive("orders") || isActive("coupons") || isEcommerceSettings;
-  const isContentManager = isActive("products") || isCms;
+  const isEcommerce = isActive("orders") || isActive("products") || isActive("coupons") || isEcommerceSettings;
   const isSettings = currentPage === "settings" || currentPage === "analytics" || currentPage === "team" || currentPage === "email-templates" || currentPage === "integrations" || currentPage === "docs" || currentPage === "themes";
 
   const hasFullAccess = role === "super_admin" || role === "admin" || role === "store_manager";
@@ -313,12 +312,11 @@ export default function AdminNav({ currentPage, role = "admin" }: AdminNavProps)
 
   if (hasFullAccess) {
     groups.push({
-      label: "Content Manager",
+      label: "Content Management",
       icon: LayoutGrid,
-      defaultOpen: isContentManager,
+      defaultOpen: isCms,
       items: [
-        { label: "Products", icon: ShoppingBag, href: "/admin/products", active: isActive("products") },
-        { label: "CMS", icon: LayoutGrid, href: "/admin/cms", active: currentPage === "cms" },
+        { label: "Dashboard", icon: LayoutGrid, href: "/admin/cms", active: currentPage === "cms" },
         { label: "Pages", icon: FileText, href: "/admin/cms/pages", active: currentPage === "cms-pages" },
         { label: "Posts", icon: FileText, href: "/admin/cms/posts", active: currentPage === "cms-posts" },
         { label: "Menus", icon: Menu, href: "/admin/cms/menus", active: currentPage === "cms-menus" },
@@ -443,34 +441,19 @@ export default function AdminNav({ currentPage, role = "admin" }: AdminNavProps)
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
+              {hasFullAccess && (
+                <Link href="/admin/cms">
                   <Button
-                    variant={isContentManager ? "secondary" : "ghost"}
+                    variant={isCms ? "secondary" : "ghost"}
                     size="sm"
                     className="gap-2"
-                    data-testid="dropdown-content-manager"
+                    data-testid="link-cms"
                   >
                     <LayoutGrid className="w-4 h-4" />
-                    Content Manager
-                    <ChevronDown className="w-3 h-3" />
+                    Content Management
                   </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
-                  <DropdownMenuItem asChild>
-                    <Link href="/admin/products" className="relative select-none rounded-sm px-2 py-1.5 outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0 flex items-center gap-2 cursor-pointer text-[13px]">
-                      <ShoppingBag className="w-4 h-4" />
-                      Products
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/admin/cms" className="relative select-none rounded-sm px-2 py-1.5 outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0 flex items-center gap-2 cursor-pointer text-[13px]">
-                      <LayoutGrid className="w-4 h-4" />
-                      CMS
-                    </Link>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                </Link>
+              )}
 
               {hasFullAccess && (
                 <DropdownMenu>
