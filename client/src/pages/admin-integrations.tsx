@@ -219,6 +219,42 @@ export default function AdminIntegrations() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
+                <CreditCard className="w-5 h-5 text-primary" />
+                Stripe Payments
+              </CardTitle>
+              <CardDescription>
+                Accept credit card payments, Apple Pay, and Google Pay
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <StatusBadge configured={integrations?.stripe} />
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowStripeDialog(true)}
+                  data-testid="button-configure-stripe"
+                >
+                  Configure
+                </Button>
+              </div>
+              {integrations?.stripe && (
+                <div className="mt-3 text-xs text-muted-foreground">
+                  Mode: <span className="font-medium capitalize">{integrations.stripeActiveMode || integrations.stripeMode || "test"}</span>
+                  {integrations.stripeTestConfigured && <span className="ml-2">· Test ✓</span>}
+                  {integrations.stripeLiveConfigured && <span className="ml-2">· Live ✓</span>}
+                </div>
+              )}
+              <div className="mt-4 text-xs text-muted-foreground">
+                <a href="https://dashboard.stripe.com/apikeys" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1">
+                  Get your API keys from Stripe Dashboard <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
                 <Mail className="w-5 h-5 text-primary" />
                 Mailgun Email
               </CardTitle>
