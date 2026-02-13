@@ -55,6 +55,7 @@ interface MobileNavProps {
   customerEmail?: string;
   onNavigate: (path: string) => void;
   onLogout: () => void;
+  onOpenAuth: () => void;
 }
 
 export default function MobileNav({
@@ -66,6 +67,7 @@ export default function MobileNav({
   customerEmail,
   onNavigate,
   onLogout,
+  onOpenAuth,
 }: MobileNavProps) {
   const { data: menu } = useQuery<MenuData | null>({
     queryKey: ["/api/menus", "main"],
@@ -220,7 +222,7 @@ export default function MobileNav({
             ) : (
               <>
                 <button
-                  onClick={() => onNavigate("/login")}
+                  onClick={onOpenAuth}
                   className="flex items-center gap-3 w-full px-4 py-3.5 text-base font-medium text-foreground hover:bg-accent/50 active:bg-accent transition-colors"
                   data-testid="mobile-menu-login"
                 >
@@ -228,7 +230,7 @@ export default function MobileNav({
                   Sign In
                 </button>
                 <button
-                  onClick={() => onNavigate("/register")}
+                  onClick={onOpenAuth}
                   className="flex items-center gap-3 w-full px-4 py-3.5 text-base font-medium text-foreground hover:bg-accent/50 active:bg-accent transition-colors"
                   data-testid="mobile-menu-register"
                 >
