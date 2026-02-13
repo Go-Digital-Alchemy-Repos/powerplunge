@@ -1,3 +1,4 @@
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Container } from "@/cms/layout";
@@ -10,6 +11,92 @@ const minHeightMap: Record<string, string> = {
   tall: "85vh",
   full: "100vh",
 };
+
+function parseVideoId(url: string): { provider: "youtube" | "vimeo"; id: string } | null {
+  if (!url) return null;
+  const ytMatch = url.match(
+    /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/
+  );
+  if (ytMatch) return { provider: "youtube", id: ytMatch[1] };
+  const vimeoMatch = url.match(/(?:vimeo\.com\/)(\d+)/);
+  if (vimeoMatch) return { provider: "vimeo", id: vimeoMatch[1] };
+  return null;
+}
+
+function VideoBackground({
+  videoUrl,
+  fallbackImage,
+}: {
+  videoUrl: string;
+  fallbackImage: string;
+}) {
+  const [videoReady, setVideoReady] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const parsed = parseVideoId(videoUrl);
+
+  useEffect(() => {
+    if (!fallbackImage) {
+      setImageLoaded(true);
+      return;
+    }
+    const img = new Image();
+    img.onload = () => setImageLoaded(true);
+    img.onerror = () => setImageLoaded(true);
+    img.src = fallbackImage;
+  }, [fallbackImage]);
+
+  const handleIframeLoad = useCallback(() => {
+    setTimeout(() => setVideoReady(true), 500);
+  }, []);
+
+  if (!parsed) return null;
+
+  const embedSrc =
+    parsed.provider === "youtube"
+      ? `https://www.youtube-nocookie.com/embed/${parsed.id}?autoplay=1&mute=1&loop=1&playlist=${parsed.id}&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1&enablejsapi=1`
+      : `https://player.vimeo.com/video/${parsed.id}?autoplay=1&muted=1&loop=1&background=1&quality=auto`;
+
+  return (
+    <>
+      {fallbackImage && (
+        <img
+          src={fallbackImage}
+          alt=""
+          className={cn(
+            "absolute inset-0 w-full h-full object-cover transition-opacity duration-700",
+            videoReady ? "opacity-0" : "opacity-100"
+          )}
+          data-testid="img-hero-background-fallback"
+        />
+      )}
+      {imageLoaded && (
+        <iframe
+          ref={iframeRef}
+          src={embedSrc}
+          title="Background video"
+          allow="autoplay; fullscreen"
+          className={cn(
+            "absolute inset-0 w-full h-full border-0 pointer-events-none transition-opacity duration-700",
+            videoReady ? "opacity-100" : "opacity-0"
+          )}
+          style={{
+            width: "177.78vh",
+            height: "100vh",
+            minWidth: "100%",
+            minHeight: "100%",
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+          }}
+          onLoad={handleIframeLoad}
+          data-testid="video-hero-background"
+        />
+      )}
+    </>
+  );
+}
 
 function OverlayGradient({ opacity, align }: { opacity: number; align: string }) {
   const o = opacity / 100;
@@ -73,6 +160,8 @@ export default function HeroBlock({ data, settings }: BlockRenderProps) {
   const secondaryCtaText = data?.secondaryCtaText || data?.secondaryButtonText || "";
   const secondaryCtaHref = data?.secondaryCtaHref || data?.secondaryButtonLink || "";
   const backgroundImage = data?.backgroundImage || "";
+  const backgroundType = data?.backgroundType || "image";
+  const videoUrl = data?.videoUrl || "";
   const heroImage = data?.heroImage || "";
   const align = data?.align || "center";
   const layout: string = data?.layout || "stacked";
@@ -83,7 +172,8 @@ export default function HeroBlock({ data, settings }: BlockRenderProps) {
 
   const isSplit = layout === "split-left" || layout === "split-right";
   const imageSide = layout === "split-right" ? "left" : "right";
-  const hasBackground = !!backgroundImage;
+  const isVideo = backgroundType === "video" && !!videoUrl && !!parseVideoId(videoUrl);
+  const hasBackground = isVideo || !!backgroundImage;
 
   return (
     <section
@@ -99,14 +189,18 @@ export default function HeroBlock({ data, settings }: BlockRenderProps) {
       data-testid="block-hero"
     >
       {hasBackground && (
-        <div className="absolute inset-0">
-          <img
-            src={backgroundImage}
-            alt=""
-            className="w-full h-full object-cover"
-            data-testid="img-hero-background"
-            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-          />
+        <div className="absolute inset-0 overflow-hidden">
+          {isVideo ? (
+            <VideoBackground videoUrl={videoUrl} fallbackImage={backgroundImage} />
+          ) : backgroundImage ? (
+            <img
+              src={backgroundImage}
+              alt=""
+              className="w-full h-full object-cover"
+              data-testid="img-hero-background"
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+            />
+          ) : null}
           <OverlayGradient opacity={overlayOpacity} align={align} />
         </div>
       )}

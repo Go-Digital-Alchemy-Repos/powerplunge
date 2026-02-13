@@ -69,6 +69,8 @@ export function registerCmsV1Blocks() {
       secondaryCtaHref: "",
       productId: "",
       backgroundImage: "",
+      backgroundType: "image",
+      videoUrl: "",
       heroImage: "",
       align: "center",
       layout: "stacked",
@@ -92,6 +94,11 @@ export function registerCmsV1Blocks() {
       secondaryButtonText: textField("Secondary Button Text"),
       secondaryButtonLink: textField("Secondary Button Link"),
       productId: textField("Product ID (for Add to Cart action)"),
+      backgroundType: selectField("Background Type", [
+        { label: "Photo", value: "image" },
+        { label: "Video (YouTube / Vimeo)", value: "video" },
+      ]),
+      videoUrl: textField("Video URL (YouTube or Vimeo link)"),
       heroImage: imageField("Split Image (for split layouts)"),
       layout: selectField("Layout", [
         { label: "Stacked (centered)", value: "stacked" },

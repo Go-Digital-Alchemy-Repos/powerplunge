@@ -8,6 +8,8 @@ export const heroSchema = z.object({
   secondaryCtaText: z.string().default(""),
   secondaryCtaHref: z.string().default(""),
   backgroundImage: z.string().default(""),
+  backgroundType: z.enum(["image", "video"]).default("image"),
+  videoUrl: z.string().default(""),
   heroImage: z.string().default(""),
   align: z.enum(["left", "center"]).default("center"),
   layout: z.enum(["stacked", "split-left", "split-right"]).default("stacked"),
