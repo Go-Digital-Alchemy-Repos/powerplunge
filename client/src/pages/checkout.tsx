@@ -369,6 +369,9 @@ export default function Checkout() {
   const [orderId, setOrderId] = useState<string | null>(null);
   const [stripePromise, setStripePromise] = useState<ReturnType<typeof loadStripe> | null>(null);
   const [taxInfo, setTaxInfo] = useState<{ subtotal: number; affiliateDiscount: number; couponDiscount: number; taxAmount: number; total: number } | null>(null);
+  const [isPricingRefreshing, setIsPricingRefreshing] = useState(false);
+  const [pricingRefreshHint, setPricingRefreshHint] = useState<string | null>(null);
+  const pricingRequestCounter = useRef(0);
 
   const [contactData, setContactData] = useState(() => {
     const defaults = { email: "", phone: "" };
@@ -495,72 +498,6 @@ export default function Checkout() {
       setReferralStatus("valid");
     }
   }, []);
-
-  const validateReferralCode = async (code: string) => {
-    if (!code || code.length < 3) {
-      setReferralStatus("idle");
-      return;
-    }
-    setReferralStatus("checking");
-    try {
-      const res = await fetch(`/api/validate-referral-code/${encodeURIComponent(code.toUpperCase())}`);
-      const data = await res.json();
-      if (data.valid) {
-        setReferralCode(data.code);
-        setReferralStatus("valid");
-        localStorage.setItem("affiliateCode", data.code);
-        localStorage.setItem("affiliateCodeExpiry", String(Date.now() + 30 * 24 * 60 * 60 * 1000));
-      } else {
-        setReferralStatus("invalid");
-      }
-    } catch {
-      setReferralStatus("invalid");
-    }
-  };
-
-  const validateCouponCode = async (code: string) => {
-    if (!code || code.length < 2) {
-      setCouponStatus("idle");
-      setCouponError("");
-      return;
-    }
-    setCouponStatus("checking");
-    setCouponError("");
-    try {
-      const res = await fetch("/api/coupons/validate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: code.toUpperCase(), orderAmount: cartTotal }),
-      });
-      const data = await res.json();
-      if (data.valid) {
-        setCouponStatus("valid");
-        setAppliedCoupon(data.coupon);
-        setCouponError("");
-      } else {
-        setCouponStatus("invalid");
-        setCouponError(data.message || "Invalid coupon code");
-        setAppliedCoupon(null);
-      }
-    } catch {
-      setCouponStatus("invalid");
-      setCouponError("Failed to validate coupon");
-      setAppliedCoupon(null);
-    }
-  };
-
-  const removeCoupon = () => {
-    setCouponCode("");
-    setCouponStatus("idle");
-    setCouponError("");
-    setAppliedCoupon(null);
-    if (orderId && clientSecret) {
-      setOrderId(null);
-      setClientSecret(null);
-      setTaxInfo(null);
-      setStep("shipping");
-    }
-  };
 
   const [cart, setCart] = useState<CartItem[]>(() => {
     try {
@@ -708,6 +645,201 @@ export default function Checkout() {
     return null;
   }, [referralStatus, referralCode]);
 
+  const canAutoRefresh = useCallback(() => {
+    if (!stripeAddressComplete || !stripeShippingAddress) return false;
+    if (!contactData.email.trim() || validateEmail(contactData.email.trim())) return false;
+    if (!billingSameAsShipping) {
+      if (!billingAddress.name.trim() || !billingAddress.line1.trim() || billingAddress.line1.trim().length < 3) return false;
+      if (!billingAddress.city.trim() || !billingAddress.state.trim() || !billingAddress.postalCode.trim()) return false;
+    }
+    return true;
+  }, [stripeAddressComplete, stripeShippingAddress, contactData.email, billingSameAsShipping, billingAddress]);
+
+  const refreshPricing = useCallback(async ({ moveToPaymentStep = false, couponCodeOverride }: { moveToPaymentStep?: boolean; couponCodeOverride?: string | null } = {}) => {
+    const customerPayload = buildCustomerPayload();
+    const billingPayload = buildBillingPayload();
+    const affiliateCode = getAffiliateCode();
+
+    const isReprice = !!orderId && !!clientSecret;
+    const endpoint = isReprice ? "/api/reprice-payment-intent" : "/api/create-payment-intent";
+
+    const requestId = ++pricingRequestCounter.current;
+
+    if (!moveToPaymentStep) {
+      setIsPricingRefreshing(true);
+      setPricingRefreshHint(null);
+    }
+
+    try {
+      const resolvedCouponCode = couponCodeOverride !== undefined ? couponCodeOverride : (appliedCoupon?.code || null);
+
+      const body: any = {
+        items: cart.map((item) => ({
+          productId: item.id,
+          quantity: item.quantity,
+        })),
+        customer: customerPayload,
+        billingAddress: billingPayload,
+        billingSameAsShipping,
+        affiliateCode,
+        couponCode: resolvedCouponCode,
+      };
+
+      if (isReprice) {
+        body.orderId = orderId;
+      }
+
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      const data = await response.json();
+
+      if (pricingRequestCounter.current !== requestId) return;
+
+      if (!response.ok) {
+        if (moveToPaymentStep) {
+          if (data.errors && Array.isArray(data.errors)) {
+            const newErrors: Record<string, string> = {};
+            for (const err of data.errors) {
+              newErrors[err.field] = err.message;
+              trackCheckoutEvent("validation_error", { field: err.field, code: err.code });
+            }
+            setFieldErrors(newErrors);
+            const firstField = data.errors[0]?.field;
+            if (firstField) {
+              setTimeout(() => {
+                const el = document.getElementById(firstField);
+                if (el) {
+                  el.scrollIntoView({ behavior: "smooth", block: "center" });
+                  el.focus();
+                }
+              }, 100);
+            }
+            return;
+          }
+
+          if (data.field) {
+            setFieldErrors(prev => ({ ...prev, [data.field]: data.message }));
+            trackCheckoutEvent("validation_error", { field: data.field, code: "server_validation" });
+            return;
+          }
+        }
+
+        throw new Error(data.message || "Failed to initialize payment");
+      }
+
+      setClientSecret(data.clientSecret);
+      setOrderId(data.orderId);
+      setTaxInfo({
+        subtotal: data.subtotal,
+        affiliateDiscount: data.affiliateDiscount || 0,
+        couponDiscount: data.couponDiscount || 0,
+        taxAmount: data.taxAmount,
+        total: data.total,
+      });
+
+      if (!moveToPaymentStep) {
+        setPricingRefreshHint("Totals updated");
+        setTimeout(() => setPricingRefreshHint(null), 3000);
+      }
+
+      if (moveToPaymentStep) {
+        setStep("payment");
+        trackCheckoutEvent("payment_step_started", { cartValue: data.total, itemCount: cart.length });
+        const mappedItems = cart.map((i) => ({ id: i.id, name: i.name, price: i.price / 100, quantity: i.quantity }));
+        trackAddShippingInfo(mappedItems, data.total / 100);
+        trackAddPaymentInfo(mappedItems, data.total / 100);
+      }
+    } catch (error: any) {
+      if (pricingRequestCounter.current !== requestId) return;
+      if (moveToPaymentStep) {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
+    } finally {
+      if (pricingRequestCounter.current === requestId) {
+        setIsPricingRefreshing(false);
+      }
+    }
+  }, [buildCustomerPayload, buildBillingPayload, getAffiliateCode, orderId, clientSecret, appliedCoupon, cart, billingSameAsShipping, toast]);
+
+  const validateReferralCode = async (code: string) => {
+    if (!code || code.length < 3) {
+      setReferralStatus("idle");
+      return;
+    }
+    setReferralStatus("checking");
+    try {
+      const res = await fetch(`/api/validate-referral-code/${encodeURIComponent(code.toUpperCase())}`);
+      const data = await res.json();
+      if (data.valid) {
+        setReferralCode(data.code);
+        setReferralStatus("valid");
+        localStorage.setItem("affiliateCode", data.code);
+        localStorage.setItem("affiliateCodeExpiry", String(Date.now() + 30 * 24 * 60 * 60 * 1000));
+        if (canAutoRefresh()) {
+          refreshPricing({ moveToPaymentStep: false });
+        }
+      } else {
+        setReferralStatus("invalid");
+      }
+    } catch {
+      setReferralStatus("invalid");
+    }
+  };
+
+  const validateCouponCode = async (code: string) => {
+    if (!code || code.length < 2) {
+      setCouponStatus("idle");
+      setCouponError("");
+      return;
+    }
+    setCouponStatus("checking");
+    setCouponError("");
+    try {
+      const res = await fetch("/api/coupons/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: code.toUpperCase(), orderAmount: cartTotal }),
+      });
+      const data = await res.json();
+      if (data.valid) {
+        setCouponStatus("valid");
+        setAppliedCoupon(data.coupon);
+        setCouponError("");
+        if (canAutoRefresh()) {
+          refreshPricing({ moveToPaymentStep: false, couponCodeOverride: data.coupon.code });
+        }
+      } else {
+        setCouponStatus("invalid");
+        setCouponError(data.message || "Invalid coupon code");
+        setAppliedCoupon(null);
+      }
+    } catch {
+      setCouponStatus("invalid");
+      setCouponError("Failed to validate coupon");
+      setAppliedCoupon(null);
+    }
+  };
+
+  const removeCoupon = () => {
+    setCouponCode("");
+    setCouponStatus("idle");
+    setCouponError("");
+    setAppliedCoupon(null);
+    if (orderId && clientSecret && canAutoRefresh()) {
+      refreshPricing({ moveToPaymentStep: false, couponCodeOverride: null });
+    } else if (orderId && clientSecret) {
+      setTaxInfo(null);
+    }
+  };
+
   const handleShippingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -753,90 +885,8 @@ export default function Checkout() {
       billingSameAsShipping,
     });
 
-    const customerPayload = buildCustomerPayload();
-    const billingPayload = buildBillingPayload();
-    const affiliateCode = getAffiliateCode();
-
-    const isReprice = !!orderId && !!clientSecret;
-    const endpoint = isReprice ? "/api/reprice-payment-intent" : "/api/create-payment-intent";
-
     try {
-      const body: any = {
-        items: cart.map((item) => ({
-          productId: item.id,
-          quantity: item.quantity,
-        })),
-        customer: customerPayload,
-        billingAddress: billingPayload,
-        billingSameAsShipping,
-        affiliateCode,
-        couponCode: appliedCoupon?.code || null,
-      };
-
-      if (isReprice) {
-        body.orderId = orderId;
-      }
-
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        if (data.errors && Array.isArray(data.errors)) {
-          const newErrors: Record<string, string> = {};
-          for (const err of data.errors) {
-            newErrors[err.field] = err.message;
-            trackCheckoutEvent("validation_error", { field: err.field, code: err.code });
-          }
-          setFieldErrors(newErrors);
-          const firstField = data.errors[0]?.field;
-          if (firstField) {
-            setTimeout(() => {
-              const el = document.getElementById(firstField);
-              if (el) {
-                el.scrollIntoView({ behavior: "smooth", block: "center" });
-                el.focus();
-              }
-            }, 100);
-          }
-          setIsLoading(false);
-          return;
-        }
-
-        if (data.field) {
-          setFieldErrors(prev => ({ ...prev, [data.field]: data.message }));
-          trackCheckoutEvent("validation_error", { field: data.field, code: "server_validation" });
-          setIsLoading(false);
-          return;
-        }
-
-        throw new Error(data.message || "Failed to initialize payment");
-      }
-
-      setClientSecret(data.clientSecret);
-      setOrderId(data.orderId);
-      setTaxInfo({
-        subtotal: data.subtotal,
-        affiliateDiscount: data.affiliateDiscount || 0,
-        couponDiscount: data.couponDiscount || 0,
-        taxAmount: data.taxAmount,
-        total: data.total,
-      });
-      setStep("payment");
-      trackCheckoutEvent("payment_step_started", { cartValue: data.total, itemCount: cart.length });
-      const mappedItems = cart.map((i) => ({ id: i.id, name: i.name, price: i.price / 100, quantity: i.quantity }));
-      trackAddShippingInfo(mappedItems, data.total / 100);
-      trackAddPaymentInfo(mappedItems, data.total / 100);
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      await refreshPricing({ moveToPaymentStep: true });
     } finally {
       setIsLoading(false);
     }
@@ -1198,6 +1248,18 @@ export default function Checkout() {
                   </div>
                 ))}
                 <div className="space-y-2 pt-4 border-t border-border">
+                  {isPricingRefreshing && (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1" data-testid="text-pricing-updating">
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      <span>Updating totals…</span>
+                    </div>
+                  )}
+                  {!isPricingRefreshing && pricingRefreshHint && (
+                    <div className="flex items-center gap-2 text-xs text-green-500 mb-1" data-testid="text-pricing-updated">
+                      <CheckCircle className="w-3 h-3" />
+                      <span>{pricingRefreshHint}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between" data-testid="text-subtotal">
                     <p className="text-muted-foreground">Subtotal</p>
                     <p>${((taxInfo?.subtotal ?? cartTotal) / 100).toLocaleString()}</p>
