@@ -486,12 +486,6 @@ export default function AdminNav({ currentPage, role = "admin" }: AdminNavProps)
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href="/admin/affiliate-invite-sender" className="relative select-none rounded-sm px-2 py-1.5 outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0 flex items-center gap-2 cursor-pointer text-[13px]" data-testid="link-invite-affiliates">
-                        <UserPlus className="w-4 h-4" />
-                        Invite Affiliates
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
                       <Link href="/admin/support" className="relative select-none rounded-sm px-2 py-1.5 outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0 flex items-center gap-2 cursor-pointer text-[13px]" data-testid="link-support">
                         <Headset className="w-4 h-4" />
                         Support Tickets

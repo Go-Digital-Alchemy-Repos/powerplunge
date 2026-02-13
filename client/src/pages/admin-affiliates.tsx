@@ -701,6 +701,13 @@ export default function AdminAffiliates() {
         <div className="flex items-center justify-between mb-6">
           <h2 className="font-display text-2xl font-bold">Affiliate Revenue Engine</h2>
           <div className="flex gap-2">
+            <Button
+              onClick={() => setActiveTab("invites")}
+              data-testid="button-invite-affiliates"
+            >
+              <Ticket className="w-4 h-4 mr-2" />
+              Invite Affiliates
+            </Button>
             <Button 
               variant="outline" 
               size="sm" 
