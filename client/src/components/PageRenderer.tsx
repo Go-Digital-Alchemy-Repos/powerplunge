@@ -61,10 +61,10 @@ const getLayoutClasses = (settings?: BlockSettings): string => {
   if (settings?.alignment === 'center') classes.push('text-center');
   if (settings?.alignment === 'right') classes.push('text-right');
   
-  if (settings?.background === 'light') classes.push('bg-slate-100 dark:bg-slate-800');
-  if (settings?.background === 'dark') classes.push('bg-slate-900 text-white');
-  if (settings?.background === 'primary') classes.push('bg-cyan-500/10');
-  if (settings?.background === 'gradient') classes.push('bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-900/20');
+  if (settings?.background === 'light') classes.push('bg-muted');
+  if (settings?.background === 'dark') classes.push('bg-background text-foreground');
+  if (settings?.background === 'primary') classes.push('bg-primary/10');
+  if (settings?.background === 'gradient') classes.push('bg-gradient-to-br from-background via-card to-primary/10');
   
   if (settings?.padding === 'none') classes.push('py-0');
   if (settings?.padding === 'sm') classes.push('py-4');
@@ -186,7 +186,7 @@ const RichTextBlock = ({ data, settings }: { data: Record<string, any>; settings
   const htmlContent = data?.bodyRichText || data?.content || '';
   return (
     <section className={cn("max-w-4xl mx-auto px-4", getLayoutClasses(settings))} data-testid="block-richtext">
-      {title && <h2 className="text-2xl font-bold text-white mb-4">{title}</h2>}
+      {title && <h2 className="text-2xl font-bold text-foreground mb-4">{title}</h2>}
       <div 
         className="prose prose-invert prose-lg max-w-none"
         dangerouslySetInnerHTML={{ __html: sanitizeHtml(htmlContent) }}
@@ -203,7 +203,7 @@ const ImageBlock = ({ data, settings }: { data: Record<string, any>; settings?: 
   if (!src) {
     return (
       <section className={cn("max-w-7xl mx-auto px-4", getLayoutClasses(settings))} data-testid="block-image">
-        <div className="bg-slate-800 rounded-lg p-8 text-center text-slate-500">
+        <div className="bg-card rounded-lg p-8 text-center text-muted-foreground">
           No image source provided
         </div>
       </section>
@@ -223,7 +223,7 @@ const ImageBlock = ({ data, settings }: { data: Record<string, any>; settings?: 
           style={data?.maxWidth ? { maxWidth: data.maxWidth } : undefined}
         />
         {caption && (
-          <figcaption className="mt-4 text-sm text-slate-400">{caption}</figcaption>
+          <figcaption className="mt-4 text-sm text-muted-foreground">{caption}</figcaption>
         )}
       </figure>
     </section>
@@ -243,7 +243,7 @@ const ImageGridBlock = ({ data, settings }: { data: Record<string, any>; setting
   const columns = data.columns || 3;
   return (
     <section className={cn("max-w-7xl mx-auto px-4", getLayoutClasses(settings))} data-testid="block-imagegrid">
-      {data.title && <h2 className="text-3xl font-bold text-white mb-8 text-center">{data.title}</h2>}
+      {data.title && <h2 className="text-3xl font-bold text-foreground mb-8 text-center">{data.title}</h2>}
       <div className={cn("grid grid-cols-2 gap-4", gridColsMap[columns] || 'md:grid-cols-3')}>
         {(data.images || []).map((img: { src: string; alt?: string }, idx: number) => (
           <img 
@@ -306,7 +306,7 @@ const ProductGridBlock = ({ data, settings, onAddToCart }: {
       <section className={cn("max-w-7xl mx-auto px-4", getLayoutClasses(settings))} data-testid="block-productgrid">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[1, 2, 3].map(i => (
-            <div key={i} className="animate-pulse bg-slate-800 rounded-lg h-64" />
+            <div key={i} className="animate-pulse bg-card rounded-lg h-64" />
           ))}
         </div>
       </section>
@@ -315,14 +315,14 @@ const ProductGridBlock = ({ data, settings, onAddToCart }: {
 
   return (
     <section className={cn("max-w-7xl mx-auto px-4", getLayoutClasses(settings))} data-testid="block-productgrid">
-      {data.title && <h2 className="text-3xl font-bold text-white mb-8 text-center">{data.title}</h2>}
+      {data.title && <h2 className="text-3xl font-bold text-foreground mb-8 text-center">{data.title}</h2>}
       <div className={cn("grid grid-cols-1 gap-6", gridColsMap[columns] || 'md:grid-cols-3')}>
         {displayProducts.map((product) => (
           <motion.div
             key={product.id}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-slate-800/50 backdrop-blur border border-slate-700 rounded-xl p-6 hover:border-cyan-500/50 transition-colors cursor-pointer"
+            className="bg-card/50 backdrop-blur border border-border rounded-xl p-6 hover:border-primary/50 transition-colors cursor-pointer"
             onClick={() => {
               const productUrl = `/products/${product.urlSlug || product.id}`;
               window.location.href = productUrl;
@@ -336,16 +336,16 @@ const ProductGridBlock = ({ data, settings, onAddToCart }: {
                 className="w-full h-48 object-cover rounded-lg mb-4"
               />
             )}
-            <h3 className="text-xl font-semibold text-white mb-2">{product.name}</h3>
-            {product.tagline && <p className="text-slate-400 text-sm mb-3">{product.tagline}</p>}
+            <h3 className="text-xl font-semibold text-foreground mb-2">{product.name}</h3>
+            {product.tagline && <p className="text-muted-foreground text-sm mb-3">{product.tagline}</p>}
             <div className="flex items-center justify-between">
-              <span className="text-2xl font-bold text-cyan-400">
+              <span className="text-2xl font-bold text-primary">
                 ${((product.salePrice || product.price) / 100).toLocaleString()}
               </span>
               {onAddToCart && (
                 <Button 
                   size="sm"
-                  className="bg-cyan-500 hover:bg-cyan-600 text-black"
+                  className="bg-primary hover:bg-primary/80 text-primary-foreground"
                   onClick={(e) => {
                     e.stopPropagation();
                     onAddToCart(product.id, 1);
@@ -366,10 +366,10 @@ const TestimonialBlock = ({ data, settings }: { data: Record<string, any>; setti
   const testimonials = data.testimonials || [];
   return (
     <section className={cn("max-w-7xl mx-auto px-4", getLayoutClasses(settings))} data-testid="block-testimonial">
-      {data.title && <h2 className="text-3xl font-bold text-white mb-8 text-center">{data.title}</h2>}
+      {data.title && <h2 className="text-3xl font-bold text-foreground mb-8 text-center">{data.title}</h2>}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {testimonials.map((t: { quote: string; author: string; role?: string; avatar?: string; rating?: number }, idx: number) => (
-          <div key={idx} className="bg-slate-800/50 backdrop-blur border border-slate-700 rounded-xl p-6">
+          <div key={idx} className="bg-card/50 backdrop-blur border border-border rounded-xl p-6">
             {t.rating && (
               <div className="flex gap-1 mb-4">
                 {[...Array(t.rating)].map((_, i) => (
@@ -377,12 +377,12 @@ const TestimonialBlock = ({ data, settings }: { data: Record<string, any>; setti
                 ))}
               </div>
             )}
-            <blockquote className="text-slate-300 mb-4">"{t.quote}"</blockquote>
+            <blockquote className="text-foreground/80 mb-4">"{t.quote}"</blockquote>
             <div className="flex items-center gap-3">
               {t.avatar && <img src={t.avatar} alt={t.author} className="w-10 h-10 rounded-full" />}
               <div>
-                <p className="font-semibold text-white">{t.author}</p>
-                {t.role && <p className="text-sm text-slate-400">{t.role}</p>}
+                <p className="font-semibold text-foreground">{t.author}</p>
+                {t.role && <p className="text-sm text-muted-foreground">{t.role}</p>}
               </div>
             </div>
           </div>
@@ -398,24 +398,24 @@ const FAQBlock = ({ data, settings }: { data: Record<string, any>; settings?: Bl
   
   return (
     <section className={cn("max-w-3xl mx-auto px-4", getLayoutClasses(settings))} data-testid="block-faq">
-      {data.title && <h2 className="text-3xl font-bold text-white mb-8 text-center">{data.title}</h2>}
+      {data.title && <h2 className="text-3xl font-bold text-foreground mb-8 text-center">{data.title}</h2>}
       <div className="space-y-4">
         {faqs.map((faq: { question: string; answer: string }, idx: number) => (
-          <div key={idx} className="border border-slate-700 rounded-lg overflow-hidden" data-testid={`faq-item-${idx}`}>
+          <div key={idx} className="border border-border rounded-lg overflow-hidden" data-testid={`faq-item-${idx}`}>
             <button
-              className="w-full flex items-center justify-between p-4 sm:p-4 text-left bg-slate-800/50 hover:bg-slate-800 transition-colors min-h-[48px]"
+              className="w-full flex items-center justify-between p-4 sm:p-4 text-left bg-card/50 hover:bg-card transition-colors min-h-[48px]"
               onClick={() => setOpenIndex(openIndex === idx ? null : idx)}
               data-testid={`faq-toggle-${idx}`}
             >
-              <span className="font-medium text-white text-sm sm:text-base pr-2">{faq.question}</span>
+              <span className="font-medium text-foreground text-sm sm:text-base pr-2">{faq.question}</span>
               {openIndex === idx ? (
-                <ChevronUp className="w-5 h-5 text-cyan-400" />
+                <ChevronUp className="w-5 h-5 text-primary" />
               ) : (
-                <ChevronDown className="w-5 h-5 text-slate-400" />
+                <ChevronDown className="w-5 h-5 text-muted-foreground" />
               )}
             </button>
             {openIndex === idx && (
-              <div className="p-4 text-slate-300 bg-slate-900/50">
+              <div className="p-4 text-foreground/80 bg-background/50">
                 {faq.answer}
               </div>
             )}
@@ -491,7 +491,7 @@ const CTABlock = ({ data, settings, onAddToCart }: { data: Record<string, any>; 
 
 const LogoCloudBlock = ({ data, settings }: { data: Record<string, any>; settings?: BlockSettings }) => (
   <section className={cn("max-w-7xl mx-auto px-4", getLayoutClasses(settings))} data-testid="block-logocloud">
-    {data.title && <h3 className="text-center text-slate-400 mb-8">{data.title}</h3>}
+    {data.title && <h3 className="text-center text-muted-foreground mb-8">{data.title}</h3>}
     <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12">
       {(data.logos || []).map((logo: { src: string; alt?: string; url?: string }, idx: number) => (
         <a key={idx} href={logo.url || '#'} className="opacity-60 hover:opacity-100 transition-opacity">
@@ -507,19 +507,19 @@ const FeatureListBlock = ({ data, settings }: { data: Record<string, any>; setti
   
   return (
     <section className={cn("max-w-7xl mx-auto px-4", getLayoutClasses(settings))} data-testid="block-featurelist">
-      {data.title && <h2 className="text-3xl font-bold text-white mb-4 text-center">{data.title}</h2>}
-      {data.subtitle && <p className="text-xl text-slate-400 mb-12 text-center">{data.subtitle}</p>}
+      {data.title && <h2 className="text-3xl font-bold text-foreground mb-4 text-center">{data.title}</h2>}
+      {data.subtitle && <p className="text-xl text-muted-foreground mb-12 text-center">{data.subtitle}</p>}
       <div className={cn("grid grid-cols-1 gap-8", gridColsMap[columns] || 'md:grid-cols-3')}>
         {(data.features || []).map((f: { icon?: string; title: string; description: string }, idx: number) => {
           const Icon = getIconWithFallback(f.icon, Check);
           return (
             <div key={idx} className="flex gap-4">
-              <div className="flex-shrink-0 w-12 h-12 bg-cyan-500/20 rounded-lg flex items-center justify-center">
-                <Icon className="w-6 h-6 text-cyan-400" />
+              <div className="flex-shrink-0 w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center">
+                <Icon className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <h3 className="font-semibold text-white mb-2">{f.title}</h3>
-                <p className="text-slate-400">{f.description}</p>
+                <h3 className="font-semibold text-foreground mb-2">{f.title}</h3>
+                <p className="text-muted-foreground">{f.description}</p>
               </div>
             </div>
           );
@@ -532,11 +532,11 @@ const FeatureListBlock = ({ data, settings }: { data: Record<string, any>; setti
 const DividerBlock = ({ data, settings }: { data: Record<string, any>; settings?: BlockSettings }) => (
   <div className={cn("max-w-7xl mx-auto px-4", getLayoutClasses({ ...settings, padding: 'sm' }))} data-testid="block-divider">
     <hr className={cn(
-      "border-slate-700",
+      "border-border",
       data.style === 'dashed' && 'border-dashed',
       data.style === 'dotted' && 'border-dotted',
       data.style === 'thick' && 'border-2',
-      data.color === 'primary' && 'border-cyan-500/50'
+      data.color === 'primary' && 'border-primary/50'
     )} />
   </div>
 );
@@ -569,14 +569,14 @@ const VideoEmbedBlock = ({ data, settings }: { data: Record<string, any>; settin
 
   return (
     <section className={cn("max-w-4xl mx-auto px-4", getLayoutClasses(settings))} data-testid="block-videoembed">
-      {data.title && <h2 className="text-3xl font-bold text-white mb-6 text-center">{data.title}</h2>}
-      <div className="relative aspect-video bg-slate-800 rounded-xl overflow-hidden">
+      {data.title && <h2 className="text-3xl font-bold text-foreground mb-6 text-center">{data.title}</h2>}
+      <div className="relative aspect-video bg-card rounded-xl overflow-hidden">
         {!playing && data.thumbnail ? (
           <div className="relative w-full h-full cursor-pointer" onClick={() => setPlaying(true)}>
             <img src={data.thumbnail} alt={data.title || 'Video'} className="w-full h-full object-cover" />
             <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-              <div className="w-16 h-16 bg-cyan-500 rounded-full flex items-center justify-center">
-                <Play className="w-8 h-8 text-black ml-1" />
+              <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center">
+                <Play className="w-8 h-8 text-primary-foreground ml-1" />
               </div>
             </div>
           </div>
@@ -589,31 +589,31 @@ const VideoEmbedBlock = ({ data, settings }: { data: Record<string, any>; settin
           />
         )}
       </div>
-      {data.caption && <p className="text-center text-slate-400 mt-4">{data.caption}</p>}
+      {data.caption && <p className="text-center text-muted-foreground mt-4">{data.caption}</p>}
     </section>
   );
 };
 
 const GuaranteeBlock = ({ data, settings }: { data: Record<string, any>; settings?: BlockSettings }) => (
   <section className={cn("max-w-4xl mx-auto px-4", getLayoutClasses(settings))} data-testid="block-guarantee">
-    <div className="bg-slate-800/50 backdrop-blur border border-slate-700 rounded-2xl p-8 flex flex-col md:flex-row items-center gap-6">
+    <div className="bg-card/50 backdrop-blur border border-border rounded-2xl p-8 flex flex-col md:flex-row items-center gap-6">
       <div className="flex-shrink-0">
         {data.icon ? (
           <img src={data.icon} alt="Guarantee" className="w-24 h-24" />
         ) : (
-          <div className="w-24 h-24 bg-cyan-500/20 rounded-full flex items-center justify-center">
-            <Shield className="w-12 h-12 text-cyan-400" />
+          <div className="w-24 h-24 bg-primary/20 rounded-full flex items-center justify-center">
+            <Shield className="w-12 h-12 text-primary" />
           </div>
         )}
       </div>
       <div className={settings?.alignment === 'center' ? 'text-center' : ''}>
-        <h3 className="text-2xl font-bold text-white mb-2">{data.title}</h3>
-        <p className="text-slate-300">{data.description}</p>
+        <h3 className="text-2xl font-bold text-foreground mb-2">{data.title}</h3>
+        <p className="text-foreground/80">{data.description}</p>
         {data.details && (
           <ul className="mt-4 space-y-2">
             {data.details.map((d: string, idx: number) => (
-              <li key={idx} className="flex items-center gap-2 text-slate-400">
-                <Check className="w-4 h-4 text-cyan-400" />
+              <li key={idx} className="flex items-center gap-2 text-muted-foreground">
+                <Check className="w-4 h-4 text-primary" />
                 {d}
               </li>
             ))}
@@ -630,18 +630,18 @@ const ComparisonTableBlock = ({ data, settings }: { data: Record<string, any>; s
   
   return (
     <section className={cn("max-w-6xl mx-auto px-4", getLayoutClasses(settings))} data-testid="block-comparisontable">
-      {data.title && <h2 className="text-3xl font-bold text-white mb-8 text-center">{data.title}</h2>}
+      {data.title && <h2 className="text-3xl font-bold text-foreground mb-8 text-center">{data.title}</h2>}
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-slate-700">
-              <th className="text-left p-4 text-slate-400 font-medium">{data.featureColumnLabel || 'Feature'}</th>
+            <tr className="border-b border-border">
+              <th className="text-left p-4 text-muted-foreground font-medium">{data.featureColumnLabel || 'Feature'}</th>
               {columns.map((col: { label: string; highlight?: boolean }, idx: number) => (
                 <th 
                   key={idx} 
                   className={cn(
                     "p-4 text-center font-semibold",
-                    col.highlight ? "text-cyan-400 bg-cyan-500/10" : "text-white"
+                    col.highlight ? "text-primary bg-primary/10" : "text-foreground"
                   )}
                 >
                   {col.label}
@@ -651,20 +651,20 @@ const ComparisonTableBlock = ({ data, settings }: { data: Record<string, any>; s
           </thead>
           <tbody>
             {rows.map((row: { feature: string; values: (string | boolean)[] }, idx: number) => (
-              <tr key={idx} className="border-b border-slate-800">
-                <td className="p-4 text-slate-300">{row.feature}</td>
+              <tr key={idx} className="border-b border-border/50">
+                <td className="p-4 text-foreground/80">{row.feature}</td>
                 {row.values.map((val, vidx) => (
                   <td 
                     key={vidx} 
                     className={cn(
                       "p-4 text-center",
-                      columns[vidx]?.highlight && "bg-cyan-500/5"
+                      columns[vidx]?.highlight && "bg-primary/5"
                     )}
                   >
                     {typeof val === 'boolean' ? (
-                      val ? <Check className="w-5 h-5 text-cyan-400 mx-auto" /> : <span className="text-slate-600">—</span>
+                      val ? <Check className="w-5 h-5 text-primary mx-auto" /> : <span className="text-muted-foreground/50">—</span>
                     ) : (
-                      <span className="text-slate-300">{val}</span>
+                      <span className="text-foreground/80">{val}</span>
                     )}
                   </td>
                 ))}
@@ -688,7 +688,7 @@ const SliderBlock = ({ data, settings }: { data: Record<string, any>; settings?:
 
   return (
     <section className={cn("max-w-6xl mx-auto px-4", getLayoutClasses(settings))} data-testid="block-slider">
-      {data.title && <h2 className="text-3xl font-bold text-white mb-8 text-center">{data.title}</h2>}
+      {data.title && <h2 className="text-3xl font-bold text-foreground mb-8 text-center">{data.title}</h2>}
       <div className="relative">
         <div className="overflow-hidden rounded-xl">
           <motion.div
@@ -704,7 +704,7 @@ const SliderBlock = ({ data, settings }: { data: Record<string, any>; settings?:
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-8">
                       <div>
                         {slide.title && <h3 className="text-2xl font-bold text-white mb-2">{slide.title}</h3>}
-                        {slide.description && <p className="text-slate-300">{slide.description}</p>}
+                        {slide.description && <p className="text-foreground/80">{slide.description}</p>}
                       </div>
                     </div>
                   )}
@@ -737,7 +737,7 @@ const SliderBlock = ({ data, settings }: { data: Record<string, any>; settings?:
                   data-testid={`slider-dot-${idx}`}
                   className={cn(
                     "w-2 h-2 rounded-full transition-colors",
-                    idx === current ? "bg-cyan-400" : "bg-slate-600"
+                    idx === current ? "bg-primary" : "bg-muted-foreground/50"
                   )}
                 />
               ))}
