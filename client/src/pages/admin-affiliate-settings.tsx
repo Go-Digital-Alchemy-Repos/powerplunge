@@ -8,13 +8,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Package, LogOut, Settings, ShoppingBag, Users, UserPlus, Link2, ArrowLeft, Save, Home, ChevronDown, Building2, Key, FileText } from "lucide-react";
+import { Package, LogOut, Settings, ShoppingBag, Users, UserPlus, Link2, ArrowLeft, Save, Home, ChevronDown, Building2, Key, FileText, ChevronUp } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AmountTypeInput } from "@/components/ui/amount-type-input";
 import { useAdmin } from "@/hooks/use-admin";
@@ -248,29 +249,46 @@ export default function AdminAffiliateSettings() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
+          <Collapsible defaultOpen className="border rounded-lg bg-card text-card-foreground shadow-sm">
+            <CollapsibleTrigger asChild>
+              <div className="flex items-center justify-between p-6 cursor-pointer hover:bg-muted/50 transition-colors group">
                 <div>
-                  <Label>Program Active</Label>
-                  <p className="text-sm text-muted-foreground">Enable or disable the affiliate program</p>
+                  <h3 className="text-lg font-semibold leading-none tracking-tight">Program Status</h3>
+                  <p className="text-sm text-muted-foreground mt-1">Enable or disable the affiliate program</p>
                 </div>
-                <Switch
-                  checked={formData.programActive}
-                  onCheckedChange={(checked) => setFormData({ ...formData, programActive: checked })}
-                  data-testid="switch-program-active"
-                />
+                <div className="flex items-center gap-4">
+                  <Switch
+                    checked={formData.programActive}
+                    onCheckedChange={(checked) => setFormData({ ...formData, programActive: checked })}
+                    onClick={(e) => e.stopPropagation()}
+                    data-testid="switch-program-active"
+                  />
+                  <ChevronDown className="w-5 h-5 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                </div>
               </div>
-            </CardContent>
-          </Card>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="px-6 pb-6 pt-0 border-t">
+              <div className="pt-6">
+                <p className="text-sm text-muted-foreground">
+                  When disabled, referral tracking and affiliate dashboard access will be restricted. 
+                  Existing commissions and payouts will remain visible in the admin.
+                </p>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Program Configuration</CardTitle>
-              <CardDescription>Configure commission rates and payout settings</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
+          <Collapsible defaultOpen className="border rounded-lg bg-card text-card-foreground shadow-sm">
+            <CollapsibleTrigger asChild>
+              <div className="flex items-center justify-between p-6 cursor-pointer hover:bg-muted/50 transition-colors group">
+                <div>
+                  <h3 className="text-lg font-semibold leading-none tracking-tight">Program Configuration</h3>
+                  <p className="text-sm text-muted-foreground mt-1">Configure commission rates and payout settings</p>
+                </div>
+                <ChevronDown className="w-5 h-5 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
+              </div>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="px-6 pb-6 pt-0 border-t">
+              <div className="space-y-6 pt-6">
                 <div className="space-y-4">
                   <h4 className="font-medium text-sm">Default Commission (paid to affiliates)</h4>
                   <div className="space-y-2">
@@ -339,19 +357,21 @@ export default function AdminAffiliateSettings() {
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </CollapsibleContent>
+          </Collapsible>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Affiliate Agreement</CardTitle>
-              <CardDescription>
-                This agreement will be presented to customers when they sign up as affiliates. 
-                They must e-sign this agreement before becoming an affiliate.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
+          <Collapsible defaultOpen className="border rounded-lg bg-card text-card-foreground shadow-sm">
+            <CollapsibleTrigger asChild>
+              <div className="flex items-center justify-between p-6 cursor-pointer hover:bg-muted/50 transition-colors group">
+                <div>
+                  <h3 className="text-lg font-semibold leading-none tracking-tight">Affiliate Agreement</h3>
+                  <p className="text-sm text-muted-foreground mt-1">This agreement will be presented to customers when they sign up as affiliates.</p>
+                </div>
+                <ChevronDown className="w-5 h-5 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
+              </div>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="px-6 pb-6 pt-0 border-t">
+              <div className="space-y-2 pt-6">
                 <Label htmlFor="agreementText">Agreement Text</Label>
                 <Textarea
                   id="agreementText"
@@ -365,8 +385,8 @@ export default function AdminAffiliateSettings() {
                   This is a legal document. Make sure it complies with applicable laws and regulations.
                 </p>
               </div>
-            </CardContent>
-          </Card>
+            </CollapsibleContent>
+          </Collapsible>
 
           <div className="flex justify-end">
             <Button type="submit" disabled={updateMutation.isPending} className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2" data-testid="button-save">
