@@ -71,6 +71,13 @@ function PaymentForm({
         elements,
         confirmParams: {
           return_url: `${window.location.origin}/admin/orders`,
+          payment_method_data: {
+            billing_details: {
+              address: {
+                country: "US",
+              },
+            },
+          },
         },
         redirect: "if_required",
       });
