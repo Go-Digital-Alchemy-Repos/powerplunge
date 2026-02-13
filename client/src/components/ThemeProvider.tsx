@@ -72,6 +72,22 @@ const THEME_TO_SHADCN: Record<string, string | string[]> = {
   "--theme-radius": "--radius",
 };
 
+const THEME_TO_PP: Record<string, string> = {
+  "--theme-bg": "--pp-bg",
+  "--theme-bg-card": "--pp-surface",
+  "--theme-bg-elevated": "--pp-surface-alt",
+  "--theme-text": "--pp-text",
+  "--theme-text-muted": "--pp-text-muted",
+  "--theme-border": "--pp-border",
+  "--theme-primary": "--pp-primary",
+  "--theme-accent": "--pp-accent",
+  "--theme-error": "--pp-danger",
+  "--theme-success": "--pp-success",
+  "--theme-warning": "--pp-warning",
+};
+
+const PP_VARS = Object.values(THEME_TO_PP);
+
 function mapThemeToShadcn(variables: Record<string, string>): Record<string, string> {
   const mapped: Record<string, string> = {};
   const root = document.documentElement;
@@ -99,6 +115,13 @@ function mapThemeToShadcn(variables: Record<string, string>): Record<string, str
     }
   }
 
+  for (const [themeKey, ppKey] of Object.entries(THEME_TO_PP)) {
+    const value = variables[themeKey];
+    if (value) {
+      root.style.setProperty(ppKey, value);
+    }
+  }
+
   const primary = variables["--theme-primary"];
   const bg = variables["--theme-bg"];
   const accent = variables["--theme-accent"];
@@ -107,12 +130,19 @@ function mapThemeToShadcn(variables: Record<string, string>): Record<string, str
     const primaryFg = isLight(primary) ? "#0a0a0a" : "#fafafa";
     const primaryFgHsl = hexToHsl(primaryFg);
     if (primaryFgHsl) root.style.setProperty("--primary-foreground", primaryFgHsl);
+    root.style.setProperty("--pp-primary-text", primaryFg);
   }
 
   if (accent && accent.startsWith("#")) {
     const accentFg = isLight(accent) ? "#0a0a0a" : "#fafafa";
     const accentFgHsl = hexToHsl(accentFg);
     if (accentFgHsl) root.style.setProperty("--accent-foreground", accentFgHsl);
+    root.style.setProperty("--pp-accent-text", accentFg);
+  }
+
+  if (primary && primary.startsWith("#") && bg && bg.startsWith("#")) {
+    root.style.setProperty("--pp-secondary", darken(primary, 30));
+    root.style.setProperty("--pp-secondary-text", isLight(darken(primary, 30)) ? "#0a0a0a" : "#fafafa");
   }
 
   const error = variables["--theme-error"];
@@ -132,6 +162,18 @@ function mapThemeToShadcn(variables: Record<string, string>): Record<string, str
   if (font) {
     root.style.setProperty("--font-display", font);
     root.style.setProperty("--font-sans", font);
+    root.style.setProperty("--pp-font-family", font);
+  }
+
+  const radius = variables["--theme-radius"];
+  if (radius) {
+    const rem = parseFloat(radius);
+    if (!isNaN(rem)) {
+      root.style.setProperty("--pp-radius-sm", `${Math.max(rem * 0.5, 0.125)}rem`);
+      root.style.setProperty("--pp-radius-md", radius);
+      root.style.setProperty("--pp-radius-lg", `${rem * 1.5}rem`);
+      root.style.setProperty("--pp-radius-xl", `${rem * 2}rem`);
+    }
   }
 
   return mapped;
@@ -156,6 +198,18 @@ export function clearThemeVariables(variables: Record<string, string>) {
       root.style.removeProperty(k);
     }
   }
+  for (const ppVar of PP_VARS) {
+    root.style.removeProperty(ppVar);
+  }
+  root.style.removeProperty("--pp-primary-text");
+  root.style.removeProperty("--pp-accent-text");
+  root.style.removeProperty("--pp-secondary");
+  root.style.removeProperty("--pp-secondary-text");
+  root.style.removeProperty("--pp-font-family");
+  root.style.removeProperty("--pp-radius-sm");
+  root.style.removeProperty("--pp-radius-md");
+  root.style.removeProperty("--pp-radius-lg");
+  root.style.removeProperty("--pp-radius-xl");
   root.style.removeProperty("--primary-foreground");
   root.style.removeProperty("--accent-foreground");
   root.style.removeProperty("--secondary-foreground");

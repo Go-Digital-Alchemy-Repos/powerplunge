@@ -1,4 +1,19 @@
 import type { ThemeTokens } from "./themeTokens.types";
+import { applyThemeVariables } from "@/components/ThemeProvider";
+
+const PP_TO_THEME: Record<string, string> = {
+  "--pp-bg": "--theme-bg",
+  "--pp-surface": "--theme-bg-card",
+  "--pp-surface-alt": "--theme-bg-elevated",
+  "--pp-text": "--theme-text",
+  "--pp-text-muted": "--theme-text-muted",
+  "--pp-border": "--theme-border",
+  "--pp-primary": "--theme-primary",
+  "--pp-accent": "--theme-accent",
+  "--pp-danger": "--theme-error",
+  "--pp-success": "--theme-success",
+  "--pp-warning": "--theme-warning",
+};
 
 const TOKEN_TO_CSS_VAR: Record<string, string> = {
   "colors.colorBg": "--pp-bg",
@@ -76,6 +91,29 @@ export function applyThemeTokens(
 
   for (const [prop, value] of Object.entries(vars)) {
     target.style.setProperty(prop, value);
+  }
+
+  if (scope === "root") {
+    const themeVars: Record<string, string> = {};
+    for (const [ppKey, themeKey] of Object.entries(PP_TO_THEME)) {
+      if (vars[ppKey]) {
+        themeVars[themeKey] = vars[ppKey];
+      }
+    }
+    if (vars["--pp-font-family"]) {
+      themeVars["--theme-font"] = vars["--pp-font-family"];
+    }
+    if (vars["--pp-radius-md"]) {
+      themeVars["--theme-radius"] = vars["--pp-radius-md"];
+    }
+    const primary = vars["--pp-primary"];
+    if (primary) {
+      themeVars["--theme-primary-hover"] = primary;
+      themeVars["--theme-primary-muted"] = primary.startsWith("#")
+        ? `${primary}26`
+        : `rgba(128,128,128,0.15)`;
+    }
+    applyThemeVariables(themeVars);
   }
 }
 
