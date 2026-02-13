@@ -377,6 +377,22 @@ router.post("/affiliate/connect/start", async (req: any, res) => {
         country: stripeAccount.country || "US",
         currency: stripeAccount.default_currency || "usd",
       });
+    } else {
+      try {
+        const existingAccount = await stripeService.retrieveAccount(payoutAccount.stripeAccountId);
+        const caps = existingAccount.capabilities || {};
+        const needsTransfers = caps.transfers !== "active" && caps.transfers !== "pending";
+        const needsCardPayments = caps.card_payments !== "active" && caps.card_payments !== "pending";
+        
+        if (needsTransfers || needsCardPayments) {
+          await stripeService.updateAccountCapabilities(payoutAccount.stripeAccountId, {
+            transfers: needsTransfers,
+            card_payments: needsCardPayments,
+          });
+        }
+      } catch (capError: any) {
+        console.error("[CONNECT] Failed to update capabilities for existing account:", capError.message);
+      }
     }
 
     const { getBaseUrl } = await import("../../utils/base-url");

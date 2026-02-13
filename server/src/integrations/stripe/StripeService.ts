@@ -242,8 +242,31 @@ class StripeService {
       country: params.country || "US",
       capabilities: {
         transfers: { requested: true },
+        card_payments: { requested: true },
       },
       metadata: params.metadata,
+    });
+  }
+
+  async updateAccountCapabilities(
+    accountId: string,
+    capabilities: { transfers?: boolean; card_payments?: boolean }
+  ): Promise<Stripe.Account> {
+    const client = await this.getClient();
+    if (!client) {
+      throw new Error("Stripe is not configured");
+    }
+
+    const capabilitiesPayload: Stripe.AccountUpdateParams["capabilities"] = {};
+    if (capabilities.transfers) {
+      capabilitiesPayload.transfers = { requested: true };
+    }
+    if (capabilities.card_payments) {
+      capabilitiesPayload.card_payments = { requested: true };
+    }
+
+    return client.accounts.update(accountId, {
+      capabilities: capabilitiesPayload,
     });
   }
 
