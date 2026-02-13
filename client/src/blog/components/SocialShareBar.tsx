@@ -5,6 +5,7 @@ interface SocialShareBarProps {
   title: string;
   excerpt: string | null;
   imageUrl?: string | null;
+  label?: string;
 }
 
 function buildAbsoluteUrl(path: string | null | undefined): string {
@@ -109,7 +110,7 @@ const platforms: Platform[] = [
   },
 ];
 
-export default function SocialShareBar({ title, excerpt, imageUrl }: SocialShareBarProps) {
+export default function SocialShareBar({ title, excerpt, imageUrl, label }: SocialShareBarProps) {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
   const currentUrl = typeof window !== "undefined" ? window.location.href : "";
@@ -138,7 +139,7 @@ export default function SocialShareBar({ title, excerpt, imageUrl }: SocialShare
 
   return (
     <div className="mt-10 pt-6 border-t border-border" data-testid="social-share-bar">
-      <p className="text-sm font-medium text-muted-foreground mb-3">Share this post</p>
+      <p className="text-sm font-medium text-muted-foreground mb-3">{label || "Share this post"}</p>
       <div className="flex items-center gap-2 flex-wrap">
         {platforms.map((platform) => (
           <button

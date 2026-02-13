@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import SiteLayout from "@/components/SiteLayout";
 import ImageLightbox from "@/components/ui/image-lightbox";
 import { trackViewItem, trackAddToCart } from "@/lib/analytics";
+import SocialShareBar from "@/blog/components/SocialShareBar";
 
 interface Product {
   id: string;
@@ -245,6 +246,12 @@ export default function ProductDetail() {
                 <span className="text-muted-foreground text-lg">No image available</span>
               </div>
             )}
+            <SocialShareBar
+              title={product.name}
+              excerpt={product.tagline || null}
+              imageUrl={product.primaryImage || null}
+              label="Share this product"
+            />
           </motion.div>
 
           <motion.div
