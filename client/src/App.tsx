@@ -77,6 +77,7 @@ const AdminDocs = lazyRetry(() => import("@/pages/admin-docs"));
 const AdminDocsCoverage = lazyRetry(() => import("@/pages/admin-docs-coverage"));
 const AdminRevenue = lazyRetry(() => import("@/pages/admin-revenue"));
 const AdminSupport = lazyRetry(() => import("@/pages/admin-support"));
+const AdminEcommerceSettings = lazyRetry(() => import("@/pages/admin-ecommerce-settings"));
 const AdminUpsells = lazyRetry(() => import("@/pages/admin-upsells"));
 const AdminVip = lazyRetry(() => import("@/pages/admin-vip"));
 const AdminRecovery = lazyRetry(() => import("@/pages/admin-recovery"));
@@ -206,6 +207,7 @@ function Router() {
         <Route path="/admin/sections">{() => <AdminGuard><AdminSections /></AdminGuard>}</Route>
         <Route path="/admin/media">{() => <AdminGuard><AdminMediaLibrary /></AdminGuard>}</Route>
         <Route path="/admin/support">{() => <AdminGuard><AdminSupport /></AdminGuard>}</Route>
+        <Route path="/admin/ecommerce/settings">{() => <AdminGuard><AdminEcommerceSettings /></AdminGuard>}</Route>
         <Route path="/admin/affiliate-invite-sender">{() => <AdminGuard><AdminAffiliateInviteSender /></AdminGuard>}</Route>
         <Route path="/admin/cms/posts/new">{() => <AdminGuard><CmsErrorBoundary><AdminCmsPostEditor /></CmsErrorBoundary></AdminGuard>}</Route>
         <Route path="/admin/cms/posts/:id/edit">{() => <AdminGuard><CmsErrorBoundary><AdminCmsPostEditor /></CmsErrorBoundary></AdminGuard>}</Route>

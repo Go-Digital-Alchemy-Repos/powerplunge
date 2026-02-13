@@ -259,7 +259,8 @@ export default function AdminNav({ currentPage, role = "admin" }: AdminNavProps)
   const isActive = (page: string) => currentPage === page;
   const isClientManagement = currentPage === "customers" || currentPage === "affiliates" || currentPage === "support" || currentPage === "affiliate-invite-sender";
   const isCms = currentPage === "media" || currentPage === "cms-settings" || currentPage === "cms" || currentPage?.startsWith("cms-");
-  const isSettings = currentPage === "settings" || currentPage === "analytics" || currentPage === "team" || currentPage === "email-templates" || currentPage === "integrations" || currentPage === "docs" || currentPage === "themes";
+  const isEcommerceSettings = currentPage === "ecommerce-settings";
+  const isSettings = currentPage === "settings" || currentPage === "analytics" || currentPage === "team" || currentPage === "email-templates" || currentPage === "integrations" || currentPage === "docs" || currentPage === "themes" || isEcommerceSettings;
 
   const hasFullAccess = role === "super_admin" || role === "admin" || role === "store_manager";
 
@@ -291,12 +292,13 @@ export default function AdminNav({ currentPage, role = "admin" }: AdminNavProps)
   groups.push({
     label: "E-Commerce",
     icon: ShoppingBag,
-    defaultOpen: isActive("orders") || isActive("products") || isActive("coupons"),
+    defaultOpen: isActive("orders") || isActive("products") || isActive("coupons") || isEcommerceSettings,
     items: [
       { label: "Orders", icon: Package, href: "/admin/orders", active: isActive("orders") },
       ...(hasFullAccess ? [
         { label: "Products", icon: ShoppingBag, href: "/admin/products", active: isActive("products") },
         { label: "Coupons", icon: Tag, href: "/admin/coupons", active: isActive("coupons") },
+        { label: "Settings", icon: Settings, href: "/admin/ecommerce/settings", active: isEcommerceSettings },
       ] : []),
     ],
   });
@@ -396,7 +398,7 @@ export default function AdminNav({ currentPage, role = "admin" }: AdminNavProps)
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
-                    variant={isActive("orders") || isActive("products") ? "secondary" : "ghost"}
+                    variant={isActive("orders") || isActive("products") || isEcommerceSettings ? "secondary" : "ghost"}
                     size="sm"
                     className="gap-2"
                     data-testid="dropdown-ecommerce"
@@ -414,12 +416,20 @@ export default function AdminNav({ currentPage, role = "admin" }: AdminNavProps)
                     </Link>
                   </DropdownMenuItem>
                   {hasFullAccess && (
-                    <DropdownMenuItem asChild>
-                      <Link href="/admin/products" className="relative select-none rounded-sm px-2 py-1.5 outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0 flex items-center gap-2 cursor-pointer text-[13px]">
-                        <ShoppingBag className="w-4 h-4" />
-                        Products
-                      </Link>
-                    </DropdownMenuItem>
+                    <>
+                      <DropdownMenuItem asChild>
+                        <Link href="/admin/products" className="relative select-none rounded-sm px-2 py-1.5 outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0 flex items-center gap-2 cursor-pointer text-[13px]">
+                          <ShoppingBag className="w-4 h-4" />
+                          Products
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/admin/ecommerce/settings" className="relative select-none rounded-sm px-2 py-1.5 outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0 flex items-center gap-2 cursor-pointer text-[13px]">
+                          <Settings className="w-4 h-4" />
+                          Settings
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
                   )}
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -544,6 +554,12 @@ export default function AdminNav({ currentPage, role = "admin" }: AdminNavProps)
                       <Link href="/admin/settings/themes" className="relative select-none rounded-sm px-2 py-1.5 outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0 flex items-center gap-2 cursor-pointer text-[13px]">
                         <Palette className="w-4 h-4" />
                         Themes
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/admin/ecommerce/settings" className="relative select-none rounded-sm px-2 py-1.5 outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0 flex items-center gap-2 cursor-pointer text-[13px]">
+                        <Settings className="w-4 h-4" />
+                        E-Commerce Settings
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
