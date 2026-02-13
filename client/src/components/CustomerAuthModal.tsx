@@ -177,10 +177,12 @@ export function CustomerAuthForm({ onSuccess, initialMode = "login" }: CustomerA
 export function CustomerAuthModal({ 
   open, 
   onOpenChange,
+  onLoginSuccess,
   initialMode = "login"
 }: { 
   open: boolean; 
   onOpenChange: (open: boolean) => void;
+  onLoginSuccess?: () => void;
   initialMode?: AuthMode;
 }) {
   const { logoSrc, companyName } = useBranding();
@@ -199,7 +201,7 @@ export function CustomerAuthModal({
             Access your orders and account details
           </DialogDescription>
         </DialogHeader>
-        <CustomerAuthForm onSuccess={() => onOpenChange(false)} initialMode={initialMode} />
+        <CustomerAuthForm onSuccess={() => { onOpenChange(false); onLoginSuccess?.(); }} initialMode={initialMode} />
       </DialogContent>
     </Dialog>
   );

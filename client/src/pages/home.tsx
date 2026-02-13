@@ -115,7 +115,7 @@ export default function Home() {
   const [selectedImage, setSelectedImage] = useState(0);
   const [product, setProduct] = useState<Product>(fallbackProduct);
   const [quantity, setQuantity] = useState(1);
-  const { customer, isLoading: authLoading, isAuthenticated, logout, getAuthHeader } = useCustomerAuth();
+  const { customer, isLoading: authLoading, isAuthenticated, logout, getAuthHeader, refreshSession } = useCustomerAuth();
   const { isAuthenticated: isAdminAuthenticated, role: adminRole } = useAdmin();
 
   // Check if this customer email has a corresponding admin account (without granting admin access)
@@ -129,7 +129,7 @@ export default function Home() {
       return res.json();
     },
     enabled: isAuthenticated,
-    staleTime: 1000 * 60 * 5,
+    staleTime: 0,
   });
   const isAdminEligible = adminEligibility?.eligible ?? false;
   const queryClient = useQueryClient();
@@ -137,9 +137,11 @@ export default function Home() {
   useEffect(() => {
     if (isAuthenticated && customer?.id) {
       queryClient.invalidateQueries({ queryKey: ["/api/customer/affiliate-portal"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/customer/auth/check-admin-eligible"] });
     }
     if (!isAuthenticated) {
       queryClient.removeQueries({ queryKey: ["/api/customer/affiliate-portal"] });
+      queryClient.removeQueries({ queryKey: ["/api/customer/auth/check-admin-eligible"] });
     }
   }, [isAuthenticated, customer?.id, queryClient]);
 
@@ -390,7 +392,8 @@ export default function Home() {
 
       <CustomerAuthModal 
         open={authModalOpen} 
-        onOpenChange={setAuthModalOpen} 
+        onOpenChange={setAuthModalOpen}
+        onLoginSuccess={refreshSession}
       />
 
       {/* Show loading state while fetching CMS content */}

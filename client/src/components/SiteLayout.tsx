@@ -23,7 +23,7 @@ interface CartItem {
 
 export default function SiteLayout({ children }: { children: ReactNode }) {
   const [location, setLocation] = useLocation();
-  const { customer, isAuthenticated, isLoading: authLoading, logout, getAuthHeader } = useCustomerAuth();
+  const { customer, isAuthenticated, isLoading: authLoading, logout, getAuthHeader, refreshSession } = useCustomerAuth();
   const { logoSrc, companyName } = useBranding();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -216,7 +216,8 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
 
       <CustomerAuthModal 
         open={authModalOpen} 
-        onOpenChange={setAuthModalOpen} 
+        onOpenChange={setAuthModalOpen}
+        onLoginSuccess={refreshSession}
       />
 
       <main>
