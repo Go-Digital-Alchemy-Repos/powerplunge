@@ -76,7 +76,7 @@ function InlineContent({ text }: { text: string }) {
     const codeMatch = remaining.match(/^`([^`]+)`/);
     if (codeMatch) {
       parts.push(
-        <code key={key++} className="bg-gray-800 text-cyan-300 px-1.5 py-0.5 rounded text-sm font-mono">
+        <code key={key++} className="bg-theme-bg-elevated text-theme-primary px-1.5 py-0.5 rounded text-sm font-mono" style={{ color: "var(--theme-primary)" }}>
           {codeMatch[1]}
         </code>
       );
@@ -86,7 +86,7 @@ function InlineContent({ text }: { text: string }) {
 
     const boldMatch = remaining.match(/^\*\*([^*]+)\*\*/);
     if (boldMatch) {
-      parts.push(<strong key={key++} className="font-semibold text-white">{boldMatch[1]}</strong>);
+      parts.push(<strong key={key++} className="font-semibold text-theme-text">{boldMatch[1]}</strong>);
       remaining = remaining.slice(boldMatch[0].length);
       continue;
     }
@@ -95,7 +95,8 @@ function InlineContent({ text }: { text: string }) {
     if (linkMatch) {
       parts.push(
         <a key={key++} href={linkMatch[2]} target="_blank" rel="noopener noreferrer"
-          className="text-cyan-400 hover:text-cyan-300 underline inline-flex items-center gap-1">
+          className="text-theme-primary hover:text-theme-primary-hover underline inline-flex items-center gap-1"
+          style={{ color: "var(--theme-primary)" }}>
           {linkMatch[1]}<ExternalLink className="w-3 h-3" />
         </a>
       );
@@ -148,25 +149,25 @@ function MarkdownRenderer({ content }: { content: string }) {
     }
 
     if (line.startsWith("# ")) {
-      elements.push(<h1 key={elements.length} className="text-2xl font-bold text-white mt-6 mb-3 border-b border-gray-700 pb-2"><InlineContent text={line.slice(2)} /></h1>);
+      elements.push(<h1 key={elements.length} className="text-2xl font-bold text-theme-text mt-6 mb-3 border-b border-theme-border pb-2"><InlineContent text={line.slice(2)} /></h1>);
       i++; continue;
     }
     if (line.startsWith("## ")) {
-      elements.push(<h2 key={elements.length} className="text-xl font-semibold text-white mt-5 mb-2"><InlineContent text={line.slice(3)} /></h2>);
+      elements.push(<h2 key={elements.length} className="text-xl font-semibold text-theme-text mt-5 mb-2"><InlineContent text={line.slice(3)} /></h2>);
       i++; continue;
     }
     if (line.startsWith("### ")) {
-      elements.push(<h3 key={elements.length} className="text-lg font-medium text-gray-200 mt-4 mb-2"><InlineContent text={line.slice(4)} /></h3>);
+      elements.push(<h3 key={elements.length} className="text-lg font-medium text-theme-text mt-4 mb-2"><InlineContent text={line.slice(4)} /></h3>);
       i++; continue;
     }
     if (line.startsWith("#### ")) {
-      elements.push(<h4 key={elements.length} className="text-base font-medium text-gray-300 mt-3 mb-1"><InlineContent text={line.slice(5)} /></h4>);
+      elements.push(<h4 key={elements.length} className="text-base font-medium text-theme-text mt-3 mb-1"><InlineContent text={line.slice(5)} /></h4>);
       i++; continue;
     }
 
     if (line.startsWith("> ")) {
       elements.push(
-        <blockquote key={elements.length} className="border-l-4 border-cyan-500 pl-4 py-1 my-2 text-gray-400 italic">
+        <blockquote key={elements.length} className="border-l-4 border-theme-primary pl-4 py-1 my-2 text-theme-text-muted italic" style={{ borderColor: "var(--theme-primary)", color: "var(--theme-text-muted)" }}>
           <InlineContent text={line.slice(2)} />
         </blockquote>
       );
@@ -182,7 +183,7 @@ function MarkdownRenderer({ content }: { content: string }) {
       const listItems: React.ReactNode[] = [];
       while (i < lines.length && (lines[i].startsWith("- ") || lines[i].startsWith("* "))) {
         listItems.push(
-          <li key={listItems.length} className="text-gray-300 ml-4">
+          <li key={listItems.length} className="text-theme-text-muted ml-4">
             <InlineContent text={lines[i].slice(2)} />
           </li>
         );
@@ -199,7 +200,7 @@ function MarkdownRenderer({ content }: { content: string }) {
         const m = lines[i].match(/^\d+\.\s+(.*)/);
         if (m) {
           listItems.push(
-            <li key={listItems.length} className="text-gray-300 ml-4">
+            <li key={listItems.length} className="text-theme-text-muted ml-4">
               <InlineContent text={m[1]} />
             </li>
           );
@@ -266,7 +267,7 @@ function MarkdownRenderer({ content }: { content: string }) {
       i++; continue;
     }
 
-    elements.push(<p key={elements.length} className="text-gray-300 my-1.5 leading-relaxed"><InlineContent text={line} /></p>);
+    elements.push(<p key={elements.length} className="text-theme-text-muted my-1.5 leading-relaxed"><InlineContent text={line} /></p>);
     i++;
   }
 
@@ -276,7 +277,7 @@ function MarkdownRenderer({ content }: { content: string }) {
 export default function AdminDocs() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { hasFullAccess, isLoading: adminLoading } = useAdmin();
+  const { hasFullAccess, isLoading: adminLoading, role } = useAdmin();
 
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -358,9 +359,9 @@ export default function AdminDocs() {
 
   if (adminLoading || !hasFullAccess) {
     return (
-      <div className="min-h-screen bg-gray-950 text-white">
-        <AdminNav currentPage="docs" />
-        <div className="p-8 text-center text-gray-400">
+      <div className="min-h-screen bg-theme-bg text-theme-text">
+        <AdminNav currentPage="docs" role={role} />
+        <div className="p-8 text-center text-theme-text-muted">
           {adminLoading ? "Loading..." : "Access Denied"}
         </div>
       </div>
@@ -368,23 +369,23 @@ export default function AdminDocs() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white" data-testid="admin-docs-page">
-      <AdminNav currentPage="docs" />
+    <div className="min-h-screen bg-theme-bg text-theme-text" data-testid="admin-docs-page">
+      <AdminNav currentPage="docs" role={role} />
 
       <div className="flex h-[calc(100vh-64px)]">
-        <div className="w-80 border-r border-gray-800 flex flex-col bg-gray-950">
-          <div className="p-3 border-b border-gray-800 space-y-2">
+        <div className="w-80 border-r border-theme-border flex flex-col bg-theme-bg">
+          <div className="p-3 border-b border-theme-border space-y-2">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-gray-300 uppercase tracking-wider">Documentation</h2>
+              <h2 className="text-sm font-semibold text-theme-text-muted uppercase tracking-wider">Documentation</h2>
               <Badge variant="secondary" className="text-xs" data-testid="badge-doc-count">{totalDocs} docs</Badge>
             </div>
             <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 w-4 h-4 text-gray-500" />
+              <Search className="absolute left-2.5 top-2.5 w-4 h-4 text-theme-text-muted" />
               <Input
                 placeholder="Search docs..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 bg-gray-900 border-gray-700 h-9 text-sm"
+                className="pl-9 bg-theme-bg-card border-theme-border h-9 text-sm text-theme-text"
                 data-testid="input-search-docs"
               />
             </div>
@@ -394,7 +395,7 @@ export default function AdminDocs() {
                 variant="outline"
                 onClick={() => syncMutation.mutate()}
                 disabled={syncMutation.isPending}
-                className="flex-1 text-xs h-8 border-gray-700"
+                className="flex-1 text-xs h-8 border-theme-border text-theme-text hover:bg-theme-bg-elevated"
                 data-testid="button-sync-api-docs"
               >
                 <Download className="w-3.5 h-3.5 mr-1" />
@@ -404,7 +405,7 @@ export default function AdminDocs() {
                 size="sm"
                 variant="outline"
                 onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/admin/docs"] })}
-                className="h-8 px-2 border-gray-700"
+                className="h-8 px-2 border-theme-border text-theme-text hover:bg-theme-bg-elevated"
                 data-testid="button-refresh-docs"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
@@ -414,9 +415,9 @@ export default function AdminDocs() {
 
           <div className="flex-1 overflow-y-auto">
             {isLoading ? (
-              <div className="p-4 text-gray-500 text-sm">Loading docs...</div>
+              <div className="p-4 text-theme-text-muted text-sm">Loading docs...</div>
             ) : filteredCategories.length === 0 ? (
-              <div className="p-4 text-gray-500 text-sm">
+              <div className="p-4 text-theme-text-muted text-sm">
                 {searchQuery ? "No matching documents" : "No documentation found"}
               </div>
             ) : (
@@ -425,20 +426,20 @@ export default function AdminDocs() {
                 const isExpanded = allDocsExpanded.has(cat.id);
 
                 return (
-                  <div key={cat.id} className="border-b border-gray-800/50" data-testid={`category-${cat.id}`}>
+                  <div key={cat.id} className="border-b border-theme-border/50" data-testid={`category-${cat.id}`}>
                     <button
                       onClick={() => toggleCategory(cat.id)}
-                      className="w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-900 text-left text-sm"
+                      className="w-full flex items-center gap-2 px-3 py-2 hover:bg-theme-bg-elevated text-left text-sm"
                       data-testid={`button-toggle-category-${cat.id}`}
                     >
                       {isExpanded ? (
-                        <ChevronDown className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />
+                        <ChevronDown className="w-3.5 h-3.5 text-theme-text-muted flex-shrink-0" />
                       ) : (
-                        <ChevronRight className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />
+                        <ChevronRight className="w-3.5 h-3.5 text-theme-text-muted flex-shrink-0" />
                       )}
-                      <IconComponent className="w-4 h-4 text-cyan-400 flex-shrink-0" />
-                      <span className="text-gray-300 font-medium truncate flex-1">{cat.displayName}</span>
-                      <Badge variant="outline" className="text-xs px-1.5 py-0 border-gray-700 text-gray-500">
+                      <IconComponent className="w-4 h-4 text-theme-primary flex-shrink-0" style={{ color: "var(--theme-primary)" }} />
+                      <span className="text-theme-text font-medium truncate flex-1">{cat.displayName}</span>
+                      <Badge variant="outline" className="text-xs px-1.5 py-0 border-theme-border text-theme-text-muted">
                         {cat.docs.length}
                       </Badge>
                     </button>
@@ -451,9 +452,10 @@ export default function AdminDocs() {
                             onClick={() => setSelectedDocId(doc.id)}
                             className={`w-full text-left px-3 py-1.5 pl-10 text-sm truncate transition-colors ${
                               selectedDocId === doc.id
-                                ? "bg-cyan-900/30 text-cyan-300 border-r-2 border-cyan-400"
-                                : "text-gray-400 hover:bg-gray-900 hover:text-gray-200"
+                                ? "bg-theme-primary/10 text-theme-primary border-r-2 border-theme-primary"
+                                : "text-theme-text-muted hover:bg-theme-bg-elevated hover:text-theme-text"
                             }`}
+                            style={selectedDocId === doc.id ? { backgroundColor: "var(--theme-primary-muted)", color: "var(--theme-primary)", borderColor: "var(--theme-primary)" } : {}}
                             data-testid={`button-select-doc-${doc.id}`}
                           >
                             {doc.title}
@@ -468,10 +470,10 @@ export default function AdminDocs() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto bg-gray-950">
+        <div className="flex-1 overflow-y-auto bg-theme-bg">
           {selectedDocId && selectedDoc ? (
             <div className="max-w-4xl mx-auto p-6" data-testid="doc-viewer">
-              <div className="flex items-center gap-3 text-xs text-gray-500 mb-4 pb-3 border-b border-gray-800">
+              <div className="flex items-center gap-3 text-xs text-theme-text-muted mb-4 pb-3 border-b border-theme-border">
                 <span>{selectedDoc.relativePath}</span>
                 <span>|</span>
                 <span>{formatBytes(selectedDoc.sizeBytes)}</span>
@@ -481,15 +483,15 @@ export default function AdminDocs() {
               <MarkdownRenderer content={selectedDoc.content} />
             </div>
           ) : docLoading ? (
-            <div className="flex items-center justify-center h-full text-gray-500">
+            <div className="flex items-center justify-center h-full text-theme-text-muted">
               Loading document...
             </div>
           ) : (
             <div className="flex items-center justify-center h-full" data-testid="doc-welcome">
               <div className="text-center max-w-lg">
-                <FileText className="w-16 h-16 text-gray-700 mx-auto mb-4" />
-                <h2 className="text-xl font-semibold text-gray-300 mb-2">App Documentation</h2>
-                <p className="text-gray-500 mb-6">
+                <FileText className="w-16 h-16 text-theme-border mx-auto mb-4" />
+                <h2 className="text-xl font-semibold text-theme-text mb-2">App Documentation</h2>
+                <p className="text-theme-text-muted mb-6">
                   Browse project documentation organized by category. Select a document from the sidebar to view its contents.
                 </p>
                 <div className="grid grid-cols-2 gap-3">
@@ -498,7 +500,8 @@ export default function AdminDocs() {
                     return (
                       <Card
                         key={cat.id}
-                        className="bg-gray-900 border-gray-800 hover:border-cyan-800 cursor-pointer transition-colors"
+                        className="bg-theme-bg-card border-theme-border hover:border-theme-primary cursor-pointer transition-colors"
+                        style={{ backgroundColor: "var(--theme-bg-card)", borderColor: "var(--theme-border)" }}
                         onClick={() => {
                           setExpandedCategories(prev => {
                             const base = new Set(prev);
@@ -510,10 +513,10 @@ export default function AdminDocs() {
                         data-testid={`card-quick-link-${cat.id}`}
                       >
                         <CardContent className="p-3 flex items-center gap-2">
-                          <IconComp className="w-5 h-5 text-cyan-400" />
+                          <IconComp className="w-5 h-5 text-theme-primary" style={{ color: "var(--theme-primary)" }} />
                           <div>
-                            <div className="text-sm text-gray-300 font-medium">{cat.displayName}</div>
-                            <div className="text-xs text-gray-500">{cat.docs.length} doc{cat.docs.length !== 1 ? "s" : ""}</div>
+                            <div className="text-sm text-theme-text font-medium">{cat.displayName}</div>
+                            <div className="text-xs text-theme-text-muted">{cat.docs.length} doc{cat.docs.length !== 1 ? "s" : ""}</div>
                           </div>
                         </CardContent>
                       </Card>
