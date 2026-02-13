@@ -54,6 +54,7 @@ import {
   Cell,
 } from "recharts";
 import { format, subDays, startOfMonth, startOfYear } from "date-fns";
+import { useThemeChartColors } from "@/hooks/use-theme-colors";
 
 interface RevenueMetrics {
   grossRevenue: number;
@@ -138,7 +139,6 @@ const PRESET_LABELS: Record<DatePreset, string> = {
   custom: "Custom Range",
 };
 
-const CHART_COLORS = ["#67e8f9", "#a78bfa", "#f472b6", "#34d399", "#fbbf24"];
 
 function formatCurrency(cents: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -185,6 +185,7 @@ function getQueryParams(
 export default function AdminRevenue() {
   const [, setLocation] = useLocation();
   const { role, hasFullAccess, isLoading: adminLoading } = useAdmin();
+  const tc = useThemeChartColors();
   const [preset, setPreset] = useState<DatePreset>("30d");
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
@@ -620,15 +621,15 @@ export default function AdminRevenue() {
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={chartRevenue}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                        <XAxis dataKey="date" stroke="#9ca3af" fontSize={12} />
-                        <YAxis stroke="#9ca3af" fontSize={12} tickFormatter={(v) => `$${v}`} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                        <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                        <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickFormatter={(v) => `$${v}`} />
                         <Tooltip
-                          contentStyle={{ backgroundColor: "#1f2937", border: "1px solid #374151" }}
-                          labelStyle={{ color: "#fff" }}
+                          contentStyle={{ backgroundColor: "hsl(var(--popover))", border: "1px solid hsl(var(--border))" }}
+                          labelStyle={{ color: "hsl(var(--foreground))" }}
                           formatter={(value: number) => [`$${value.toFixed(2)}`, "Revenue"]}
                         />
-                        <Line type="monotone" dataKey="revenue" stroke="#67e8f9" strokeWidth={2} dot={false} />
+                        <Line type="monotone" dataKey="revenue" stroke={tc.primary} strokeWidth={2} dot={false} />
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
@@ -643,14 +644,14 @@ export default function AdminRevenue() {
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={chartOrders}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                        <XAxis dataKey="date" stroke="#9ca3af" fontSize={12} />
-                        <YAxis stroke="#9ca3af" fontSize={12} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                        <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                        <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
                         <Tooltip
-                          contentStyle={{ backgroundColor: "#1f2937", border: "1px solid #374151" }}
-                          labelStyle={{ color: "#fff" }}
+                          contentStyle={{ backgroundColor: "hsl(var(--popover))", border: "1px solid hsl(var(--border))" }}
+                          labelStyle={{ color: "hsl(var(--foreground))" }}
                         />
-                        <Bar dataKey="orders" fill="#a78bfa" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="orders" fill={tc.info} radius={[4, 4, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -677,11 +678,11 @@ export default function AdminRevenue() {
                             label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                           >
                             {pieData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                              <Cell key={`cell-${index}`} fill={tc.pieColors[index % tc.pieColors.length]} />
                             ))}
                           </Pie>
                           <Tooltip
-                            contentStyle={{ backgroundColor: "#1f2937", border: "1px solid #374151" }}
+                            contentStyle={{ backgroundColor: "hsl(var(--popover))", border: "1px solid hsl(var(--border))" }}
                             formatter={(value: number) => formatCurrency(value)}
                           />
                         </RePieChart>
@@ -701,15 +702,15 @@ export default function AdminRevenue() {
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={chartAOV}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                        <XAxis dataKey="date" stroke="#9ca3af" fontSize={12} />
-                        <YAxis stroke="#9ca3af" fontSize={12} tickFormatter={(v) => `$${v}`} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                        <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                        <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickFormatter={(v) => `$${v}`} />
                         <Tooltip
-                          contentStyle={{ backgroundColor: "#1f2937", border: "1px solid #374151" }}
-                          labelStyle={{ color: "#fff" }}
+                          contentStyle={{ backgroundColor: "hsl(var(--popover))", border: "1px solid hsl(var(--border))" }}
+                          labelStyle={{ color: "hsl(var(--foreground))" }}
                           formatter={(value: number) => [`$${value.toFixed(2)}`, "AOV"]}
                         />
-                        <Line type="monotone" dataKey="aov" stroke="#34d399" strokeWidth={2} dot={false} />
+                        <Line type="monotone" dataKey="aov" stroke={tc.success} strokeWidth={2} dot={false} />
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
@@ -724,15 +725,15 @@ export default function AdminRevenue() {
                   <div className="h-48">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={chartRefunds}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                        <XAxis dataKey="date" stroke="#9ca3af" fontSize={12} />
-                        <YAxis stroke="#9ca3af" fontSize={12} tickFormatter={(v) => `$${v}`} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                        <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                        <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickFormatter={(v) => `$${v}`} />
                         <Tooltip
-                          contentStyle={{ backgroundColor: "#1f2937", border: "1px solid #374151" }}
-                          labelStyle={{ color: "#fff" }}
+                          contentStyle={{ backgroundColor: "hsl(var(--popover))", border: "1px solid hsl(var(--border))" }}
+                          labelStyle={{ color: "hsl(var(--foreground))" }}
                           formatter={(value: number) => [`$${value.toFixed(2)}`, "Refunds"]}
                         />
-                        <Bar dataKey="refunds" fill="#f87171" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="refunds" fill={tc.error} radius={[4, 4, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>

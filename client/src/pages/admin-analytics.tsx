@@ -16,9 +16,7 @@ import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Area, AreaChart,
 } from "recharts";
-
-const CHART_COLORS = ["#67e8f9", "#22d3ee", "#06b6d4", "#0891b2", "#0e7490", "#155e75", "#164e63", "#083344"];
-const PIE_COLORS = ["#67e8f9", "#a78bfa", "#34d399", "#fbbf24", "#f87171", "#818cf8"];
+import { useThemeChartColors } from "@/hooks/use-theme-colors";
 
 const DATE_RANGES = [
   { value: "7d", label: "Last 7 days", startDate: "7daysAgo" },
@@ -98,6 +96,7 @@ export default function AdminAnalytics() {
   const { admin } = useAdmin();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const tc = useThemeChartColors();
   const [gaMeasurementId, setGaMeasurementId] = useState("");
   const [ga4PropertyId, setGa4PropertyId] = useState("");
   const [ga4ServiceAccountEmail, setGa4ServiceAccountEmail] = useState("");
@@ -450,7 +449,7 @@ export default function AdminAnalytics() {
                   <Card data-testid="stat-active-users">
                     <CardHeader className="flex flex-row items-center justify-between pb-1 pt-4 px-4">
                       <CardTitle className="text-xs font-medium text-muted-foreground">Active Users</CardTitle>
-                      <Users className="w-4 h-4 text-cyan-500" />
+                      <Users className="w-4 h-4" style={{ color: tc.primary }} />
                     </CardHeader>
                     <CardContent className="px-4 pb-4 pt-0">
                       <div className="text-2xl font-bold">{formatNumber(overview?.activeUsers || 0)}</div>
@@ -460,7 +459,7 @@ export default function AdminAnalytics() {
                   <Card data-testid="stat-sessions">
                     <CardHeader className="flex flex-row items-center justify-between pb-1 pt-4 px-4">
                       <CardTitle className="text-xs font-medium text-muted-foreground">Sessions</CardTitle>
-                      <MousePointerClick className="w-4 h-4 text-blue-500" />
+                      <MousePointerClick className="w-4 h-4" style={{ color: tc.info }} />
                     </CardHeader>
                     <CardContent className="px-4 pb-4 pt-0">
                       <div className="text-2xl font-bold">{formatNumber(overview?.sessions || 0)}</div>
@@ -470,7 +469,7 @@ export default function AdminAnalytics() {
                   <Card data-testid="stat-page-views">
                     <CardHeader className="flex flex-row items-center justify-between pb-1 pt-4 px-4">
                       <CardTitle className="text-xs font-medium text-muted-foreground">Page Views</CardTitle>
-                      <Eye className="w-4 h-4 text-purple-500" />
+                      <Eye className="w-4 h-4" style={{ color: tc.accent }} />
                     </CardHeader>
                     <CardContent className="px-4 pb-4 pt-0">
                       <div className="text-2xl font-bold">{formatNumber(overview?.pageViews || 0)}</div>
@@ -480,7 +479,7 @@ export default function AdminAnalytics() {
                   <Card data-testid="stat-revenue">
                     <CardHeader className="flex flex-row items-center justify-between pb-1 pt-4 px-4">
                       <CardTitle className="text-xs font-medium text-muted-foreground">Revenue (GA4)</CardTitle>
-                      <DollarSign className="w-4 h-4 text-green-500" />
+                      <DollarSign className="w-4 h-4" style={{ color: tc.success }} />
                     </CardHeader>
                     <CardContent className="px-4 pb-4 pt-0">
                       <div className="text-2xl font-bold">{formatCurrency(overview?.totalRevenue || 0)}</div>
@@ -508,12 +507,12 @@ export default function AdminAnalytics() {
                     <AreaChart data={formattedTraffic} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
                       <defs>
                         <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#67e8f9" stopOpacity={0.3} />
-                          <stop offset="95%" stopColor="#67e8f9" stopOpacity={0} />
+                          <stop offset="5%" stopColor={tc.primary} stopOpacity={0.3} />
+                          <stop offset="95%" stopColor={tc.primary} stopOpacity={0} />
                         </linearGradient>
                         <linearGradient id="colorSessions" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#a78bfa" stopOpacity={0.3} />
-                          <stop offset="95%" stopColor="#a78bfa" stopOpacity={0} />
+                          <stop offset="5%" stopColor={tc.info} stopOpacity={0.3} />
+                          <stop offset="95%" stopColor={tc.info} stopOpacity={0} />
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -521,8 +520,8 @@ export default function AdminAnalytics() {
                       <YAxis tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
                       <Tooltip content={<CustomTooltip />} />
                       <Legend />
-                      <Area type="monotone" dataKey="activeUsers" name="Users" stroke="#67e8f9" fill="url(#colorUsers)" strokeWidth={2} />
-                      <Area type="monotone" dataKey="sessions" name="Sessions" stroke="#a78bfa" fill="url(#colorSessions)" strokeWidth={2} />
+                      <Area type="monotone" dataKey="activeUsers" name="Users" stroke={tc.primary} fill="url(#colorUsers)" strokeWidth={2} />
+                      <Area type="monotone" dataKey="sessions" name="Sessions" stroke={tc.info} fill="url(#colorSessions)" strokeWidth={2} />
                     </AreaChart>
                   </ResponsiveContainer>
                 )}
@@ -549,7 +548,7 @@ export default function AdminAnalytics() {
                         <XAxis type="number" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
                         <YAxis type="category" dataKey="channel" width={120} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
                         <Tooltip content={<CustomTooltip />} />
-                        <Bar dataKey="sessions" name="Sessions" fill="#67e8f9" radius={[0, 4, 4, 0]} />
+                        <Bar dataKey="sessions" name="Sessions" fill={tc.primary} radius={[0, 4, 4, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   )}
@@ -584,7 +583,7 @@ export default function AdminAnalytics() {
                             stroke="none"
                           >
                             {(devices || []).map((_: any, i: number) => (
-                              <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                              <Cell key={i} fill={tc.pieColors[i % tc.pieColors.length]} />
                             ))}
                           </Pie>
                           <Tooltip formatter={(value: number) => formatNumber(value)} />
@@ -594,7 +593,7 @@ export default function AdminAnalytics() {
                         {(devices || []).map((d: any, i: number) => (
                           <div key={d.device} className="flex items-center justify-between text-sm">
                             <div className="flex items-center gap-2">
-                              <span className="w-3 h-3 rounded-full" style={{ backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }} />
+                              <span className="w-3 h-3 rounded-full" style={{ backgroundColor: tc.pieColors[i % tc.pieColors.length] }} />
                               <span className="flex items-center gap-1.5">
                                 {getDeviceIcon(d.device)}
                                 <span className="capitalize">{d.device}</span>
