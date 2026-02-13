@@ -333,6 +333,7 @@ router.post("/create-payment-intent", paymentLimiter, async (req: any, res) => {
     const paymentIntent = await stripeClient.paymentIntents.create({
       amount: totalAmount,
       currency: "usd",
+      automatic_payment_methods: { enabled: true },
       metadata: {
         orderId: order.id,
         customerId: existingCustomer.id,
@@ -652,6 +653,7 @@ router.post("/reprice-payment-intent", paymentLimiter, async (req: any, res) => 
       const newIntent = await stripeClient.paymentIntents.create({
         amount: totalAmount,
         currency: "usd",
+        automatic_payment_methods: { enabled: true },
         metadata: repriceMetadata,
       });
       await storage.updateOrder(orderId, { stripePaymentIntentId: newIntent.id });
@@ -909,7 +911,6 @@ router.post("/checkout", checkoutLimiter, async (req: any, res) => {
     const baseUrl = process.env.BASE_URL || `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`;
 
     const stripeSession = await checkoutStripeClient.checkout.sessions.create({
-      payment_method_types: ["card"],
       line_items: lineItems,
       mode: "payment",
       success_url: `${baseUrl}/order-success?session_id={CHECKOUT_SESSION_ID}`,

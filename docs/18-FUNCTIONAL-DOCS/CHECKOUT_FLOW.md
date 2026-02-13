@@ -51,11 +51,12 @@ Tax is calculated in real-time using Stripe Tax:
 
 ### 6. Payment Processing
 
-The checkout supports multiple payment methods:
+The checkout supports multiple payment methods via Stripe's dynamic payment method resolution:
 
-**Standard Payment:**
-- Credit/debit card via Stripe Elements
-- Full PCI-compliant card form
+**Standard Payment (PaymentElement):**
+- Credit/debit card
+- Any additional payment methods enabled in your Stripe Dashboard (e.g., ACH, Klarna, Afterpay, etc.)
+- `automatic_payment_methods` is enabled on PaymentIntents, so Stripe dynamically surfaces eligible methods based on Dashboard configuration, currency, country, and amount constraints.
 
 **Express Checkout:**
 - Apple Pay (Safari/iOS)
@@ -63,6 +64,11 @@ The checkout supports multiple payment methods:
 - Link (Stripe's one-click checkout)
 
 These are rendered via Stripe's `ExpressCheckoutElement`.
+
+**Checkout Session flow:**
+- No hardcoded `payment_method_types`; Stripe dynamically determines eligible methods based on Dashboard enablement and transaction context.
+
+> **Note:** Final payment method availability depends on Stripe Dashboard enablement, currency, country, and eligibility constraints.
 
 ### 7. Order Creation
 

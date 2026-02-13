@@ -45,11 +45,16 @@ The server:
 ### 2. Client-Side Payment
 
 The frontend uses Stripe Elements to collect payment details:
-- `PaymentElement` for card input
+- `PaymentElement` for all eligible payment methods (card, ACH, buy-now-pay-later, etc.)
 - `AddressElement` for shipping address
 - `ExpressCheckoutElement` for Apple Pay / Google Pay / Link
 
 Payment confirmation is handled by `stripe.confirmPayment()`.
+
+**Dynamic Payment Methods:**
+- PaymentIntents are created with `automatic_payment_methods: { enabled: true }`, allowing Stripe to dynamically surface all eligible payment methods based on Dashboard configuration, currency, country, and amount.
+- The Checkout Session flow omits `payment_method_types` to let Stripe resolve eligible methods automatically.
+- Final method availability depends on Stripe Dashboard enablement and transaction-level eligibility constraints.
 
 ### 3. Webhook Processing
 

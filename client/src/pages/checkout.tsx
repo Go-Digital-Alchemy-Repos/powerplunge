@@ -238,7 +238,7 @@ function CheckoutForm({ clientSecret, orderId, cartTotal, totalWithTax, cart, bi
             <div className="w-full border-t border-border" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-muted/50 px-2 text-muted-foreground">Or pay with card</span>
+            <span className="bg-muted/50 px-2 text-muted-foreground">Or pay below</span>
           </div>
         </div>
 
