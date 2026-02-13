@@ -509,10 +509,10 @@ export default function RichTextEditor({
       />
 
       <Dialog open={showImageDialog} onOpenChange={setShowImageDialog}>
-        <DialogContent className="max-w-md bg-gray-900 border-gray-800">
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-white flex items-center gap-2">
-              <ImageIcon className="w-5 h-5 text-cyan-400" />
+            <DialogTitle className="flex items-center gap-2">
+              <ImageIcon className="w-5 h-5 text-primary" />
               Insert Image
             </DialogTitle>
           </DialogHeader>
@@ -520,41 +520,41 @@ export default function RichTextEditor({
           <div className="space-y-3 py-2">
             <Button
               variant="outline"
-              className="w-full justify-start gap-3 h-14 border-gray-700 bg-gray-800/50 hover:bg-gray-800 text-white hover:text-white"
+              className="w-full justify-start gap-3 h-14"
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploading}
               data-testid="rte-image-upload-btn"
             >
               {isUploading ? (
-                <Loader2 className="w-5 h-5 text-cyan-400 animate-spin flex-shrink-0" />
+                <Loader2 className="w-5 h-5 text-primary animate-spin flex-shrink-0" />
               ) : (
-                <Upload className="w-5 h-5 text-cyan-400 flex-shrink-0" />
+                <Upload className="w-5 h-5 text-primary flex-shrink-0" />
               )}
               <div className="text-left">
                 <p className="text-sm font-medium">{isUploading ? "Uploading..." : "Upload Image"}</p>
-                <p className="text-xs text-gray-400">Choose a file from your computer</p>
+                <p className="text-xs text-muted-foreground">Choose a file from your computer</p>
               </div>
             </Button>
 
             <Button
               variant="outline"
-              className="w-full justify-start gap-3 h-14 border-gray-700 bg-gray-800/50 hover:bg-gray-800 text-white hover:text-white"
+              className="w-full justify-start gap-3 h-14"
               onClick={() => { setShowMediaPicker(true); setShowImageDialog(false); }}
               data-testid="rte-image-library-btn"
             >
-              <FolderOpen className="w-5 h-5 text-cyan-400 flex-shrink-0" />
+              <FolderOpen className="w-5 h-5 text-primary flex-shrink-0" />
               <div className="text-left">
                 <p className="text-sm font-medium">Media Library</p>
-                <p className="text-xs text-gray-400">Select from uploaded images</p>
+                <p className="text-xs text-muted-foreground">Select from uploaded images</p>
               </div>
             </Button>
 
             <div className="relative pt-2">
               <div className="absolute inset-0 flex items-center pt-2">
-                <span className="w-full border-t border-gray-700" />
+                <span className="w-full border-t border-border" />
               </div>
               <div className="relative flex justify-center pt-2">
-                <span className="bg-gray-900 px-2 text-xs text-gray-500">or paste a URL</span>
+                <span className="bg-popover px-2 text-xs text-muted-foreground">or paste a URL</span>
               </div>
             </div>
 
@@ -564,14 +564,13 @@ export default function RichTextEditor({
                 onChange={(e) => setImageUrlInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") handleUrlInsert(); }}
                 placeholder="https://example.com/image.jpg"
-                className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500"
                 data-testid="rte-image-url-input"
               />
               <Button
                 onClick={handleUrlInsert}
                 disabled={!imageUrlInput.trim()}
                 size="sm"
-                className="bg-cyan-600 hover:bg-cyan-700 text-white px-4"
+                className="px-4"
                 data-testid="rte-image-url-insert"
               >
                 Insert

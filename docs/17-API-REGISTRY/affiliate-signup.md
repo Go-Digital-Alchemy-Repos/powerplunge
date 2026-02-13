@@ -47,9 +47,12 @@
 
 | Method | Path | Source File | Line |
 |--------|------|-------------|------|
-| `GET` | `/api/` | server/src/routes/public/affiliate-signup.routes.ts | 9 |
-| `POST` | `/api/` | server/src/routes/public/affiliate-signup.routes.ts | 67 |
+| `GET` | `/api/` | server/src/routes/public/affiliate-signup.routes.ts | 21 |
+| `POST` | `/api/` | server/src/routes/public/affiliate-signup.routes.ts | 136 |
+| `POST` | `/api/join` | server/src/routes/public/affiliate-signup.routes.ts | 330 |
+| `POST` | `/api/send-verification` | server/src/routes/public/affiliate-signup.routes.ts | 448 |
+| `POST` | `/api/verify-phone` | server/src/routes/public/affiliate-signup.routes.ts | 529 |
 
-_2 endpoint(s) detected._
+_5 endpoint(s) detected._
 
 <!-- === END AUTO-GENERATED SECTION === -->

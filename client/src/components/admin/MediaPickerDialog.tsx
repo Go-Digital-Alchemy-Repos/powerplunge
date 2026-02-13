@@ -138,30 +138,30 @@ export function MediaPickerDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] bg-gray-900 border-gray-800 flex flex-col">
+      <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle className="text-white flex items-center gap-2">
-            <ImageIcon className="w-5 h-5 text-cyan-400" />
+          <DialogTitle className="flex items-center gap-2">
+            <ImageIcon className="w-5 h-5 text-primary" />
             {title}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex items-center gap-3 py-3 border-b border-gray-800">
+        <div className="flex items-center gap-3 py-3 border-b border-border">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search media..."
-              className="pl-10 bg-gray-800 border-gray-700 text-white"
+              className="pl-10"
               data-testid="media-picker-search"
             />
           </div>
           <Select value={selectedFolder} onValueChange={setSelectedFolder}>
-            <SelectTrigger className="w-40 bg-gray-800 border-gray-700 text-white" data-testid="media-picker-folder">
+            <SelectTrigger className="w-40" data-testid="media-picker-folder">
               <SelectValue placeholder="All folders" />
             </SelectTrigger>
-            <SelectContent className="bg-gray-800 border-gray-700">
+            <SelectContent>
               <SelectItem value="all">All folders</SelectItem>
               {folders.map((folder) => (
                 <SelectItem key={folder} value={folder}>{folder}</SelectItem>
@@ -173,7 +173,6 @@ export function MediaPickerDialog({
               variant={viewMode === "grid" ? "secondary" : "ghost"}
               size="icon"
               onClick={() => setViewMode("grid")}
-              className="text-gray-400"
             >
               <Grid3X3 className="w-4 h-4" />
             </Button>
@@ -181,7 +180,6 @@ export function MediaPickerDialog({
               variant={viewMode === "list" ? "secondary" : "ghost"}
               size="icon"
               onClick={() => setViewMode("list")}
-              className="text-gray-400"
             >
               <List className="w-4 h-4" />
             </Button>
@@ -195,7 +193,7 @@ export function MediaPickerDialog({
               className="hidden"
               data-testid="media-picker-upload"
             />
-            <Button variant="outline" size="sm" className="border-cyan-600 text-cyan-400" asChild>
+            <Button variant="outline" size="sm" className="border-primary text-primary" asChild>
               <span>
                 {isUploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
                 Upload
@@ -207,10 +205,10 @@ export function MediaPickerDialog({
         <div className="flex-1 overflow-y-auto min-h-[300px]">
           {isLoading ? (
             <div className="flex items-center justify-center h-full">
-              <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
+              <Loader2 className="w-8 h-8 text-primary animate-spin" />
             </div>
           ) : mediaItems.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-gray-500">
+            <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
               <ImageIcon className="w-12 h-12 mb-3" />
               <p>No media found</p>
               <p className="text-sm mt-1">Upload images or adjust your search</p>
@@ -223,8 +221,8 @@ export function MediaPickerDialog({
                   onClick={() => setSelectedItem(item)}
                   className={`relative cursor-pointer rounded-lg overflow-hidden border-2 transition-all ${
                     selectedItem?.id === item.id
-                      ? "border-cyan-400 ring-2 ring-cyan-400/50"
-                      : "border-gray-700 hover:border-gray-600"
+                      ? "border-primary ring-2 ring-primary/50"
+                      : "border-border hover:border-muted-foreground"
                   }`}
                   data-testid={`media-picker-item-${item.id}`}
                 >
@@ -235,28 +233,28 @@ export function MediaPickerDialog({
                       className="w-full aspect-square object-cover"
                     />
                   ) : (
-                    <div className="w-full aspect-square bg-gray-800 flex items-center justify-center">
-                      <ImageIcon className="w-8 h-8 text-gray-600" />
+                    <div className="w-full aspect-square bg-muted flex items-center justify-center">
+                      <ImageIcon className="w-8 h-8 text-muted-foreground" />
                     </div>
                   )}
                   {selectedItem?.id === item.id && (
-                    <div className="absolute top-1 right-1 bg-cyan-500 rounded-full p-1">
-                      <Check className="w-3 h-3 text-white" />
+                    <div className="absolute top-1 right-1 bg-primary rounded-full p-1">
+                      <Check className="w-3 h-3 text-primary-foreground" />
                     </div>
                   )}
                 </div>
               ))}
             </div>
           ) : (
-            <div className="divide-y divide-gray-800">
+            <div className="divide-y divide-border">
               {mediaItems.map((item) => (
                 <div
                   key={item.id}
                   onClick={() => setSelectedItem(item)}
                   className={`flex items-center gap-4 p-3 cursor-pointer transition-colors ${
                     selectedItem?.id === item.id
-                      ? "bg-cyan-900/20"
-                      : "hover:bg-gray-800/50"
+                      ? "bg-primary/10"
+                      : "hover:bg-muted/50"
                   }`}
                   data-testid={`media-picker-item-${item.id}`}
                 >
@@ -268,19 +266,19 @@ export function MediaPickerDialog({
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="w-full h-full bg-gray-800 flex items-center justify-center">
-                        <ImageIcon className="w-6 h-6 text-gray-600" />
+                      <div className="w-full h-full bg-muted flex items-center justify-center">
+                        <ImageIcon className="w-6 h-6 text-muted-foreground" />
                       </div>
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-white text-sm truncate">{item.title || item.filename}</p>
-                    <p className="text-gray-500 text-xs">
+                    <p className="text-foreground text-sm truncate">{item.title || item.filename}</p>
+                    <p className="text-muted-foreground text-xs">
                       {formatBytes(item.fileSize)} {item.width && item.height && `• ${item.width}×${item.height}`}
                     </p>
                   </div>
                   {selectedItem?.id === item.id && (
-                    <Check className="w-5 h-5 text-cyan-400" />
+                    <Check className="w-5 h-5 text-primary" />
                   )}
                 </div>
               ))}
@@ -288,14 +286,13 @@ export function MediaPickerDialog({
           )}
         </div>
 
-        <DialogFooter className="border-t border-gray-800 pt-4">
-          <Button variant="ghost" onClick={() => onOpenChange(false)} className="text-gray-400">
+        <DialogFooter className="border-t border-border pt-4">
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
           <Button
             onClick={handleSelect}
             disabled={!selectedItem}
-            className="bg-cyan-600 hover:bg-cyan-700 text-white"
             data-testid="media-picker-select"
           >
             Select Image

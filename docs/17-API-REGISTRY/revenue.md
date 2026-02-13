@@ -26,16 +26,16 @@ _Add manual documentation notes here. This section is preserved during sync._
 
 | Method | Path | Source File | Line |
 |--------|------|-------------|------|
-| `GET` | `/api/admin/affiliate-vs-direct` | server/src/routes/revenue.routes.ts | 113 |
-| `GET` | `/api/admin/metrics` | server/src/routes/revenue.routes.ts | 58 |
-| `GET` | `/api/admin/products` | server/src/routes/revenue.routes.ts | 160 |
-| `GET` | `/api/admin/timeseries/aov` | server/src/routes/revenue.routes.ts | 91 |
-| `GET` | `/api/admin/timeseries/orders` | server/src/routes/revenue.routes.ts | 80 |
-| `GET` | `/api/admin/timeseries/refunds` | server/src/routes/revenue.routes.ts | 102 |
-| `GET` | `/api/admin/timeseries/revenue` | server/src/routes/revenue.routes.ts | 69 |
-| `GET` | `/api/admin/top-affiliates` | server/src/routes/revenue.routes.ts | 136 |
-| `GET` | `/api/admin/top-customers` | server/src/routes/revenue.routes.ts | 148 |
-| `GET` | `/api/admin/top-products` | server/src/routes/revenue.routes.ts | 124 |
+| `GET` | `/api/admin/affiliate-vs-direct` | server/src/routes/admin/revenue.routes.ts | 113 |
+| `GET` | `/api/admin/metrics` | server/src/routes/admin/revenue.routes.ts | 58 |
+| `GET` | `/api/admin/products` | server/src/routes/admin/revenue.routes.ts | 160 |
+| `GET` | `/api/admin/timeseries/aov` | server/src/routes/admin/revenue.routes.ts | 91 |
+| `GET` | `/api/admin/timeseries/orders` | server/src/routes/admin/revenue.routes.ts | 80 |
+| `GET` | `/api/admin/timeseries/refunds` | server/src/routes/admin/revenue.routes.ts | 102 |
+| `GET` | `/api/admin/timeseries/revenue` | server/src/routes/admin/revenue.routes.ts | 69 |
+| `GET` | `/api/admin/top-affiliates` | server/src/routes/admin/revenue.routes.ts | 136 |
+| `GET` | `/api/admin/top-customers` | server/src/routes/admin/revenue.routes.ts | 148 |
+| `GET` | `/api/admin/top-products` | server/src/routes/admin/revenue.routes.ts | 124 |
 
 _10 endpoint(s) detected._
 

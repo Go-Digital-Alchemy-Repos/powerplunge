@@ -1,12 +1,12 @@
-# Main Application Routes
+# Cms Theme
 
 ## Module Info
 
 | Property | Value |
 |----------|-------|
-| Domain | main |
-| Source Files | server/routes.ts |
-| Endpoint Count | 184 |
+| Domain | cms-theme |
+| Source Files | server/src/routes/admin/cms-theme.routes.ts, server/src/routes/public/cms-theme.routes.ts |
+| Endpoint Count | 4 |
 
 ## Auth & Authorization
 
@@ -26,13 +26,11 @@ _Add manual documentation notes here. This section is preserved during sync._
 
 | Method | Path | Source File | Line |
 |--------|------|-------------|------|
-| `GET` | `/api/health/config` | server/routes.ts | 174 |
-| `GET` | `/api/health/timings` | server/routes.ts | 180 |
-| `POST` | `/api/health/timings/reset` | server/routes.ts | 184 |
-| `GET` | `/health` | server/routes.ts | 98 |
-| `GET` | `/ready` | server/routes.ts | 102 |
-| `GET` | `/version` | server/routes.ts | 125 |
+| `GET` | `/` | server/src/routes/admin/cms-theme.routes.ts | 6 |
+| `GET` | `/` | server/src/routes/public/cms-theme.routes.ts | 6 |
+| `PATCH` | `/` | server/src/routes/admin/cms-theme.routes.ts | 15 |
+| `GET` | `/active` | server/src/routes/public/cms-theme.routes.ts | 15 |
 
-_6 endpoint(s) detected._
+_4 endpoint(s) detected._
 
 <!-- === END AUTO-GENERATED SECTION === -->

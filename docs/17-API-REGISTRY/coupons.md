@@ -26,13 +26,11 @@ _Add manual documentation notes here. This section is preserved during sync._
 
 | Method | Path | Source File | Line |
 |--------|------|-------------|------|
-| `POST` | `/api/admin/admin/:couponId/disable` | server/src/routes/coupon.routes.ts | 20 |
-| `POST` | `/api/admin/admin/:couponId/enable` | server/src/routes/coupon.routes.ts | 26 |
-| `GET` | `/api/admin/admin/analytics` | server/src/routes/coupon.routes.ts | 8 |
-| `POST` | `/api/admin/admin/auto-expire` | server/src/routes/coupon.routes.ts | 32 |
-| `GET` | `/api/admin/admin/performance` | server/src/routes/coupon.routes.ts | 14 |
-| `POST` | `/api/admin/validate-stacking` | server/src/routes/coupon.routes.ts | 41 |
+| `GET` | `/` | server/src/routes/admin/coupons.routes.ts | 6 |
+| `POST` | `/` | server/src/routes/admin/coupons.routes.ts | 15 |
+| `PATCH` | `/:id` | server/src/routes/admin/coupons.routes.ts | 27 |
+| `DELETE` | `/:id` | server/src/routes/admin/coupons.routes.ts | 39 |
 
-_6 endpoint(s) detected._
+_4 endpoint(s) detected._
 
 <!-- === END AUTO-GENERATED SECTION === -->

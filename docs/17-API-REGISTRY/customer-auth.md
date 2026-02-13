@@ -26,15 +26,23 @@ _Add manual documentation notes here. This section is preserved during sync._
 
 | Method | Path | Source File | Line |
 |--------|------|-------------|------|
-| `POST` | `/api/customer/change-password` | server/src/routes/customer/auth.routes.ts | 265 |
-| `POST` | `/api/customer/login` | server/src/routes/customer/auth.routes.ts | 78 |
-| `POST` | `/api/customer/magic-link` | server/src/routes/customer/auth.routes.ts | 127 |
-| `GET` | `/api/customer/me` | server/src/routes/customer/auth.routes.ts | 189 |
-| `POST` | `/api/customer/register` | server/src/routes/customer/auth.routes.ts | 22 |
-| `PATCH` | `/api/customer/update-profile` | server/src/routes/customer/auth.routes.ts | 231 |
-| `POST` | `/api/customer/verify-magic-link` | server/src/routes/customer/auth.routes.ts | 150 |
-| `POST` | `/api/customer/verify-session` | server/src/routes/customer/auth.routes.ts | 297 |
+| `POST` | `/api/customer/change-password` | server/src/routes/customer/auth.routes.ts | 292 |
+| `GET` | `/api/customer/check-admin-eligible` | server/src/routes/customer/auth.routes.ts | 201 |
+| `GET` | `/api/customer/check-setup` | server/src/routes/admin/auth.routes.ts | 8 |
+| `POST` | `/api/customer/forgot-password` | server/src/routes/customer/auth.routes.ts | 328 |
+| `POST` | `/api/customer/login` | server/src/routes/admin/auth.routes.ts | 55 |
+| `POST` | `/api/customer/login` | server/src/routes/customer/auth.routes.ts | 82 |
+| `POST` | `/api/customer/logout` | server/src/routes/admin/auth.routes.ts | 86 |
+| `POST` | `/api/customer/magic-link` | server/src/routes/customer/auth.routes.ts | 136 |
+| `GET` | `/api/customer/me` | server/src/routes/admin/auth.routes.ts | 95 |
+| `GET` | `/api/customer/me` | server/src/routes/customer/auth.routes.ts | 216 |
+| `POST` | `/api/customer/register` | server/src/routes/customer/auth.routes.ts | 24 |
+| `POST` | `/api/customer/reset-password` | server/src/routes/customer/auth.routes.ts | 366 |
+| `POST` | `/api/customer/setup` | server/src/routes/admin/auth.routes.ts | 17 |
+| `PATCH` | `/api/customer/update-profile` | server/src/routes/customer/auth.routes.ts | 258 |
+| `POST` | `/api/customer/verify-magic-link` | server/src/routes/customer/auth.routes.ts | 160 |
+| `POST` | `/api/customer/verify-session` | server/src/routes/customer/auth.routes.ts | 418 |
 
-_8 endpoint(s) detected._
+_16 endpoint(s) detected._
 
 <!-- === END AUTO-GENERATED SECTION === -->

@@ -1,12 +1,12 @@
-# Main Application Routes
+# Blog
 
 ## Module Info
 
 | Property | Value |
 |----------|-------|
-| Domain | main |
-| Source Files | server/routes.ts |
-| Endpoint Count | 184 |
+| Domain | blog |
+| Source Files | server/src/routes/public/blog.routes.ts |
+| Endpoint Count | 4 |
 
 ## Auth & Authorization
 
@@ -26,13 +26,11 @@ _Add manual documentation notes here. This section is preserved during sync._
 
 | Method | Path | Source File | Line |
 |--------|------|-------------|------|
-| `GET` | `/api/health/config` | server/routes.ts | 174 |
-| `GET` | `/api/health/timings` | server/routes.ts | 180 |
-| `POST` | `/api/health/timings/reset` | server/routes.ts | 184 |
-| `GET` | `/health` | server/routes.ts | 98 |
-| `GET` | `/ready` | server/routes.ts | 102 |
-| `GET` | `/version` | server/routes.ts | 125 |
+| `GET` | `/categories` | server/src/routes/public/blog.routes.ts | 23 |
+| `GET` | `/posts` | server/src/routes/public/blog.routes.ts | 7 |
+| `GET` | `/posts/:slug` | server/src/routes/public/blog.routes.ts | 12 |
+| `GET` | `/tags` | server/src/routes/public/blog.routes.ts | 18 |
 
-_6 endpoint(s) detected._
+_4 endpoint(s) detected._
 
 <!-- === END AUTO-GENERATED SECTION === -->

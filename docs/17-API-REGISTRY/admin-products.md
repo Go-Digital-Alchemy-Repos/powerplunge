@@ -29,10 +29,11 @@ _Add manual documentation notes here. This section is preserved during sync._
 | `GET` | `/api/admin/products/` | server/src/routes/admin/products.routes.ts | 7 |
 | `GET` | `/api/admin/products/` | server/src/routes/public/products.routes.ts | 6 |
 | `POST` | `/api/admin/products/` | server/src/routes/admin/products.routes.ts | 8 |
-| `GET` | `/api/admin/products/:id` | server/src/routes/public/products.routes.ts | 7 |
+| `GET` | `/api/admin/products/:id` | server/src/routes/public/products.routes.ts | 8 |
 | `PATCH` | `/api/admin/products/:id` | server/src/routes/admin/products.routes.ts | 9 |
 | `DELETE` | `/api/admin/products/:id` | server/src/routes/admin/products.routes.ts | 10 |
+| `GET` | `/api/admin/products/slug/:slug` | server/src/routes/public/products.routes.ts | 7 |
 
-_6 endpoint(s) detected._
+_7 endpoint(s) detected._
 
 <!-- === END AUTO-GENERATED SECTION === -->

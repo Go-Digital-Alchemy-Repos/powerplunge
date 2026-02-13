@@ -435,7 +435,7 @@ export function CustomerProfileDrawer({
       case "cancelled":
         return "bg-red-500";
       default:
-        return "bg-gray-500";
+        return "bg-muted-foreground";
     }
   };
 
@@ -452,8 +452,8 @@ export function CustomerProfileDrawer({
         <SheetHeader className="border-b pb-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-cyan-500/20 rounded-full flex items-center justify-center">
-                <User className="w-6 h-6 text-cyan-500" />
+              <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center">
+                <User className="w-6 h-6 text-primary" />
               </div>
               <div>
                 <SheetTitle className="text-xl" data-testid="customer-name">
@@ -464,7 +464,7 @@ export function CustomerProfileDrawer({
                   {profile?.customer.email}
                 </SheetDescription>
                 {profile?.customer.id && (
-                  <p className="text-xs font-mono text-cyan-500 mt-1" data-testid="text-client-id">
+                  <p className="text-xs font-mono text-primary mt-1" data-testid="text-client-id">
                     Client ID: {profile.customer.id.slice(0, 8).toUpperCase()}
                   </p>
                 )}
@@ -1132,9 +1132,9 @@ export function CustomerProfileDrawer({
                     </AlertDialog>
                   </div>
 
-                  <div className="flex items-center justify-between p-4 bg-amber-500/10 rounded-lg">
+                  <div className="flex items-center justify-between p-4 bg-destructive/10 rounded-lg">
                     <div>
-                      <p className="font-medium flex items-center gap-2 text-amber-500">
+                      <p className="font-medium flex items-center gap-2 text-destructive">
                         <LogOut className="w-4 h-4" />
                         Force Logout
                       </p>
@@ -1144,7 +1144,7 @@ export function CustomerProfileDrawer({
                     </div>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="outline" className="border-amber-500 text-amber-500" data-testid="button-force-logout">
+                        <Button variant="outline" className="border-destructive text-destructive" data-testid="button-force-logout">
                           <LogOut className="w-4 h-4 mr-2" />
                           Force Logout
                         </Button>
@@ -1170,7 +1170,7 @@ export function CustomerProfileDrawer({
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-amber-500">
+                  <CardTitle className="flex items-center gap-2 text-destructive">
                     <AlertTriangle className="w-5 h-5" />
                     Account Controls
                   </CardTitle>

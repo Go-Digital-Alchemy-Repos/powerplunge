@@ -26,20 +26,20 @@ _Add manual documentation notes here. This section is preserved during sync._
 
 | Method | Path | Source File | Line |
 |--------|------|-------------|------|
-| `GET` | `/api/admin/admin/analytics` | server/src/routes/upsell.routes.ts | 160 |
-| `POST` | `/api/admin/admin/relationships` | server/src/routes/upsell.routes.ts | 107 |
-| `DELETE` | `/api/admin/admin/relationships/:id` | server/src/routes/upsell.routes.ts | 126 |
-| `GET` | `/api/admin/admin/relationships/:productId` | server/src/routes/upsell.routes.ts | 93 |
-| `GET` | `/api/admin/admin/rules` | server/src/routes/upsell.routes.ts | 133 |
-| `POST` | `/api/admin/admin/rules` | server/src/routes/upsell.routes.ts | 140 |
-| `PATCH` | `/api/admin/admin/rules/:id` | server/src/routes/upsell.routes.ts | 146 |
-| `DELETE` | `/api/admin/admin/rules/:id` | server/src/routes/upsell.routes.ts | 153 |
-| `GET` | `/api/admin/analytics` | server/src/routes/upsell.routes.ts | 171 |
-| `POST` | `/api/admin/cart-suggestions` | server/src/routes/upsell.routes.ts | 10 |
-| `POST` | `/api/admin/post-purchase/:offerId/accept` | server/src/routes/upsell.routes.ts | 57 |
-| `POST` | `/api/admin/post-purchase/:offerId/decline` | server/src/routes/upsell.routes.ts | 64 |
-| `GET` | `/api/admin/post-purchase/:orderId` | server/src/routes/upsell.routes.ts | 37 |
-| `POST` | `/api/admin/track` | server/src/routes/upsell.routes.ts | 71 |
+| `GET` | `/admin/analytics` | server/src/routes/admin/upsells.routes.ts | 160 |
+| `POST` | `/admin/relationships` | server/src/routes/admin/upsells.routes.ts | 107 |
+| `DELETE` | `/admin/relationships/:id` | server/src/routes/admin/upsells.routes.ts | 126 |
+| `GET` | `/admin/relationships/:productId` | server/src/routes/admin/upsells.routes.ts | 93 |
+| `GET` | `/admin/rules` | server/src/routes/admin/upsells.routes.ts | 133 |
+| `POST` | `/admin/rules` | server/src/routes/admin/upsells.routes.ts | 140 |
+| `PATCH` | `/admin/rules/:id` | server/src/routes/admin/upsells.routes.ts | 146 |
+| `DELETE` | `/admin/rules/:id` | server/src/routes/admin/upsells.routes.ts | 153 |
+| `GET` | `/analytics` | server/src/routes/admin/upsells.routes.ts | 171 |
+| `POST` | `/cart-suggestions` | server/src/routes/admin/upsells.routes.ts | 10 |
+| `POST` | `/post-purchase/:offerId/accept` | server/src/routes/admin/upsells.routes.ts | 57 |
+| `POST` | `/post-purchase/:offerId/decline` | server/src/routes/admin/upsells.routes.ts | 64 |
+| `GET` | `/post-purchase/:orderId` | server/src/routes/admin/upsells.routes.ts | 37 |
+| `POST` | `/track` | server/src/routes/admin/upsells.routes.ts | 71 |
 
 _14 endpoint(s) detected._
 

@@ -10,12 +10,12 @@ interface AdminPageProps {
 
 export function AdminPage({ title, subtitle, actions, children }: AdminPageProps) {
   return (
-    <div className="min-h-screen bg-gray-950 text-white overflow-x-hidden" data-testid="admin-page-wrapper">
+    <div className="min-h-screen bg-background text-foreground overflow-x-hidden" data-testid="admin-page-wrapper">
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 px-4 sm:px-6 pt-4 sm:pt-6 pb-4" data-testid="admin-page-header">
         <div className="min-w-0">
           <h1 className="text-xl sm:text-2xl font-bold truncate" data-testid="admin-page-title">{title}</h1>
           {subtitle && (
-            <p className="text-gray-400 text-sm mt-1" data-testid="admin-page-subtitle">{subtitle}</p>
+            <p className="text-muted-foreground text-sm mt-1" data-testid="admin-page-subtitle">{subtitle}</p>
           )}
         </div>
         {actions && (
@@ -37,7 +37,7 @@ export function AdminSection({ title, children, className }: AdminSectionProps) 
   return (
     <section className={cn(className)} data-testid="admin-section-wrapper">
       {title && (
-        <h2 className="text-lg font-semibold text-white mb-3" data-testid="admin-section-title">{title}</h2>
+        <h2 className="text-lg font-semibold mb-3" data-testid="admin-section-title">{title}</h2>
       )}
       {children}
     </section>
@@ -56,17 +56,17 @@ export function AdminCard({ title, description, children, className, actions }: 
   const hasHeader = title || description || actions;
   return (
     <div
-      className={cn("bg-gray-900/50 border border-gray-800/60 rounded-lg p-4 sm:p-5", className)}
+      className={cn("bg-card/50 border border-border rounded-lg p-4 sm:p-5", className)}
       data-testid="admin-card-wrapper"
     >
       {hasHeader && (
         <div className="flex items-start justify-between" data-testid="admin-card-header">
           <div>
             {title && (
-              <h3 className="text-base font-medium text-white" data-testid="admin-card-title">{title}</h3>
+              <h3 className="text-base font-medium" data-testid="admin-card-title">{title}</h3>
             )}
             {description && (
-              <p className="text-sm text-gray-500 mt-0.5" data-testid="admin-card-description">{description}</p>
+              <p className="text-sm text-muted-foreground mt-0.5" data-testid="admin-card-description">{description}</p>
             )}
           </div>
           {actions && (
@@ -101,8 +101,8 @@ interface AdminStatProps {
 export function AdminStat({ label, value, trend }: AdminStatProps) {
   return (
     <div data-testid="admin-stat-wrapper">
-      <p className="text-xs text-gray-500 uppercase tracking-wider" data-testid="admin-stat-label">{label}</p>
-      <p className="text-2xl font-bold text-white" data-testid="admin-stat-value">{value}</p>
+      <p className="text-xs text-muted-foreground uppercase tracking-wider" data-testid="admin-stat-label">{label}</p>
+      <p className="text-2xl font-bold" data-testid="admin-stat-value">{value}</p>
       {trend && (
         <p
           className={cn("text-xs", trend.positive ? "text-green-400" : "text-red-400")}

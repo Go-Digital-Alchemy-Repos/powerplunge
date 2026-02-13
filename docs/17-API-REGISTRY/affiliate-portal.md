@@ -49,15 +49,15 @@
 
 | Method | Path | Source File | Line |
 |--------|------|-------------|------|
-| `GET` | `/api/customer/` | server/src/routes/customer/affiliate-portal.routes.ts | 314 |
-| `PUT` | `/api/customer/code` | server/src/routes/customer/affiliate-portal.routes.ts | 628 |
-| `GET` | `/api/customer/commissions` | server/src/routes/customer/affiliate-portal.routes.ts | 273 |
-| `POST` | `/api/customer/connect/refresh` | server/src/routes/customer/affiliate-portal.routes.ts | 582 |
-| `POST` | `/api/customer/connect/start` | server/src/routes/customer/affiliate-portal.routes.ts | 509 |
-| `GET` | `/api/customer/connect/status` | server/src/routes/customer/affiliate-portal.routes.ts | 442 |
-| `POST` | `/api/customer/join` | server/src/routes/customer/affiliate-portal.routes.ts | 395 |
-| `POST` | `/api/customer/payout-request` | server/src/routes/customer/affiliate-portal.routes.ts | 109 |
-| `GET` | `/api/customer/payouts` | server/src/routes/customer/affiliate-portal.routes.ts | 235 |
+| `GET` | `/api/customer/` | server/src/routes/customer/affiliate-portal.routes.ts | 296 |
+| `PUT` | `/api/customer/code` | server/src/routes/customer/affiliate-portal.routes.ts | 604 |
+| `GET` | `/api/customer/commissions` | server/src/routes/customer/affiliate-portal.routes.ts | 259 |
+| `POST` | `/api/customer/connect/refresh` | server/src/routes/customer/affiliate-portal.routes.ts | 561 |
+| `POST` | `/api/customer/connect/start` | server/src/routes/customer/affiliate-portal.routes.ts | 491 |
+| `GET` | `/api/customer/connect/status` | server/src/routes/customer/affiliate-portal.routes.ts | 424 |
+| `POST` | `/api/customer/join` | server/src/routes/customer/affiliate-portal.routes.ts | 377 |
+| `POST` | `/api/customer/payout-request` | server/src/routes/customer/affiliate-portal.routes.ts | 105 |
+| `GET` | `/api/customer/payouts` | server/src/routes/customer/affiliate-portal.routes.ts | 226 |
 | `GET` | `/api/customer/portal` | server/src/routes/customer/affiliate-portal.routes.ts | 59 |
 
 _10 endpoint(s) detected._

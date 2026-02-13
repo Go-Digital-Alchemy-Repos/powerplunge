@@ -26,10 +26,10 @@ _Add manual documentation notes here. This section is preserved during sync._
 
 | Method | Path | Source File | Line |
 |--------|------|-------------|------|
-| `GET` | `/` | server/src/routes/admin/docs.router.ts | 162 |
-| `GET` | `/:docPath` | server/src/routes/admin/docs.router.ts | 325 |
-| `GET` | `/coverage` | server/src/routes/admin/docs.router.ts | 172 |
-| `POST` | `/sync` | server/src/routes/admin/docs.router.ts | 274 |
+| `GET` | `/` | server/src/routes/admin/docs.router.ts | 163 |
+| `GET` | `/:docPath` | server/src/routes/admin/docs.router.ts | 326 |
+| `GET` | `/coverage` | server/src/routes/admin/docs.router.ts | 173 |
+| `POST` | `/sync` | server/src/routes/admin/docs.router.ts | 275 |
 
 _4 endpoint(s) detected._
 

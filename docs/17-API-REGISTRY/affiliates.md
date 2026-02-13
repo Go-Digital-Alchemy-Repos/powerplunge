@@ -66,25 +66,26 @@ Both modules require `requireFullAccess` at mount. They coexist because the v1 m
 
 | Method | Path | Source File | Line |
 |--------|------|-------------|------|
-| `DELETE` | `/api/admin/:affiliateId` | server/src/routes/affiliate.routes.ts | 691 |
-| `GET` | `/api/admin/:affiliateId/commissions` | server/src/routes/affiliate.routes.ts | 143 |
-| `GET` | `/api/admin/:affiliateId/payouts` | server/src/routes/affiliate.routes.ts | 651 |
-| `POST` | `/api/admin/:affiliateId/payouts` | server/src/routes/affiliate.routes.ts | 560 |
-| `GET` | `/api/admin/:affiliateId/profile` | server/src/routes/affiliate.routes.ts | 90 |
-| `GET` | `/api/admin/:affiliateId/referred-customers` | server/src/routes/affiliate.routes.ts | 155 |
-| `POST` | `/api/admin/commissions/:commissionId/approve` | server/src/routes/affiliate.routes.ts | 167 |
-| `POST` | `/api/admin/commissions/:commissionId/review-approve` | server/src/routes/affiliate.routes.ts | 244 |
-| `POST` | `/api/admin/commissions/:commissionId/review-void` | server/src/routes/affiliate.routes.ts | 277 |
-| `POST` | `/api/admin/commissions/:commissionId/void` | server/src/routes/affiliate.routes.ts | 199 |
-| `POST` | `/api/admin/commissions/auto-approve` | server/src/routes/affiliate.routes.ts | 343 |
-| `POST` | `/api/admin/commissions/bulk-approve` | server/src/routes/affiliate.routes.ts | 310 |
-| `GET` | `/api/admin/commissions/flagged` | server/src/routes/affiliate.routes.ts | 233 |
-| `GET` | `/api/admin/leaderboard` | server/src/routes/affiliate.routes.ts | 78 |
-| `POST` | `/api/admin/payouts/:payoutId/approve` | server/src/routes/affiliate.routes.ts | 382 |
-| `POST` | `/api/admin/payouts/:payoutId/process` | server/src/routes/affiliate.routes.ts | 461 |
-| `POST` | `/api/admin/payouts/:payoutId/reject` | server/src/routes/affiliate.routes.ts | 420 |
-| `POST` | `/api/admin/run-payout-batch` | server/src/routes/affiliate.routes.ts | 669 |
+| `GET` | `/affiliate` | server/src/routes/customer/affiliates.routes.ts | 94 |
+| `POST` | `/affiliate` | server/src/routes/customer/affiliates.routes.ts | 206 |
+| `PATCH` | `/affiliate` | server/src/routes/customer/affiliates.routes.ts | 314 |
+| `GET` | `/affiliate-invites` | server/src/routes/admin/affiliates.routes.ts | 211 |
+| `POST` | `/affiliate-invites` | server/src/routes/admin/affiliates.routes.ts | 254 |
+| `DELETE` | `/affiliate-invites/:id` | server/src/routes/admin/affiliates.routes.ts | 291 |
+| `POST` | `/affiliate-invites/send` | server/src/routes/admin/affiliates.routes.ts | 319 |
+| `GET` | `/affiliate-payouts/batches/:batchId` | server/src/routes/admin/affiliates.routes.ts | 580 |
+| `POST` | `/affiliate-payouts/run` | server/src/routes/admin/affiliates.routes.ts | 546 |
+| `GET` | `/affiliate-settings` | server/src/routes/admin/affiliates.routes.ts | 71 |
+| `PATCH` | `/affiliate-settings` | server/src/routes/admin/affiliates.routes.ts | 111 |
+| `POST` | `/affiliate/connect/start` | server/src/routes/customer/affiliates.routes.ts | 336 |
+| `GET` | `/affiliate/connect/status` | server/src/routes/customer/affiliates.routes.ts | 398 |
+| `POST` | `/affiliate/payout` | server/src/routes/customer/affiliates.routes.ts | 275 |
+| `GET` | `/affiliates` | server/src/routes/admin/affiliates.routes.ts | 139 |
+| `GET` | `/affiliates/:id` | server/src/routes/admin/affiliates.routes.ts | 164 |
+| `PATCH` | `/affiliates/:id` | server/src/routes/admin/affiliates.routes.ts | 182 |
+| `GET` | `/payouts` | server/src/routes/admin/affiliates.routes.ts | 463 |
+| `PATCH` | `/payouts/:id` | server/src/routes/admin/affiliates.routes.ts | 498 |
 
-_18 endpoint(s) detected._
+_19 endpoint(s) detected._
 
 <!-- === END AUTO-GENERATED SECTION === -->

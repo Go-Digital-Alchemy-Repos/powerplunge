@@ -26,16 +26,16 @@ _Add manual documentation notes here. This section is preserved during sync._
 
 | Method | Path | Source File | Line |
 |--------|------|-------------|------|
-| `GET` | `/api/admin/media/` | server/src/routes/admin/media.routes.ts | 18 |
-| `POST` | `/api/admin/media/` | server/src/routes/admin/media.routes.ts | 49 |
-| `GET` | `/api/admin/media/:id` | server/src/routes/admin/media.routes.ts | 36 |
-| `PATCH` | `/api/admin/media/:id` | server/src/routes/admin/media.routes.ts | 74 |
-| `DELETE` | `/api/admin/media/:id` | server/src/routes/admin/media.routes.ts | 91 |
-| `DELETE` | `/api/admin/media/:id/force` | server/src/routes/admin/media.routes.ts | 114 |
-| `POST` | `/api/admin/media/:id/generate-seo` | server/src/routes/admin/media.routes.ts | 173 |
-| `GET` | `/api/admin/media/folders/list` | server/src/routes/admin/media.routes.ts | 129 |
-| `GET` | `/api/admin/media/openai/status` | server/src/routes/admin/media.routes.ts | 206 |
-| `GET` | `/api/admin/media/stats/summary` | server/src/routes/admin/media.routes.ts | 143 |
+| `GET` | `/api/admin/media/` | server/src/routes/admin/media.routes.ts | 21 |
+| `POST` | `/api/admin/media/` | server/src/routes/admin/media.routes.ts | 52 |
+| `GET` | `/api/admin/media/:id` | server/src/routes/admin/media.routes.ts | 39 |
+| `PATCH` | `/api/admin/media/:id` | server/src/routes/admin/media.routes.ts | 77 |
+| `DELETE` | `/api/admin/media/:id` | server/src/routes/admin/media.routes.ts | 100 |
+| `DELETE` | `/api/admin/media/:id/force` | server/src/routes/admin/media.routes.ts | 124 |
+| `POST` | `/api/admin/media/:id/generate-seo` | server/src/routes/admin/media.routes.ts | 184 |
+| `GET` | `/api/admin/media/folders/list` | server/src/routes/admin/media.routes.ts | 140 |
+| `GET` | `/api/admin/media/openai/status` | server/src/routes/admin/media.routes.ts | 217 |
+| `GET` | `/api/admin/media/stats/summary` | server/src/routes/admin/media.routes.ts | 154 |
 
 _10 endpoint(s) detected._
 

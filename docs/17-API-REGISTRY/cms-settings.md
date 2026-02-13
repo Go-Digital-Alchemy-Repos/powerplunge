@@ -1,12 +1,12 @@
-# Main Application Routes
+# Cms Settings
 
 ## Module Info
 
 | Property | Value |
 |----------|-------|
-| Domain | main |
-| Source Files | server/routes.ts |
-| Endpoint Count | 184 |
+| Domain | cms-settings |
+| Source Files | server/src/routes/public/cms-settings.routes.ts |
+| Endpoint Count | 3 |
 
 ## Auth & Authorization
 
@@ -26,13 +26,10 @@ _Add manual documentation notes here. This section is preserved during sync._
 
 | Method | Path | Source File | Line |
 |--------|------|-------------|------|
-| `GET` | `/api/health/config` | server/routes.ts | 174 |
-| `GET` | `/api/health/timings` | server/routes.ts | 180 |
-| `POST` | `/api/health/timings/reset` | server/routes.ts | 184 |
-| `GET` | `/health` | server/routes.ts | 98 |
-| `GET` | `/ready` | server/routes.ts | 102 |
-| `GET` | `/version` | server/routes.ts | 125 |
+| `GET` | `/` | server/src/routes/public/cms-settings.routes.ts | 6 |
+| `GET` | `/consent` | server/src/routes/public/cms-settings.routes.ts | 27 |
+| `GET` | `/legal/:type` | server/src/routes/public/cms-settings.routes.ts | 62 |
 
-_6 endpoint(s) detected._
+_3 endpoint(s) detected._
 
 <!-- === END AUTO-GENERATED SECTION === -->
