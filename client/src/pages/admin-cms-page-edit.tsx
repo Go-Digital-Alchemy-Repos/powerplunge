@@ -34,7 +34,6 @@ import {
   Layout,
   PanelLeft,
   Maximize,
-  Settings2,
 } from "lucide-react";
 
 function slugify(text: string): string {
@@ -78,6 +77,9 @@ export default function AdminCmsPageEdit() {
   const { toast } = useToast();
   const pageId = params?.id;
 
+  const [detailsOpen, setDetailsOpen] = useState(true);
+  const [templateOpen, setTemplateOpen] = useState(true);
+  const [contentOpen, setContentOpen] = useState(true);
   const [seoOpen, setSeoOpen] = useState(false);
   const [generatingSeo, setGeneratingSeo] = useState(false);
   const [formData, setFormData] = useState<Record<string, any>>({});
@@ -310,9 +312,21 @@ export default function AdminCmsPageEdit() {
         <form onSubmit={handleSubmit} className="space-y-6">
           <Card className="bg-card border-border">
             <CardHeader>
-              <CardTitle className="text-foreground text-base">Page Details</CardTitle>
+              <button
+                type="button"
+                className="flex items-center justify-between w-full text-left"
+                onClick={() => setDetailsOpen(!detailsOpen)}
+                data-testid="button-toggle-details"
+              >
+                <CardTitle className="text-foreground text-base">Page Details</CardTitle>
+                {detailsOpen ? (
+                  <ChevronUp className="w-4 h-4 text-muted-foreground" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                )}
+              </button>
             </CardHeader>
-            <CardContent className="space-y-4">
+            {detailsOpen && <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="title">Title</Label>
                 <Input
@@ -356,18 +370,32 @@ export default function AdminCmsPageEdit() {
                   data-testid="switch-show-in-nav"
                 />
               </div>
-            </CardContent>
+            </CardContent>}
           </Card>
 
           <Card className="bg-card border-border">
             <CardHeader>
-              <CardTitle className="text-foreground text-base flex items-center gap-2">
-                <Layout className="w-4 h-4" />
-                Page Template
-              </CardTitle>
-              <CardDescription>Choose a layout for this page</CardDescription>
+              <button
+                type="button"
+                className="flex items-center justify-between w-full text-left"
+                onClick={() => setTemplateOpen(!templateOpen)}
+                data-testid="button-toggle-template"
+              >
+                <div>
+                  <CardTitle className="text-foreground text-base flex items-center gap-2">
+                    <Layout className="w-4 h-4" />
+                    Page Template
+                  </CardTitle>
+                  <CardDescription>Choose a layout for this page</CardDescription>
+                </div>
+                {templateOpen ? (
+                  <ChevronUp className="w-4 h-4 text-muted-foreground" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                )}
+              </button>
             </CardHeader>
-            <CardContent className="space-y-4">
+            {templateOpen && <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
@@ -442,19 +470,33 @@ export default function AdminCmsPageEdit() {
                   )}
                 </div>
               )}
-            </CardContent>
+            </CardContent>}
           </Card>
 
           <Card className="bg-card border-border">
             <CardHeader>
-              <CardTitle className="text-foreground text-base">Content</CardTitle>
-              <CardDescription>
+              <button
+                type="button"
+                className="flex items-center justify-between w-full text-left"
+                onClick={() => setContentOpen(!contentOpen)}
+                data-testid="button-toggle-content"
+              >
+                <div>
+                  <CardTitle className="text-foreground text-base">Content</CardTitle>
+                  <CardDescription>
                 {hasBlocks
                   ? "This page uses the block-based page builder for visual content. Use the Page Builder button above to edit blocks. The HTML field below is for supplemental content."
                   : "Enter your page content as HTML. For a visual editing experience, you can switch to the Page Builder."}
               </CardDescription>
+                </div>
+                {contentOpen ? (
+                  <ChevronUp className="w-4 h-4 text-muted-foreground" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                )}
+              </button>
             </CardHeader>
-            <CardContent>
+            {contentOpen && <CardContent>
               <Textarea
                 value={formData.content || ""}
                 onChange={(e) => updateField("content", e.target.value)}
@@ -476,7 +518,7 @@ export default function AdminCmsPageEdit() {
                   </Button>
                 </div>
               )}
-            </CardContent>
+            </CardContent>}
           </Card>
 
           <Card className="bg-card border-border">
