@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PageRenderer from "@/components/PageRenderer";
 import SiteLayout from "@/components/SiteLayout";
@@ -9,6 +9,7 @@ import { ContentWithLeftSidebar } from "@/components/SidebarRenderer";
 import PostMeta from "./components/PostMeta";
 import PostTaxonomy from "./components/PostTaxonomy";
 import PostCard from "./components/PostCard";
+import SocialShareBar from "./components/SocialShareBar";
 
 interface TaxonomyItem {
   id: string;
@@ -216,6 +217,8 @@ export default function BlogPostPage() {
               </div>
             )}
           </div>
+
+          <SocialShareBar title={post.title} excerpt={post.excerpt} />
         </article>
 
         {relatedPosts.length > 0 && (
