@@ -377,7 +377,7 @@ export default function AdminOrders() {
               currentFilters={filters}
               hasActiveFilters={hasActiveFilters}
             />
-            <Button onClick={() => setShowNewOrder(true)} variant="outline" size="sm" className="gap-2" data-testid="button-new-order">
+            <Button onClick={() => setShowNewOrder(true)} size="sm" className="gap-2" data-testid="button-new-order">
               <Plus className="w-4 h-4" />
               Manual Order
             </Button>
