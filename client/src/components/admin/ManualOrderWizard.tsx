@@ -47,12 +47,14 @@ function PaymentForm({
   clientSecret,
   orderId,
   total,
+  billingAddress,
   onSuccess,
   onError,
 }: {
   clientSecret: string;
   orderId: string;
   total: number;
+  billingAddress: AddressFormData;
   onSuccess: () => void;
   onError: (msg: string) => void;
 }) {
@@ -73,8 +75,14 @@ function PaymentForm({
           return_url: `${window.location.origin}/admin/orders`,
           payment_method_data: {
             billing_details: {
+              name: billingAddress.name || undefined,
               address: {
-                country: "US",
+                line1: billingAddress.line1 || undefined,
+                line2: billingAddress.line2 || undefined,
+                city: billingAddress.city || undefined,
+                state: billingAddress.state || undefined,
+                postal_code: billingAddress.postalCode || undefined,
+                country: billingAddress.country || "US",
               },
             },
           },
@@ -710,6 +718,7 @@ export function ManualOrderWizard({ open, onOpenChange, preselectedCustomerId }:
                   clientSecret={clientSecret}
                   orderId={orderId!}
                   total={taxInfo?.total || 0}
+                  billingAddress={billingSameAsShipping ? shippingAddress : billingAddress}
                   onSuccess={() => {
                     queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
                     queryClient.invalidateQueries({ queryKey: ["/api/admin/customers"] });
