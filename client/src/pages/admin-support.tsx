@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useAdmin } from "@/hooks/use-admin";
 import AdminNav from "@/components/admin/AdminNav";
+import RichTextEditor from "@/components/admin/RichTextEditor";
 import { Headset, MessageSquare, CheckCircle, Clock, AlertCircle, Eye, Search, Filter, RefreshCw, Plus, User } from "lucide-react";
 
 interface AdminNote {
@@ -523,11 +524,10 @@ export default function AdminSupport() {
 
               <div className="space-y-3">
                 <Label>Add Note</Label>
-                <Textarea
-                  value={newNoteText}
-                  onChange={(e) => setNewNoteText(e.target.value)}
+                <RichTextEditor
+                  content={newNoteText}
+                  onChange={setNewNoteText}
                   placeholder="Add an internal note about this ticket..."
-                  rows={3}
                   data-testid="input-admin-notes"
                 />
 
