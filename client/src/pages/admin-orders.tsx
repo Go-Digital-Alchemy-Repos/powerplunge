@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useAdmin } from "@/hooks/use-admin";
-import { Package, Calendar, User, ChevronRight, Truck, Mail, RefreshCw, ExternalLink, Search, Download, Filter } from "lucide-react";
+import { Package, Calendar, User, ChevronRight, Truck, Mail, RefreshCw, ExternalLink, Search, Download, Filter, Plus } from "lucide-react";
 import { format } from "date-fns";
 import AdminNav from "@/components/admin/AdminNav";
 import { ManualOrderWizard } from "@/components/admin/ManualOrderWizard";
