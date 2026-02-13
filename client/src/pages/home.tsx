@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useCustomerAuth } from "@/hooks/use-customer-auth";
 import { trackAddToCart, trackViewItem, trackViewItemList } from "@/lib/analytics";
+import { CustomerAuthModal } from "@/components/CustomerAuthModal";
 import chillerImage from "@assets/power_plunge_1hp_chiller_mockup_1767902865789.png";
 import tubImage from "@assets/power_plunge_portable_tub_mockup_1767902865790.png";
 import { useBranding } from "@/hooks/use-branding";
@@ -107,6 +108,7 @@ export default function Home() {
   });
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState(0);
   const [product, setProduct] = useState<Product>(fallbackProduct);
   const [quantity, setQuantity] = useState(1);
@@ -276,69 +278,77 @@ export default function Home() {
             <div className="hidden md:flex">
               <DynamicNav location="main" />
             </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-2 h-10 min-w-[40px] px-2.5 sm:px-3" data-testid="button-my-account">
-                  <User className="w-4 h-4" />
-                  <span className="hidden sm:inline">My Account</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                {authLoading ? (
-                  <DropdownMenuItem disabled>Loading...</DropdownMenuItem>
-                ) : isAuthenticated ? (
-                  <>
-                    <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                      {customer?.email}
-                    </div>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => setLocation("/my-account")} data-testid="menu-my-orders">
-                      <ShoppingCart className="w-4 h-4 mr-2" />
-                      My Orders
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setLocation("/my-account")} data-testid="menu-account-details">
-                      <Settings className="w-4 h-4 mr-2" />
-                      Account Details
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setLocation("/my-account")} data-testid="menu-support">
-                      <Headphones className="w-4 h-4 mr-2" />
-                      Support
-                    </DropdownMenuItem>
-                    {isAffiliate && (
-                      <>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => setLocation("/affiliate-portal")} data-testid="menu-affiliate-dashboard">
-                          <Link2 className="w-4 h-4 mr-2 text-primary" />
-                          Affiliate Portal
-                        </DropdownMenuItem>
-                      </>
-                    )}
-                    {isAdminEligible && (
-                      <>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onClick={() => setLocation(`/admin/login?email=${encodeURIComponent(customer?.email || "")}`)}
-                          data-testid="menu-admin-portal"
-                        >
-                          <LayoutDashboard className="w-4 h-4 mr-2" />
-                          Go to Admin Portal
-                        </DropdownMenuItem>
-                      </>
-                    )}
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => logout()} data-testid="menu-logout">
-                      <LogOut className="w-4 h-4 mr-2" />
-                      Logout
-                    </DropdownMenuItem>
-                  </>
-                ) : (
-                  <DropdownMenuItem onClick={() => setLocation("/login")} data-testid="menu-login">
-                    <User className="w-4 h-4 mr-2" />
-                    Sign In
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {!isAuthenticated ? (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="gap-2 h-10 min-w-[40px] px-2.5 sm:px-3" 
+                onClick={() => setAuthModalOpen(true)}
+                data-testid="button-my-account"
+              >
+                <User className="w-4 h-4" />
+                <span className="hidden sm:inline">My Account</span>
+              </Button>
+            ) : (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2 h-10 min-w-[40px] px-2.5 sm:px-3" data-testid="button-my-account">
+                    <User className="w-4 h-4" />
+                    <span className="hidden sm:inline">My Account</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  {authLoading ? (
+                    <DropdownMenuItem disabled>Loading...</DropdownMenuItem>
+                  ) : (
+                    <>
+                      <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                        {customer?.email}
+                      </div>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => setLocation("/my-account")} data-testid="menu-my-orders">
+                        <ShoppingCart className="w-4 h-4 mr-2" />
+                        My Orders
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setLocation("/my-account")} data-testid="menu-account-details">
+                        <Settings className="w-4 h-4 mr-2" />
+                        Account Details
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setLocation("/my-account")} data-testid="menu-support">
+                        <Headphones className="w-4 h-4 mr-2" />
+                        Support
+                      </DropdownMenuItem>
+                      {isAffiliate && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => setLocation("/affiliate-portal")} data-testid="menu-affiliate-dashboard">
+                            <Link2 className="w-4 h-4 mr-2 text-primary" />
+                            Affiliate Portal
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                      {isAdminEligible && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => setLocation(`/admin/login?email=${encodeURIComponent(customer?.email || "")}`)}
+                            data-testid="menu-admin-portal"
+                          >
+                            <LayoutDashboard className="w-4 h-4 mr-2" />
+                            Go to Admin Portal
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => logout()} data-testid="menu-logout">
+                        <LogOut className="w-4 h-4 mr-2" />
+                        Logout
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
             <Button
               variant="outline"
               size="sm"
@@ -367,6 +377,12 @@ export default function Home() {
         customerEmail={customer?.email}
         onNavigate={(path: string) => { setLocation(path); setMobileMenuOpen(false); }}
         onLogout={() => { logout(); setMobileMenuOpen(false); }}
+        onOpenAuth={() => { setAuthModalOpen(true); setMobileMenuOpen(false); }}
+      />
+
+      <CustomerAuthModal 
+        open={authModalOpen} 
+        onOpenChange={setAuthModalOpen} 
       />
 
       {/* Show loading state while fetching CMS content */}
