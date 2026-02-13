@@ -299,9 +299,15 @@ export default function AdminSettings() {
     <div className="min-h-screen bg-background">
       <AdminNav currentPage="settings" role={role} />
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold">Site Settings</h2>
-          <p className="text-muted-foreground mt-2">Configure your website, branding, notifications, and integrations.</p>
+        <div className="mb-8 flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-3xl font-bold">Site Settings</h2>
+            <p className="text-muted-foreground mt-2">Configure your website, branding, notifications, and integrations.</p>
+          </div>
+          <Button type="submit" form="settings-form" className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2 flex-shrink-0" disabled={updateMutation.isPending} data-testid="button-save-settings">
+            <Save className="w-4 h-4" />
+            {updateMutation.isPending ? "Saving..." : "Save Settings"}
+          </Button>
         </div>
 
         {isLoading ? (
@@ -331,7 +337,7 @@ export default function AdminSettings() {
               </TabsTrigger>
             </TabsList>
 
-            <form onSubmit={handleSubmit}>
+            <form id="settings-form" onSubmit={handleSubmit}>
               <TabsContent value="company" className="space-y-6">
                 <Card>
                   <CardHeader>
@@ -387,10 +393,6 @@ export default function AdminSettings() {
                   </CardContent>
                 </Card>
 
-                <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground gap-2" disabled={updateMutation.isPending} data-testid="button-save-settings">
-                  <Save className="w-4 h-4" />
-                  {updateMutation.isPending ? "Saving..." : "Save Settings"}
-                </Button>
               </TabsContent>
 
               <TabsContent value="branding" className="space-y-6">
@@ -649,10 +651,6 @@ export default function AdminSettings() {
                   </CardContent>
                 </Card>
 
-                <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground gap-2" disabled={updateMutation.isPending} data-testid="button-save-email-settings">
-                  <Save className="w-4 h-4" />
-                  {updateMutation.isPending ? "Saving..." : "Save Settings"}
-                </Button>
               </TabsContent>
 
 
@@ -697,10 +695,6 @@ export default function AdminSettings() {
                   </CardContent>
                 </Card>
 
-                <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground gap-2" disabled={updateMutation.isPending} data-testid="button-save-legal-settings">
-                  <Save className="w-4 h-4" />
-                  {updateMutation.isPending ? "Saving..." : "Save Settings"}
-                </Button>
               </TabsContent>
             </form>
 
