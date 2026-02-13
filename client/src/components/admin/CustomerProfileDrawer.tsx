@@ -59,6 +59,7 @@ import {
   EyeOff,
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
+import { ManualOrderWizard } from "./ManualOrderWizard";
 
 interface CustomerProfile {
   customer: {
@@ -151,6 +152,7 @@ export function CustomerProfileDrawer({
     country: "",
   });
   const [showPasswordReset, setShowPasswordReset] = useState(false);
+  const [showManualOrder, setShowManualOrder] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
@@ -811,8 +813,25 @@ export function CustomerProfileDrawer({
             <TabsContent value="orders" className="m-0 space-y-4">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold">Order History</h3>
-                <Badge variant="outline">{orders.length} orders</Badge>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() => setShowManualOrder(true)}
+                    data-testid="button-manual-order-drawer"
+                  >
+                    <Plus className="w-4 h-4 mr-1" />
+                    Manual Order
+                  </Button>
+                  <Badge variant="outline">{orders.length} orders</Badge>
+                </div>
               </div>
+              {customerId && (
+                <ManualOrderWizard
+                  open={showManualOrder}
+                  onOpenChange={setShowManualOrder}
+                  preselectedCustomerId={customerId}
+                />
+              )}
               {orders.length === 0 ? (
                 <Card>
                   <CardContent className="py-8 text-center text-muted-foreground">

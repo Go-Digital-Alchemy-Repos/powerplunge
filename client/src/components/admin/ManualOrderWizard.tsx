@@ -38,6 +38,7 @@ interface Customer {
 interface ManualOrderWizardProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  preselectedCustomerId?: string;
 }
 
 type WizardStep = "choice" | "select" | "create" | "products" | "shipping" | "payment" | "success";
@@ -145,11 +146,11 @@ function PaymentForm({
   );
 }
 
-export function ManualOrderWizard({ open, onOpenChange }: ManualOrderWizardProps) {
+export function ManualOrderWizard({ open, onOpenChange, preselectedCustomerId }: ManualOrderWizardProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [orderStep, setOrderStep] = useState<WizardStep>("choice");
-  const [orderCustomerId, setOrderCustomerId] = useState("");
+  const [orderStep, setOrderStep] = useState<WizardStep>(preselectedCustomerId ? "products" : "choice");
+  const [orderCustomerId, setOrderCustomerId] = useState(preselectedCustomerId || "");
   const [orderItems, setOrderItems] = useState<Array<{ productId: string; quantity: number }>>([]);
   const [newCustomer, setNewCustomer] = useState({ name: "", email: "", phone: "", address: "", city: "", state: "", zipCode: "" });
 
@@ -242,8 +243,8 @@ export function ManualOrderWizard({ open, onOpenChange }: ManualOrderWizardProps
   const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
 
   const resetWizard = () => {
-    setOrderStep("choice");
-    setOrderCustomerId("");
+    setOrderStep(preselectedCustomerId ? "products" : "choice");
+    setOrderCustomerId(preselectedCustomerId || "");
     setOrderItems([]);
     setNewCustomer({ name: "", email: "", phone: "", address: "", city: "", state: "", zipCode: "" });
     setShippingAddress(emptyAddress);
@@ -254,6 +255,14 @@ export function ManualOrderWizard({ open, onOpenChange }: ManualOrderWizardProps
     setOrderId(null);
     setTaxInfo(null);
   };
+
+  useEffect(() => {
+    if (open && preselectedCustomerId) {
+      setOrderCustomerId(preselectedCustomerId);
+      setOrderStep("products");
+      if (orderItems.length === 0) setOrderItems([{ productId: "", quantity: 1 }]);
+    }
+  }, [open, preselectedCustomerId]);
 
   const handleOpenChange = (open: boolean) => {
     onOpenChange(open);
