@@ -1,13 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useSearch } from "wouter";
-import { Search, ChevronLeft, ChevronRight, X, Rss } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, X, Rss, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import SeoHead from "@/components/SeoHead";
 import PageRenderer from "@/components/PageRenderer";
 import SiteLayout from "@/components/SiteLayout";
 import PostCard from "./components/PostCard";
+import PostMeta from "./components/PostMeta";
+import PostTaxonomy from "./components/PostTaxonomy";
 
 interface TaxonomyItem {
   id: string;
@@ -83,6 +85,63 @@ function CmsBlogPage({ pageId }: { pageId: string }) {
   );
 }
 
+function FeaturedPostCard({ post }: { post: PostListItem }) {
+  const [, navigate] = useLocation();
+  const coverSrc = post.coverImageUrl;
+  const excerptText = post.excerpt
+    ? post.excerpt.length > 300
+      ? post.excerpt.slice(0, 297) + "..."
+      : post.excerpt
+    : null;
+
+  return (
+    <article
+      className="group mb-10 bg-card/60 border border-border rounded-xl overflow-hidden hover:border-primary/50 transition-all duration-300 cursor-pointer"
+      onClick={() => navigate(`/blog/${post.slug}`)}
+      data-testid="featured-post-card"
+    >
+      <div className="flex flex-col md:flex-row">
+        <div className="md:w-1/2 aspect-video md:aspect-auto md:min-h-[320px] bg-muted overflow-hidden relative">
+          {coverSrc ? (
+            <img
+              src={coverSrc}
+              alt={post.title}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-primary/10 to-card flex items-center justify-center">
+              <span className="text-6xl text-primary/20 font-bold">PP</span>
+            </div>
+          )}
+          <span className="absolute top-3 left-3 bg-primary text-primary-foreground text-xs font-semibold px-2.5 py-1 rounded-full" data-testid="featured-badge">
+            Featured
+          </span>
+        </div>
+        <div className="md:w-1/2 p-6 md:p-8 flex flex-col justify-center gap-4">
+          <PostTaxonomy categories={post.categories} tags={post.tags} linkable={false} />
+          <h2
+            className="text-2xl md:text-3xl font-bold text-foreground group-hover:text-primary transition-colors leading-tight"
+            data-testid="featured-post-title"
+          >
+            {post.title}
+          </h2>
+          <PostMeta publishedAt={post.publishedAt} readingTimeMinutes={post.readingTimeMinutes} />
+          {excerptText && (
+            <p className="text-muted-foreground text-sm md:text-base leading-relaxed line-clamp-4" data-testid="featured-post-excerpt">
+              {excerptText}
+            </p>
+          )}
+          <div>
+            <span className="inline-flex items-center gap-1.5 text-primary font-medium text-sm group-hover:gap-2.5 transition-all" data-testid="featured-read-more">
+              Read more <ArrowRight className="w-4 h-4" />
+            </span>
+          </div>
+        </div>
+      </div>
+    </article>
+  );
+}
+
 function DefaultBlogIndex() {
   const [, navigate] = useLocation();
   const searchString = useSearch();
@@ -146,8 +205,26 @@ function DefaultBlogIndex() {
   }, [page, q, tag, category]);
 
   const totalPages = result ? Math.ceil(result.total / result.pageSize) : 0;
-  const posts = result?.data || [];
+  const allPosts = result?.data || [];
   const hasFilters = q || tag || category;
+
+  const { featuredPost, posts } = useMemo(() => {
+    if (hasFilters || page > 1 || allPosts.length === 0) {
+      return { featuredPost: null, posts: allPosts };
+    }
+    const explicitlyFeatured = allPosts
+      .filter((p) => p.featured)
+      .sort((a, b) => {
+        const da = a.publishedAt ? new Date(a.publishedAt).getTime() : 0;
+        const db = b.publishedAt ? new Date(b.publishedAt).getTime() : 0;
+        return db - da;
+      });
+    const chosen = explicitlyFeatured.length > 0 ? explicitlyFeatured[0] : allPosts[0];
+    return {
+      featuredPost: chosen,
+      posts: allPosts.filter((p) => p.id !== chosen.id),
+    };
+  }, [allPosts, hasFilters, page]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -260,7 +337,7 @@ function DefaultBlogIndex() {
           </div>
         )}
 
-        {!isLoading && posts.length === 0 && (
+        {!isLoading && allPosts.length === 0 && (
           <div className="text-center py-24" data-testid="blog-empty">
             <p className="text-muted-foreground text-lg mb-2">No posts found</p>
             {hasFilters && (
@@ -271,8 +348,13 @@ function DefaultBlogIndex() {
           </div>
         )}
 
-        {!isLoading && posts.length > 0 && (
+        {!isLoading && (allPosts.length > 0) && (
           <>
+            {featuredPost && (
+              <FeaturedPostCard post={featuredPost} />
+            )}
+
+            {posts.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" data-testid="blog-posts-grid">
               {posts.map((post) => (
                 <PostCard
@@ -289,6 +371,7 @@ function DefaultBlogIndex() {
                 />
               ))}
             </div>
+            )}
 
             {totalPages > 1 && (
               <div className="flex items-center justify-center gap-4 mt-10" data-testid="blog-pagination">
