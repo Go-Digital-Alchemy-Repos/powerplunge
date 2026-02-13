@@ -426,7 +426,7 @@ export default function AdminNav({ currentPage, role = "admin" }: AdminNavProps)
                       <DropdownMenuItem asChild>
                         <Link href="/admin/ecommerce/settings" className="relative select-none rounded-sm px-2 py-1.5 outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0 flex items-center gap-2 cursor-pointer text-[13px]">
                           <Settings className="w-4 h-4" />
-                          Settings
+                          E-Commerce Settings
                         </Link>
                       </DropdownMenuItem>
                     </>
