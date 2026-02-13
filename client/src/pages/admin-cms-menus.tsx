@@ -1206,26 +1206,28 @@ export default function AdminCmsMenus() {
                   )}
                   <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
                       onClick={() => setEditingMenu(menu)}
-                      className="text-muted-foreground hover:text-foreground gap-1 h-7 text-xs"
+                      className="text-muted-foreground hover:text-foreground hover:bg-muted gap-2 h-9 px-4 text-xs font-medium border-border"
                       data-testid={`button-edit-menu-${menu.id}`}
                     >
-                      <Pencil className="w-3 h-3" />Edit
+                      <Pencil className="w-4 h-4" />
+                      Edit
                     </Button>
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
                       onClick={() => {
                         if (window.confirm("Delete this menu? This will remove it from your site navigation.")) {
                           deleteMutation.mutate(menu.id);
                         }
                       }}
-                      className="text-red-400 hover:text-red-300 gap-1 h-7 text-xs"
+                      className="text-red-400 hover:text-red-300 hover:bg-red-400/10 gap-2 h-9 px-4 text-xs font-medium border-border hover:border-red-400/50"
                       data-testid={`button-delete-menu-${menu.id}`}
                     >
-                      <Trash2 className="w-3 h-3" />Delete
+                      <Trash2 className="w-4 h-4" />
+                      Delete
                     </Button>
                   </div>
                 </CardContent>
