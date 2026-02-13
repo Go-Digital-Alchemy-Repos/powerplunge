@@ -101,7 +101,8 @@ interface CustomerNote {
   id: string;
   customerId: string;
   note: string;
-  createdByAdminId: string | null;
+  createdBy: string | null;
+  createdByAdminName: string | null;
   createdAt: string;
 }
 
@@ -778,10 +779,15 @@ export function CustomerProfileDrawer({
                         className="bg-muted p-3 rounded-lg flex justify-between items-start"
                         data-testid={`note-${note.id}`}
                       >
-                        <div>
+                        <div className="flex-1">
                           <p className="text-sm">{note.note}</p>
                           <p className="text-xs text-muted-foreground mt-1">
                             {formatDate(note.createdAt)}
+                            {note.createdByAdminName && (
+                              <span className="ml-1 border-l pl-1.5 border-muted-foreground/30 italic">
+                                — {note.createdByAdminName}
+                              </span>
+                            )}
                           </p>
                         </div>
                         <Button

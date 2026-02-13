@@ -1039,6 +1039,7 @@ export const customerNotes = pgTable("customer_notes", {
   customerId: varchar("customer_id").notNull().references(() => customers.id),
   note: text("note").notNull(),
   createdBy: varchar("created_by").references(() => adminUsers.id),
+  createdByAdminName: text("created_by_admin_name"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
