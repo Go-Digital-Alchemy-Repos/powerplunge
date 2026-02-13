@@ -719,7 +719,7 @@ export default function AdminAffiliates() {
               Auto-Approve Old Commissions
             </Button>
             <Link href="/admin/affiliate-settings">
-              <Button variant="outline" size="sm" className="gap-2" data-testid="button-affiliate-settings">
+              <Button variant="outline" className="gap-2" data-testid="button-affiliate-settings">
                 <Settings className="w-4 h-4" />
                 Settings
               </Button>
