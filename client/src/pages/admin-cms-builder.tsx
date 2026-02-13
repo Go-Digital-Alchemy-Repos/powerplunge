@@ -3,7 +3,7 @@ import { useAdmin } from "@/hooks/use-admin";
 import { useRoute, useLocation } from "wouter";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import AdminNav from "@/components/admin/AdminNav";
-import { ArrowLeft, Save, Globe, Layers, Unlink, Search, X, Monitor, Tablet, Smartphone, ChevronUp, ChevronDown, Copy, Zap, Star, Plus, Mountain, Megaphone, ShoppingCart as CartIcon, HelpCircle, MessageSquare } from "lucide-react";
+import { ArrowLeft, Save, Globe, Layers, Unlink, Search, X, Monitor, Tablet, Smartphone, ChevronUp, ChevronDown, Copy, Zap, Star, Plus, Mountain, Megaphone, ShoppingCart as CartIcon, HelpCircle, MessageSquare, Settings } from "lucide-react";
 
 function safeUUID(): string {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
@@ -1229,6 +1229,16 @@ export default function AdminCmsBuilder() {
           overrides={{
             headerActions: () => (
               <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="border-primary/30 text-primary hover:bg-primary/10 h-7 text-xs"
+                  onClick={() => navigate(`/admin/cms/pages/${pageId}`)}
+                  data-testid="button-page-settings"
+                >
+                  <Settings className="w-3.5 h-3.5 mr-1" />
+                  Page Settings
+                </Button>
                 <PreviewButton pageSlug={page?.slug} isHomePage={page?.isHome} isShopPage={page?.isShop} />
                 <SaveButton pageId={pageId!} pageTitle={page?.title || ""} seoData={seoData} pageStatus={pageStatus} scheduledAt={scheduledAt} sidebarId={pageSidebarId} onDone={invalidateQueries} />
               </>
