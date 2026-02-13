@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { DollarSign, Users, Clock, CheckCircle, Copy, ExternalLink, FileText, Loader2, CreditCard, AlertTriangle, Calendar, AlertCircle } from "lucide-react";
+import { DollarSign, Users, Clock, CheckCircle, Copy, ExternalLink, Loader2, CreditCard, AlertTriangle, Calendar, AlertCircle } from "lucide-react";
 import { useAccountAffiliate } from "../hooks/useAccountAffiliate";
 
 export default function AffiliateTab() {
@@ -354,33 +354,10 @@ export default function AffiliateTab() {
               <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
                 <DollarSign className="w-8 h-8 text-primary" />
               </div>
-              <h2 className="text-2xl font-bold mb-4">Earn Money with Power Plunge</h2>
-              <p className="text-muted-foreground mb-6">
-                Join our affiliate program and earn {affiliateData?.commissionRate || 10}% commission on every sale you refer. 
-                Get your unique referral link and QR code, and start earning today!
+              <h2 className="text-2xl font-bold mb-4">Affiliate Program</h2>
+              <p className="text-muted-foreground">
+                Our affiliate program is invite-only. If you've received an invitation, please use the link provided in your invite to get started.
               </p>
-              <ul className="text-left space-y-3 mb-8">
-                <li className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-green-500" />
-                  <span>Earn {affiliateData?.commissionRate || 10}% on every referred sale</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-green-500" />
-                  <span>Get your unique referral link and QR code</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-green-500" />
-                  <span>Track your referrals and earnings in real-time</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-green-500" />
-                  <span>Weekly payouts via Stripe Connect</span>
-                </li>
-              </ul>
-              <Button size="lg" onClick={() => setShowEsign(true)} className="gap-2" data-testid="button-become-affiliate">
-                <FileText className="w-5 h-5" />
-                Become an Affiliate
-              </Button>
             </div>
           </CardContent>
         </Card>

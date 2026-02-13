@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { useCustomerAuth } from "@/hooks/use-customer-auth";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,9 +17,24 @@ import SupportTab from "./account/components/SupportTab";
 export default function MyAccount() {
   const [, setLocation] = useLocation();
   const { logoSrc, companyName } = useBranding();
-  const { customer: authCustomer, isLoading: authLoading, isAuthenticated, logout } = useCustomerAuth();
+  const { customer: authCustomer, isLoading: authLoading, isAuthenticated, logout, getAuthHeader } = useCustomerAuth();
   const [activeTab, setActiveTab] = useState("orders");
   const { vipData } = useAccountVip();
+
+  const { data: affiliateCheck } = useQuery<{ affiliate: any | null }>({
+    queryKey: ["/api/customer/affiliate-portal"],
+    queryFn: async () => {
+      const res = await fetch("/api/customer/affiliate-portal", {
+        headers: { ...getAuthHeader() },
+      });
+      if (!res.ok && res.status !== 404) throw new Error("Failed to check affiliate status");
+      if (res.status === 404) return { affiliate: null };
+      return res.json();
+    },
+    enabled: isAuthenticated,
+  });
+
+  const isAffiliate = !!affiliateCheck?.affiliate;
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -78,10 +94,12 @@ export default function MyAccount() {
               <Settings className="w-4 h-4" />
               Account Details
             </TabsTrigger>
-            <TabsTrigger value="affiliate" className="gap-2" data-testid="tab-affiliate" onClick={(e) => { e.preventDefault(); setLocation('/affiliate-portal'); }}>
-              <Link2 className="w-4 h-4" />
-              Affiliate Program
-            </TabsTrigger>
+            {isAffiliate && (
+              <TabsTrigger value="affiliate" className="gap-2" data-testid="tab-affiliate" onClick={(e) => { e.preventDefault(); setLocation('/affiliate-portal'); }}>
+                <Link2 className="w-4 h-4" />
+                Affiliate Program
+              </TabsTrigger>
+            )}
             <TabsTrigger value="support" className="gap-2" data-testid="tab-support">
               <Headset className="w-4 h-4" />
               Support
@@ -96,9 +114,11 @@ export default function MyAccount() {
             <AccountTab />
           </TabsContent>
 
-          <TabsContent value="affiliate">
-            <AffiliateTab />
-          </TabsContent>
+          {isAffiliate && (
+            <TabsContent value="affiliate">
+              <AffiliateTab />
+            </TabsContent>
+          )}
 
           <TabsContent value="support">
             <SupportTab />
