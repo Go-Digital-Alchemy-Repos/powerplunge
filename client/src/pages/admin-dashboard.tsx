@@ -147,7 +147,9 @@ export default function AdminDashboard() {
                             <p className="text-sm text-muted-foreground">{formatDate(order.createdAt)}</p>
                           </div>
                           <div className="text-right">
-                            <p className="font-medium">{formatCurrency(order.totalAmount)}</p>
+                            <p className="font-medium">
+                              {order.isManualOrder && !order.stripePaymentIntentId ? "FREE" : formatCurrency(order.totalAmount)}
+                            </p>
                             <span className={`text-xs px-2 py-1 rounded ${getStatusColor(order.status)}`}>
                               {order.status}
                             </span>

@@ -117,6 +117,8 @@ interface Order {
   createdAt: string;
   items: OrderItem[];
   shipments?: Shipment[];
+  isManualOrder?: boolean;
+  stripePaymentIntentId?: string | null;
 }
 
 interface CustomerData {
@@ -626,7 +628,7 @@ export default function MyAccount() {
                           ))}
                           <div className="flex justify-between pt-4 font-semibold">
                             <span>Total</span>
-                            <span className="text-primary">${(order.totalAmount / 100).toLocaleString()}</span>
+                            <span className="text-primary">{order.isManualOrder && !order.stripePaymentIntentId ? "FREE" : `$${(order.totalAmount / 100).toLocaleString()}`}</span>
                           </div>
                         </div>
 

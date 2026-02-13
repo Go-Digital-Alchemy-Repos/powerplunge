@@ -37,6 +37,8 @@ interface Order {
   status: string;
   totalAmount: number;
   createdAt: string;
+  isManualOrder?: boolean;
+  stripePaymentIntentId?: string | null;
   customer: {
     name: string;
     email: string;
@@ -52,6 +54,15 @@ interface Order {
     unitPrice: number;
   }>;
   shipments?: Shipment[];
+}
+
+function isPaymentBypassed(order: { isManualOrder?: boolean; stripePaymentIntentId?: string | null }): boolean {
+  return !!order.isManualOrder && !order.stripePaymentIntentId;
+}
+
+function formatOrderPrice(order: { totalAmount: number; isManualOrder?: boolean; stripePaymentIntentId?: string | null }): string {
+  if (isPaymentBypassed(order)) return "FREE";
+  return `$${(order.totalAmount / 100).toLocaleString()}`;
 }
 
 interface OrderFilters {
@@ -512,7 +523,7 @@ export default function AdminOrders() {
                         </div>
                         <div className="text-right">
                           <p className="font-display font-bold text-lg">
-                            ${(order.totalAmount / 100).toLocaleString()}
+                            {formatOrderPrice(order)}
                           </p>
                           <p className="text-xs text-muted-foreground">
                             {format(new Date(order.createdAt), "MMM d, yyyy")}
@@ -589,7 +600,7 @@ export default function AdminOrders() {
                             <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
                           </div>
                           <p className="font-medium">
-                            ${((item.unitPrice * item.quantity) / 100).toLocaleString()}
+                            {isPaymentBypassed(currentOrder) ? "FREE" : `$${((item.unitPrice * item.quantity) / 100).toLocaleString()}`}
                           </p>
                         </div>
                       ))}
@@ -598,7 +609,7 @@ export default function AdminOrders() {
                     <div className="flex justify-between pt-4 border-t border-border">
                       <p className="font-semibold">Total</p>
                       <p className="font-display font-bold text-xl text-primary">
-                        ${(currentOrder.totalAmount / 100).toLocaleString()}
+                        {formatOrderPrice(currentOrder)}
                       </p>
                     </div>
 

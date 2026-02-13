@@ -968,12 +968,14 @@ export async function sendOrderNotification(orderId: string) {
       const orderDate = new Date(order.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
       const orderTime = new Date(order.createdAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
       const formatCents = (cents: number) => `$${(cents / 100).toFixed(2)}`;
+      const isFreeOrder = !!order.isManualOrder && !order.stripePaymentIntentId;
+      const formatOrderTotal = isFreeOrder ? "FREE" : formatCents(order.totalAmount);
 
       const itemsHtml = items.map(item => `
             <tr>
               <td style="padding: 12px 16px; border-bottom: 1px solid #e5e7eb; color: #374151; font-size: 14px;">${item.productName}</td>
               <td style="padding: 12px 16px; border-bottom: 1px solid #e5e7eb; text-align: center; color: #374151; font-size: 14px;">${item.quantity}</td>
-              <td style="padding: 12px 16px; border-bottom: 1px solid #e5e7eb; text-align: right; color: #111827; font-weight: 500; font-size: 14px;">${formatCents(item.unitPrice * item.quantity)}</td>
+              <td style="padding: 12px 16px; border-bottom: 1px solid #e5e7eb; text-align: right; color: #111827; font-weight: 500; font-size: 14px;">${isFreeOrder ? "FREE" : formatCents(item.unitPrice * item.quantity)}</td>
             </tr>`).join("");
 
       const html = `
@@ -1007,7 +1009,7 @@ export async function sendOrderNotification(orderId: string) {
           </div>
           <div>
             <span style="color: #6b7280; font-size: 14px;">Total: </span>
-            <span style="color: #111827; font-weight: 700; font-size: 16px;">${formatCents(order.totalAmount)}</span>
+            <span style="color: #111827; font-weight: 700; font-size: 16px;">${formatOrderTotal}</span>
           </div>
         </div>
 
@@ -1027,7 +1029,7 @@ export async function sendOrderNotification(orderId: string) {
           <tfoot>
             <tr>
               <td colspan="2" style="padding: 16px; font-weight: 600; color: #111827; font-size: 16px; border-top: 2px solid #e5e7eb;">Order Total</td>
-              <td style="padding: 16px; text-align: right; font-weight: 700; color: #111827; font-size: 18px; border-top: 2px solid #e5e7eb;">${formatCents(order.totalAmount)}</td>
+              <td style="padding: 16px; text-align: right; font-weight: 700; color: #111827; font-size: 18px; border-top: 2px solid #e5e7eb;">${formatOrderTotal}</td>
             </tr>
           </tfoot>
         </table>
@@ -1067,7 +1069,7 @@ export async function sendOrderNotification(orderId: string) {
       await mg.messages.create(process.env.MAILGUN_DOMAIN, {
         from: `${companyName} Orders <orders@${process.env.MAILGUN_DOMAIN}>`,
         to: recipients,
-        subject: `New Order #${order.id.slice(0, 8).toUpperCase()} — ${formatCents(order.totalAmount)} — ${customer?.name || "Unknown"}`,
+        subject: `New Order #${order.id.slice(0, 8).toUpperCase()} — ${formatOrderTotal} — ${customer?.name || "Unknown"}`,
         html,
       });
 

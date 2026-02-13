@@ -40,6 +40,8 @@ interface OrderData {
   items: OrderItem[];
   customer: Customer;
   shipments: Shipment[];
+  isManualOrder?: boolean;
+  stripePaymentIntentId?: string | null;
 }
 
 function formatCurrency(cents: number): string {
@@ -233,7 +235,7 @@ export default function OrderStatus() {
               <div className="flex justify-between items-center pt-2">
                 <span className="font-semibold">Total</span>
                 <span className="font-bold text-xl text-primary" data-testid="text-order-total">
-                  {formatCurrency(order.totalAmount)}
+                  {order.isManualOrder && !order.stripePaymentIntentId ? "FREE" : formatCurrency(order.totalAmount)}
                 </span>
               </div>
             </div>

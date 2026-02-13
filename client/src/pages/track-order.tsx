@@ -21,6 +21,8 @@ interface Order {
   totalAmount: number;
   createdAt: string;
   items: OrderItem[];
+  isManualOrder?: boolean;
+  stripePaymentIntentId?: string | null;
 }
 
 interface CustomerSession {
@@ -283,7 +285,7 @@ export default function TrackOrder() {
                     </div>
                     <div className="flex justify-between items-center pt-4 border-t">
                       <span className="font-medium">Total</span>
-                      <span className="font-bold text-lg">{formatCurrency(order.totalAmount)}</span>
+                      <span className="font-bold text-lg">{order.isManualOrder && !order.stripePaymentIntentId ? "FREE" : formatCurrency(order.totalAmount)}</span>
                     </div>
                   </CardContent>
                 </Card>

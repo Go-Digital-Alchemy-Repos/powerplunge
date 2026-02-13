@@ -169,6 +169,13 @@ router.post("/", requireFullAccess, async (req: Request, res: Response) => {
     const orderWithDetails = await storage.getOrder(order.id);
     const orderItemsList = await storage.getOrderItems(order.id);
 
+    try {
+      const { sendOrderNotification } = await import("../public/payments.routes");
+      await sendOrderNotification(order.id);
+    } catch (emailError: any) {
+      console.error("Failed to send manual order notification emails:", emailError.message);
+    }
+
     res.json({ ...orderWithDetails, customer, items: orderItemsList });
   } catch (error: any) {
     res.status(400).json({ message: error.message || "Failed to create order" });

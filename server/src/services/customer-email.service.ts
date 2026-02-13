@@ -25,6 +25,20 @@ function formatCurrency(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
+function isPaymentBypassed(order: { isManualOrder?: boolean | null; stripePaymentIntentId?: string | null }): boolean {
+  return !!order.isManualOrder && !order.stripePaymentIntentId;
+}
+
+function formatOrderAmount(order: { totalAmount: number; isManualOrder?: boolean | null; stripePaymentIntentId?: string | null }): string {
+  if (isPaymentBypassed(order)) return "FREE";
+  return formatCurrency(order.totalAmount);
+}
+
+function formatItemPrice(cents: number, order: { isManualOrder?: boolean | null; stripePaymentIntentId?: string | null }): string {
+  if (isPaymentBypassed(order)) return "FREE";
+  return formatCurrency(cents);
+}
+
 import { getOrderStatusLabel, getOrderStatusSubtext, getOrderStatusColor } from "@shared/orderStatus";
 
 function getBaseUrl(): string {
@@ -149,13 +163,13 @@ class CustomerEmailService {
                 <span style="color: #6b7280; font-size: 14px;"> × ${item.quantity}</span>
               </td>
               <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb; text-align: right; color: #111827; font-weight: 500;">
-                ${formatCurrency(item.unitPrice * item.quantity)}
+                ${formatItemPrice(item.unitPrice * item.quantity, order)}
               </td>
             </tr>
           `).join("")}
           <tr>
             <td style="padding: 16px 0 0; font-weight: 600; color: #111827; font-size: 16px;">Total</td>
-            <td style="padding: 16px 0 0; text-align: right; font-weight: 700; color: #111827; font-size: 18px;">${formatCurrency(order.totalAmount)}</td>
+            <td style="padding: 16px 0 0; text-align: right; font-weight: 700; color: #111827; font-size: 18px;">${formatOrderAmount(order)}</td>
           </tr>
         </table>
 
