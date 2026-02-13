@@ -152,23 +152,35 @@ export default function BlogPostPage() {
       />
 
       <ContentWithLeftSidebar sidebarId={post.sidebarId}>
-        <article className={`${post.sidebarId ? '' : 'max-w-4xl mx-auto px-6'} py-10`} data-testid="blog-post-article">
-          <Button
-            variant="ghost"
-            onClick={() => navigate("/blog")}
-            className="text-muted-foreground hover:text-foreground mb-6 -ml-2"
-            data-testid="button-back-to-blog"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" /> Back to Blog
-          </Button>
-
+        <article className={`${post.sidebarId ? '' : 'max-w-4xl mx-auto px-6'}`} data-testid="blog-post-article">
           {coverSrc && (
-            <div className="aspect-video rounded-xl overflow-hidden mb-8 bg-card" data-testid="blog-post-cover">
+            <div className="relative aspect-video rounded-xl overflow-hidden mb-8 bg-card" data-testid="blog-post-cover">
               <img
                 src={coverSrc}
                 alt={post.title}
                 className="w-full h-full object-cover"
               />
+              <Button
+                variant="ghost"
+                onClick={() => navigate("/blog")}
+                className="absolute top-3 left-3 bg-black/50 backdrop-blur-sm text-white hover:bg-black/70 hover:text-white"
+                data-testid="button-back-to-blog"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" /> Back to Blog
+              </Button>
+            </div>
+          )}
+
+          {!coverSrc && (
+            <div className="mb-8">
+              <Button
+                variant="ghost"
+                onClick={() => navigate("/blog")}
+                className="text-muted-foreground hover:text-foreground -ml-2"
+                data-testid="button-back-to-blog"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" /> Back to Blog
+              </Button>
             </div>
           )}
 
