@@ -66,6 +66,7 @@ import adminShippingRoutes, { shipmentRoutes, shipmentManagementRoutes } from ".
 import adminOperationsRoutes, { refundOrderRoutes, dashboardRoutes } from "./src/routes/admin/operations.routes";
 import adminCustomerMgmtRoutes from "./src/routes/admin/customer-management.routes";
 import adminReportsRoutes from "./src/routes/admin/reports.routes";
+import adminAnalyticsRoutes from "./src/routes/admin/analytics.routes";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -219,6 +220,7 @@ export async function registerRoutes(
   app.use("/api/admin/orders", requireFullAccess, refundOrderRoutes);
   app.use("/api/admin/customers", requireFullAccess, adminCustomerMgmtRoutes);
   app.use("/api/admin/reports", requireFullAccess, adminReportsRoutes);
+  app.use("/api/admin/analytics", requireFullAccess, adminAnalyticsRoutes);
 
   return httpServer;
 }
