@@ -218,7 +218,7 @@ export default function BlogPostPage() {
             )}
           </div>
 
-          <SocialShareBar title={post.title} excerpt={post.excerpt} />
+          <SocialShareBar title={post.title} excerpt={post.excerpt} imageUrl={ogImage} />
         </article>
 
         {relatedPosts.length > 0 && (
