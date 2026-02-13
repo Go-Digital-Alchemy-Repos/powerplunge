@@ -31,6 +31,10 @@ import {
   ChevronUp,
   Sparkles,
   Loader2,
+  Layout,
+  PanelLeft,
+  Maximize,
+  Settings2,
 } from "lucide-react";
 
 function slugify(text: string): string {
@@ -84,6 +88,11 @@ export default function AdminCmsPageEdit() {
     enabled: !!pageId && hasFullAccess,
   });
 
+  const { data: sidebarsList } = useQuery<any[]>({
+    queryKey: ["/api/admin/cms/sidebars"],
+    enabled: hasFullAccess,
+  });
+
   useEffect(() => {
     if (page) {
       setSlugTouched(true);
@@ -107,6 +116,8 @@ export default function AdminCmsPageEdit() {
         twitterImage: page.twitterImage || "",
         robots: page.robots || "index, follow",
         featuredImage: page.featuredImage || "",
+        template: page.template || "full-width",
+        sidebarId: page.sidebarId || null,
       });
     }
   }, [page]);
@@ -223,6 +234,10 @@ export default function AdminCmsPageEdit() {
   return (
     <CmsLayout activeNav="pages" breadcrumbs={[{ label: "Pages", href: "/admin/cms/pages" }, { label: page.title }]}>
       <div className="max-w-3xl mx-auto" data-testid="page-editor">
+        <h1 className="text-xl font-bold text-foreground flex items-center gap-2 mb-4">
+          <Settings2 className="w-5 h-5" />
+          Page Settings
+        </h1>
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <Button
@@ -335,6 +350,92 @@ export default function AdminCmsPageEdit() {
                   data-testid="switch-show-in-nav"
                 />
               </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-card border-border">
+            <CardHeader>
+              <CardTitle className="text-foreground text-base flex items-center gap-2">
+                <Layout className="w-4 h-4" />
+                Page Template
+              </CardTitle>
+              <CardDescription>Choose a layout for this page</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    updateField("template", "full-width");
+                    updateField("sidebarId", null);
+                  }}
+                  className={`relative flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all ${
+                    formData.template !== "sidebar"
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-muted-foreground/40"
+                  }`}
+                  data-testid="template-full-width"
+                >
+                  <Maximize className="w-8 h-8 text-muted-foreground" />
+                  <div className="text-center">
+                    <p className="text-sm font-medium">Full Width</p>
+                    <p className="text-xs text-muted-foreground">Content spans the entire page</p>
+                  </div>
+                  {formData.template !== "sidebar" && (
+                    <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-primary" />
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => updateField("template", "sidebar")}
+                  className={`relative flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all ${
+                    formData.template === "sidebar"
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-muted-foreground/40"
+                  }`}
+                  data-testid="template-sidebar"
+                >
+                  <PanelLeft className="w-8 h-8 text-muted-foreground" />
+                  <div className="text-center">
+                    <p className="text-sm font-medium">Sidebar Page</p>
+                    <p className="text-xs text-muted-foreground">Content with a sidebar panel</p>
+                  </div>
+                  {formData.template === "sidebar" && (
+                    <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-primary" />
+                  )}
+                </button>
+              </div>
+
+              {formData.template === "sidebar" && (
+                <div className="space-y-2 pt-2 border-t border-border">
+                  <Label>Select Sidebar</Label>
+                  <Select
+                    value={formData.sidebarId || ""}
+                    onValueChange={(val) => updateField("sidebarId", val || null)}
+                  >
+                    <SelectTrigger data-testid="select-sidebar">
+                      <SelectValue placeholder="Choose a sidebar..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(sidebarsList || []).filter((s: any) => s.isActive).map((sidebar: any) => (
+                        <SelectItem key={sidebar.id} value={sidebar.id}>
+                          {sidebar.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {(!sidebarsList || sidebarsList.filter((s: any) => s.isActive).length === 0) && (
+                    <p className="text-xs text-yellow-500">
+                      No sidebars available. Create one in the Sidebars section first.
+                    </p>
+                  )}
+                  {formData.sidebarId && sidebarsList && (
+                    <p className="text-xs text-muted-foreground">
+                      Selected: {sidebarsList.find((s: any) => s.id === formData.sidebarId)?.name || "Unknown"}
+                    </p>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
 
