@@ -1233,7 +1233,7 @@ export default function AdminCmsBuilder() {
                   size="sm"
                   variant="outline"
                   className="border-primary/30 text-primary hover:bg-primary/10 h-7 text-xs"
-                  onClick={() => navigate(`/admin/cms/pages/${pageId}`)}
+                  onClick={() => navigate(`/admin/cms/pages/${pageId}/edit`)}
                   data-testid="button-page-settings"
                 >
                   <Settings className="w-3.5 h-3.5 mr-1" />
