@@ -325,7 +325,7 @@ export default function AdminEmailTemplates() {
                       <Button
                         onClick={handleSave}
                         disabled={updateMutation.isPending}
-                        className="gap-2"
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
                         data-testid="button-save"
                       >
                         {updateMutation.isPending ? (

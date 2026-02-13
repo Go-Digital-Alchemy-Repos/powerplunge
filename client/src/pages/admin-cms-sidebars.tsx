@@ -269,7 +269,7 @@ function WidgetSettingsEditor({
           )}
         </div>
       ))}
-      <Button size="sm" onClick={() => onSave(settings, title)} data-testid="button-save-widget-settings">
+      <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground" onClick={() => onSave(settings, title)} data-testid="button-save-widget-settings">
         <Save className="w-4 h-4 mr-1" /> Save
       </Button>
     </div>
@@ -493,6 +493,7 @@ function SidebarDetail({
             </select>
             <Button
               size="sm"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground"
               onClick={() => updateSidebarMutation.mutate({ name: editName, description: editDesc, location: editLocation === "__none__" ? null : editLocation, slug: sidebar.slug, isActive: sidebar.isActive })}
               data-testid="button-save-sidebar"
             >

@@ -234,6 +234,7 @@ export default function AdminSections() {
                 Cancel
               </Button>
               <Button
+                className="bg-primary hover:bg-primary/90 text-primary-foreground"
                 onClick={handleSaveEdit}
                 disabled={updateMutation.isPending || !editName.trim()}
               >

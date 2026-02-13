@@ -191,7 +191,7 @@ export default function AdminTheme() {
             <Button variant="outline" onClick={handleReset} data-testid="button-reset">
               <RefreshCw className="w-4 h-4 mr-2" /> Reset to Default
             </Button>
-            <Button onClick={handleSave} className="bg-cyan-500 hover:bg-cyan-600" disabled={saveMutation.isPending} data-testid="button-save">
+            <Button onClick={handleSave} className="bg-primary hover:bg-primary/90 text-primary-foreground" disabled={saveMutation.isPending} data-testid="button-save">
               <Save className="w-4 h-4 mr-2" /> Save Changes
             </Button>
           </div>

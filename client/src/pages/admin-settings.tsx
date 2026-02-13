@@ -387,7 +387,7 @@ export default function AdminSettings() {
                   </CardContent>
                 </Card>
 
-                <Button type="submit" className="w-full gap-2" disabled={updateMutation.isPending} data-testid="button-save-settings">
+                <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground gap-2" disabled={updateMutation.isPending} data-testid="button-save-settings">
                   <Save className="w-4 h-4" />
                   {updateMutation.isPending ? "Saving..." : "Save Settings"}
                 </Button>
@@ -649,7 +649,7 @@ export default function AdminSettings() {
                   </CardContent>
                 </Card>
 
-                <Button type="submit" className="w-full gap-2" disabled={updateMutation.isPending} data-testid="button-save-email-settings">
+                <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground gap-2" disabled={updateMutation.isPending} data-testid="button-save-email-settings">
                   <Save className="w-4 h-4" />
                   {updateMutation.isPending ? "Saving..." : "Save Settings"}
                 </Button>
@@ -697,7 +697,7 @@ export default function AdminSettings() {
                   </CardContent>
                 </Card>
 
-                <Button type="submit" className="w-full gap-2" disabled={updateMutation.isPending} data-testid="button-save-legal-settings">
+                <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground gap-2" disabled={updateMutation.isPending} data-testid="button-save-legal-settings">
                   <Save className="w-4 h-4" />
                   {updateMutation.isPending ? "Saving..." : "Save Settings"}
                 </Button>

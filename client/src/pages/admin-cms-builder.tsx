@@ -685,8 +685,7 @@ function SaveButton({ pageId, pageTitle, seoData, pageStatus, scheduledAt, sideb
   return (
     <Button
       size="sm"
-      variant="outline"
-      className="border-primary/30 text-primary hover:bg-primary/10"
+      className="bg-primary hover:bg-primary/90 text-primary-foreground"
       disabled={saving}
       data-testid="button-save"
       onClick={handleSave}

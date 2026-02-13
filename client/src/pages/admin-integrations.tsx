@@ -1018,7 +1018,7 @@ function MailgunConfigDialog({ open, onOpenChange, onSuccess }: {
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleSave} disabled={saving} data-testid="button-save-mailgun">
+          <Button className="bg-primary hover:bg-primary/90 text-primary-foreground" onClick={handleSave} disabled={saving} data-testid="button-save-mailgun">
             {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
             Save Configuration
           </Button>
@@ -1245,7 +1245,7 @@ function StripeEnvPanel({ env, stripeSettings, onSaved }: {
           Validate
         </Button>
         <Button
-          className="flex-1"
+          className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
           onClick={handleSave}
           disabled={saving || hasErrors || (!publishableKey && !secretKey && !webhookSecret)}
           data-testid={`button-save-stripe-${env}`}
@@ -1450,6 +1450,7 @@ function StripeConfigDialog({ open, onOpenChange, onSuccess }: {
                       data-testid="input-stripe-connect-webhook-secret"
                     />
                     <Button
+                      className="bg-primary hover:bg-primary/90 text-primary-foreground"
                       onClick={handleSaveConnect}
                       disabled={savingConnect || !connectWebhookSecret}
                       data-testid="button-save-connect-webhook"
@@ -1683,7 +1684,7 @@ function R2ConfigDialog({ open, onOpenChange, onSuccess }: {
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleSave} disabled={saving} data-testid="button-save-r2">
+          <Button className="bg-primary hover:bg-primary/90 text-primary-foreground" onClick={handleSave} disabled={saving} data-testid="button-save-r2">
             {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
             Save Configuration
           </Button>
@@ -1839,7 +1840,7 @@ function OpenAIConfigDialog({ open, onOpenChange, onSuccess }: {
               Remove
             </Button>
           )}
-          <Button onClick={handleSave} disabled={saving || !apiKey} data-testid="button-save-openai">
+          <Button className="bg-primary hover:bg-primary/90 text-primary-foreground" onClick={handleSave} disabled={saving || !apiKey} data-testid="button-save-openai">
             {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
             Save Configuration
           </Button>
@@ -2065,7 +2066,7 @@ function TikTokShopConfigDialog({ open, onOpenChange, onSuccess }: {
               Remove
             </Button>
           )}
-          <Button onClick={handleSave} disabled={saving} data-testid="button-save-tiktok">
+          <Button className="bg-primary hover:bg-primary/90 text-primary-foreground" onClick={handleSave} disabled={saving} data-testid="button-save-tiktok">
             {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
             Save Configuration
           </Button>
@@ -2264,7 +2265,7 @@ function InstagramShopConfigDialog({ open, onOpenChange, onSuccess }: {
               Remove
             </Button>
           )}
-          <Button onClick={handleSave} disabled={saving} data-testid="button-save-instagram">
+          <Button className="bg-primary hover:bg-primary/90 text-primary-foreground" onClick={handleSave} disabled={saving} data-testid="button-save-instagram">
             {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
             Save Configuration
           </Button>
@@ -2536,7 +2537,7 @@ function PinterestShoppingConfigDialog({ open, onOpenChange, onSuccess }: {
               Remove
             </Button>
           )}
-          <Button onClick={handleSave} disabled={saving} data-testid="button-save-pinterest">
+          <Button className="bg-primary hover:bg-primary/90 text-primary-foreground" onClick={handleSave} disabled={saving} data-testid="button-save-pinterest">
             {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
             Save Configuration
           </Button>
@@ -2808,7 +2809,7 @@ function YouTubeShoppingConfigDialog({ open, onOpenChange, onSuccess }: {
               Remove
             </Button>
           )}
-          <Button onClick={handleSave} disabled={saving} data-testid="button-save-youtube">
+          <Button className="bg-primary hover:bg-primary/90 text-primary-foreground" onClick={handleSave} disabled={saving} data-testid="button-save-youtube">
             {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
             Save Configuration
           </Button>
@@ -3080,7 +3081,7 @@ function SnapchatShoppingConfigDialog({ open, onOpenChange, onSuccess }: {
               Remove
             </Button>
           )}
-          <Button onClick={handleSave} disabled={saving} data-testid="button-save-snapchat">
+          <Button className="bg-primary hover:bg-primary/90 text-primary-foreground" onClick={handleSave} disabled={saving} data-testid="button-save-snapchat">
             {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
             Save Configuration
           </Button>
@@ -3352,7 +3353,7 @@ function XShoppingConfigDialog({ open, onOpenChange, onSuccess }: {
               Remove
             </Button>
           )}
-          <Button onClick={handleSave} disabled={saving} data-testid="button-save-x">
+          <Button className="bg-primary hover:bg-primary/90 text-primary-foreground" onClick={handleSave} disabled={saving} data-testid="button-save-x">
             {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
             Save Configuration
           </Button>
@@ -3554,7 +3555,7 @@ function MailchimpConfigDialog({ open, onOpenChange, onSuccess }: {
               Remove
             </Button>
           )}
-          <Button onClick={handleSave} disabled={saving} data-testid="button-save-mailchimp">
+          <Button className="bg-primary hover:bg-primary/90 text-primary-foreground" onClick={handleSave} disabled={saving} data-testid="button-save-mailchimp">
             {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
             Save Configuration
           </Button>
@@ -3710,7 +3711,7 @@ function GooglePlacesConfigDialog({ open, onOpenChange, onSuccess }: {
               Remove
             </Button>
           )}
-          <Button onClick={handleSave} disabled={saving} data-testid="button-save-google-places">
+          <Button className="bg-primary hover:bg-primary/90 text-primary-foreground" onClick={handleSave} disabled={saving} data-testid="button-save-google-places">
             {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
             Save Configuration
           </Button>
@@ -3907,7 +3908,7 @@ function TwilioConfigDialog({ open, onOpenChange, onSuccess }: { open: boolean; 
         )}
 
         <DialogFooter>
-          <Button onClick={handleSave} disabled={saving} data-testid="button-save-twilio">
+          <Button className="bg-primary hover:bg-primary/90 text-primary-foreground" onClick={handleSave} disabled={saving} data-testid="button-save-twilio">
             {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
             Save Configuration
           </Button>

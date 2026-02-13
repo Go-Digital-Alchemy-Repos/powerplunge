@@ -363,7 +363,7 @@ export default function AdminAnalytics() {
                     </p>
                   </div>
                   <div className="flex items-center gap-4">
-                    <Button type="submit" size="sm" className="gap-2" disabled={updateGa4Mutation.isPending} data-testid="button-save-ga4-credentials">
+                    <Button type="submit" size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2" disabled={updateGa4Mutation.isPending} data-testid="button-save-ga4-credentials">
                       <Save className="w-4 h-4" />
                       {updateGa4Mutation.isPending ? "Saving..." : "Save API Credentials"}
                     </Button>
@@ -398,7 +398,7 @@ export default function AdminAnalytics() {
                     />
                     <p className="text-xs text-muted-foreground">Found in GA4 Admin &gt; Data Streams &gt; Web stream details</p>
                   </div>
-                  <Button type="submit" size="sm" className="gap-2" disabled={updateMeasurementMutation.isPending} data-testid="button-save-analytics-settings">
+                  <Button type="submit" size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2" disabled={updateMeasurementMutation.isPending} data-testid="button-save-analytics-settings">
                     <Save className="w-4 h-4" />
                     {updateMeasurementMutation.isPending ? "Saving..." : "Save Tracking ID"}
                   </Button>

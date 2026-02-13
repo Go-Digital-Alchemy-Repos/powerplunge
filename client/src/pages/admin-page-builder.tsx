@@ -710,6 +710,7 @@ export default function AdminPageBuilder() {
           <Button
             onClick={handleSave}
             disabled={saveMutation.isPending}
+            className="bg-primary hover:bg-primary/90 text-primary-foreground"
             data-testid="button-save"
           >
             <Save className="w-4 h-4 mr-2" />
@@ -1462,7 +1463,7 @@ export default function AdminPageBuilder() {
             <Button
               onClick={saveSelectedBlocksAsSection}
               disabled={!newSectionName.trim() || selectedBlocksForSection.length === 0 || saveSectionMutation.isPending}
-              className="w-full"
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
               data-testid="button-save-section"
             >
               <FolderPlus className="w-4 h-4 mr-2" />

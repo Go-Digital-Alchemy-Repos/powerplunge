@@ -170,8 +170,7 @@ function SaveDraftButton({ postId, postTitle, onDone }: { postId: string; postTi
   return (
     <Button
       size="sm"
-      variant="outline"
-      className="border-primary/30 text-primary hover:bg-primary/10"
+      className="bg-primary hover:bg-primary/90 text-primary-foreground"
       disabled={saving}
       data-testid="button-save-draft"
       onClick={handleSave}

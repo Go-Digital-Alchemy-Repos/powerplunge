@@ -184,7 +184,7 @@ export default function AdminCmsSettings() {
                   <Button
                     onClick={handleSave}
                     disabled={!hasUnsavedChanges || setHomeMutation.isPending}
-                    className="gap-2"
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
                     data-testid="button-save-home-page"
                   >
                     {setHomeMutation.isPending ? (

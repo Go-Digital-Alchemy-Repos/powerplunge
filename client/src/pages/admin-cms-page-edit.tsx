@@ -234,10 +234,6 @@ export default function AdminCmsPageEdit() {
   return (
     <CmsLayout activeNav="pages" breadcrumbs={[{ label: "Pages", href: "/admin/cms/pages" }, { label: page.title }]}>
       <div className="max-w-3xl mx-auto" data-testid="page-editor">
-        <h1 className="text-xl font-bold text-foreground flex items-center gap-2 mb-4">
-          <Settings2 className="w-5 h-5" />
-          Page Settings
-        </h1>
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <Button
@@ -297,6 +293,16 @@ export default function AdminCmsPageEdit() {
               ) : (
                 <><Globe className="w-4 h-4 mr-1" /> Publish</>
               )}
+            </Button>
+            <Button
+              size="sm"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground gap-1"
+              onClick={() => saveMutation.mutate(formData)}
+              disabled={saveMutation.isPending}
+              data-testid="button-save-page"
+            >
+              <Save className="w-4 h-4" />
+              {saveMutation.isPending ? "Saving..." : "Save"}
             </Button>
           </div>
         </div>
@@ -679,17 +685,6 @@ export default function AdminCmsPageEdit() {
             )}
           </Card>
 
-          <div className="flex items-center gap-3">
-            <Button
-              type="submit"
-              className="flex-1 gap-2"
-              disabled={saveMutation.isPending}
-              data-testid="button-save-page"
-            >
-              <Save className="w-4 h-4" />
-              {saveMutation.isPending ? "Saving..." : "Save Page"}
-            </Button>
-          </div>
         </form>
       </div>
     </CmsLayout>

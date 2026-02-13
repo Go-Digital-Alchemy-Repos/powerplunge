@@ -369,7 +369,7 @@ export default function AdminAffiliateSettings() {
           </Card>
 
           <div className="flex justify-end">
-            <Button type="submit" disabled={updateMutation.isPending} className="gap-2" data-testid="button-save">
+            <Button type="submit" disabled={updateMutation.isPending} className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2" data-testid="button-save">
               <Save className="w-4 h-4" />
               {updateMutation.isPending ? "Saving..." : "Save Settings"}
             </Button>

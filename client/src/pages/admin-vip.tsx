@@ -476,7 +476,7 @@ export default function AdminVip() {
                     <Button
                       onClick={() => localSettings && updateSettings.mutate(localSettings)}
                       disabled={updateSettings.isPending || !localSettings}
-                      className="gap-2"
+                      className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
                     >
                       {updateSettings.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                       Save Settings

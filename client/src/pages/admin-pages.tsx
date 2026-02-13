@@ -477,7 +477,7 @@ export default function AdminPages() {
             </div>
             <DialogFooter>
               <Button variant="ghost" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-              <Button onClick={handleSubmit} disabled={!formData.title} data-testid="button-save">
+              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground" onClick={handleSubmit} disabled={!formData.title} data-testid="button-save">
                 {editingPage ? "Update Page" : "Create Page"}
               </Button>
             </DialogFooter>
