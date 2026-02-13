@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAdmin } from "@/hooks/use-admin";
-import { CreditCard, ShoppingBag, Instagram, Send, Star, ExternalLink, CheckCircle2, XCircle } from "lucide-react";
+import { CreditCard, ShoppingBag, Instagram, Send, Star, ExternalLink, CheckCircle2, XCircle, Link2, Youtube, Ghost } from "lucide-react";
 import AdminNav from "@/components/admin/AdminNav";
 
 function StatusBadge({ configured }: { configured?: boolean }) {
@@ -134,10 +134,34 @@ export default function AdminEcommerceSettings() {
                   <Button variant="ghost" size="sm">Configure</Button>
                 </div>
 
+                {/* YouTube Shopping */}
+                <div className="flex items-center justify-between py-2 border-b">
+                  <div className="flex items-center gap-3">
+                    <Youtube className="w-5 h-5" />
+                    <div>
+                      <p className="font-medium text-sm">YouTube Shopping</p>
+                      <StatusBadge configured={integrations?.youtubeShopping} />
+                    </div>
+                  </div>
+                  <Button variant="ghost" size="sm">Configure</Button>
+                </div>
+
+                {/* Snapchat Shopping */}
+                <div className="flex items-center justify-between py-2 border-b">
+                  <div className="flex items-center gap-3">
+                    <Ghost className="w-5 h-5" />
+                    <div>
+                      <p className="font-medium text-sm">Snapchat Shopping</p>
+                      <StatusBadge configured={integrations?.snapchatShopping} />
+                    </div>
+                  </div>
+                  <Button variant="ghost" size="sm">Configure</Button>
+                </div>
+
                 {/* X Shopping */}
                 <div className="flex items-center justify-between py-2 border-b">
                   <div className="flex items-center gap-3">
-                    <Send className="w-5 h-5" />
+                    <Link2 className="w-5 h-5" />
                     <div>
                       <p className="font-medium text-sm">X Shopping</p>
                       <StatusBadge configured={integrations?.xShopping} />
