@@ -108,9 +108,9 @@ export function ThemeSelector({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
-          variant="outline"
+          variant="ghost"
           size="sm"
-          className={cn("gap-2 h-10 w-10 p-0", triggerClassName)}
+          className={cn("gap-2 h-10 w-10 p-0 hover:bg-transparent", triggerClassName)}
           data-testid={`button-theme-selector${testIdSuffix || ""}`}
         >
           <Sun className="w-4 h-4" />
