@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, Link } from "wouter";
 import { DollarSign, ShoppingCart, Users, Package, UserCheck, Clock } from "lucide-react";
@@ -21,7 +22,13 @@ interface DashboardStats {
 
 export default function AdminDashboard() {
   const [, navigate] = useLocation();
-  const { role, hasFullAccess } = useAdmin();
+  const { role, hasFullAccess, isLoading: isAdminLoading } = useAdmin();
+
+  useEffect(() => {
+    if (!isAdminLoading && role === "fulfillment") {
+      navigate("/admin/orders", { replace: true });
+    }
+  }, [isAdminLoading, role, navigate]);
 
   const { data: stats, isLoading } = useQuery<DashboardStats>({
     queryKey: ["/api/admin/dashboard"],

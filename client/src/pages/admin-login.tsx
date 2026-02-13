@@ -60,7 +60,7 @@ export default function AdminLogin() {
         description: `Logged in as ${data.admin.name}`,
       });
 
-      setLocation("/admin/dashboard");
+      setLocation(data.admin.role === "fulfillment" ? "/admin/orders" : "/admin/dashboard");
     } catch (error: any) {
       toast({
         title: "Error",

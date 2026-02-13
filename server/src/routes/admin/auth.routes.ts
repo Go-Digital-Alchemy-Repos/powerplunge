@@ -77,7 +77,7 @@ router.post("/login", authLimiter, async (req: any, res) => {
     // Storefront access requires separate customer login.
     res.json({ 
       success: true, 
-      admin: { id: admin.id, email: admin.email, name: admin.name } 
+      admin: { id: admin.id, email: admin.email, name: admin.name, role: admin.role } 
     });
   } catch (error) {
     res.status(500).json({ message: "Login failed" });

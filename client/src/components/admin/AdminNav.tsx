@@ -288,7 +288,7 @@ export default function AdminNav({ currentPage, role = "admin" }: AdminNavProps)
   }
 
   const mainItems: DrawerNavItem[] = [
-    { label: "Dashboard", icon: Home, href: "/admin/dashboard", active: isActive("home") },
+    ...(hasFullAccess ? [{ label: "Dashboard", icon: Home, href: "/admin/dashboard", active: isActive("home") }] : []),
   ];
 
   const groups: DrawerNavGroup[] = [];
