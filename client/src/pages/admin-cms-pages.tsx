@@ -192,7 +192,7 @@ export default function AdminCmsPages() {
   return (
     <CmsLayout activeNav="pages" breadcrumbs={[{ label: "Pages" }]}>
       <div className="max-w-5xl mx-auto" data-testid="admin-cms-pages-page">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div>
             <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
               Pages
@@ -200,10 +200,11 @@ export default function AdminCmsPages() {
                 <span className="text-sm font-normal text-muted-foreground">{pages.length} total</span>
               )}
             </h1>
+            <p className="text-muted-foreground text-xs mt-1">Manage your site's landing pages and content.</p>
           </div>
           <Button
             onClick={() => { resetForm(); setCreateOpen(true); }}
-            className="bg-primary text-foreground h-8 text-xs"
+            className="bg-primary text-foreground h-8 text-xs w-full md:w-auto"
             data-testid="button-create-page"
           >
             <Plus className="w-3.5 h-3.5 mr-1" />

@@ -254,7 +254,7 @@ export default function AdminAnalytics() {
     <div className="min-h-screen bg-background">
       <AdminNav currentPage="analytics" role={admin.role} />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2">
               <BarChart3 className="w-6 h-6" />
@@ -264,9 +264,9 @@ export default function AdminAnalytics() {
               Live traffic and ecommerce data from Google Analytics
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col md:flex-row items-center gap-3 w-full md:w-auto">
             <Select value={dateRange} onValueChange={setDateRange}>
-              <SelectTrigger className="w-[160px]" data-testid="select-date-range">
+              <SelectTrigger className="w-full md:w-[160px]" data-testid="select-date-range">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -279,7 +279,7 @@ export default function AdminAnalytics() {
               variant="outline"
               size="sm"
               onClick={() => setShowSettings(!showSettings)}
-              className="gap-2"
+              className="gap-2 w-full md:w-auto"
               data-testid="button-toggle-settings"
             >
               <Settings className="w-4 h-4" />

@@ -198,12 +198,12 @@ export default function AdminTeam() {
       <AdminNav currentPage="team" role={role} />
 
       <main className="max-w-4xl mx-auto px-6 py-8">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
             <h2 className="font-display text-2xl font-bold">Team Management</h2>
             <p className="text-muted-foreground">Add and manage team members who can access the admin dashboard.</p>
           </div>
-          <Button className="gap-2" onClick={openAddPanel} data-testid="button-add-member">
+          <Button className="gap-2 w-full md:w-auto" onClick={openAddPanel} data-testid="button-add-member">
             <UserPlus className="w-4 h-4" />
             Add Team Member
           </Button>
