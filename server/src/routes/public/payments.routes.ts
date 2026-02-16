@@ -19,7 +19,8 @@ function computeAffiliateDiscount(
   lineTotal: number,
   settings: AffiliateSettings | undefined,
   isFriendsFamily: boolean = false,
-  affiliate?: Affiliate | null
+  affiliate?: Affiliate | null,
+  quantity: number = 1
 ): number {
   if (!product.affiliateEnabled) return 0;
 
@@ -47,7 +48,7 @@ function computeAffiliateDiscount(
   if (discountType === "PERCENT") {
     return Math.floor(lineTotal * (discountValue / 100));
   } else {
-    return Math.min(lineTotal, discountValue);
+    return Math.min(lineTotal, discountValue * quantity);
   }
 }
 
@@ -285,7 +286,7 @@ router.post("/create-payment-intent", paymentLimiter, async (req: any, res) => {
       const affSettings = await storage.getAffiliateSettings();
       for (let i = 0; i < orderItems.length; i++) {
         const lineTotal = orderItems[i].unitPrice * orderItems[i].quantity;
-        affiliateDiscountAmount += computeAffiliateDiscount(resolvedProducts[i], lineTotal, affSettings, isFriendsFamily, affiliate);
+        affiliateDiscountAmount += computeAffiliateDiscount(resolvedProducts[i], lineTotal, affSettings, isFriendsFamily, affiliate, orderItems[i].quantity);
       }
     }
 
@@ -613,7 +614,7 @@ router.post("/reprice-payment-intent", paymentLimiter, async (req: any, res) => 
       const affSettings = await storage.getAffiliateSettings();
       for (let i = 0; i < orderItems.length; i++) {
         const lineTotal = orderItems[i].unitPrice * orderItems[i].quantity;
-        affiliateDiscountAmount += computeAffiliateDiscount(repriceProducts[i], lineTotal, affSettings, isFriendsFamily, affiliate);
+        affiliateDiscountAmount += computeAffiliateDiscount(repriceProducts[i], lineTotal, affSettings, isFriendsFamily, affiliate, orderItems[i].quantity);
       }
     }
 
@@ -951,7 +952,7 @@ router.post("/checkout", checkoutLimiter, async (req: any, res) => {
     if (affiliate && affiliate.status === "active") {
       for (let i = 0; i < orderItems.length; i++) {
         const lineTotal = orderItems[i].unitPrice * orderItems[i].quantity;
-        affiliateDiscountAmount += computeAffiliateDiscount(resolvedCheckoutProducts[i], lineTotal, affSettings, isFriendsFamily, affiliate);
+        affiliateDiscountAmount += computeAffiliateDiscount(resolvedCheckoutProducts[i], lineTotal, affSettings, isFriendsFamily, affiliate, orderItems[i].quantity);
       }
     }
 

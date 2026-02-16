@@ -246,7 +246,7 @@ export class AffiliateCommissionService {
           if (commType === "PERCENT") {
             commissionAmount += Math.floor(lineAmount * (commValue / 100));
           } else {
-            commissionAmount += Math.min(lineAmount, commValue);
+            commissionAmount += Math.min(lineAmount, commValue * item.quantity);
           }
         }
       } else {
