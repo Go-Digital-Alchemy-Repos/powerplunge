@@ -260,23 +260,16 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
   });
 
   useEffect(() => {
-    // Check local storage preference
-    const localPref = localStorage.getItem("user-theme-preference");
-    
-    // Always prefer local preference if it matches a known theme
-    if (localPref) {
-      const preferred = (allThemes || []).find(t => t.id === localPref) || 
-                        themePresets.find(t => t.id === localPref);
-      if (preferred) {
-        applyThemeVariables(preferred.variables);
-        return;
-      }
-    }
-
     if (theme?.variables) {
       applyThemeVariables(theme.variables);
+    } else {
+      // Default to Arctic if no theme is provided by API
+      const arctic = themePresets.find(t => t.id === "arctic-default");
+      if (arctic) {
+        applyThemeVariables(arctic.variables);
+      }
     }
-  }, [theme, allThemes]);
+  }, [theme]);
 
   return <>{children}</>;
 }

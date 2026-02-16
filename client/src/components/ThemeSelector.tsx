@@ -1,3 +1,4 @@
+import { useAdmin } from "@/hooks/use-admin";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -103,6 +104,13 @@ export function ThemeSelector({
     // We don't want to change site-wide theme for everyone if a customer clicks it.
     // The requirement says "all users should be able to set their theme preference".
   };
+
+  const { admin } = useAdmin();
+  const isAdmin = !!admin;
+
+  if (!isAdmin) {
+    return null;
+  }
 
   return (
     <DropdownMenu>
