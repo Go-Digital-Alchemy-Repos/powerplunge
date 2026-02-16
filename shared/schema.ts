@@ -125,6 +125,7 @@ export const orders = pgTable("orders", {
   stripePaymentIntentId: text("stripe_payment_intent_id"),
   stripeSessionId: text("stripe_session_id"),
   affiliateCode: text("affiliate_code"), // referral tracking
+  affiliateIsFriendsFamily: boolean("affiliate_is_friends_family").default(false),
   affiliateDiscountAmount: integer("affiliate_discount_amount"), // in cents
   couponDiscountAmount: integer("coupon_discount_amount"), // in cents
   couponCode: text("coupon_code"), // coupon code used at checkout

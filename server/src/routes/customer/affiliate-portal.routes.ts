@@ -2,8 +2,8 @@ import { Router, Request, Response } from "express";
 import { affiliatePayoutService } from "../../services/affiliate-payout.service";
 import { db } from "../../../db";
 import { storage } from "../../../storage";
-import { affiliates, affiliatePayouts, affiliateReferrals, customers } from "@shared/schema";
-import { eq, desc } from "drizzle-orm";
+import { affiliates, affiliatePayouts, affiliateReferrals, customers, orders } from "@shared/schema";
+import { eq, desc, and, sql } from "drizzle-orm";
 import { z } from "zod";
 import { 
   requireCustomerAuth,
@@ -340,12 +340,31 @@ router.get("/", requireCustomerAuth, async (req: AuthenticatedRequest, res: Resp
         approvalDays,
         agreementText,
         ffEnabled: false,
+        ffUsageCount: 0,
+        ffMaxUses: 0,
         programTerms,
       });
     }
     
     const affiliateFfEnabled = globalFfEnabled && (affiliate.ffEnabled !== false);
     programTerms.friendsAndFamily.enabled = affiliateFfEnabled;
+
+    let ffUsageCount = 0;
+    let ffMaxUses = 0;
+    if (affiliateFfEnabled) {
+      ffMaxUses = (settings as any)?.ffMaxUses ?? 0;
+      const usageResult = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(orders)
+        .where(
+          and(
+            eq(orders.affiliateCode, affiliate.affiliateCode),
+            eq(orders.affiliateIsFriendsFamily, true),
+            sql`${orders.status} != 'cancelled'`
+          )
+        );
+      ffUsageCount = usageResult[0]?.count || 0;
+    }
     
     const referrals = await storage.getAffiliateReferrals(affiliate.id);
     const payouts = await storage.getAffiliatePayouts(affiliate.id);
@@ -393,6 +412,8 @@ router.get("/", requireCustomerAuth, async (req: AuthenticatedRequest, res: Resp
       approvalDays,
       agreementText,
       ffEnabled: affiliateFfEnabled,
+      ffUsageCount,
+      ffMaxUses,
       programTerms,
     });
   } catch (error: any) {

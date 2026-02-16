@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, LogOut, User, Link2, DollarSign, Users, Copy, CheckCircle, ExternalLink, Loader2, CreditCard, AlertCircle, Crown, Calendar, AlertTriangle, Clock, Download, Edit3, X, Save } from "lucide-react";
 import DynamicNav from "@/components/DynamicNav";
 import { useBranding } from "@/hooks/use-branding";
+import { QRCodeSVG } from "qrcode.react";
 
 interface AffiliateData {
   affiliate: {
@@ -48,6 +49,8 @@ interface AffiliateData {
   approvalDays: number;
   agreementText: string;
   ffEnabled: boolean;
+  ffUsageCount: number;
+  ffMaxUses: number;
   programTerms?: {
     standard: {
       commission: { type: string; value: number };
@@ -596,6 +599,25 @@ export default function AffiliatePortal() {
                     <span className="font-medium">F&F code:</span>{" "}
                     <code className="bg-background px-2 py-1 rounded" data-testid="text-ff-code">FF{affiliateData.affiliate.code}</code>
                   </p>
+                  {affiliateData.ffMaxUses > 0 && (
+                    <p className="text-sm mt-2">
+                      <span className="font-medium">Uses:</span>{" "}
+                      <span data-testid="text-ff-usage">{affiliateData.ffUsageCount} / {affiliateData.ffMaxUses}</span>
+                      {affiliateData.ffUsageCount >= affiliateData.ffMaxUses && (
+                        <Badge variant="destructive" className="ml-2">Limit reached</Badge>
+                      )}
+                    </p>
+                  )}
+                </div>
+                <div className="mt-4 flex justify-center">
+                  <div className="bg-white p-3 rounded-lg border" data-testid="ff-qr-code">
+                    <QRCodeSVG
+                      value={`${window.location.origin}?ref=FF${affiliateData.affiliate.code}`}
+                      size={160}
+                      level="M"
+                    />
+                    <p className="text-xs text-center text-muted-foreground mt-2">Scan to share F&F discount</p>
+                  </div>
                 </div>
               </CardContent>
             </Card>

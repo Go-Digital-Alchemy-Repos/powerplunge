@@ -1,12 +1,14 @@
 import { Router } from "express";
 import { storage } from "../../../storage";
-import { insertCustomerSchema, type Product, type AffiliateSettings } from "@shared/schema";
+import { insertCustomerSchema, type Product, type AffiliateSettings, orders } from "@shared/schema";
 import { checkoutLimiter, paymentLimiter } from "../../middleware/rate-limiter";
 import { affiliateCommissionService } from "../../services/affiliate-commission.service";
 import { normalizeEmail } from "../../services/customer-identity.service";
 import { normalizeState } from "@shared/us-states";
 import { validateEmail, validatePhone, validateAddress, validateZip, normalizeAddress, type ValidationError } from "@shared/validation";
 import { stripeService } from "../../integrations/stripe/StripeService";
+import { db } from "../../../db";
+import { eq, and, sql } from "drizzle-orm";
 
 const DEFAULT_STRIPE_TAX_CODE = "txcd_99999999";
 
@@ -56,6 +58,26 @@ async function resolveAffiliateCode(code: string): Promise<{ baseCode: string; i
   return { baseCode: upper, isFriendsFamily: false };
 }
 
+async function countFfUsesForAffiliate(affiliateCode: string): Promise<number> {
+  const result = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(orders)
+    .where(
+      and(
+        eq(orders.affiliateCode, affiliateCode),
+        eq(orders.affiliateIsFriendsFamily, true),
+        sql`${orders.status} != 'cancelled'`
+      )
+    );
+  return result[0]?.count || 0;
+}
+
+async function checkFfLimitExceeded(affiliateCode: string, settings: AffiliateSettings | null): Promise<boolean> {
+  if (!settings || !settings.ffMaxUses || settings.ffMaxUses <= 0) return false;
+  const usageCount = await countFfUsesForAffiliate(affiliateCode);
+  return usageCount >= settings.ffMaxUses;
+}
+
 const router = Router();
 
 router.get("/stripe/config", async (req, res) => {
@@ -83,6 +105,10 @@ router.get("/validate-referral-code/:code", async (req, res) => {
         const affSettings = await storage.getAffiliateSettings();
         if (!(affSettings as any)?.ffEnabled || !affiliate.ffEnabled) {
           return res.json({ valid: false });
+        }
+        const limitExceeded = await checkFfLimitExceeded(affiliate.affiliateCode, affSettings);
+        if (limitExceeded) {
+          return res.json({ valid: false, reason: "ff_limit_reached" });
         }
         return res.json({ valid: true, code: `FF${affiliate.affiliateCode}`, isFriendsFamily: true });
       }
@@ -188,6 +214,11 @@ router.post("/create-payment-intent", paymentLimiter, async (req: any, res) => {
         const affSettings = await storage.getAffiliateSettings();
         if (!(affSettings as any)?.ffEnabled || !affiliate.ffEnabled) {
           isFriendsFamily = false;
+        } else {
+          const limitExceeded = await checkFfLimitExceeded(affiliate.affiliateCode, affSettings);
+          if (limitExceeded) {
+            isFriendsFamily = false;
+          }
         }
       }
     } else if (cookieAffiliateId) {
@@ -338,6 +369,7 @@ router.post("/create-payment-intent", paymentLimiter, async (req: any, res) => {
       taxAmount: taxAmount > 0 ? taxAmount : null,
       stripeTaxCalculationId: taxCalculationId,
       affiliateCode: affiliate?.affiliateCode,
+      affiliateIsFriendsFamily: isFriendsFamily,
       affiliateDiscountAmount: affiliateDiscountAmount > 0 ? affiliateDiscountAmount : null,
       couponDiscountAmount: couponDiscountAmount > 0 ? couponDiscountAmount : null,
       couponCode: validatedCoupon?.code || null,
@@ -515,6 +547,11 @@ router.post("/reprice-payment-intent", paymentLimiter, async (req: any, res) => 
         const affSettings = await storage.getAffiliateSettings();
         if (!(affSettings as any)?.ffEnabled || !affiliate.ffEnabled) {
           isFriendsFamily = false;
+        } else {
+          const limitExceeded = await checkFfLimitExceeded(affiliate.affiliateCode, affSettings);
+          if (limitExceeded) {
+            isFriendsFamily = false;
+          }
         }
       }
     } else if (cookieAffiliateId) {
@@ -655,6 +692,7 @@ router.post("/reprice-payment-intent", paymentLimiter, async (req: any, res) => 
       totalAmount,
       stripeTaxCalculationId: taxCalculationId,
       affiliateCode: affiliate?.affiliateCode || null,
+      affiliateIsFriendsFamily: isFriendsFamily,
       affiliateDiscountAmount: affiliateDiscountAmount > 0 ? affiliateDiscountAmount : null,
       couponDiscountAmount: couponDiscountAmount > 0 ? couponDiscountAmount : null,
       couponCode: validatedCoupon?.code || null,
@@ -842,6 +880,11 @@ router.post("/checkout", checkoutLimiter, async (req: any, res) => {
         const affSettings = await storage.getAffiliateSettings();
         if (!(affSettings as any)?.ffEnabled || !affiliate.ffEnabled) {
           isFriendsFamily = false;
+        } else {
+          const limitExceeded = await checkFfLimitExceeded(affiliate.affiliateCode, affSettings);
+          if (limitExceeded) {
+            isFriendsFamily = false;
+          }
         }
       }
     } else if (cookieAffiliateId) {
@@ -926,6 +969,7 @@ router.post("/checkout", checkoutLimiter, async (req: any, res) => {
         totalAmount,
         notes: "Stripe not configured - manual payment required",
         affiliateCode: affiliate?.affiliateCode,
+        affiliateIsFriendsFamily: isFriendsFamily,
         affiliateDiscountAmount: affiliateDiscountAmount > 0 ? affiliateDiscountAmount : null,
       });
 
@@ -1009,6 +1053,7 @@ router.post("/checkout", checkoutLimiter, async (req: any, res) => {
       totalAmount,
       stripeSessionId: stripeSession.id,
       affiliateCode: affiliate?.affiliateCode,
+      affiliateIsFriendsFamily: isFriendsFamily,
       affiliateDiscountAmount: affiliateDiscountAmount > 0 ? affiliateDiscountAmount : null,
     });
 

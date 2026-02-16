@@ -103,6 +103,7 @@ const affiliateSettingsPatchSchema = z.object({
   ffDiscountValue: z.number().int().min(0).optional(),
   ffCommissionType: z.enum(["PERCENT", "FIXED"]).optional(),
   ffCommissionValue: z.number().int().min(0).optional(),
+  ffMaxUses: z.number().int().min(0).optional(),
 }).refine((data) => {
   if (data.defaultCommissionType === "PERCENT" && data.defaultCommissionValue !== undefined && data.defaultCommissionValue > 100) {
     return false;

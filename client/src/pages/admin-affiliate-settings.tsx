@@ -39,6 +39,7 @@ interface AffiliateSettings {
   ffDiscountValue: number;
   ffCommissionType: string;
   ffCommissionValue: number;
+  ffMaxUses: number;
   updatedAt: string;
 }
 
@@ -62,6 +63,7 @@ export default function AdminAffiliateSettings() {
     ffDiscountValue: 20,
     ffCommissionType: "PERCENT",
     ffCommissionValue: 0,
+    ffMaxUses: 0,
   });
 
   const { data: settings, isLoading } = useQuery<AffiliateSettings>({
@@ -101,6 +103,7 @@ export default function AdminAffiliateSettings() {
         ffCommissionValue: (settings.ffCommissionType === "FIXED"
           ? Math.round((settings.ffCommissionValue ?? 0) / 100 * 100) / 100
           : settings.ffCommissionValue ?? 0),
+        ffMaxUses: settings.ffMaxUses ?? 0,
       });
     }
   }, [settings]);
@@ -445,6 +448,24 @@ export default function AdminAffiliateSettings() {
                       {formData.ffCommissionType === "FIXED"
                         ? "Flat commission per eligible product in dollars for F&F orders"
                         : "Percentage commission for F&F orders (typically 0%)"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h4 className="font-medium text-sm">F&F Usage Limit (per affiliate)</h4>
+                  <div className="space-y-2">
+                    <Label htmlFor="ffMaxUses">Maximum Uses</Label>
+                    <Input
+                      id="ffMaxUses"
+                      type="number"
+                      min="0"
+                      value={formData.ffMaxUses ?? 0}
+                      onChange={(e) => setFormData({ ...formData, ffMaxUses: parseInt(e.target.value) || 0 })}
+                      data-testid="input-ff-max-uses"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Maximum number of times each affiliate's F&F code can be used. Set to 0 for unlimited.
                     </p>
                   </div>
                 </div>
