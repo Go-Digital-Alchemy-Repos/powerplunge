@@ -666,12 +666,11 @@ export default function AdminOrders() {
                       <p className="text-sm text-muted-foreground mb-2">Items</p>
                       {currentOrder.items.map((item, i) => (
                         <div key={i} className="flex justify-between py-2 border-b border-border last:border-0">
-                          <div>
-                            <p className="font-medium text-sm">{item.productName}</p>
+                          <p className="font-medium text-sm">{item.productName}</p>
                             <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
                           </div>
                           <p className="font-medium">
-                            {isPaymentBypassed(currentOrder) ? "FREE" : `$${((item.unitPrice * item.quantity) / 100).toLocaleString()}`}
+                            {isPaymentBypassed(currentOrder) ? "$0.00" : `$${((item.unitPrice * item.quantity) / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                           </p>
                         </div>
                       ))}
@@ -870,6 +869,12 @@ export default function AdminOrders() {
                         </DialogContent>
                       </Dialog>
                     </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card>
+                  <CardContent className="py-12 text-center text-muted-foreground">
+                    Select an order to view details
                   </CardContent>
                 </Card>
               )}
