@@ -319,19 +319,19 @@ export default function AdminSupport() {
             </h1>
             <p className="text-muted-foreground mt-1">Manage customer inquiries and support conversations</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col md:flex-row items-center gap-2 w-full md:w-auto">
             <Button
               onClick={() => {
                 resetCreateForm();
                 setShowCreateDialog(true);
               }}
-              className="gap-2"
+              className="gap-2 w-full md:w-auto"
               data-testid="button-create-ticket"
             >
               <Plus className="w-4 h-4" />
               Create Ticket
             </Button>
-            <Button variant="outline" onClick={() => refetch()} data-testid="button-refresh">
+            <Button variant="outline" className="w-full md:w-auto" onClick={() => refetch()} data-testid="button-refresh">
               <RefreshCw className="w-4 h-4 mr-2" />
               Refresh
             </Button>

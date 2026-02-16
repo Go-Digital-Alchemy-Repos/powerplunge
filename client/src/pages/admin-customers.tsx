@@ -188,13 +188,13 @@ export default function AdminCustomers() {
       <AdminNav currentPage="customers" role={role} />
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
             <h2 className="font-display text-2xl font-bold">Customers</h2>
             <p className="text-muted-foreground">View all customers and their order history.</p>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="relative w-64">
+          <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+            <div className="relative w-full md:w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 placeholder="Search customers..."
@@ -204,7 +204,7 @@ export default function AdminCustomers() {
                 data-testid="input-search"
               />
             </div>
-            <Button onClick={() => setShowNewCustomer(true)} className="gap-2" data-testid="button-new-customer">
+            <Button onClick={() => setShowNewCustomer(true)} className="gap-2 w-full md:w-auto" data-testid="button-new-customer">
               <Plus className="w-4 h-4" />
               New Customer
             </Button>

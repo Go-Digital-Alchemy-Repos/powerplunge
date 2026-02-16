@@ -467,7 +467,7 @@ export default function AdminCoupons() {
     <div className="min-h-screen bg-background">
       <AdminNav currentPage="coupons" role={role} />
       <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
             <h1 className="text-3xl font-bold">Coupons & Discounts</h1>
             <p className="text-muted-foreground mt-1">Manage discount codes and promotions</p>
