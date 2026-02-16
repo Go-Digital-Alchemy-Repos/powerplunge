@@ -192,9 +192,13 @@ router.get("/affiliates/:id", async (req, res) => {
 
 router.patch("/affiliates/:id", async (req: any, res) => {
   try {
-    const { status, paypalEmail } = req.body;
+    const { status, paypalEmail, ffEnabled } = req.body;
     const prevAffiliate = await storage.getAffiliate(req.params.id);
-    const affiliate = await storage.updateAffiliate(req.params.id, { status, paypalEmail });
+    const updateData: any = {};
+    if (status !== undefined) updateData.status = status;
+    if (paypalEmail !== undefined) updateData.paypalEmail = paypalEmail;
+    if (typeof ffEnabled === "boolean") updateData.ffEnabled = ffEnabled;
+    const affiliate = await storage.updateAffiliate(req.params.id, updateData);
     if (!affiliate) {
       return res.status(404).json({ message: "Affiliate not found" });
     }
@@ -202,7 +206,7 @@ router.patch("/affiliates/:id", async (req: any, res) => {
     const adminEmail = req.adminUser?.email || req.session?.adminEmail || "admin";
     await storage.createAuditLog({
       actor: adminEmail,
-      action: "affiliate.status_changed",
+      action: ffEnabled !== undefined && status === undefined ? "affiliate.ff_toggled" : "affiliate.status_changed",
       entityType: "affiliate",
       entityId: affiliate.id,
       metadata: { 
@@ -210,6 +214,7 @@ router.patch("/affiliates/:id", async (req: any, res) => {
         prevStatus: prevAffiliate?.status,
         newStatus: status,
         paypalEmail,
+        ffEnabled,
       },
     });
 

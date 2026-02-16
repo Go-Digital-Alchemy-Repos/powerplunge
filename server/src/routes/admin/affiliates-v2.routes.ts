@@ -102,6 +102,7 @@ router.get("/:affiliateId/profile", validateParams(affiliateIdSchema), async (re
         totalReferrals: affiliates.totalReferrals,
         totalSales: affiliates.totalSales,
         paypalEmail: affiliates.paypalEmail,
+        ffEnabled: affiliates.ffEnabled,
         createdAt: affiliates.createdAt,
         customerName: customers.name,
         customerEmail: customers.email,

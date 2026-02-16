@@ -388,6 +388,7 @@ export const affiliates = pgTable("affiliates", {
   totalClicks: integer("total_clicks").notNull().default(0),
   totalSales: integer("total_sales").notNull().default(0), // in cents
   paypalEmail: text("paypal_email"),
+  ffEnabled: boolean("ff_enabled").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

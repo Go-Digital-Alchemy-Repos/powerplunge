@@ -81,7 +81,7 @@ router.get("/validate-referral-code/:code", async (req, res) => {
     if (affiliate && affiliate.status === "active") {
       if (resolved.isFriendsFamily) {
         const affSettings = await storage.getAffiliateSettings();
-        if (!(affSettings as any)?.ffEnabled) {
+        if (!(affSettings as any)?.ffEnabled || !affiliate.ffEnabled) {
           return res.json({ valid: false });
         }
         return res.json({ valid: true, code: `FF${affiliate.affiliateCode}`, isFriendsFamily: true });
@@ -186,7 +186,7 @@ router.post("/create-payment-intent", paymentLimiter, async (req: any, res) => {
       affiliate = await storage.getAffiliateByCode(resolved.baseCode);
       if (isFriendsFamily && affiliate) {
         const affSettings = await storage.getAffiliateSettings();
-        if (!(affSettings as any)?.ffEnabled) {
+        if (!(affSettings as any)?.ffEnabled || !affiliate.ffEnabled) {
           isFriendsFamily = false;
         }
       }
@@ -513,7 +513,7 @@ router.post("/reprice-payment-intent", paymentLimiter, async (req: any, res) => 
       affiliate = await storage.getAffiliateByCode(resolved.baseCode);
       if (isFriendsFamily && affiliate) {
         const affSettings = await storage.getAffiliateSettings();
-        if (!(affSettings as any)?.ffEnabled) {
+        if (!(affSettings as any)?.ffEnabled || !affiliate.ffEnabled) {
           isFriendsFamily = false;
         }
       }
@@ -840,7 +840,7 @@ router.post("/checkout", checkoutLimiter, async (req: any, res) => {
       affiliate = await storage.getAffiliateByCode(resolved.baseCode);
       if (isFriendsFamily && affiliate) {
         const affSettings = await storage.getAffiliateSettings();
-        if (!(affSettings as any)?.ffEnabled) {
+        if (!(affSettings as any)?.ffEnabled || !affiliate.ffEnabled) {
           isFriendsFamily = false;
         }
       }

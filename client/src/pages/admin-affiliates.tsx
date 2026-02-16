@@ -52,6 +52,7 @@ interface AffiliateProfile {
   customerName: string;
   customerEmail: string;
   createdAt: string;
+  ffEnabled?: boolean;
   payoutAccount?: {
     payoutsEnabled?: boolean;
     detailsSubmitted?: boolean;
@@ -433,6 +434,27 @@ export default function AdminAffiliates() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/affiliates-v2/leaderboard"] });
       setSelectedAffiliateId(null);
       toast({ title: "Affiliate deleted", description: "The affiliate and all related data have been permanently removed." });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const toggleFfMutation = useMutation({
+    mutationFn: async ({ affiliateId, ffEnabled }: { affiliateId: string; ffEnabled: boolean }) => {
+      const res = await fetch(`/api/admin/affiliates/${affiliateId}`, {
+        credentials: "include",
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ffEnabled }),
+      });
+      if (!res.ok) throw new Error("Failed to update F&F setting");
+      return res.json();
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/affiliates-v2/leaderboard"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/affiliates-v2", variables.affiliateId, "profile"] });
+      toast({ title: variables.ffEnabled ? "F&F enabled" : "F&F disabled", description: `Friends & Family code has been ${variables.ffEnabled ? "enabled" : "disabled"} for this affiliate.` });
     },
     onError: (error: Error) => {
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -965,6 +987,21 @@ export default function AdminAffiliates() {
                       <p className="text-sm mt-1">PayPal: {affiliateProfile.paypalEmail}</p>
                     )}
                     <Badge className={`mt-2 ${statusColors[affiliateProfile.status]}`}>{affiliateProfile.status}</Badge>
+                    <div className="flex items-center gap-2 mt-3">
+                      <Switch
+                        checked={affiliateProfile.ffEnabled !== false}
+                        onCheckedChange={(checked) => toggleFfMutation.mutate({ affiliateId: affiliateProfile.id, ffEnabled: checked })}
+                        disabled={toggleFfMutation.isPending}
+                        data-testid="switch-affiliate-ff"
+                      />
+                      <Label className="text-sm text-muted-foreground">
+                        Friends & Family Code {affiliateProfile.ffEnabled !== false ? (
+                          <span className="text-primary font-mono ml-1">FF{affiliateProfile.affiliateCode}</span>
+                        ) : (
+                          <span className="text-muted-foreground/50 ml-1">(disabled)</span>
+                        )}
+                      </Label>
+                    </div>
                   </div>
                   <div className="grid grid-cols-4 gap-4 text-center">
                     <div className="p-4 rounded-lg bg-muted">

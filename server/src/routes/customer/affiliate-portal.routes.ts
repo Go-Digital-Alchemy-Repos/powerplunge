@@ -303,11 +303,10 @@ router.get("/", requireCustomerAuth, async (req: AuthenticatedRequest, res: Resp
     const minimumPayout = settings?.minimumPayout ?? 5000;
     const approvalDays = settings?.approvalDays ?? 30;
     const agreementText = settings?.agreementText ?? "Affiliate Program Agreement - Terms and conditions for the affiliate program. By joining, you agree to promote our products ethically and in accordance with all applicable laws.";
-    const ffEnabled = (settings as any)?.ffEnabled ?? false;
+    const globalFfEnabled = (settings as any)?.ffEnabled ?? false;
     
     const affiliate = await storage.getAffiliateByCustomerId(customerId);
     if (!affiliate) {
-      // Return settings even if not an affiliate (needed to display join modal)
       return res.json({ 
         affiliate: null, 
         referrals: [], 
@@ -316,9 +315,11 @@ router.get("/", requireCustomerAuth, async (req: AuthenticatedRequest, res: Resp
         minimumPayout,
         approvalDays,
         agreementText,
-        ffEnabled,
+        ffEnabled: false,
       });
     }
+    
+    const affiliateFfEnabled = globalFfEnabled && (affiliate.ffEnabled !== false);
     
     const referrals = await storage.getAffiliateReferrals(affiliate.id);
     const payouts = await storage.getAffiliatePayouts(affiliate.id);
@@ -365,7 +366,7 @@ router.get("/", requireCustomerAuth, async (req: AuthenticatedRequest, res: Resp
       minimumPayout,
       approvalDays,
       agreementText,
-      ffEnabled,
+      ffEnabled: affiliateFfEnabled,
     });
   } catch (error: any) {
     console.error("Fetch affiliate data error:", error);
