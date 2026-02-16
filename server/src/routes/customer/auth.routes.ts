@@ -85,8 +85,6 @@ router.post("/login", authLimiter, async (req: any, res) => {
     const email = normalizeEmail(parsed.email);
     const { password } = parsed;
     
-    // Storefront login authenticates only against customer records.
-    // Admin access requires explicit login via /admin/login.
     const customerRecord = await storage.getCustomerByEmail(email);
     
     if (!customerRecord) {
