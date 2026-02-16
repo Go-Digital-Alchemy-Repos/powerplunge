@@ -237,6 +237,11 @@ adminSupportRouter.patch("/:id", requireAdmin, async (req, res, next) => {
           createdAt: new Date().toISOString(),
         },
       ];
+
+      // Automatically change status to 'In Progress' if currently 'Open'
+      if (existing.status === "open" && !parsed.data.status) {
+        updateData.status = "in_progress";
+      }
     }
 
     const [updated] = await db.update(supportTickets)
