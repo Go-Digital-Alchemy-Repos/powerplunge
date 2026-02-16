@@ -116,6 +116,18 @@ export interface AffiliateData {
   minimumPayout: number;
   approvalDays: number;
   agreementText: string;
+  ffEnabled?: boolean;
+  programTerms?: {
+    standard: {
+      commission: { type: string; value: number };
+      discount: { type: string; value: number };
+    };
+    friendsAndFamily: {
+      enabled: boolean;
+      commission: { type: string; value: number };
+      discount: { type: string; value: number };
+    };
+  };
 }
 
 export interface ConnectStatus {

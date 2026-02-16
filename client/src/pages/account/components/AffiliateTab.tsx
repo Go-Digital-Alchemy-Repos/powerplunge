@@ -8,6 +8,27 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { DollarSign, Users, Clock, CheckCircle, Copy, ExternalLink, Loader2, CreditCard, AlertTriangle, Calendar, AlertCircle } from "lucide-react";
 import { useAccountAffiliate } from "../hooks/useAccountAffiliate";
 
+function formatTermValue(type: string, value: number): string {
+  if (type === "FIXED") {
+    return `$${(value / 100).toLocaleString()}`;
+  }
+  return `${value}%`;
+}
+
+function formatCommissionLabel(type: string, value: number): string {
+  if (type === "FIXED") {
+    return `${formatTermValue(type, value)} commission per sale`;
+  }
+  return `${value}% commission`;
+}
+
+function formatDiscountLabel(type: string, value: number): string {
+  if (type === "FIXED") {
+    return `${formatTermValue(type, value)} customer discount`;
+  }
+  return `${value}% off`;
+}
+
 export default function AffiliateTab() {
   const {
     affiliateData,
@@ -86,7 +107,10 @@ export default function AffiliateTab() {
                 <p className="text-sm text-muted-foreground">Total Revenue Generated</p>
                 <p className="text-3xl font-bold text-primary">${((affiliateData.affiliate.totalRevenue || 0) / 100).toLocaleString()}</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  From {affiliateData.affiliate.totalReferrals} referrals at {affiliateData.commissionRate}% commission
+                  From {affiliateData.affiliate.totalReferrals} referrals at{" "}
+                  {affiliateData.programTerms
+                    ? formatCommissionLabel(affiliateData.programTerms.standard.commission.type, affiliateData.programTerms.standard.commission.value)
+                    : `${affiliateData.commissionRate}% commission`}
                 </p>
               </div>
             </CardContent>
@@ -100,7 +124,14 @@ export default function AffiliateTab() {
               <div className="flex flex-col md:flex-row gap-6">
                 <div className="flex-1">
                   <p className="text-sm text-muted-foreground mb-3">
-                    Share this link with friends and earn {affiliateData.commissionRate}% commission on every sale!
+                    Share this link with friends and earn{" "}
+                    {affiliateData.programTerms
+                      ? formatCommissionLabel(affiliateData.programTerms.standard.commission.type, affiliateData.programTerms.standard.commission.value)
+                      : `${affiliateData.commissionRate}% commission`}
+                    {" "}on every sale!
+                    {affiliateData.programTerms && affiliateData.programTerms.standard.discount.value > 0 && (
+                      <> Your customers get {formatDiscountLabel(affiliateData.programTerms.standard.discount.type, affiliateData.programTerms.standard.discount.value)}.</>
+                    )}
                   </p>
                   <div className="flex gap-2">
                     <Input 

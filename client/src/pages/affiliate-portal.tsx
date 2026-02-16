@@ -48,6 +48,38 @@ interface AffiliateData {
   approvalDays: number;
   agreementText: string;
   ffEnabled: boolean;
+  programTerms?: {
+    standard: {
+      commission: { type: string; value: number };
+      discount: { type: string; value: number };
+    };
+    friendsAndFamily: {
+      enabled: boolean;
+      commission: { type: string; value: number };
+      discount: { type: string; value: number };
+    };
+  };
+}
+
+function formatTermValue(type: string, value: number): string {
+  if (type === "FIXED") {
+    return `$${(value / 100).toLocaleString()}`;
+  }
+  return `${value}%`;
+}
+
+function formatCommissionLabel(type: string, value: number): string {
+  if (type === "FIXED") {
+    return `${formatTermValue(type, value)} commission per sale`;
+  }
+  return `${value}% commission`;
+}
+
+function formatDiscountLabel(type: string, value: number): string {
+  if (type === "FIXED") {
+    return `${formatTermValue(type, value)} customer discount`;
+  }
+  return `${value}% off`;
 }
 
 interface ConnectStatus {
@@ -428,7 +460,14 @@ export default function AffiliatePortal() {
               <div className="flex flex-col md:flex-row gap-6">
                 <div className="flex-1">
                   <p className="text-sm text-muted-foreground mb-3">
-                    Share this link with friends and earn {affiliateData.commissionRate}% commission on every sale!
+                    Share this link with friends and earn{" "}
+                    {affiliateData.programTerms
+                      ? formatCommissionLabel(affiliateData.programTerms.standard.commission.type, affiliateData.programTerms.standard.commission.value)
+                      : `${affiliateData.commissionRate}% commission`}
+                    {" "}on every sale!
+                    {affiliateData.programTerms && affiliateData.programTerms.standard.discount.value > 0 && (
+                      <> Your customers get {formatDiscountLabel(affiliateData.programTerms.standard.discount.type, affiliateData.programTerms.standard.discount.value)}.</>
+                    )}
                   </p>
                   <div className="flex gap-2">
                     <Input 
@@ -534,7 +573,11 @@ export default function AffiliatePortal() {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground mb-3">
-                  Share this special link with friends and family for an exclusive discount. This code has different terms than your regular affiliate code.
+                  Share this special link with friends and family for an exclusive discount.
+                  {affiliateData.programTerms && (
+                    <> You earn {formatCommissionLabel(affiliateData.programTerms.friendsAndFamily.commission.type, affiliateData.programTerms.friendsAndFamily.commission.value)}.
+                    Your friends & family get {formatDiscountLabel(affiliateData.programTerms.friendsAndFamily.discount.type, affiliateData.programTerms.friendsAndFamily.discount.value)}.</>
+                  )}
                 </p>
                 <div className="flex gap-2">
                   <Input 
@@ -716,7 +759,10 @@ export default function AffiliatePortal() {
                 <p className="text-sm text-muted-foreground">Total Revenue Generated</p>
                 <p className="text-3xl font-bold text-primary">${((affiliateData.affiliate.totalRevenue || 0) / 100).toLocaleString()}</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  From {affiliateData.affiliate.totalReferrals} referrals at {affiliateData.commissionRate}% commission
+                  From {affiliateData.affiliate.totalReferrals} referrals at{" "}
+                  {affiliateData.programTerms
+                    ? formatCommissionLabel(affiliateData.programTerms.standard.commission.type, affiliateData.programTerms.standard.commission.value)
+                    : `${affiliateData.commissionRate}% commission`}
                 </p>
               </div>
             </CardContent>

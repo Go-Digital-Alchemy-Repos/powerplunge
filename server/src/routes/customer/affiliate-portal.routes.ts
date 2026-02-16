@@ -304,6 +304,30 @@ router.get("/", requireCustomerAuth, async (req: AuthenticatedRequest, res: Resp
     const approvalDays = settings?.approvalDays ?? 30;
     const agreementText = settings?.agreementText ?? "Affiliate Program Agreement - Terms and conditions for the affiliate program. By joining, you agree to promote our products ethically and in accordance with all applicable laws.";
     const globalFfEnabled = (settings as any)?.ffEnabled ?? false;
+
+    const programTerms = {
+      standard: {
+        commission: {
+          type: settings?.defaultCommissionType ?? "PERCENT",
+          value: settings?.defaultCommissionValue ?? commissionRate,
+        },
+        discount: {
+          type: settings?.defaultDiscountType ?? "PERCENT",
+          value: settings?.defaultDiscountValue ?? 0,
+        },
+      },
+      friendsAndFamily: {
+        enabled: false as boolean,
+        commission: {
+          type: settings?.ffCommissionType ?? "PERCENT",
+          value: settings?.ffCommissionValue ?? 0,
+        },
+        discount: {
+          type: settings?.ffDiscountType ?? "PERCENT",
+          value: settings?.ffDiscountValue ?? 0,
+        },
+      },
+    };
     
     const affiliate = await storage.getAffiliateByCustomerId(customerId);
     if (!affiliate) {
@@ -316,10 +340,12 @@ router.get("/", requireCustomerAuth, async (req: AuthenticatedRequest, res: Resp
         approvalDays,
         agreementText,
         ffEnabled: false,
+        programTerms,
       });
     }
     
     const affiliateFfEnabled = globalFfEnabled && (affiliate.ffEnabled !== false);
+    programTerms.friendsAndFamily.enabled = affiliateFfEnabled;
     
     const referrals = await storage.getAffiliateReferrals(affiliate.id);
     const payouts = await storage.getAffiliatePayouts(affiliate.id);
@@ -367,6 +393,7 @@ router.get("/", requireCustomerAuth, async (req: AuthenticatedRequest, res: Resp
       approvalDays,
       agreementText,
       ffEnabled: affiliateFfEnabled,
+      programTerms,
     });
   } catch (error: any) {
     console.error("Fetch affiliate data error:", error);
