@@ -382,7 +382,7 @@ export default function AdminNav({ currentPage, role = "admin" }: AdminNavProps)
 
   return (
     <>
-      <nav className="sticky top-0 z-50 bg-card border-b border-border" data-testid="admin-nav">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-card border-b border-border" data-testid="admin-nav">
         {/* Desktop nav — hidden on mobile */}
         <div className="hidden lg:flex max-w-7xl mx-auto px-6 py-4 items-center justify-between">
           <div className="flex items-center gap-6">
@@ -650,6 +650,8 @@ export default function AdminNav({ currentPage, role = "admin" }: AdminNavProps)
           </div>
         </div>
       </nav>
+      {/* Spacer to offset content below the fixed nav */}
+      <div className="h-[57px] lg:h-[65px]" />
 
       {/* Mobile drawer */}
       <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
