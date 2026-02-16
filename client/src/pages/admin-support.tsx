@@ -22,6 +22,19 @@ interface AdminNote {
   createdAt: string;
 }
 
+interface CustomerReply {
+  text: string;
+  customerName: string;
+  createdAt: string;
+}
+
+interface ThreadEntry {
+  type: "customer_original" | "customer_reply" | "admin_reply";
+  text: string;
+  author: string;
+  createdAt: string;
+}
+
 interface SupportTicket {
   id: string;
   subject: string;
@@ -31,6 +44,7 @@ interface SupportTicket {
   priority: string;
   orderId: string | null;
   adminNotes: AdminNote[] | null;
+  customerReplies: CustomerReply[] | null;
   customerId: string;
   customerName: string | null;
   customerEmail: string | null;
@@ -38,6 +52,38 @@ interface SupportTicket {
   updatedAt: string;
   resolvedAt: string | null;
   resolvedBy: string | null;
+}
+
+function buildThread(ticket: SupportTicket): ThreadEntry[] {
+  const entries: ThreadEntry[] = [];
+  entries.push({
+    type: "customer_original",
+    text: ticket.message,
+    author: ticket.customerName || "Customer",
+    createdAt: ticket.createdAt,
+  });
+  if (Array.isArray(ticket.adminNotes)) {
+    for (const note of ticket.adminNotes) {
+      entries.push({
+        type: "admin_reply",
+        text: note.text,
+        author: note.adminName || "Support Team",
+        createdAt: note.createdAt,
+      });
+    }
+  }
+  if (Array.isArray(ticket.customerReplies)) {
+    for (const reply of ticket.customerReplies) {
+      entries.push({
+        type: "customer_reply",
+        text: reply.text,
+        author: reply.customerName || "Customer",
+        createdAt: reply.createdAt,
+      });
+    }
+  }
+  entries.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+  return entries;
 }
 
 interface TicketStats {
@@ -479,15 +525,49 @@ export default function AdminSupport() {
                 )}
               </div>
 
-              <div>
-                <h4 className="text-sm font-medium text-muted-foreground mb-2">Subject</h4>
-                <p className="font-medium">{selectedTicket.subject}</p>
+              <div className="flex items-center gap-3 mb-1">
+                <h4 className="font-medium">{selectedTicket.subject}</h4>
+                <Badge className={statusColors[selectedTicket.status]}>{selectedTicket.status.replace("_", " ")}</Badge>
+                <Badge className={priorityColors[selectedTicket.priority]}>{selectedTicket.priority}</Badge>
               </div>
 
-              <div>
-                <h4 className="text-sm font-medium text-muted-foreground mb-2">Message</h4>
-                <div className="p-4 rounded-lg bg-muted/30 whitespace-pre-wrap">
-                  {selectedTicket.message}
+              <div className="space-y-3" data-testid="ticket-thread">
+                <Label className="text-xs text-muted-foreground uppercase tracking-wider">Conversation</Label>
+                <div className="space-y-3 max-h-[40vh] overflow-y-auto pr-1" data-testid="thread-container">
+                  {buildThread(selectedTicket).map((entry, idx) => {
+                    const isAdmin = entry.type === "admin_reply";
+                    const isCustomer = entry.type === "customer_original" || entry.type === "customer_reply";
+                    const isHtml = isAdmin && entry.text.includes("<") && entry.text.includes(">");
+                    return (
+                      <div
+                        key={idx}
+                        className={`flex gap-3 ${isAdmin ? "" : ""}`}
+                        data-testid={`thread-entry-${idx}`}
+                      >
+                        <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${isAdmin ? "bg-blue-500/20 text-blue-400" : "bg-primary/20 text-primary"}`}>
+                          {isAdmin ? <Headset className="w-4 h-4" /> : <User className="w-4 h-4" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className={`text-sm font-medium ${isAdmin ? "text-blue-400" : ""}`}>
+                              {entry.author}
+                            </span>
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                              {isAdmin ? "Staff" : "Customer"}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">{new Date(entry.createdAt).toLocaleString()}</span>
+                          </div>
+                          <div className={`rounded-lg p-3 text-sm ${isAdmin ? "bg-blue-500/10 border border-blue-500/20" : "bg-muted/50 border"}`}>
+                            {isHtml ? (
+                              <div className="prose prose-sm prose-invert max-w-none [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1" dangerouslySetInnerHTML={{ __html: entry.text }} data-testid={`thread-text-${idx}`} />
+                            ) : (
+                              <p className="whitespace-pre-wrap" data-testid={`thread-text-${idx}`}>{entry.text}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -522,57 +602,35 @@ export default function AdminSupport() {
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <Label>Add Note</Label>
-                <RichTextEditor
-                  content={newNoteText}
-                  onChange={setNewNoteText}
-                  placeholder="Add an internal note about this ticket..."
-                  data-testid="input-admin-notes"
-                />
+              {selectedTicket.status !== "closed" && (
+                <div className="space-y-2">
+                  <Label>Add Reply</Label>
+                  <RichTextEditor
+                    content={newNoteText}
+                    onChange={setNewNoteText}
+                    placeholder="Type your reply to the customer..."
+                    data-testid="input-admin-notes"
+                  />
+                </div>
+              )}
 
-                {selectedTicket.adminNotes && selectedTicket.adminNotes.length > 0 && (
-                  <div className="space-y-2" data-testid="notes-history">
-                    <Label className="text-xs text-muted-foreground uppercase tracking-wider">Note History</Label>
-                    <div className="space-y-2 max-h-60 overflow-y-auto">
-                      {[...selectedTicket.adminNotes].reverse().map((note, idx) => (
-                        <div
-                          key={idx}
-                          className="p-3 rounded-lg bg-muted/30 border text-sm space-y-1"
-                          data-testid={`note-entry-${idx}`}
-                        >
-                          <p className="whitespace-pre-wrap">{note.text}</p>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1 border-t border-border/50">
-                            <span className="font-medium">{note.adminName || "System"}</span>
-                            <span>·</span>
-                            <span>{new Date(note.createdAt).toLocaleString()}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="text-xs text-muted-foreground space-y-1">
-                <p>Created: {new Date(selectedTicket.createdAt).toLocaleString()}</p>
-                <p>Updated: {new Date(selectedTicket.updatedAt).toLocaleString()}</p>
-                {selectedTicket.resolvedAt && (
-                  <p>Resolved: {new Date(selectedTicket.resolvedAt).toLocaleString()}</p>
-                )}
-              </div>
-
-              <div className="flex justify-end gap-2 pt-4 border-t">
-                <Button variant="outline" onClick={() => setSelectedTicket(null)}>
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleUpdateTicket}
-                  disabled={updateTicketMutation.isPending}
-                  data-testid="button-update-ticket"
-                >
-                  {updateTicketMutation.isPending ? "Updating..." : "Update Ticket"}
-                </Button>
+              <div className="flex items-center justify-between pt-4 border-t">
+                <div className="text-xs text-muted-foreground">
+                  Created {new Date(selectedTicket.createdAt).toLocaleString()}
+                  {selectedTicket.resolvedAt && ` · Resolved ${new Date(selectedTicket.resolvedAt).toLocaleString()}`}
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={() => setSelectedTicket(null)}>
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleUpdateTicket}
+                    disabled={updateTicketMutation.isPending}
+                    data-testid="button-update-ticket"
+                  >
+                    {updateTicketMutation.isPending ? "Updating..." : "Update Ticket"}
+                  </Button>
+                </div>
               </div>
             </div>
           )}

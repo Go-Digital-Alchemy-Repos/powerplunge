@@ -60,12 +60,70 @@ function statusLabel(status: string) {
   return status.charAt(0).toUpperCase() + status.slice(1);
 }
 
-function TicketDetailDialog({ ticket, open, onOpenChange }: { ticket: SupportTicket | null; open: boolean; onOpenChange: (open: boolean) => void }) {
+interface ThreadEntry {
+  type: "customer_original" | "customer_reply" | "admin_reply";
+  text: string;
+  author: string;
+  createdAt: string;
+}
+
+function buildThread(ticket: SupportTicket, customerName: string): ThreadEntry[] {
+  const entries: ThreadEntry[] = [];
+  entries.push({
+    type: "customer_original",
+    text: ticket.message,
+    author: customerName,
+    createdAt: ticket.createdAt,
+  });
+  if (Array.isArray(ticket.adminNotes)) {
+    for (const note of ticket.adminNotes) {
+      entries.push({
+        type: "admin_reply",
+        text: note.text,
+        author: note.adminName || "Support Team",
+        createdAt: note.createdAt,
+      });
+    }
+  }
+  if (Array.isArray(ticket.customerReplies)) {
+    for (const reply of ticket.customerReplies) {
+      entries.push({
+        type: "customer_reply",
+        text: reply.text,
+        author: reply.customerName || customerName,
+        createdAt: reply.createdAt,
+      });
+    }
+  }
+  entries.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+  return entries;
+}
+
+function TicketDetailDialog({
+  ticket,
+  open,
+  onOpenChange,
+  replyMutation,
+}: {
+  ticket: SupportTicket | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  replyMutation: ReturnType<typeof useAccountSupport>["replyMutation"];
+}) {
   const { customer } = useCustomerAuth();
+  const [replyText, setReplyText] = useState("");
   if (!ticket) return null;
 
-  const notes = Array.isArray(ticket.adminNotes) ? ticket.adminNotes : [];
-  const hasReplies = notes.length > 0;
+  const thread = buildThread(ticket, customer?.name || "You");
+  const isClosed = ticket.status === "closed";
+
+  const handleSendReply = () => {
+    if (!replyText.trim()) return;
+    replyMutation.mutate(
+      { ticketId: ticket.id, message: replyText.trim() },
+      { onSuccess: () => setReplyText("") }
+    );
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -88,39 +146,34 @@ function TicketDetailDialog({ ticket, open, onOpenChange }: { ticket: SupportTic
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto space-y-4 py-2 min-h-0" data-testid="ticket-conversation-thread">
-          <div className="flex gap-3" data-testid="ticket-customer-message">
-            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center">
-              <User className="w-4 h-4" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-sm font-medium">{customer?.name || "You"}</span>
-                <span className="text-xs text-muted-foreground">{formatDateTime(ticket.createdAt)}</span>
-              </div>
-              <div className="rounded-lg bg-muted/50 border p-3">
-                <p className="text-sm whitespace-pre-wrap" data-testid="text-ticket-original-message">{ticket.message}</p>
-              </div>
-            </div>
-          </div>
-
-          {notes.map((note, index) => (
-            <div key={index} className="flex gap-3" data-testid={`ticket-admin-reply-${index}`}>
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center">
-                <Shield className="w-4 h-4" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-sm font-medium text-blue-400">{note.adminName || "Support Team"}</span>
-                  <span className="text-xs text-muted-foreground">{formatDateTime(note.createdAt)}</span>
+          {thread.map((entry, idx) => {
+            const isAdmin = entry.type === "admin_reply";
+            const isHtml = isAdmin && entry.text.includes("<") && entry.text.includes(">");
+            return (
+              <div key={idx} className="flex gap-3" data-testid={`thread-entry-${idx}`}>
+                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${isAdmin ? "bg-blue-500/20 text-blue-400" : "bg-primary/20 text-primary"}`}>
+                  {isAdmin ? <Shield className="w-4 h-4" /> : <User className="w-4 h-4" />}
                 </div>
-                <div className="rounded-lg bg-blue-500/10 border border-blue-500/20 p-3">
-                  <p className="text-sm whitespace-pre-wrap" data-testid={`text-admin-reply-${index}`}>{note.text}</p>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={`text-sm font-medium ${isAdmin ? "text-blue-400" : ""}`}>
+                      {isAdmin ? entry.author : "You"}
+                    </span>
+                    <span className="text-xs text-muted-foreground">{formatDateTime(entry.createdAt)}</span>
+                  </div>
+                  <div className={`rounded-lg p-3 text-sm ${isAdmin ? "bg-blue-500/10 border border-blue-500/20" : "bg-muted/50 border"}`}>
+                    {isHtml ? (
+                      <div className="prose prose-sm prose-invert max-w-none [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1" dangerouslySetInnerHTML={{ __html: entry.text }} data-testid={`thread-text-${idx}`} />
+                    ) : (
+                      <p className="whitespace-pre-wrap" data-testid={`thread-text-${idx}`}>{entry.text}</p>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
 
-          {!hasReplies && (
+          {thread.length === 1 && (
             <div className="text-center py-4" data-testid="text-no-replies">
               <Clock className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
               <p className="text-sm text-muted-foreground">Waiting for a response from our support team</p>
@@ -136,6 +189,34 @@ function TicketDetailDialog({ ticket, open, onOpenChange }: { ticket: SupportTic
             </div>
           )}
         </div>
+
+        {!isClosed && (
+          <div className="border-t pt-3 flex gap-2" data-testid="reply-section">
+            <Textarea
+              value={replyText}
+              onChange={(e) => setReplyText(e.target.value)}
+              placeholder="Type your reply..."
+              rows={2}
+              className="flex-1 resize-none"
+              maxLength={5000}
+              data-testid="input-customer-reply"
+            />
+            <Button
+              size="sm"
+              onClick={handleSendReply}
+              disabled={!replyText.trim() || replyMutation.isPending}
+              className="self-end"
+              data-testid="button-send-reply"
+            >
+              {replyMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            </Button>
+          </div>
+        )}
+        {isClosed && (
+          <div className="border-t pt-3 text-center text-sm text-muted-foreground">
+            This ticket is closed. No further replies can be added.
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
@@ -149,6 +230,7 @@ export default function SupportTab() {
     supportTickets,
     ticketsLoading,
     createTicketMutation,
+    replyMutation,
   } = useAccountSupport();
   const { orders } = useAccountOrders();
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
@@ -291,7 +373,9 @@ export default function SupportTab() {
             ) : (
               <div className="space-y-3 max-h-[500px] overflow-y-auto">
                 {supportTickets.tickets.map((ticket) => {
-                  const replyCount = Array.isArray(ticket.adminNotes) ? ticket.adminNotes.length : 0;
+                  const adminCount = Array.isArray(ticket.adminNotes) ? ticket.adminNotes.length : 0;
+                  const customerCount = Array.isArray(ticket.customerReplies) ? ticket.customerReplies.length : 0;
+                  const replyCount = adminCount + customerCount;
                   return (
                     <button
                       key={ticket.id}
@@ -348,6 +432,7 @@ export default function SupportTab() {
         ticket={selectedTicket}
         open={!!selectedTicket}
         onOpenChange={(open) => { if (!open) setSelectedTicketId(null); }}
+        replyMutation={replyMutation}
       />
     </>
   );

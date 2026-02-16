@@ -150,6 +150,12 @@ export interface AdminNote {
   createdAt: string;
 }
 
+export interface CustomerReply {
+  text: string;
+  customerName: string;
+  createdAt: string;
+}
+
 export interface SupportTicket {
   id: string;
   subject: string;
@@ -159,6 +165,7 @@ export interface SupportTicket {
   priority: string;
   orderId: string | null;
   adminNotes: AdminNote[] | null;
+  customerReplies: CustomerReply[] | null;
   createdAt: string;
   updatedAt: string;
   resolvedAt: string | null;

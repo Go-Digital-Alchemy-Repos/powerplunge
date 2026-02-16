@@ -8,7 +8,7 @@ import {
   AuthenticatedRequest 
 } from "../../middleware/customer-auth.middleware";
 import { db } from "../../../db";
-import { supportTickets, orders } from "@shared/schema";
+import { supportTickets, orders, customers } from "@shared/schema";
 import { eq, and, desc } from "drizzle-orm";
 
 const router = Router();
@@ -131,6 +131,7 @@ router.get("/support", requireCustomerAuth, async (req: AuthenticatedRequest, re
       priority: supportTickets.priority,
       orderId: supportTickets.orderId,
       adminNotes: supportTickets.adminNotes,
+      customerReplies: supportTickets.customerReplies,
       createdAt: supportTickets.createdAt,
       updatedAt: supportTickets.updatedAt,
       resolvedAt: supportTickets.resolvedAt,
@@ -185,6 +186,61 @@ router.post("/support", requireCustomerAuth, async (req: AuthenticatedRequest, r
     }
     console.error("Create support ticket error:", error);
     res.status(500).json({ message: "Failed to create support ticket" });
+  }
+});
+
+const replySchema = z.object({
+  message: z.string().min(1, "Message is required").max(5000),
+});
+
+router.post("/support/:id/reply", requireCustomerAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const customerId = req.customerSession!.customerId;
+    const { id } = req.params;
+    const data = replySchema.parse(req.body);
+
+    const existing = await db.query.supportTickets.findFirst({
+      where: and(
+        eq(supportTickets.id, id),
+        eq(supportTickets.customerId, customerId)
+      ),
+    });
+
+    if (!existing) {
+      return res.status(404).json({ message: "Ticket not found" });
+    }
+
+    if (existing.status === "closed") {
+      return res.status(400).json({ message: "Cannot reply to a closed ticket" });
+    }
+
+    const customer = await db.query.customers.findFirst({
+      where: eq(customers.id, customerId),
+    });
+
+    const existingReplies = Array.isArray(existing.customerReplies) ? existing.customerReplies : [];
+    const [updated] = await db.update(supportTickets)
+      .set({
+        customerReplies: [
+          ...existingReplies,
+          {
+            text: data.message,
+            customerName: customer?.name || "Customer",
+            createdAt: new Date().toISOString(),
+          },
+        ],
+        updatedAt: new Date(),
+      })
+      .where(eq(supportTickets.id, id))
+      .returning();
+
+    res.json({ success: true, ticket: updated });
+  } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ message: error.errors[0].message });
+    }
+    console.error("Customer reply error:", error);
+    res.status(500).json({ message: "Failed to add reply" });
   }
 });
 

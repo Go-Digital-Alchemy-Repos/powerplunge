@@ -54,11 +54,34 @@ export function useAccountSupport() {
     },
   });
 
+  const replyMutation = useMutation({
+    mutationFn: async ({ ticketId, message }: { ticketId: string; message: string }) => {
+      const res = await fetch(`/api/customer/orders/support/${ticketId}/reply`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...getAuthHeader() },
+        body: JSON.stringify({ message }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Failed to send reply");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/customer/orders/support"] });
+      toast({ title: "Reply sent!" });
+    },
+    onError: (error: any) => {
+      toast({ title: error.message, variant: "destructive" });
+    },
+  });
+
   return {
     supportForm,
     setSupportForm,
     supportTickets,
     ticketsLoading,
     createTicketMutation,
+    replyMutation,
   };
 }
