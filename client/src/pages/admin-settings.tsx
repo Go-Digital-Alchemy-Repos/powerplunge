@@ -301,7 +301,7 @@ export default function AdminSettings() {
     <div className="min-h-screen bg-background">
       <AdminNav currentPage="settings" role={role} />
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
-        <div className="mb-8 flex items-start justify-between gap-4">
+        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-8">
           <div>
             <h2 className="text-3xl font-bold">Site Settings</h2>
             <p className="text-muted-foreground mt-2">Configure your website, branding, notifications, and integrations.</p>

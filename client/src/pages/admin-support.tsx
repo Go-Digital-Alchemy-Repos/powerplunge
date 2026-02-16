@@ -311,11 +311,14 @@ export default function AdminSupport() {
       <AdminNav currentPage="support" role={role} />
 
       <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold flex items-center gap-3">
-            <Headset className="w-8 h-8 text-primary" />
-            Support Tickets
-          </h1>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+          <div>
+            <h1 className="text-3xl font-bold flex items-center gap-3">
+              <Headset className="w-8 h-8 text-primary" />
+              Support Tickets
+            </h1>
+            <p className="text-muted-foreground mt-1">Manage customer inquiries and support conversations</p>
+          </div>
           <div className="flex items-center gap-2">
             <Button
               onClick={() => {
