@@ -30,12 +30,12 @@ function isPaymentBypassed(order: { isManualOrder?: boolean | null; stripePaymen
 }
 
 function formatOrderAmount(order: { totalAmount: number; isManualOrder?: boolean | null; stripePaymentIntentId?: string | null }): string {
-  if (isPaymentBypassed(order)) return "FREE";
+  if (isPaymentBypassed(order)) return "$0.00";
   return formatCurrency(order.totalAmount);
 }
 
 function formatItemPrice(cents: number, order: { isManualOrder?: boolean | null; stripePaymentIntentId?: string | null }): string {
-  if (isPaymentBypassed(order)) return "FREE";
+  if (isPaymentBypassed(order)) return "$0.00";
   return formatCurrency(cents);
 }
 

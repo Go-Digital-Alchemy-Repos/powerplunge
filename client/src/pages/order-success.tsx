@@ -189,7 +189,7 @@ export default function OrderSuccess() {
               <div className="flex justify-between pt-4 border-t border-border">
                 <p className="font-semibold">Total</p>
                 <p className="font-display font-bold text-2xl text-primary" data-testid="text-order-total">
-                  {orderData.order.isManualOrder && !orderData.order.stripePaymentIntentId ? "FREE" : `$${(orderData.order.totalAmount / 100).toLocaleString()}`}
+                  {`$${(orderData.order.totalAmount / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                 </p>
               </div>
             </CardContent>

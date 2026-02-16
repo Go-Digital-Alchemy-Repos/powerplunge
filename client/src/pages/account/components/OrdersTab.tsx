@@ -159,7 +159,7 @@ export default function OrdersTab() {
                     )}
                     <div className="flex justify-between pt-4 font-semibold">
                       <span>Total</span>
-                      <span className="text-primary">{order.isManualOrder && !order.stripePaymentIntentId ? "FREE" : `$${(order.totalAmount / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}</span>
+                      <span className="text-primary">{`$${(order.totalAmount / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}</span>
                     </div>
                   </div>
 

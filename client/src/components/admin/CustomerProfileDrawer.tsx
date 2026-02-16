@@ -936,7 +936,7 @@ export function CustomerProfileDrawer({
                           </div>
                           <div className="flex items-center gap-4">
                             <span className="font-semibold">
-                              {order.isManualOrder && !order.stripePaymentIntentId ? "FREE" : formatCurrency(order.totalAmount)}
+                              {order.isManualOrder && !order.stripePaymentIntentId ? "$0.00" : formatCurrency(order.totalAmount)}
                             </span>
                             <span className="text-muted-foreground text-sm">
                               {formatDate(order.createdAt)}

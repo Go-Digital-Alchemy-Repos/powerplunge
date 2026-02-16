@@ -61,8 +61,7 @@ function isPaymentBypassed(order: { isManualOrder?: boolean; stripePaymentIntent
 }
 
 function formatOrderPrice(order: { totalAmount: number; isManualOrder?: boolean; stripePaymentIntentId?: string | null }): string {
-  if (isPaymentBypassed(order)) return "FREE";
-  return `$${(order.totalAmount / 100).toLocaleString()}`;
+  return `$${(order.totalAmount / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 interface OrderFilters {
@@ -871,12 +870,6 @@ export default function AdminOrders() {
                         </DialogContent>
                       </Dialog>
                     </div>
-                  </CardContent>
-                </Card>
-              ) : (
-                <Card>
-                  <CardContent className="py-12 text-center text-muted-foreground">
-                    Select an order to view details
                   </CardContent>
                 </Card>
               )}

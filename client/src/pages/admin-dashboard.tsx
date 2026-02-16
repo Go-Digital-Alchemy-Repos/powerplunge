@@ -155,7 +155,7 @@ export default function AdminDashboard() {
                           </div>
                           <div className="text-right">
                             <p className="font-medium">
-                              {order.isManualOrder && !order.stripePaymentIntentId ? "FREE" : formatCurrency(order.totalAmount)}
+                              {formatCurrency(order.totalAmount)}
                             </p>
                             <span className={`text-xs px-2 py-1 rounded ${getStatusColor(order.status)}`}>
                               {order.status}
