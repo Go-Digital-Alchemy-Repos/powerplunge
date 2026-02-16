@@ -190,11 +190,12 @@ function CheckoutForm({ clientSecret, orderId, cartTotal, totalWithTax, cart, bi
     trackCheckoutEvent("payment_submitted", { cartValue: totalWithTax, method: "express" });
 
     try {
-      const { error } = await stripe.confirmPayment({
+      const { error, paymentIntent } = await stripe.confirmPayment({
         elements,
         confirmParams: {
           return_url: `${window.location.origin}/order-success?order_id=${orderId}`,
         },
+        redirect: "if_required",
       });
 
       if (error) {
@@ -204,6 +205,80 @@ function CheckoutForm({ clientSecret, orderId, cartTotal, totalWithTax, cart, bi
           description: error.message,
           variant: "destructive",
         });
+        setIsProcessing(false);
+        return;
+      }
+
+      if (paymentIntent) {
+        if (paymentIntent.status === "succeeded") {
+          trackCheckoutEvent("payment_succeeded", { cartValue: totalWithTax, method: "express" });
+
+          const confirmResponse = await fetch("/api/confirm-payment", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              orderId,
+              paymentIntentId: paymentIntent.id,
+            }),
+          });
+
+          const confirmData = await confirmResponse.json();
+
+          if (!confirmResponse.ok) {
+            toast({
+              title: "Confirmation Error",
+              description: confirmData.message || "Failed to confirm payment. Please contact support.",
+              variant: "destructive",
+            });
+            setIsProcessing(false);
+            return;
+          }
+
+          const checkoutSessionId = localStorage.getItem("checkoutSessionId");
+          if (checkoutSessionId) {
+            fetch("/api/recovery/mark-cart-recovered", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ sessionId: checkoutSessionId, orderId }),
+            }).catch(() => {});
+          }
+
+          trackPurchase({
+            transactionId: orderId,
+            value: totalWithTax / 100,
+            items: cart.map((i) => ({
+              id: i.id,
+              name: i.name,
+              price: i.price / 100,
+              quantity: i.quantity,
+            })),
+          });
+
+          localStorage.removeItem("cart");
+          localStorage.removeItem("checkoutSessionId");
+          sessionStorage.removeItem("pp_checkout_session_id");
+          sessionStorage.removeItem("checkoutFormData");
+          sessionStorage.removeItem("checkoutBillingData");
+          sessionStorage.removeItem("checkoutShippingAddress");
+          sessionStorage.removeItem("checkoutBillingAddress");
+          setLocation(`/order-success?order_id=${orderId}`);
+        } else if (paymentIntent.status === "requires_action" || paymentIntent.status === "requires_confirmation") {
+          toast({
+            title: "Additional Verification Required",
+            description: "Please complete the verification process.",
+          });
+        } else if (paymentIntent.status === "processing") {
+          toast({
+            title: "Payment Processing",
+            description: "Your payment is being processed. Please wait...",
+          });
+        } else {
+          toast({
+            title: "Payment Status",
+            description: `Payment status: ${paymentIntent.status}. Please try again or contact support.`,
+            variant: "destructive",
+          });
+        }
       }
     } catch (err: any) {
       trackCheckoutEvent("payment_failed", { error: err.message, method: "express" });
