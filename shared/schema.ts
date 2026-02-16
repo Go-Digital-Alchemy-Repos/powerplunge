@@ -363,6 +363,11 @@ export const affiliateSettings = pgTable("affiliate_settings", {
   approvalDays: integer("approval_days").notNull().default(14), // days before auto-approval
   agreementText: text("agreement_text").notNull().default(""),
   programActive: boolean("program_active").notNull().default(true),
+  ffEnabled: boolean("ff_enabled").notNull().default(false),
+  ffDiscountType: text("ff_discount_type").notNull().default("PERCENT"),
+  ffDiscountValue: integer("ff_discount_value").notNull().default(20),
+  ffCommissionType: text("ff_commission_type").notNull().default("PERCENT"),
+  ffCommissionValue: integer("ff_commission_value").notNull().default(0),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 

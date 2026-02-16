@@ -47,6 +47,7 @@ interface AffiliateData {
   minimumPayout: number;
   approvalDays: number;
   agreementText: string;
+  ffEnabled: boolean;
 }
 
 interface ConnectStatus {
@@ -258,6 +259,8 @@ export default function AffiliatePortal() {
     }
   }, [queryClient, toast]);
 
+  const [ffCopied, setFfCopied] = useState(false);
+
   const copyReferralLink = () => {
     if (affiliateData?.affiliate?.code) {
       const link = `${window.location.origin}?ref=${affiliateData.affiliate.code}`;
@@ -265,6 +268,17 @@ export default function AffiliatePortal() {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
       toast({ title: "Referral link copied!" });
+    }
+  };
+
+  const copyFfLink = () => {
+    if (affiliateData?.affiliate?.code) {
+      const ffCode = `FF${affiliateData.affiliate.code}`;
+      const link = `${window.location.origin}?ref=${ffCode}`;
+      navigator.clipboard.writeText(link);
+      setFfCopied(true);
+      setTimeout(() => setFfCopied(false), 2000);
+      toast({ title: "Friends & Family link copied!" });
     }
   };
 
@@ -509,6 +523,40 @@ export default function AffiliatePortal() {
               </div>
             </CardContent>
           </Card>
+
+          {affiliateData.ffEnabled && (
+            <Card className="border-primary/30 bg-primary/5">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Users className="w-5 h-5" />
+                  Friends & Family Code
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Share this special link with friends and family for an exclusive discount. This code has different terms than your regular affiliate code.
+                </p>
+                <div className="flex gap-2">
+                  <Input 
+                    value={`${window.location.origin}?ref=FF${affiliateData.affiliate.code}`}
+                    readOnly
+                    className="text-sm"
+                    data-testid="input-ff-referral-link"
+                  />
+                  <Button onClick={copyFfLink} className="gap-2" data-testid="button-copy-ff-link">
+                    {ffCopied ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    {ffCopied ? "Copied!" : "Copy"}
+                  </Button>
+                </div>
+                <div className="mt-3 p-3 bg-primary/10 rounded-lg border border-primary/20">
+                  <p className="text-sm">
+                    <span className="font-medium">F&F code:</span>{" "}
+                    <code className="bg-background px-2 py-1 rounded" data-testid="text-ff-code">FF{affiliateData.affiliate.code}</code>
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           <Card>
             <CardHeader>

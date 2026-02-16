@@ -136,6 +136,7 @@ export class AffiliateCommissionService {
     attributionType?: string;
     idempotencyKey?: string;
     customerIp?: string;
+    isFriendsFamily?: boolean;
   }): Promise<CommissionResult> {
     // Generate idempotency key from orderId if not provided
     const idempotencyKey = options?.idempotencyKey || `commission-${orderId}`;
@@ -211,6 +212,7 @@ export class AffiliateCommissionService {
 
       let commissionAmount = 0;
       const commissionBase = order.subtotalAmount ?? order.totalAmount;
+      const isFriendsFamily = options?.isFriendsFamily && settings?.ffEnabled;
 
       if (items.length > 0) {
         for (const item of items) {
@@ -225,7 +227,10 @@ export class AffiliateCommissionService {
 
           let commType: string;
           let commValue: number;
-          if (product.affiliateUseGlobalSettings || !product.affiliateCommissionType) {
+          if (isFriendsFamily) {
+            commType = settings?.ffCommissionType || "PERCENT";
+            commValue = settings?.ffCommissionValue ?? 0;
+          } else if (product.affiliateUseGlobalSettings || !product.affiliateCommissionType) {
             commType = settings?.defaultCommissionType || "PERCENT";
             commValue = settings?.defaultCommissionValue ?? settings?.commissionRate ?? 10;
           } else {
@@ -240,8 +245,15 @@ export class AffiliateCommissionService {
           }
         }
       } else {
-        const fallbackValue = settings?.defaultCommissionValue ?? settings?.commissionRate ?? 10;
-        const fallbackType = settings?.defaultCommissionType || "PERCENT";
+        let fallbackValue: number;
+        let fallbackType: string;
+        if (isFriendsFamily) {
+          fallbackType = settings?.ffCommissionType || "PERCENT";
+          fallbackValue = settings?.ffCommissionValue ?? 0;
+        } else {
+          fallbackValue = settings?.defaultCommissionValue ?? settings?.commissionRate ?? 10;
+          fallbackType = settings?.defaultCommissionType || "PERCENT";
+        }
         if (fallbackType === "PERCENT") {
           commissionAmount = Math.floor(commissionBase * (fallbackValue / 100));
         } else {

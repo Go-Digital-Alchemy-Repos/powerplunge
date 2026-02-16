@@ -34,6 +34,11 @@ interface AffiliateSettings {
   cookieDuration: number;
   agreementText: string;
   programActive: boolean;
+  ffEnabled: boolean;
+  ffDiscountType: string;
+  ffDiscountValue: number;
+  ffCommissionType: string;
+  ffCommissionValue: number;
   updatedAt: string;
 }
 
@@ -52,6 +57,11 @@ export default function AdminAffiliateSettings() {
     cookieDuration: 30,
     agreementText: "",
     programActive: true,
+    ffEnabled: false,
+    ffDiscountType: "PERCENT",
+    ffDiscountValue: 20,
+    ffCommissionType: "PERCENT",
+    ffCommissionValue: 0,
   });
 
   const { data: settings, isLoading } = useQuery<AffiliateSettings>({
@@ -82,6 +92,15 @@ export default function AdminAffiliateSettings() {
         cookieDuration: settings.cookieDuration,
         agreementText: settings.agreementText,
         programActive: settings.programActive,
+        ffEnabled: settings.ffEnabled ?? false,
+        ffDiscountType: settings.ffDiscountType || "PERCENT",
+        ffDiscountValue: (settings.ffDiscountType === "FIXED"
+          ? Math.round((settings.ffDiscountValue ?? 0) / 100 * 100) / 100
+          : settings.ffDiscountValue ?? 20),
+        ffCommissionType: settings.ffCommissionType || "PERCENT",
+        ffCommissionValue: (settings.ffCommissionType === "FIXED"
+          ? Math.round((settings.ffCommissionValue ?? 0) / 100 * 100) / 100
+          : settings.ffCommissionValue ?? 0),
       });
     }
   }, [settings]);
@@ -122,6 +141,12 @@ export default function AdminAffiliateSettings() {
       defaultDiscountValue: formData.defaultDiscountType === "FIXED"
         ? Math.round((formData.defaultDiscountValue || 0) * 100)
         : (formData.defaultDiscountValue || 0),
+      ffDiscountValue: formData.ffDiscountType === "FIXED"
+        ? Math.round((formData.ffDiscountValue || 0) * 100)
+        : (formData.ffDiscountValue || 0),
+      ffCommissionValue: formData.ffCommissionType === "FIXED"
+        ? Math.round((formData.ffCommissionValue || 0) * 100)
+        : (formData.ffCommissionValue || 0),
     };
     updateMutation.mutate(payload);
   };
@@ -354,6 +379,73 @@ export default function AdminAffiliateSettings() {
                       data-testid="input-cookie-duration"
                     />
                     <p className="text-xs text-muted-foreground">How long referral tracking lasts</p>
+                  </div>
+                </div>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+
+          <Collapsible defaultOpen className="border rounded-lg bg-card text-card-foreground shadow-sm">
+            <CollapsibleTrigger asChild>
+              <div className="flex items-center justify-between p-6 cursor-pointer hover:bg-muted/50 transition-colors group">
+                <div>
+                  <h3 className="text-lg font-semibold leading-none tracking-tight">Friends & Family Code</h3>
+                  <p className="text-sm text-muted-foreground mt-1">A second discount code for affiliates to share with friends and family</p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <Switch
+                    checked={formData.ffEnabled}
+                    onCheckedChange={(checked) => setFormData({ ...formData, ffEnabled: checked })}
+                    onClick={(e) => e.stopPropagation()}
+                    data-testid="switch-ff-enabled"
+                  />
+                  <ChevronDown className="w-5 h-5 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                </div>
+              </div>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="px-6 pb-6 pt-0 border-t">
+              <div className="space-y-6 pt-6">
+                <div className="p-3 rounded-lg bg-muted/50 border">
+                  <p className="text-sm text-muted-foreground">
+                    When enabled, each affiliate gets a second code with the prefix <code className="bg-background px-1 py-0.5 rounded font-mono">FF</code>. For example, if an affiliate's code is <code className="bg-background px-1 py-0.5 rounded font-mono">TOMMY</code>, their Friends & Family code will be <code className="bg-background px-1 py-0.5 rounded font-mono">FFTOMMY</code>.
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  <h4 className="font-medium text-sm">F&F Customer Discount (applied at checkout)</h4>
+                  <div className="space-y-2">
+                    <Label>Discount Amount</Label>
+                    <AmountTypeInput
+                      value={formData.ffDiscountValue ?? 20}
+                      onChange={(v) => setFormData({ ...formData, ffDiscountValue: v })}
+                      type={formData.ffDiscountType === "FIXED" ? "fixed" : "percent"}
+                      onTypeChange={(t) => setFormData({ ...formData, ffDiscountType: t === "fixed" ? "FIXED" : "PERCENT", ffDiscountValue: 0 })}
+                      data-testid="input-ff-discount-value"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {formData.ffDiscountType === "FIXED"
+                        ? "Flat discount in dollars for F&F code orders"
+                        : "Percentage off for F&F code orders"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h4 className="font-medium text-sm">F&F Commission (paid to affiliates)</h4>
+                  <div className="space-y-2">
+                    <Label>Commission Amount</Label>
+                    <AmountTypeInput
+                      value={formData.ffCommissionValue ?? 0}
+                      onChange={(v) => setFormData({ ...formData, ffCommissionValue: v })}
+                      type={formData.ffCommissionType === "FIXED" ? "fixed" : "percent"}
+                      onTypeChange={(t) => setFormData({ ...formData, ffCommissionType: t === "fixed" ? "FIXED" : "PERCENT", ffCommissionValue: 0 })}
+                      data-testid="input-ff-commission-value"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {formData.ffCommissionType === "FIXED"
+                        ? "Flat commission per eligible product in dollars for F&F orders"
+                        : "Percentage commission for F&F orders (typically 0%)"}
+                    </p>
                   </div>
                 </div>
               </div>

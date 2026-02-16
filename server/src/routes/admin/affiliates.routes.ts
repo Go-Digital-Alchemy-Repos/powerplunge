@@ -98,11 +98,22 @@ const affiliateSettingsPatchSchema = z.object({
   cookieDuration: z.number().int().min(1).max(365).optional(),
   agreementText: z.string().optional(),
   programActive: z.boolean().optional(),
+  ffEnabled: z.boolean().optional(),
+  ffDiscountType: z.enum(["PERCENT", "FIXED"]).optional(),
+  ffDiscountValue: z.number().int().min(0).optional(),
+  ffCommissionType: z.enum(["PERCENT", "FIXED"]).optional(),
+  ffCommissionValue: z.number().int().min(0).optional(),
 }).refine((data) => {
   if (data.defaultCommissionType === "PERCENT" && data.defaultCommissionValue !== undefined && data.defaultCommissionValue > 100) {
     return false;
   }
   if (data.defaultDiscountType === "PERCENT" && data.defaultDiscountValue !== undefined && data.defaultDiscountValue > 100) {
+    return false;
+  }
+  if (data.ffDiscountType === "PERCENT" && data.ffDiscountValue !== undefined && data.ffDiscountValue > 100) {
+    return false;
+  }
+  if (data.ffCommissionType === "PERCENT" && data.ffCommissionValue !== undefined && data.ffCommissionValue > 100) {
     return false;
   }
   return true;

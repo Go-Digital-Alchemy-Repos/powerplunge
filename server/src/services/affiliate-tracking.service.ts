@@ -38,9 +38,22 @@ function generateSessionId(): string {
   return crypto.randomBytes(16).toString("hex");
 }
 
+async function resolveAffiliateCode(code: string): Promise<{ baseCode: string; isFriendsFamily: boolean }> {
+  const upper = code.toUpperCase();
+  const exactAffiliate = await storage.getAffiliateByCode(upper);
+  if (exactAffiliate) {
+    return { baseCode: upper, isFriendsFamily: false };
+  }
+  if (upper.startsWith("FF") && upper.length > 2) {
+    return { baseCode: upper.substring(2), isFriendsFamily: true };
+  }
+  return { baseCode: upper, isFriendsFamily: false };
+}
+
 class AffiliateTrackingService {
   async trackClick(input: TrackClickInput): Promise<TrackClickResult> {
-    const affiliate = await storage.getAffiliateByCode(input.affiliateCode);
+    const resolved = await resolveAffiliateCode(input.affiliateCode);
+    const affiliate = await storage.getAffiliateByCode(resolved.baseCode);
     if (!affiliate) {
       return { success: false, error: "Invalid affiliate code" };
     }

@@ -70,9 +70,11 @@ router.post("/stripe", async (req, res) => {
       if (order.affiliateCode) {
         const sessionId = session.metadata?.affiliateSessionId;
         const attributionType = session.metadata?.attributionType;
+        const metaIsFriendsFamily = session.metadata?.isFriendsFamily === "true";
         const commissionResult = await affiliateCommissionService.recordCommission(order.id, {
           sessionId: sessionId || undefined,
           attributionType: attributionType || undefined,
+          isFriendsFamily: metaIsFriendsFamily,
         });
         if (commissionResult.success && commissionResult.commissionAmount) {
           console.log(`[CHECKOUT] Recorded commission for order ${order.id}`);
@@ -99,9 +101,11 @@ router.post("/stripe", async (req, res) => {
           if (order.affiliateCode) {
             const sessionId = paymentIntent.metadata?.affiliateSessionId;
             const attributionType = paymentIntent.metadata?.attributionType;
+            const metaIsFriendsFamily = paymentIntent.metadata?.isFriendsFamily === "true";
             const commissionResult = await affiliateCommissionService.recordCommission(orderId, {
               sessionId: sessionId || undefined,
               attributionType: attributionType || undefined,
+              isFriendsFamily: metaIsFriendsFamily,
             });
             if (commissionResult.success && commissionResult.commissionAmount) {
               console.log(`[WEBHOOK] Recorded commission for order ${orderId}`);

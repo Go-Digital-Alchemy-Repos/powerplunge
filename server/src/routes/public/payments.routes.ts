@@ -15,14 +15,18 @@ const TAXABLE_STATES_WARN_ON_ZERO = ["NC"];
 function computeAffiliateDiscount(
   product: Product,
   lineTotal: number,
-  settings: AffiliateSettings | undefined
+  settings: AffiliateSettings | undefined,
+  isFriendsFamily: boolean = false
 ): number {
   if (!product.affiliateEnabled) return 0;
 
   let discountType: string;
   let discountValue: number;
 
-  if (product.affiliateUseGlobalSettings || !product.affiliateDiscountType) {
+  if (isFriendsFamily && settings?.ffEnabled) {
+    discountType = settings.ffDiscountType || "PERCENT";
+    discountValue = settings.ffDiscountValue ?? 20;
+  } else if (product.affiliateUseGlobalSettings || !product.affiliateDiscountType) {
     discountType = settings?.defaultDiscountType || "PERCENT";
     discountValue = settings?.defaultDiscountValue ?? settings?.customerDiscountPercent ?? 0;
   } else {
@@ -37,6 +41,19 @@ function computeAffiliateDiscount(
   } else {
     return Math.min(lineTotal, discountValue);
   }
+}
+
+async function resolveAffiliateCode(code: string): Promise<{ baseCode: string; isFriendsFamily: boolean }> {
+  const upper = code.toUpperCase();
+  const exactAffiliate = await storage.getAffiliateByCode(upper);
+  if (exactAffiliate) {
+    return { baseCode: upper, isFriendsFamily: false };
+  }
+  if (upper.startsWith("FF") && upper.length > 2) {
+    const stripped = upper.substring(2);
+    return { baseCode: stripped, isFriendsFamily: true };
+  }
+  return { baseCode: upper, isFriendsFamily: false };
 }
 
 const router = Router();
@@ -59,8 +76,16 @@ router.get("/validate-referral-code/:code", async (req, res) => {
     if (!code || code.length < 3) {
       return res.json({ valid: false });
     }
-    const affiliate = await storage.getAffiliateByCode(code.toUpperCase());
+    const resolved = await resolveAffiliateCode(code);
+    const affiliate = await storage.getAffiliateByCode(resolved.baseCode);
     if (affiliate && affiliate.status === "active") {
+      if (resolved.isFriendsFamily) {
+        const affSettings = await storage.getAffiliateSettings();
+        if (!(affSettings as any)?.ffEnabled) {
+          return res.json({ valid: false });
+        }
+        return res.json({ valid: true, code: `FF${affiliate.affiliateCode}`, isFriendsFamily: true });
+      }
       return res.json({ valid: true, code: affiliate.affiliateCode });
     }
     return res.json({ valid: false });
@@ -154,8 +179,17 @@ router.post("/create-payment-intent", paymentLimiter, async (req: any, res) => {
     }
 
     let affiliate = null;
+    let isFriendsFamily = false;
     if (affiliateCode) {
-      affiliate = await storage.getAffiliateByCode(affiliateCode);
+      const resolved = await resolveAffiliateCode(affiliateCode);
+      isFriendsFamily = resolved.isFriendsFamily;
+      affiliate = await storage.getAffiliateByCode(resolved.baseCode);
+      if (isFriendsFamily && affiliate) {
+        const affSettings = await storage.getAffiliateSettings();
+        if (!(affSettings as any)?.ffEnabled) {
+          isFriendsFamily = false;
+        }
+      }
     } else if (cookieAffiliateId) {
       affiliate = await storage.getAffiliate(cookieAffiliateId);
     }
@@ -214,7 +248,7 @@ router.post("/create-payment-intent", paymentLimiter, async (req: any, res) => {
       const affSettings = await storage.getAffiliateSettings();
       for (let i = 0; i < orderItems.length; i++) {
         const lineTotal = orderItems[i].unitPrice * orderItems[i].quantity;
-        affiliateDiscountAmount += computeAffiliateDiscount(resolvedProducts[i], lineTotal, affSettings);
+        affiliateDiscountAmount += computeAffiliateDiscount(resolvedProducts[i], lineTotal, affSettings, isFriendsFamily);
       }
     }
 
@@ -344,6 +378,7 @@ router.post("/create-payment-intent", paymentLimiter, async (req: any, res) => {
         affiliateId: affiliate?.id || "",
         affiliateSessionId: affiliateSessionId || "",
         attributionType: affiliateCode ? "coupon" : (affiliateSessionId ? "cookie" : "direct"),
+        isFriendsFamily: isFriendsFamily ? "true" : "false",
         taxAmount: taxAmount.toString(),
         taxCalculationId: taxCalculationId || "",
         affiliateDiscountAmount: affiliateDiscountAmount.toString(),
@@ -471,8 +506,17 @@ router.post("/reprice-payment-intent", paymentLimiter, async (req: any, res) => 
     }
 
     let affiliate = null;
+    let isFriendsFamily = false;
     if (affiliateCode) {
-      affiliate = await storage.getAffiliateByCode(affiliateCode);
+      const resolved = await resolveAffiliateCode(affiliateCode);
+      isFriendsFamily = resolved.isFriendsFamily;
+      affiliate = await storage.getAffiliateByCode(resolved.baseCode);
+      if (isFriendsFamily && affiliate) {
+        const affSettings = await storage.getAffiliateSettings();
+        if (!(affSettings as any)?.ffEnabled) {
+          isFriendsFamily = false;
+        }
+      }
     } else if (cookieAffiliateId) {
       affiliate = await storage.getAffiliate(cookieAffiliateId);
     }
@@ -526,7 +570,7 @@ router.post("/reprice-payment-intent", paymentLimiter, async (req: any, res) => 
       const affSettings = await storage.getAffiliateSettings();
       for (let i = 0; i < orderItems.length; i++) {
         const lineTotal = orderItems[i].unitPrice * orderItems[i].quantity;
-        affiliateDiscountAmount += computeAffiliateDiscount(repriceProducts[i], lineTotal, affSettings);
+        affiliateDiscountAmount += computeAffiliateDiscount(repriceProducts[i], lineTotal, affSettings, isFriendsFamily);
       }
     }
 
@@ -746,9 +790,11 @@ router.post("/confirm-payment", paymentLimiter, async (req: any, res) => {
       if (order.affiliateCode) {
         const sessionId = paymentIntent.metadata?.affiliateSessionId;
         const attributionType = paymentIntent.metadata?.attributionType;
+        const metaIsFriendsFamily = paymentIntent.metadata?.isFriendsFamily === "true";
         const commissionResult = await affiliateCommissionService.recordCommission(orderId, {
           sessionId: sessionId || undefined,
           attributionType: attributionType || undefined,
+          isFriendsFamily: metaIsFriendsFamily,
         });
         if (commissionResult.success && commissionResult.commissionAmount) {
           console.log(`[PAYMENT] Recorded commission for order ${orderId}`);
@@ -787,8 +833,17 @@ router.post("/checkout", checkoutLimiter, async (req: any, res) => {
     }
 
     let affiliate = null;
+    let isFriendsFamily = false;
     if (affiliateCode) {
-      affiliate = await storage.getAffiliateByCode(affiliateCode);
+      const resolved = await resolveAffiliateCode(affiliateCode);
+      isFriendsFamily = resolved.isFriendsFamily;
+      affiliate = await storage.getAffiliateByCode(resolved.baseCode);
+      if (isFriendsFamily && affiliate) {
+        const affSettings = await storage.getAffiliateSettings();
+        if (!(affSettings as any)?.ffEnabled) {
+          isFriendsFamily = false;
+        }
+      }
     } else if (cookieAffiliateId) {
       affiliate = await storage.getAffiliate(cookieAffiliateId);
     }
@@ -843,9 +898,19 @@ router.post("/checkout", checkoutLimiter, async (req: any, res) => {
     let affiliateDiscountAmount = 0;
     const affSettings = await storage.getAffiliateSettings();
     if (affiliate && affiliate.status === "active") {
-      const discountPercent = affSettings?.customerDiscountPercent || 0;
-      if (discountPercent > 0) {
-        affiliateDiscountAmount = Math.floor(subtotalAmount * (discountPercent / 100));
+      if (isFriendsFamily && affSettings?.ffEnabled) {
+        const ffDiscountType = affSettings.ffDiscountType || "PERCENT";
+        const ffDiscountValue = affSettings.ffDiscountValue ?? 20;
+        if (ffDiscountType === "PERCENT" && ffDiscountValue > 0) {
+          affiliateDiscountAmount = Math.floor(subtotalAmount * (ffDiscountValue / 100));
+        } else if (ffDiscountType === "FIXED" && ffDiscountValue > 0) {
+          affiliateDiscountAmount = Math.min(subtotalAmount, ffDiscountValue);
+        }
+      } else {
+        const discountPercent = affSettings?.customerDiscountPercent || 0;
+        if (discountPercent > 0) {
+          affiliateDiscountAmount = Math.floor(subtotalAmount * (discountPercent / 100));
+        }
       }
     }
 
@@ -933,6 +998,7 @@ router.post("/checkout", checkoutLimiter, async (req: any, res) => {
         affiliateId: affiliate?.id || "",
         affiliateSessionId: affiliateSessionId || "",
         attributionType: affiliateCode ? "coupon" : (affiliateSessionId ? "cookie" : "direct"),
+        isFriendsFamily: isFriendsFamily ? "true" : "false",
       },
     });
 
