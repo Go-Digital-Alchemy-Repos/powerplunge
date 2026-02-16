@@ -9,16 +9,17 @@ const router = Router();
 router.post("/stripe", async (req, res) => {
   const { stripeService } = await import("../../integrations/stripe/StripeService");
 
-  const config = await stripeService.getConfig();
-  if (!config.configured || !config.secretKey) {
-    console.error("[WEBHOOK] Stripe not configured. Source:", config.source, "Mode:", config.resolvedMode);
-    return res.status(400).json({ message: "Stripe not configured" });
+  const dbWebhookSecret = await stripeService.getDbOnlyWebhookSecret();
+  if (!dbWebhookSecret.secret) {
+    const msg = `[WEBHOOK] ${dbWebhookSecret.reason}`;
+    console.error(msg);
+    return res.status(400).json({
+      message: dbWebhookSecret.reason,
+      debug: { source: dbWebhookSecret.source, mode: dbWebhookSecret.mode },
+    });
   }
 
-  if (!config.webhookSecret) {
-    console.error("[WEBHOOK] Stripe webhook secret not configured. Source:", config.source, "Mode:", config.resolvedMode);
-    return res.status(400).json({ message: "Stripe webhook secret not configured" });
-  }
+  console.log(`[WEBHOOK] Using webhook secret from ${dbWebhookSecret.source}, mode=${dbWebhookSecret.mode}`);
 
   const sig = req.headers["stripe-signature"] as string;
   let event;
@@ -27,17 +28,20 @@ router.post("/stripe", async (req, res) => {
     event = await stripeService.constructWebhookEvent(
       req.rawBody as Buffer,
       sig,
-      config.webhookSecret
+      dbWebhookSecret.secret
     );
   } catch (err: any) {
-    console.error("Webhook signature verification failed:", err.message);
+    console.error(`[WEBHOOK] Signature verification failed (source=${dbWebhookSecret.source}, mode=${dbWebhookSecret.mode}):`, err.message);
     await errorAlertingService.alertWebhookFailure({
       provider: "stripe",
       eventType: "signature_verification",
       errorMessage: err.message,
       errorCode: "SIGNATURE_VERIFICATION_FAILED",
     });
-    return res.status(400).json({ message: `Webhook Error: ${err.message}` });
+    return res.status(400).json({
+      message: `Webhook Error: ${err.message}`,
+      debug: { source: dbWebhookSecret.source, mode: dbWebhookSecret.mode },
+    });
   }
 
   const existingEvent = await storage.getProcessedWebhookEvent(event.id);

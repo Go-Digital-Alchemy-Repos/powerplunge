@@ -238,6 +238,65 @@ class StripeService {
     return this.configCache;
   }
 
+  async getDbOnlyWebhookSecret(): Promise<{ secret: string; source: string; mode: string; reason?: string }> {
+    const settings = await storage.getIntegrationSettings();
+
+    if (!settings) {
+      return {
+        secret: "",
+        source: "none",
+        mode: "unknown",
+        reason: "No integration settings found in database. Configure Stripe at Admin → Integrations → Stripe.",
+      };
+    }
+
+    const activeMode = (settings.stripeActiveMode as "test" | "live") || "test";
+
+    const whField = activeMode === "live"
+      ? settings.stripeWebhookSecretLiveEncrypted
+      : settings.stripeWebhookSecretTestEncrypted;
+
+    if (whField) {
+      try {
+        const webhookSecret = decrypt(whField);
+        if (webhookSecret) {
+          return { secret: webhookSecret, source: "database", mode: activeMode };
+        }
+      } catch (error) {
+        return {
+          secret: "",
+          source: "database",
+          mode: activeMode,
+          reason: `Failed to decrypt ${activeMode}-mode webhook secret from database. The encryption key may have changed. Re-save the webhook secret at Admin → Integrations → Stripe.`,
+        };
+      }
+    }
+
+    if (settings.stripeWebhookSecretEncrypted) {
+      try {
+        const webhookSecret = decrypt(settings.stripeWebhookSecretEncrypted);
+        if (webhookSecret) {
+          const legacyMode = (settings.stripeMode as "test" | "live") || "test";
+          return { secret: webhookSecret, source: "database_legacy", mode: legacyMode };
+        }
+      } catch (error) {
+        return {
+          secret: "",
+          source: "database_legacy",
+          mode: activeMode,
+          reason: `Failed to decrypt legacy webhook secret from database. Re-save the webhook secret at Admin → Integrations → Stripe.`,
+        };
+      }
+    }
+
+    return {
+      secret: "",
+      source: "none",
+      mode: activeMode,
+      reason: `Stripe ${activeMode}-mode webhook signing secret (whsec_...) not found in database. Add it at Admin → Integrations → Stripe → Webhook Secret field.`,
+    };
+  }
+
   async getClient(): Promise<Stripe | null> {
     const config = await this.getConfig();
     
