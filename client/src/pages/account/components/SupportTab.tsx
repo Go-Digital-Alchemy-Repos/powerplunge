@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+
+const RichTextEditor = lazy(() => import("@/components/admin/RichTextEditor"));
 import {
   Dialog,
   DialogContent,
@@ -162,11 +163,7 @@ function TicketDetailDialog({
                     <span className="text-xs text-muted-foreground">{formatDateTime(entry.createdAt)}</span>
                   </div>
                   <div className={`rounded-lg p-3 text-sm ${isAdmin ? "bg-blue-500/10 border border-blue-500/20" : "bg-muted/50 border"}`}>
-                    {isHtml ? (
-                      <div className="prose prose-sm prose-invert max-w-none [&_p]:my-2 [&_p:empty]:h-4 [&_ul]:my-2 [&_ol]:my-2 [&_li]:my-0.5" dangerouslySetInnerHTML={{ __html: entry.text }} data-testid={`thread-text-${idx}`} />
-                    ) : (
-                      <p className="whitespace-pre-wrap" data-testid={`thread-text-${idx}`}>{entry.text}</p>
-                    )}
+                    <div className="prose prose-sm prose-invert max-w-none [&_p]:my-2 [&_p:empty]:h-4 [&_ul]:my-2 [&_ol]:my-2 [&_li]:my-0.5" dangerouslySetInnerHTML={{ __html: entry.text }} data-testid={`thread-text-${idx}`} />
                   </div>
                 </div>
               </div>
@@ -191,25 +188,27 @@ function TicketDetailDialog({
         </div>
 
         {!isClosed && (
-          <div className="border-t pt-3 flex gap-2" data-testid="reply-section">
-            <Textarea
-              value={replyText}
-              onChange={(e) => setReplyText(e.target.value)}
-              placeholder="Type your reply..."
-              rows={2}
-              className="flex-1 resize-none"
-              maxLength={5000}
-              data-testid="input-customer-reply"
-            />
-            <Button
-              size="sm"
-              onClick={handleSendReply}
-              disabled={!replyText.trim() || replyMutation.isPending}
-              className="self-end"
-              data-testid="button-send-reply"
-            >
-              {replyMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-            </Button>
+          <div className="border-t pt-3 flex flex-col gap-2" data-testid="reply-section">
+            <Suspense fallback={<div className="h-[200px] w-full bg-muted animate-pulse rounded-md" />}>
+              <RichTextEditor
+                value={replyText}
+                onChange={setReplyText}
+                placeholder="Type your reply..."
+                className="min-h-[150px]"
+                data-testid="input-customer-reply"
+              />
+            </Suspense>
+            <div className="flex justify-end">
+              <Button
+                size="sm"
+                onClick={handleSendReply}
+                disabled={!replyText.trim() || replyText === "<p></p>" || replyMutation.isPending}
+                data-testid="button-send-reply"
+              >
+                {replyMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                <span className="ml-2">Send Reply</span>
+              </Button>
+            </div>
           </div>
         )}
         {isClosed && (
@@ -320,15 +319,14 @@ export default function SupportTab() {
 
               <div>
                 <Label htmlFor="ticket-message">Message *</Label>
-                <Textarea
-                  id="ticket-message"
-                  value={supportForm.message}
-                  onChange={(e) => setSupportForm({ ...supportForm, message: e.target.value })}
-                  placeholder="Please describe your issue in detail..."
-                  rows={5}
-                  maxLength={5000}
-                  data-testid="input-ticket-message"
-                />
+                <Suspense fallback={<div className="h-[200px] w-full bg-muted animate-pulse rounded-md" />}>
+                  <RichTextEditor
+                    value={supportForm.message}
+                    onChange={(val) => setSupportForm({ ...supportForm, message: val })}
+                    placeholder="Please describe your issue in detail..."
+                    data-testid="input-ticket-message"
+                  />
+                </Suspense>
               </div>
 
               <Button
