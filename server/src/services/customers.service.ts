@@ -9,13 +9,7 @@ class CustomersService {
     const customersWithStats = await Promise.all(
       customers.map(async (customer) => {
         const orders = await customersRepository.getOrdersByCustomerId(customer.id);
-        const totalSpent = orders.reduce((sum, o) => {
-          // If it's a manual order and has no Stripe Payment Intent ID, it's FREE
-          if (o.isManualOrder && !o.stripePaymentIntentId) {
-            return sum;
-          }
-          return sum + o.totalAmount;
-        }, 0);
+        const totalSpent = orders.reduce((sum, o) => sum + o.totalAmount, 0);
         return {
           ...customer,
           orderCount: orders.length,

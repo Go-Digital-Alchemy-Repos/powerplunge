@@ -258,11 +258,7 @@ export default function AdminCustomers() {
                         <Badge variant="secondary">{customer.orderCount}</Badge>
                       </td>
                       <td className="px-6 py-4 text-right font-medium">
-                        {customer.totalSpent === 0 ? (
-                          <span className="text-primary font-bold">FREE</span>
-                        ) : (
-                          `$${(customer.totalSpent / 100).toLocaleString()}`
-                        )}
+                        ${(customer.totalSpent / 100).toLocaleString()}
                       </td>
                     </tr>
                   ))}
@@ -296,11 +292,7 @@ export default function AdminCustomers() {
                     </div>
                     <div className="text-right flex flex-col items-end gap-1 shrink-0">
                       <p className="font-bold text-sm">
-                        {customer.totalSpent === 0 ? (
-                          <span className="text-primary font-bold">FREE</span>
-                        ) : (
-                          `$${(customer.totalSpent / 100).toLocaleString()}`
-                        )}
+                        ${(customer.totalSpent / 100).toLocaleString()}
                       </p>
                       <Badge variant="outline" className="text-[10px] py-0 h-4">
                         {customer.orderCount} orders
@@ -387,13 +379,13 @@ export default function AdminCustomers() {
                           {order.items.map((item, i) => (
                             <div key={i} className="flex justify-between text-sm">
                               <span className="text-muted-foreground">{item.productName} x{item.quantity}</span>
-                              <span>{order.isManualOrder && !order.stripePaymentIntentId ? "FREE" : `$${((item.unitPrice * item.quantity) / 100).toLocaleString()}`}</span>
+                              <span>${((item.unitPrice * item.quantity) / 100).toLocaleString()}</span>
                             </div>
                           ))}
                         </div>
                         <div className="flex justify-between mt-3 pt-3 border-t border-border font-medium">
                           <span>Total</span>
-                          <span className="text-primary font-bold">{order.isManualOrder && !order.stripePaymentIntentId ? "FREE" : `$${(order.totalAmount / 100).toLocaleString()}`}</span>
+                          <span className="text-primary">{order.isManualOrder && !order.stripePaymentIntentId ? "FREE" : `$${(order.totalAmount / 100).toLocaleString()}`}</span>
                         </div>
                       </CardContent>
                     </Card>
