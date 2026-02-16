@@ -392,6 +392,11 @@ export const affiliates = pgTable("affiliates", {
   totalSales: integer("total_sales").notNull().default(0), // in cents
   paypalEmail: text("paypal_email"),
   ffEnabled: boolean("ff_enabled").notNull().default(true),
+  useCustomRates: boolean("use_custom_rates").notNull().default(false),
+  customCommissionType: text("custom_commission_type"), // PERCENT or FIXED
+  customCommissionValue: integer("custom_commission_value"), // percent points or cents
+  customDiscountType: text("custom_discount_type"), // PERCENT or FIXED
+  customDiscountValue: integer("custom_discount_value"), // percent points or cents
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

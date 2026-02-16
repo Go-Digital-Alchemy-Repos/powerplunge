@@ -41,7 +41,7 @@ The Power Plunge e-commerce platform utilizes a modern full-stack architecture.
 **Key Features:**
 - **Admin CMS:** Comprehensive dashboards for order, product, team, customer, and affiliate management, including manual order creation and searchable customer list.
 - **Role-Based Access Control:** Three admin roles (admin, store_manager, fulfillment) with enforced permissions at both API and UI levels.
-- **Affiliate Program:** Invite-only signup with a 5-step onboarding wizard, configurable commission rates, customer discount percentage, minimum payout thresholds, cookie-based referral tracking, admin payout management, and fraud/compliance guardrails.
+- **Affiliate Program:** Invite-only signup with a 5-step onboarding wizard, configurable commission rates, customer discount percentage, minimum payout thresholds, cookie-based referral tracking, admin payout management, and fraud/compliance guardrails. Per-affiliate custom commission and discount rate overrides are supported (priority: affiliate custom > product-level > global defaults; friends & family always takes priority).
 - **PWA Support:** Web app manifest and Apple mobile meta tags.
 - **Upsell/Cross-sell System:** Product relationships, cart upsells, one-click post-purchase offers, and analytics tracking.
 - **Revenue-Aware Coupons:** Performance analytics, affiliate overlap detection, stacking rules, and auto-expiration.

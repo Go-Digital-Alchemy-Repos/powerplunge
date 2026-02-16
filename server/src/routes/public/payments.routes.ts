@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { storage } from "../../../storage";
-import { insertCustomerSchema, type Product, type AffiliateSettings, orders } from "@shared/schema";
+import { insertCustomerSchema, type Product, type AffiliateSettings, type Affiliate, orders } from "@shared/schema";
 import { checkoutLimiter, paymentLimiter } from "../../middleware/rate-limiter";
 import { affiliateCommissionService } from "../../services/affiliate-commission.service";
 import { normalizeEmail } from "../../services/customer-identity.service";
@@ -18,16 +18,22 @@ function computeAffiliateDiscount(
   product: Product,
   lineTotal: number,
   settings: AffiliateSettings | undefined,
-  isFriendsFamily: boolean = false
+  isFriendsFamily: boolean = false,
+  affiliate?: Affiliate | null
 ): number {
   if (!product.affiliateEnabled) return 0;
 
   let discountType: string;
   let discountValue: number;
 
+  const hasCustomDiscount = affiliate?.useCustomRates && affiliate?.customDiscountType && affiliate?.customDiscountValue != null;
+
   if (isFriendsFamily && settings?.ffEnabled) {
     discountType = settings.ffDiscountType || "PERCENT";
     discountValue = settings.ffDiscountValue ?? 20;
+  } else if (hasCustomDiscount) {
+    discountType = affiliate!.customDiscountType!;
+    discountValue = affiliate!.customDiscountValue!;
   } else if (product.affiliateUseGlobalSettings || !product.affiliateDiscountType) {
     discountType = settings?.defaultDiscountType || "PERCENT";
     discountValue = settings?.defaultDiscountValue ?? settings?.customerDiscountPercent ?? 0;
@@ -279,7 +285,7 @@ router.post("/create-payment-intent", paymentLimiter, async (req: any, res) => {
       const affSettings = await storage.getAffiliateSettings();
       for (let i = 0; i < orderItems.length; i++) {
         const lineTotal = orderItems[i].unitPrice * orderItems[i].quantity;
-        affiliateDiscountAmount += computeAffiliateDiscount(resolvedProducts[i], lineTotal, affSettings, isFriendsFamily);
+        affiliateDiscountAmount += computeAffiliateDiscount(resolvedProducts[i], lineTotal, affSettings, isFriendsFamily, affiliate);
       }
     }
 
@@ -607,7 +613,7 @@ router.post("/reprice-payment-intent", paymentLimiter, async (req: any, res) => 
       const affSettings = await storage.getAffiliateSettings();
       for (let i = 0; i < orderItems.length; i++) {
         const lineTotal = orderItems[i].unitPrice * orderItems[i].quantity;
-        affiliateDiscountAmount += computeAffiliateDiscount(repriceProducts[i], lineTotal, affSettings, isFriendsFamily);
+        affiliateDiscountAmount += computeAffiliateDiscount(repriceProducts[i], lineTotal, affSettings, isFriendsFamily, affiliate);
       }
     }
 
@@ -923,6 +929,7 @@ router.post("/checkout", checkoutLimiter, async (req: any, res) => {
       quantity: number;
       unitPrice: number;
     }> = [];
+    const resolvedCheckoutProducts: Product[] = [];
 
     for (const item of items) {
       const product = await storage.getProduct(item.productId);
@@ -936,24 +943,15 @@ router.post("/checkout", checkoutLimiter, async (req: any, res) => {
         quantity: item.quantity,
         unitPrice: product.price,
       });
+      resolvedCheckoutProducts.push(product);
     }
 
     let affiliateDiscountAmount = 0;
     const affSettings = await storage.getAffiliateSettings();
     if (affiliate && affiliate.status === "active") {
-      if (isFriendsFamily && affSettings?.ffEnabled) {
-        const ffDiscountType = affSettings.ffDiscountType || "PERCENT";
-        const ffDiscountValue = affSettings.ffDiscountValue ?? 20;
-        if (ffDiscountType === "PERCENT" && ffDiscountValue > 0) {
-          affiliateDiscountAmount = Math.floor(subtotalAmount * (ffDiscountValue / 100));
-        } else if (ffDiscountType === "FIXED" && ffDiscountValue > 0) {
-          affiliateDiscountAmount = Math.min(subtotalAmount, ffDiscountValue);
-        }
-      } else {
-        const discountPercent = affSettings?.customerDiscountPercent || 0;
-        if (discountPercent > 0) {
-          affiliateDiscountAmount = Math.floor(subtotalAmount * (discountPercent / 100));
-        }
+      for (let i = 0; i < orderItems.length; i++) {
+        const lineTotal = orderItems[i].unitPrice * orderItems[i].quantity;
+        affiliateDiscountAmount += computeAffiliateDiscount(resolvedCheckoutProducts[i], lineTotal, affSettings, isFriendsFamily, affiliate);
       }
     }
 

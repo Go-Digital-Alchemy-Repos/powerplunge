@@ -214,6 +214,8 @@ export class AffiliateCommissionService {
       const commissionBase = order.subtotalAmount ?? order.totalAmount;
       const isFriendsFamily = options?.isFriendsFamily && settings?.ffEnabled;
 
+      const hasCustomRates = affiliate.useCustomRates && affiliate.customCommissionType && affiliate.customCommissionValue != null;
+
       if (items.length > 0) {
         for (const item of items) {
           const [product] = await db
@@ -230,6 +232,9 @@ export class AffiliateCommissionService {
           if (isFriendsFamily) {
             commType = settings?.ffCommissionType || "PERCENT";
             commValue = settings?.ffCommissionValue ?? 0;
+          } else if (hasCustomRates) {
+            commType = affiliate.customCommissionType!;
+            commValue = affiliate.customCommissionValue!;
           } else if (product.affiliateUseGlobalSettings || !product.affiliateCommissionType) {
             commType = settings?.defaultCommissionType || "PERCENT";
             commValue = settings?.defaultCommissionValue ?? settings?.commissionRate ?? 10;
@@ -250,6 +255,9 @@ export class AffiliateCommissionService {
         if (isFriendsFamily) {
           fallbackType = settings?.ffCommissionType || "PERCENT";
           fallbackValue = settings?.ffCommissionValue ?? 0;
+        } else if (hasCustomRates) {
+          fallbackType = affiliate.customCommissionType!;
+          fallbackValue = affiliate.customCommissionValue!;
         } else {
           fallbackValue = settings?.defaultCommissionValue ?? settings?.commissionRate ?? 10;
           fallbackType = settings?.defaultCommissionType || "PERCENT";

@@ -103,6 +103,11 @@ router.get("/:affiliateId/profile", validateParams(affiliateIdSchema), async (re
         totalSales: affiliates.totalSales,
         paypalEmail: affiliates.paypalEmail,
         ffEnabled: affiliates.ffEnabled,
+        useCustomRates: affiliates.useCustomRates,
+        customCommissionType: affiliates.customCommissionType,
+        customCommissionValue: affiliates.customCommissionValue,
+        customDiscountType: affiliates.customDiscountType,
+        customDiscountValue: affiliates.customDiscountValue,
         createdAt: affiliates.createdAt,
         customerName: customers.name,
         customerEmail: customers.email,
@@ -137,6 +142,51 @@ router.get("/:affiliateId/profile", validateParams(affiliateIdSchema), async (re
   } catch (error: any) {
     console.error("Failed to get affiliate profile:", error);
     res.status(500).json({ error: { code: "PROFILE_ERROR", message: error.message } });
+  }
+});
+
+// Update custom rates for an affiliate
+router.put("/:affiliateId/custom-rates", validateParams(affiliateIdSchema), async (req: Request, res: Response) => {
+  try {
+    const { affiliateId } = req.params;
+    const adminId = (req.session as any)?.adminId || "system";
+
+    const schema = z.object({
+      useCustomRates: z.boolean(),
+      customCommissionType: z.enum(["PERCENT", "FIXED"]).nullable().optional(),
+      customCommissionValue: z.number().int().min(0).nullable().optional(),
+      customDiscountType: z.enum(["PERCENT", "FIXED"]).nullable().optional(),
+      customDiscountValue: z.number().int().min(0).nullable().optional(),
+    });
+
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: parsed.error.errors[0]?.message } });
+    }
+
+    const data = parsed.data;
+
+    await db.update(affiliates).set({
+      useCustomRates: data.useCustomRates,
+      customCommissionType: data.useCustomRates ? (data.customCommissionType ?? "PERCENT") : null,
+      customCommissionValue: data.useCustomRates ? (data.customCommissionValue ?? 0) : null,
+      customDiscountType: data.useCustomRates ? (data.customDiscountType ?? "PERCENT") : null,
+      customDiscountValue: data.useCustomRates ? (data.customDiscountValue ?? 0) : null,
+      updatedAt: new Date(),
+    }).where(eq(affiliates.id, affiliateId));
+
+    await createAuditLog(adminId, "affiliate.custom_rates_updated", "affiliate", affiliateId, {
+      useCustomRates: data.useCustomRates,
+      customCommissionType: data.customCommissionType,
+      customCommissionValue: data.customCommissionValue,
+      customDiscountType: data.customDiscountType,
+      customDiscountValue: data.customDiscountValue,
+    });
+
+    res.json({ success: true });
+  } catch (error: any) {
+    console.error("Failed to update custom rates:", error);
+    res.status(500).json({ error: { code: "UPDATE_ERROR", message: error.message } });
   }
 });
 

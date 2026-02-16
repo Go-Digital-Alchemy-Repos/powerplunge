@@ -95,6 +95,13 @@ app.use(requestLoggerMiddleware);
         console.error("[MIGRATION] Failed to run refund/payment status migration:", error);
       }
 
+      try {
+        const { addAffiliateCustomRates } = await import("./src/migrations/addAffiliateCustomRates");
+        await addAffiliateCustomRates();
+      } catch (error) {
+        console.error("[MIGRATION] Failed to run affiliate custom rates migration:", error);
+      }
+
       // Ensure default CMS pages exist
       try {
         const { ensureCmsDefaults } = await import("./seed");

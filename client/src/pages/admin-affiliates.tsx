@@ -53,6 +53,11 @@ interface AffiliateProfile {
   customerEmail: string;
   createdAt: string;
   ffEnabled?: boolean;
+  useCustomRates?: boolean;
+  customCommissionType?: string | null;
+  customCommissionValue?: number | null;
+  customDiscountType?: string | null;
+  customDiscountValue?: number | null;
   payoutAccount?: {
     payoutsEnabled?: boolean;
     detailsSubmitted?: boolean;
@@ -252,6 +257,13 @@ export default function AdminAffiliates() {
     notes: "",
   });
 
+  // Custom rates state
+  const [customRatesEnabled, setCustomRatesEnabled] = useState(false);
+  const [customCommissionType, setCustomCommissionType] = useState("PERCENT");
+  const [customCommissionValue, setCustomCommissionValue] = useState("");
+  const [customDiscountType, setCustomDiscountType] = useState("PERCENT");
+  const [customDiscountValue, setCustomDiscountValue] = useState("");
+
   // Fetch leaderboard
   const { data: leaderboard, isLoading: loadingLeaderboard } = useQuery<LeaderboardEntry[]>({
     queryKey: ["/api/admin/affiliates-v2/leaderboard"],
@@ -341,6 +353,44 @@ export default function AdminAffiliates() {
       return res.json();
     },
     enabled: activeTab === "invites",
+  });
+
+  // Sync custom rates state when affiliate profile loads
+  useEffect(() => {
+    if (affiliateProfile) {
+      setCustomRatesEnabled(affiliateProfile.useCustomRates || false);
+      setCustomCommissionType(affiliateProfile.customCommissionType || "PERCENT");
+      setCustomCommissionValue(affiliateProfile.customCommissionValue != null ? String(affiliateProfile.customCommissionValue) : "");
+      setCustomDiscountType(affiliateProfile.customDiscountType || "PERCENT");
+      setCustomDiscountValue(affiliateProfile.customDiscountValue != null ? String(affiliateProfile.customDiscountValue) : "");
+    }
+  }, [affiliateProfile]);
+
+  // Save custom rates mutation
+  const saveCustomRatesMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/admin/affiliates-v2/${selectedAffiliateId}/custom-rates`, {
+        credentials: "include",
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          useCustomRates: customRatesEnabled,
+          customCommissionType: customRatesEnabled ? customCommissionType : null,
+          customCommissionValue: customRatesEnabled ? parseInt(customCommissionValue) || 0 : null,
+          customDiscountType: customRatesEnabled ? customDiscountType : null,
+          customDiscountValue: customRatesEnabled ? parseInt(customDiscountValue) || 0 : null,
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to save custom rates");
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Custom rates saved" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/affiliates-v2", selectedAffiliateId, "profile"] });
+    },
+    onError: (error: any) => {
+      toast({ title: "Failed to save", description: error.message, variant: "destructive" });
+    },
   });
 
   // Create invite mutation — uses /send endpoint so the email is delivered
@@ -1107,6 +1157,113 @@ export default function AdminAffiliates() {
                       <span className="text-muted-foreground">Currency: </span>
                       <span className="font-medium">{affiliateProfile.payoutAccount?.currency?.toUpperCase() || "USD"}</span>
                     </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Custom Commission & Discount Rates */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Settings className="w-5 h-5" />
+                  Custom Rates Override
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label htmlFor="custom-rates-toggle" className="font-medium">Enable Custom Rates</Label>
+                      <p className="text-xs text-muted-foreground mt-0.5">Override global commission and discount rates for this affiliate</p>
+                    </div>
+                    <Switch
+                      id="custom-rates-toggle"
+                      checked={customRatesEnabled}
+                      onCheckedChange={setCustomRatesEnabled}
+                      data-testid="switch-custom-rates"
+                    />
+                  </div>
+
+                  {customRatesEnabled && (
+                    <div className="grid grid-cols-2 gap-6 pt-2 border-t">
+                      <div className="space-y-3">
+                        <Label className="font-medium text-sm">Commission</Label>
+                        <div className="flex gap-2">
+                          <Select value={customCommissionType} onValueChange={setCustomCommissionType}>
+                            <SelectTrigger className="w-[120px]" data-testid="select-custom-commission-type">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="PERCENT">Percent</SelectItem>
+                              <SelectItem value="FIXED">Fixed ($)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <div className="relative flex-1">
+                            <Input
+                              type="number"
+                              min="0"
+                              value={customCommissionValue}
+                              onChange={(e) => setCustomCommissionValue(e.target.value)}
+                              placeholder={customCommissionType === "PERCENT" ? "e.g. 15" : "e.g. 500"}
+                              data-testid="input-custom-commission-value"
+                            />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                              {customCommissionType === "PERCENT" ? "%" : "¢"}
+                            </span>
+                          </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {customCommissionType === "PERCENT"
+                            ? `Affiliate earns ${customCommissionValue || "0"}% of each sale`
+                            : `Affiliate earns $${((parseInt(customCommissionValue) || 0) / 100).toFixed(2)} per sale`}
+                        </p>
+                      </div>
+
+                      <div className="space-y-3">
+                        <Label className="font-medium text-sm">Customer Discount</Label>
+                        <div className="flex gap-2">
+                          <Select value={customDiscountType} onValueChange={setCustomDiscountType}>
+                            <SelectTrigger className="w-[120px]" data-testid="select-custom-discount-type">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="PERCENT">Percent</SelectItem>
+                              <SelectItem value="FIXED">Fixed ($)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <div className="relative flex-1">
+                            <Input
+                              type="number"
+                              min="0"
+                              value={customDiscountValue}
+                              onChange={(e) => setCustomDiscountValue(e.target.value)}
+                              placeholder={customDiscountType === "PERCENT" ? "e.g. 10" : "e.g. 500"}
+                              data-testid="input-custom-discount-value"
+                            />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                              {customDiscountType === "PERCENT" ? "%" : "¢"}
+                            </span>
+                          </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {customDiscountType === "PERCENT"
+                            ? `Customers get ${customDiscountValue || "0"}% off using this affiliate's link`
+                            : `Customers get $${((parseInt(customDiscountValue) || 0) / 100).toFixed(2)} off using this affiliate's link`}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex justify-end pt-2">
+                    <Button
+                      size="sm"
+                      onClick={() => saveCustomRatesMutation.mutate()}
+                      disabled={saveCustomRatesMutation.isPending || (customRatesEnabled && (!customCommissionValue || !customDiscountValue))}
+                      data-testid="button-save-custom-rates"
+                    >
+                      {saveCustomRatesMutation.isPending ? "Saving..." : "Save Custom Rates"}
+                    </Button>
                   </div>
                 </div>
               </CardContent>
