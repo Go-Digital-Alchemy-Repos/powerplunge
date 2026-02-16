@@ -1533,13 +1533,14 @@ export const supportTickets = pgTable("support_tickets", {
   status: text("status").notNull().default("open"), // open, in_progress, resolved, closed
   priority: text("priority").notNull().default("normal"), // low, normal, high, urgent
   adminNotes: jsonb("admin_notes").$type<Array<{ text: string; adminId: string; adminName: string; createdAt: string }>>().default([]),
+  customerReplies: jsonb("customer_replies").$type<Array<{ text: string; customerName: string; createdAt: string }>>().default([]),
   resolvedBy: varchar("resolved_by").references(() => adminUsers.id),
   resolvedAt: timestamp("resolved_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-export const insertSupportTicketSchema = createInsertSchema(supportTickets).omit({ id: true, createdAt: true, updatedAt: true, resolvedAt: true, resolvedBy: true, adminNotes: true });
+export const insertSupportTicketSchema = createInsertSchema(supportTickets).omit({ id: true, createdAt: true, updatedAt: true, resolvedAt: true, resolvedBy: true, adminNotes: true, customerReplies: true });
 export type InsertSupportTicket = z.infer<typeof insertSupportTicketSchema>;
 export type SupportTicket = typeof supportTickets.$inferSelect;
 
