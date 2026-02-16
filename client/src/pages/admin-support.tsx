@@ -315,23 +315,23 @@ export default function AdminSupport() {
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-3">
               <Headset className="w-8 h-8 text-primary" />
-              Support Tickets
+              Support
             </h1>
             <p className="text-muted-foreground mt-1">Manage customer inquiries and support conversations</p>
           </div>
-          <div className="flex flex-col md:flex-row items-center gap-2 w-full md:w-auto">
+          <div className="flex flex-col sm:flex-row items-center gap-2 w-full md:w-auto">
             <Button
               onClick={() => {
                 resetCreateForm();
                 setShowCreateDialog(true);
               }}
-              className="gap-2 w-full md:w-auto"
+              className="gap-2 w-full sm:w-auto flex-1"
               data-testid="button-create-ticket"
             >
               <Plus className="w-4 h-4" />
-              Create Ticket
+              New Ticket
             </Button>
-            <Button variant="outline" className="w-full md:w-auto" onClick={() => refetch()} data-testid="button-refresh">
+            <Button variant="outline" className="w-full sm:w-auto flex-1" onClick={() => refetch()} data-testid="button-refresh">
               <RefreshCw className="w-4 h-4 mr-2" />
               Refresh
             </Button>
@@ -339,47 +339,47 @@ export default function AdminSupport() {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <Card data-testid="card-open-tickets">
-            <CardContent className="pt-6">
+          <Card data-testid="card-open-tickets" className="bg-yellow-500/5 border-yellow-500/10">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Open</p>
-                  <p className="text-2xl font-bold text-yellow-500">{getStatCount("open")}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Open</p>
+                  <p className="text-xl sm:text-2xl font-bold text-yellow-500">{getStatCount("open")}</p>
                 </div>
-                <Clock className="w-8 h-8 text-yellow-500/50" />
+                <Clock className="w-6 h-6 sm:w-8 h-8 text-yellow-500/30" />
               </div>
             </CardContent>
           </Card>
-          <Card data-testid="card-progress-tickets">
-            <CardContent className="pt-6">
+          <Card data-testid="card-progress-tickets" className="bg-blue-500/5 border-blue-500/10">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">In Progress</p>
-                  <p className="text-2xl font-bold text-blue-500">{getStatCount("in_progress")}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Progress</p>
+                  <p className="text-xl sm:text-2xl font-bold text-blue-500">{getStatCount("in_progress")}</p>
                 </div>
-                <AlertCircle className="w-8 h-8 text-blue-500/50" />
+                <AlertCircle className="w-6 h-6 sm:w-8 h-8 text-blue-500/30" />
               </div>
             </CardContent>
           </Card>
-          <Card data-testid="card-resolved-tickets">
-            <CardContent className="pt-6">
+          <Card data-testid="card-resolved-tickets" className="bg-green-500/5 border-green-500/10">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Resolved</p>
-                  <p className="text-2xl font-bold text-green-500">{getStatCount("resolved")}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Resolved</p>
+                  <p className="text-xl sm:text-2xl font-bold text-green-500">{getStatCount("resolved")}</p>
                 </div>
-                <CheckCircle className="w-8 h-8 text-green-500/50" />
+                <CheckCircle className="w-6 h-6 sm:w-8 h-8 text-green-500/30" />
               </div>
             </CardContent>
           </Card>
-          <Card data-testid="card-closed-tickets">
-            <CardContent className="pt-6">
+          <Card data-testid="card-closed-tickets" className="bg-gray-500/5 border-gray-500/10">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Closed</p>
-                  <p className="text-2xl font-bold text-gray-500">{getStatCount("closed")}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Closed</p>
+                  <p className="text-xl sm:text-2xl font-bold text-gray-400">{getStatCount("closed")}</p>
                 </div>
-                <MessageSquare className="w-8 h-8 text-gray-500/50" />
+                <MessageSquare className="w-6 h-6 sm:w-8 h-8 text-gray-500/30" />
               </div>
             </CardContent>
           </Card>
@@ -423,7 +423,7 @@ export default function AdminSupport() {
           <CardHeader>
             <CardTitle>All Tickets</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0 sm:p-6">
             {isLoading ? (
               <div className="text-center py-12">
                 <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto" />
@@ -434,71 +434,114 @@ export default function AdminSupport() {
                 <p className="text-muted-foreground">No support tickets found</p>
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Ticket</TableHead>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Priority</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+              <>
+                <div className="hidden md:block">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Ticket</TableHead>
+                        <TableHead>Customer</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Priority</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Created</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredTickets.map((ticket) => (
+                        <TableRow key={ticket.id} data-testid={`ticket-row-${ticket.id}`}>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium line-clamp-1">{ticket.subject}</p>
+                              <p className="text-xs text-muted-foreground">#{ticket.id.slice(0, 8)}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{ticket.customerName || "Unknown"}</p>
+                              <p className="text-xs text-muted-foreground">{ticket.customerEmail}</p>
+                              <p className="text-xs text-muted-foreground">ID: {ticket.customerId.slice(0, 8)}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{typeLabels[ticket.type] || ticket.type}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={priorityColors[ticket.priority]}>
+                              {ticket.priority.charAt(0).toUpperCase() + ticket.priority.slice(1)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={statusColors[ticket.status]}>
+                              {ticket.status === "in_progress" ? "In Progress" : ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <p className="text-sm">
+                              {new Date(ticket.createdAt).toLocaleDateString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                              })}
+                            </p>
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openTicketModal(ticket)}
+                              data-testid={`button-view-${ticket.id}`}
+                            >
+                              <Eye className="w-4 h-4 mr-1" />
+                              View
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                <div className="md:hidden divide-y">
                   {filteredTickets.map((ticket) => (
-                    <TableRow key={ticket.id} data-testid={`ticket-row-${ticket.id}`}>
-                      <TableCell>
-                        <div>
+                    <div
+                      key={ticket.id}
+                      className="p-4 active:bg-muted/50 transition-colors"
+                      onClick={() => openTicketModal(ticket)}
+                      data-testid={`ticket-card-${ticket.id}`}
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="min-w-0">
                           <p className="font-medium line-clamp-1">{ticket.subject}</p>
                           <p className="text-xs text-muted-foreground">#{ticket.id.slice(0, 8)}</p>
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{ticket.customerName || "Unknown"}</p>
-                          <p className="text-xs text-muted-foreground">{ticket.customerEmail}</p>
-                          <p className="text-xs text-muted-foreground">ID: {ticket.customerId.slice(0, 8)}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{typeLabels[ticket.type] || ticket.type}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={priorityColors[ticket.priority]}>
-                          {ticket.priority.charAt(0).toUpperCase() + ticket.priority.slice(1)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={statusColors[ticket.status]}>
+                        <Badge className={`${statusColors[ticket.status]} ml-2`}>
                           {ticket.status === "in_progress" ? "In Progress" : ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1)}
                         </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <p className="text-sm">
-                          {new Date(ticket.createdAt).toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                          })}
-                        </p>
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openTicketModal(ticket)}
-                          data-testid={`button-view-${ticket.id}`}
-                        >
-                          <Eye className="w-4 h-4 mr-1" />
-                          View
-                        </Button>
-                      </TableCell>
-                    </TableRow>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="text-muted-foreground">
+                          {ticket.customerName || "Unknown"}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-[10px] px-1.5">{typeLabels[ticket.type] || ticket.type}</Badge>
+                          <Badge className={`${priorityColors[ticket.priority]} text-[10px] px-1.5`}>
+                            {ticket.priority}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div className="mt-2 text-xs text-muted-foreground">
+                        {new Date(ticket.createdAt).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </div>
+                    </div>
                   ))}
-                </TableBody>
-              </Table>
+                </div>
+              </>
             )}
           </CardContent>
         </Card>
@@ -506,7 +549,7 @@ export default function AdminSupport() {
 
       {/* Ticket Detail Drawer */}
       <Sheet open={!!selectedTicket} onOpenChange={() => setSelectedTicket(null)}>
-        <SheetContent side="right" className="w-[80vw] sm:max-w-none overflow-y-auto">
+        <SheetContent side="right" className="w-full sm:max-w-xl md:max-w-2xl overflow-y-auto">
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
               <MessageSquare className="w-5 h-5" />
@@ -515,67 +558,76 @@ export default function AdminSupport() {
           </SheetHeader>
 
           {selectedTicket && (
-            <div className="space-y-6">
+            <div className="space-y-6 mt-6">
               <div className="p-4 rounded-lg bg-muted/30">
                 <h4 className="text-sm font-medium text-muted-foreground mb-2">Customer</h4>
-                <p className="font-medium">{selectedTicket.customerName || "Unknown"}</p>
-                <p className="text-sm text-muted-foreground">{selectedTicket.customerEmail}</p>
-                <p className="text-sm text-muted-foreground mt-1">Client ID: {selectedTicket.customerId.slice(0, 8)}</p>
-                {selectedTicket.orderId && (
-                  <p className="text-sm mt-2">
-                    <span className="text-muted-foreground">Related Order:</span>{" "}
-                    <span className="">#{selectedTicket.orderId.slice(0, 8)}</span>
-                  </p>
-                )}
-              </div>
-
-              <div className="flex items-center gap-3 mb-1">
-                <h4 className="font-medium">{selectedTicket.subject}</h4>
-                <Badge className={statusColors[selectedTicket.status]}>{selectedTicket.status.replace("_", " ")}</Badge>
-                <Badge className={priorityColors[selectedTicket.priority]}>{selectedTicket.priority}</Badge>
-              </div>
-
-              <div className="space-y-3" data-testid="ticket-thread">
-                <Label className="text-xs text-muted-foreground uppercase tracking-wider">Conversation</Label>
-                <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1" data-testid="thread-container">
-                  {buildThread(selectedTicket).map((entry, idx) => {
-                    const isAdmin = entry.type === "admin_reply";
-                    const isCustomer = entry.type === "customer_original" || entry.type === "customer_reply";
-                    const isHtml = isAdmin && entry.text.includes("<") && entry.text.includes(">");
-                    return (
-                      <div
-                        key={idx}
-                        className={`flex gap-3 ${isAdmin ? "" : ""}`}
-                        data-testid={`thread-entry-${idx}`}
-                      >
-                        <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${isAdmin ? "bg-blue-500/20 text-blue-400" : "bg-primary/20 text-primary"}`}>
-                          {isAdmin ? <Headset className="w-4 h-4" /> : <User className="w-4 h-4" />}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className={`text-sm font-medium ${isAdmin ? "text-blue-400" : ""}`}>
-                              {entry.author}
-                            </span>
-                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                              {isAdmin ? "Staff" : "Customer"}
-                            </Badge>
-                            <span className="text-xs text-muted-foreground">{new Date(entry.createdAt).toLocaleString()}</span>
-                          </div>
-                          <div className={`rounded-lg p-3 text-sm ${isAdmin ? "bg-blue-500/10 border border-blue-500/20" : "bg-muted/50 border"}`}>
-                            {isHtml ? (
-                              <div className="prose prose-sm prose-invert max-w-none [&_p]:my-2 [&_p:empty]:h-4 [&_ul]:my-2 [&_ol]:my-2 [&_li]:my-0.5" dangerouslySetInnerHTML={{ __html: entry.text }} data-testid={`thread-text-${idx}`} />
-                            ) : (
-                              <p className="whitespace-pre-wrap" data-testid={`thread-text-${idx}`}>{entry.text}</p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <div>
+                    <p className="font-medium">{selectedTicket.customerName || "Unknown"}</p>
+                    <p className="text-sm text-muted-foreground">{selectedTicket.customerEmail}</p>
+                  </div>
+                  <div className="text-sm sm:text-right">
+                    <p className="text-muted-foreground">ID: {selectedTicket.customerId.slice(0, 8)}</p>
+                    {selectedTicket.orderId && (
+                      <p className="mt-1">
+                        <span className="text-muted-foreground">Order:</span>{" "}
+                        <span>#{selectedTicket.orderId.slice(0, 8)}</span>
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div>
+                <div className="flex flex-wrap items-center gap-2 mb-3">
+                  <h4 className="font-medium text-lg min-w-0 flex-1">{selectedTicket.subject}</h4>
+                  <div className="flex gap-2">
+                    <Badge className={statusColors[selectedTicket.status]}>{selectedTicket.status.replace("_", " ")}</Badge>
+                    <Badge className={priorityColors[selectedTicket.priority]}>{selectedTicket.priority}</Badge>
+                  </div>
+                </div>
+
+                <div className="space-y-3" data-testid="ticket-thread">
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wider">Conversation</Label>
+                  <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-1" data-testid="thread-container">
+                    {buildThread(selectedTicket).map((entry, idx) => {
+                      const isAdmin = entry.type === "admin_reply";
+                      const isHtml = isAdmin && entry.text.includes("<") && entry.text.includes(">");
+                      return (
+                        <div
+                          key={idx}
+                          className="flex gap-3"
+                          data-testid={`thread-entry-${idx}`}
+                        >
+                          <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${isAdmin ? "bg-blue-500/20 text-blue-400" : "bg-primary/20 text-primary"}`}>
+                            {isAdmin ? <Headset className="w-4 h-4" /> : <User className="w-4 h-4" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-wrap items-center gap-2 mb-1">
+                              <span className={`text-sm font-medium ${isAdmin ? "text-blue-400" : ""}`}>
+                                {entry.author}
+                              </span>
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                                {isAdmin ? "Staff" : "Customer"}
+                              </Badge>
+                              <span className="text-[10px] text-muted-foreground ml-auto sm:ml-0">{new Date(entry.createdAt).toLocaleString()}</span>
+                            </div>
+                            <div className={`rounded-lg p-3 text-sm ${isAdmin ? "bg-blue-500/10 border border-blue-500/20" : "bg-muted/50 border"}`}>
+                              {isHtml ? (
+                                <div className="prose prose-sm prose-invert max-w-none [&_p]:my-2 [&_p:empty]:h-4 [&_ul]:my-2 [&_ol]:my-2 [&_li]:my-0.5" dangerouslySetInnerHTML={{ __html: entry.text }} data-testid={`thread-text-${idx}`} />
+                              ) : (
+                                <p className="whitespace-pre-wrap break-words" data-testid={`thread-text-${idx}`}>{entry.text}</p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t pt-6">
                 <div>
                   <Label>Status</Label>
                   <Select value={newStatus} onValueChange={setNewStatus}>

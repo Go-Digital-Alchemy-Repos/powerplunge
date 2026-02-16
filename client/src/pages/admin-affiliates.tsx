@@ -887,46 +887,31 @@ export default function AdminAffiliates() {
         </div>
 
         {/* Main Tabs */}
-        <div className="flex gap-2 mb-6">
-          <Button 
-            variant={activeTab === "leaderboard" ? "secondary" : "ghost"} 
-            onClick={() => { setActiveTab("leaderboard"); setSelectedAffiliateId(null); }}
-            data-testid="tab-leaderboard"
-          >
-            <Trophy className="w-4 h-4 mr-2" />
-            Leaderboard
-          </Button>
-          <Button 
-            variant={activeTab === "payouts" ? "secondary" : "ghost"} 
-            onClick={() => { setActiveTab("payouts"); setSelectedAffiliateId(null); }}
-            data-testid="tab-payouts"
-          >
-            <Wallet className="w-4 h-4 mr-2" />
-            Payout Queue
-          </Button>
-          <Button 
-            variant={activeTab === "review" ? "secondary" : "ghost"} 
-            onClick={() => { setActiveTab("review"); setSelectedAffiliateId(null); }}
-            data-testid="tab-review"
-            className="relative"
-          >
-            <ShieldAlert className="w-4 h-4 mr-2" />
-            Fraud Review
-            {flaggedCommissions && flaggedCommissions.length > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                {flaggedCommissions.length}
-              </span>
-            )}
-          </Button>
-          <Button 
-            variant={activeTab === "invites" ? "secondary" : "ghost"} 
-            onClick={() => { setActiveTab("invites"); setSelectedAffiliateId(null); }}
-            data-testid="tab-invites"
-          >
-            <Ticket className="w-4 h-4 mr-2" />
-            Invites
-          </Button>
-        </div>
+        <MobileTabsList
+          tabs={[
+            { value: "leaderboard", label: "Leaderboard", icon: <Trophy className="w-4 h-4" />, "data-testid": "tab-leaderboard" },
+            { value: "payouts", label: "Payout Queue", icon: <Wallet className="w-4 h-4" />, "data-testid": "tab-payouts" },
+            { 
+              value: "review", 
+              label: "Fraud Review", 
+              icon: (
+                <div className="relative">
+                  <ShieldAlert className="w-4 h-4" />
+                  {flaggedCommissions && flaggedCommissions.length > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
+                      {flaggedCommissions.length}
+                    </span>
+                  )}
+                </div>
+              ), 
+              "data-testid": "tab-review" 
+            },
+            { value: "invites", label: "Invites", icon: <Ticket className="w-4 h-4" />, "data-testid": "tab-invites" },
+          ]}
+          activeTab={activeTab}
+          onTabChange={(v) => { setActiveTab(v); setSelectedAffiliateId(null); }}
+          className="mb-6"
+        />
 
         {activeTab === "leaderboard" && !selectedAffiliateId && (
           <Card>
@@ -1058,22 +1043,22 @@ export default function AdminAffiliates() {
                       </Label>
                     </div>
                   </div>
-                  <div className="grid grid-cols-4 gap-4 text-center">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                     <div className="p-4 rounded-lg bg-muted">
-                      <p className="text-sm text-muted-foreground">Total Earnings</p>
-                      <p className="text-xl font-bold">${(affiliateProfile.totalEarnings / 100).toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground">Total Earnings</p>
+                      <p className="text-lg font-bold">${(affiliateProfile.totalEarnings / 100).toLocaleString()}</p>
                     </div>
                     <div className="p-4 rounded-lg bg-yellow-500/10" title="Commissions awaiting approval">
-                      <p className="text-sm text-muted-foreground">Pending Commission</p>
-                      <p className="text-xl font-bold text-yellow-500">${(affiliateProfile.pendingBalance / 100).toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground">Pending</p>
+                      <p className="text-lg font-bold text-yellow-500">${(affiliateProfile.pendingBalance / 100).toLocaleString()}</p>
                     </div>
                     <div className="p-4 rounded-lg bg-blue-500/10" title="Approved and ready to pay out">
-                      <p className="text-sm text-muted-foreground">Approved</p>
-                      <p className="text-xl font-bold text-blue-500">${(affiliateProfile.approvedBalance / 100).toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground">Approved</p>
+                      <p className="text-lg font-bold text-blue-500">${(affiliateProfile.approvedBalance / 100).toLocaleString()}</p>
                     </div>
                     <div className="p-4 rounded-lg bg-green-500/10">
-                      <p className="text-sm text-muted-foreground">Paid</p>
-                      <p className="text-xl font-bold text-green-500">${(affiliateProfile.paidBalance / 100).toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground">Paid</p>
+                      <p className="text-lg font-bold text-green-500">${(affiliateProfile.paidBalance / 100).toLocaleString()}</p>
                     </div>
                   </div>
                 </div>
@@ -1082,8 +1067,8 @@ export default function AdminAffiliates() {
                 {affiliateProfile.approvedBalance > 0 && (
                   <div className="mt-6 p-4 border rounded-lg">
                     <h4 className="font-medium mb-3">Record Payout</h4>
-                    <div className="flex gap-3 items-end">
-                      <div className="flex-1">
+                    <div className="flex flex-col sm:flex-row gap-3 items-end">
+                      <div className="w-full sm:flex-1">
                         <label className="text-sm text-muted-foreground">Amount (cents)</label>
                         <Input
                           type="number"
@@ -1092,15 +1077,17 @@ export default function AdminAffiliates() {
                           onChange={(e) => setPayoutAmount(e.target.value)}
                           max={affiliateProfile.approvedBalance}
                           data-testid="input-payout-amount"
+                          className="w-full"
                         />
                       </div>
-                      <div className="flex-1">
+                      <div className="w-full sm:flex-1">
                         <label className="text-sm text-muted-foreground">Note (optional)</label>
                         <Input
                           placeholder="PayPal transaction ID..."
                           value={payoutNote}
                           onChange={(e) => setPayoutNote(e.target.value)}
                           data-testid="input-payout-note"
+                          className="w-full"
                         />
                       </div>
                       <Button
@@ -1112,6 +1099,7 @@ export default function AdminAffiliates() {
                         }}
                         disabled={!payoutAmount || parseInt(payoutAmount) <= 0 || recordPayoutMutation.isPending}
                         data-testid="button-record-payout"
+                        className="w-full sm:w-auto"
                       >
                         Record Payout
                       </Button>

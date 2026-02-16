@@ -445,23 +445,25 @@ export default function AdminOrders() {
             <p className="text-muted-foreground mt-1">Manage and track customer orders</p>
           </div>
           <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-            <SavedFiltersPanel
-              savedFilters={savedFilters}
-              filterName={filterName}
-              setFilterName={setFilterName}
-              onSave={saveFilter}
-              onLoad={(filter) => setFilters(filter.filters)}
-              onDelete={deleteFilter}
-              currentFilters={filters}
-              hasActiveFilters={hasActiveFilters}
-            />
+            <div className="flex-1 md:flex-initial">
+              <SavedFiltersPanel
+                savedFilters={savedFilters}
+                filterName={filterName}
+                setFilterName={setFilterName}
+                onSave={saveFilter}
+                onLoad={(filter) => setFilters(filter.filters)}
+                onDelete={deleteFilter}
+                currentFilters={filters}
+                hasActiveFilters={hasActiveFilters}
+              />
+            </div>
             <Button onClick={() => setShowNewOrder(true)} size="sm" className="gap-2 flex-1 md:flex-initial" data-testid="button-new-order">
               <Plus className="w-4 h-4" />
               Manual Order
             </Button>
             <Button variant="outline" size="sm" onClick={exportCSV} className="flex-1 md:flex-initial" data-testid="button-export-all">
               <Download className="w-4 h-4 mr-2" />
-              Export All
+              Export
             </Button>
           </div>
         </div>
@@ -469,13 +471,13 @@ export default function AdminOrders() {
         {/* Filters */}
         <Card className="mb-6">
           <CardContent className="p-4">
-            <div className="flex flex-wrap items-end gap-4">
-              <div className="flex-1 min-w-[200px]">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+              <div className="sm:col-span-2 lg:col-span-1">
                 <Label className="text-xs text-muted-foreground mb-1 block">Search</Label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
-                    placeholder="Search by ID, name, or email..."
+                    placeholder="Search orders..."
                     value={filters.search}
                     onChange={(e) => setFilters({ ...filters, search: e.target.value })}
                     className="pl-9"
@@ -483,7 +485,7 @@ export default function AdminOrders() {
                   />
                 </div>
               </div>
-              <div className="w-40">
+              <div>
                 <Label className="text-xs text-muted-foreground mb-1 block">Status</Label>
                 <Select
                   value={filters.status}
@@ -502,7 +504,7 @@ export default function AdminOrders() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="w-40">
+              <div>
                 <Label className="text-xs text-muted-foreground mb-1 block">From Date</Label>
                 <Input
                   type="date"
@@ -511,7 +513,7 @@ export default function AdminOrders() {
                   data-testid="input-date-from"
                 />
               </div>
-              <div className="w-40">
+              <div>
                 <Label className="text-xs text-muted-foreground mb-1 block">To Date</Label>
                 <Input
                   type="date"
@@ -521,14 +523,16 @@ export default function AdminOrders() {
                 />
               </div>
               {hasActiveFilters && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setFilters(defaultFilters)}
-                  data-testid="button-clear-filters"
-                >
-                  Clear Filters
-                </Button>
+                <div className="sm:col-span-2 lg:col-span-4 flex justify-end">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setFilters(defaultFilters)}
+                    data-testid="button-clear-filters"
+                  >
+                    Clear Filters
+                  </Button>
+                </div>
               )}
             </div>
           </CardContent>
@@ -543,8 +547,8 @@ export default function AdminOrders() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-4">
+          <div className="flex flex-col gap-6">
+            <div className="space-y-4">
               {/* Select All */}
               <div className="flex items-center gap-3 px-2">
                 <Checkbox
@@ -557,56 +561,57 @@ export default function AdminOrders() {
                 </span>
               </div>
 
-              {filteredOrders.map((order) => (
-                <Card
-                  key={order.id}
-                  className={`transition-all hover:border-primary/50 ${selectedOrder === order.id ? "border-primary ring-2 ring-primary" : ""} ${isSelected(order.id) ? "bg-primary/5" : ""}`}
-                  data-testid={`order-card-${order.id}`}
-                  data-order-id={order.id}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-4">
-                      <Checkbox
-                        checked={isSelected(order.id)}
-                        onCheckedChange={() => toggleItem(order.id)}
-                        onClick={(e) => e.stopPropagation()}
-                        data-testid={`checkbox-order-${order.id}`}
-                      />
-                      <div 
-                        className="flex-1 flex items-start justify-between gap-4 cursor-pointer"
-                        onClick={() => setSelectedOrder(order.id)}
-                      >
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-3 mb-2">
-                            <Badge className={statusColors[order.status] || statusColors.pending}>
-                              {getOrderStatusLabel(order.status)}
-                            </Badge>
-                            <span className="text-sm text-muted-foreground">
-                              #{order.id.slice(0, 8)}
-                            </span>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredOrders.map((order) => (
+                  <Card
+                    key={order.id}
+                    className={`transition-all hover:border-primary/50 cursor-pointer ${selectedOrder === order.id ? "border-primary ring-2 ring-primary" : ""} ${isSelected(order.id) ? "bg-primary/5" : ""}`}
+                    data-testid={`order-card-${order.id}`}
+                    data-order-id={order.id}
+                    onClick={() => setSelectedOrder(order.id)}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-4">
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <Checkbox
+                            checked={isSelected(order.id)}
+                            onCheckedChange={() => toggleItem(order.id)}
+                            data-testid={`checkbox-order-${order.id}`}
+                          />
+                        </div>
+                        <div className="flex-1 flex items-start justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-3 mb-2">
+                              <Badge className={statusColors[order.status] || statusColors.pending}>
+                                {getOrderStatusLabel(order.status)}
+                              </Badge>
+                              <span className="text-sm text-muted-foreground">
+                                #{order.id.slice(0, 8)}
+                              </span>
+                            </div>
+                            <p className="font-medium truncate">{order.customer?.name}</p>
+                            <p className="text-sm text-muted-foreground truncate">{order.customer?.email}</p>
                           </div>
-                          <p className="font-medium truncate">{order.customer?.name}</p>
-                          <p className="text-sm text-muted-foreground truncate">{order.customer?.email}</p>
+                          <div className="text-right">
+                            <p className="font-display font-bold text-lg">
+                              {formatOrderPrice(order)}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {format(new Date(order.createdAt), "MMM d, yyyy")}
+                            </p>
+                          </div>
+                          <ChevronRight className="w-5 h-5 text-muted-foreground mt-1" />
                         </div>
-                        <div className="text-right">
-                          <p className="font-display font-bold text-lg">
-                            {formatOrderPrice(order)}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {format(new Date(order.createdAt), "MMM d, yyyy")}
-                          </p>
-                        </div>
-                        <ChevronRight className="w-5 h-5 text-muted-foreground" />
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             </div>
 
-            <div className="lg:col-span-1">
-              {currentOrder ? (
-                <Card className="sticky top-24">
+            {selectedOrder && (
+              <div className="w-full">
+                <Card className="w-full">
                   <CardHeader>
                     <CardTitle className="text-lg">Order Details</CardTitle>
                   </CardHeader>
