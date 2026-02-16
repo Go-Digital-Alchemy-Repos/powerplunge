@@ -59,6 +59,7 @@ import {
   EyeOff,
   ExternalLink,
 } from "lucide-react";
+import { MobileTabsList } from "@/components/ui/mobile-tabs-list";
 import { Label } from "@/components/ui/label";
 import { ManualOrderWizard } from "./ManualOrderWizard";
 
@@ -534,28 +535,18 @@ export function CustomerProfileDrawer({
         </SheetHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-          <TabsList className="grid w-full grid-cols-5 mt-4">
-            <TabsTrigger value="overview" className="flex items-center gap-2" data-testid="tab-overview">
-              <User className="w-4 h-4" />
-              Overview
-            </TabsTrigger>
-            <TabsTrigger value="orders" className="flex items-center gap-2" data-testid="tab-orders">
-              <ShoppingCart className="w-4 h-4" />
-              Orders
-            </TabsTrigger>
-            <TabsTrigger value="affiliate" className="flex items-center gap-2" data-testid="tab-affiliate">
-              <Users className="w-4 h-4" />
-              Affiliate
-            </TabsTrigger>
-            <TabsTrigger value="shipping" className="flex items-center gap-2" data-testid="tab-shipping">
-              <Truck className="w-4 h-4" />
-              Shipping
-            </TabsTrigger>
-            <TabsTrigger value="security" className="flex items-center gap-2" data-testid="tab-security">
-              <Shield className="w-4 h-4" />
-              Security
-            </TabsTrigger>
-          </TabsList>
+          <MobileTabsList
+            tabs={[
+              { value: "overview", label: "Overview", icon: <User className="w-4 h-4" />, "data-testid": "tab-overview" },
+              { value: "orders", label: "Orders", icon: <ShoppingCart className="w-4 h-4" />, "data-testid": "tab-orders" },
+              { value: "affiliate", label: "Affiliate", icon: <Users className="w-4 h-4" />, "data-testid": "tab-affiliate" },
+              { value: "shipping", label: "Shipping", icon: <Truck className="w-4 h-4" />, "data-testid": "tab-shipping" },
+              { value: "security", label: "Security", icon: <Shield className="w-4 h-4" />, "data-testid": "tab-security" },
+            ]}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            tabsListClassName="grid w-full grid-cols-5 mt-4"
+          />
 
           <ScrollArea className="flex-1 mt-4">
             <TabsContent value="overview" className="m-0 space-y-6">
