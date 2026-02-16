@@ -267,11 +267,11 @@ export default function Home() {
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
+    <div className="min-h-screen bg-background relative overflow-x-hidden">
       {isAdminAuthenticated && (
         <AdminNav currentPage="storefront" role={adminRole} />
       )}
-      <nav className={`fixed left-0 right-0 z-50 bg-card border-b border-border ${isAdminAuthenticated ? "top-[57px] lg:top-[65px]" : "top-0"}`}>
+      <nav className={`sticky z-50 bg-card border-b border-border ${isAdminAuthenticated ? "top-[57px] lg:top-[65px]" : "top-0"}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
@@ -399,14 +399,14 @@ export default function Home() {
 
       {/* Show loading state while fetching CMS content */}
       {isHomePageLoading && (
-        <div className={`min-h-screen flex items-center justify-center ${isAdminAuthenticated ? "pt-32" : "pt-20"}`}>
+        <div className="min-h-screen flex items-center justify-center">
           <div className="animate-pulse text-muted-foreground">Loading...</div>
         </div>
       )}
 
       {/* Render CMS content if available */}
       {hasCmsContent && (
-        <div className={isAdminAuthenticated ? "pt-32" : "pt-20"}>
+        <div>
           <PageRenderer
             contentJson={homePage?.contentJson}
             legacyContent={homePage?.content}
@@ -438,7 +438,7 @@ export default function Home() {
       {/* Fallback to hardcoded content if CMS content not available */}
       {showFallbackPage && !isHomePageLoading && (
         <>
-        <section className={`relative min-h-[80vh] sm:min-h-screen flex items-center justify-center ${isAdminAuthenticated ? "pt-28 sm:pt-32" : "pt-16 sm:pt-20"}`}>
+        <section className="relative min-h-[80vh] sm:min-h-screen flex items-center justify-center">
           <div className="absolute inset-0">
             <img src={heroImage} alt="" className="w-full h-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-r from-background/90 sm:from-background/80 via-background/60 sm:via-background/50 to-transparent" />
