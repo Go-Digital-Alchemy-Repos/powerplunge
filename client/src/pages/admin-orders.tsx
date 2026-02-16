@@ -618,17 +618,17 @@ export default function AdminOrders() {
                   <CardContent className="space-y-6">
                     <div>
                       <p className="text-sm text-muted-foreground mb-1">Order ID</p>
-                      <p className="text-sm">{currentOrder.id}</p>
+                      <p className="text-sm">{currentOrder?.id}</p>
                     </div>
 
                     <div>
                       <p className="text-sm text-muted-foreground mb-2">Status</p>
                       <Select
-                        value={currentOrder.status}
+                        value={currentOrder?.status}
                         onValueChange={(status) => {
-                          if (status === "shipped" && currentOrder.status !== "shipped") {
+                          if (status === "shipped" && currentOrder?.status !== "shipped") {
                             setShipDialogOpen(true);
-                          } else {
+                          } else if (currentOrder) {
                             updateOrderMutation.mutate({ id: currentOrder.id, status });
                           }
                         }}
@@ -650,12 +650,12 @@ export default function AdminOrders() {
                       <p className="text-sm text-muted-foreground mb-2 flex items-center gap-2">
                         <User className="w-4 h-4" /> Customer
                       </p>
-                      <p className="font-medium">{currentOrder.customer?.name}</p>
-                      <p className="text-sm text-muted-foreground">{currentOrder.customer?.email}</p>
-                      {currentOrder.customer?.phone && (
+                      <p className="font-medium">{currentOrder?.customer?.name}</p>
+                      <p className="text-sm text-muted-foreground">{currentOrder?.customer?.email}</p>
+                      {currentOrder?.customer?.phone && (
                         <p className="text-sm text-muted-foreground">{currentOrder.customer.phone}</p>
                       )}
-                      {currentOrder.customer?.address && (
+                      {currentOrder?.customer?.address && (
                         <p className="text-sm text-muted-foreground mt-2">
                           {currentOrder.customer.address}<br />
                           {currentOrder.customer.city}, {currentOrder.customer.state} {currentOrder.customer.zipCode}
@@ -665,14 +665,14 @@ export default function AdminOrders() {
 
                     <div>
                       <p className="text-sm text-muted-foreground mb-2">Items</p>
-                      {currentOrder.items.map((item, i) => (
+                      {currentOrder?.items.map((item, i) => (
                         <div key={i} className="flex justify-between py-2 border-b border-border last:border-0">
                           <div>
                             <p className="font-medium text-sm">{item.productName}</p>
                             <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
                           </div>
                           <p className="font-medium">
-                            {isPaymentBypassed(currentOrder) ? "FREE" : `$${((item.unitPrice * item.quantity) / 100).toLocaleString()}`}
+                            {currentOrder && isPaymentBypassed(currentOrder) ? "FREE" : `$${((item.unitPrice * item.quantity) / 100).toLocaleString()}`}
                           </p>
                         </div>
                       ))}
@@ -681,13 +681,13 @@ export default function AdminOrders() {
                     <div className="flex justify-between pt-4 border-t border-border">
                       <p className="font-semibold">Total</p>
                       <p className="font-display font-bold text-xl text-primary">
-                        {formatOrderPrice(currentOrder)}
+                        {currentOrder && formatOrderPrice(currentOrder)}
                       </p>
                     </div>
 
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Calendar className="w-4 h-4" />
-                      {format(new Date(currentOrder.createdAt), "MMMM d, yyyy 'at' h:mm a")}
+                      {currentOrder && format(new Date(currentOrder.createdAt), "MMMM d, yyyy 'at' h:mm a")}
                     </div>
 
                     {/* Shipping Section */}
@@ -696,7 +696,7 @@ export default function AdminOrders() {
                         <Truck className="w-4 h-4" /> Shipping
                       </p>
                       
-                      {currentOrder.shipments && currentOrder.shipments.length > 0 ? (
+                      {currentOrder?.shipments && currentOrder.shipments.length > 0 ? (
                         <div className="space-y-3">
                           {currentOrder.shipments.map((shipment) => (
                             <div key={shipment.id} className="bg-muted/50 rounded-lg p-3 space-y-2">
@@ -754,7 +754,7 @@ export default function AdminOrders() {
                         <p className="text-sm text-muted-foreground mb-3">No shipments yet</p>
                       )}
 
-                      {(currentOrder.status === "paid" || currentOrder.status === "processing" || currentOrder.status === "pending") && (
+                      {(currentOrder?.status === "paid" || currentOrder?.status === "processing" || currentOrder?.status === "pending") && (
                         <Button 
                           className="w-full mt-3 gap-2" 
                           onClick={() => setShipDialogOpen(true)}
@@ -769,8 +769,10 @@ export default function AdminOrders() {
                         variant="destructive" 
                         className="w-full mt-3 gap-2"
                         onClick={() => {
-                          setDeleteTarget({ type: "single", id: currentOrder.id });
-                          setDeleteConfirmOpen(true);
+                          if (currentOrder) {
+                            setDeleteTarget({ type: "single", id: currentOrder.id });
+                            setDeleteConfirmOpen(true);
+                          }
                         }}
                         data-testid="button-delete-order"
                       >
@@ -781,7 +783,7 @@ export default function AdminOrders() {
                       <Dialog open={shipDialogOpen} onOpenChange={setShipDialogOpen}>
                         <DialogContent>
                           <DialogHeader>
-                            <DialogTitle>Ship Order #{currentOrder.id.slice(0, 8)}</DialogTitle>
+                            <DialogTitle>Ship Order #{currentOrder?.id.slice(0, 8)}</DialogTitle>
                             <p className="text-sm text-muted-foreground">
                               Enter shipping details and tracking information
                             </p>
@@ -789,10 +791,12 @@ export default function AdminOrders() {
                           <form
                             onSubmit={(e) => {
                               e.preventDefault();
-                              shipOrderMutation.mutate({
-                                orderId: currentOrder.id,
-                                ...shipFormData,
-                              });
+                              if (currentOrder) {
+                                shipOrderMutation.mutate({
+                                  orderId: currentOrder.id,
+                                  ...shipFormData,
+                                });
+                              }
                             }}
                             className="space-y-4"
                           >
@@ -985,7 +989,7 @@ export default function AdminOrders() {
               disabled={deleteOrderMutation.isPending || bulkDeleteMutation.isPending}
               data-testid="button-confirm-delete"
             >
-              {(deleteOrderMutation.isPending || bulkDeleteMutation.isPending) ? (
+              {deleteOrderMutation.isPending || bulkDeleteMutation.isPending ? (
                 <>
                   <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
                   Deleting...
