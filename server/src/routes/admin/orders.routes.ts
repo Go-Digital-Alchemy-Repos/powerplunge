@@ -53,12 +53,26 @@ router.get("/", async (req: Request, res: Response) => {
       }
     }
 
-    const enrichedOrders = orders.map(order => ({
-      ...order,
-      customer: customerMap.get(order.customerId) || null,
-      items: itemsByOrder.get(order.id) || [],
-      shipments: shipmentsByOrder.get(order.id) || [],
-    }));
+    const { computeRefundSummary } = await import("../../services/refund.service");
+    const allRefunds = orderIds.length > 0
+      ? await Promise.all(orderIds.map(id => storage.getRefundsByOrderId(id)))
+      : [];
+    const refundsByOrder = new Map<string, any[]>();
+    orderIds.forEach((id, idx) => {
+      refundsByOrder.set(id, allRefunds[idx] || []);
+    });
+
+    const enrichedOrders = orders.map(order => {
+      const orderRefunds = refundsByOrder.get(order.id) || [];
+      const refundSummary = computeRefundSummary(order, orderRefunds);
+      return {
+        ...order,
+        customer: customerMap.get(order.customerId) || null,
+        items: itemsByOrder.get(order.id) || [],
+        shipments: shipmentsByOrder.get(order.id) || [],
+        ...refundSummary,
+      };
+    });
 
     if (page !== undefined) {
       res.json({ data: enrichedOrders, total, page, pageSize });
@@ -77,10 +91,16 @@ router.get("/:id", async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Order not found" });
     }
 
-    const customer = await storage.getCustomer(order.customerId);
-    const items = await storage.getOrderItems(order.id);
+    const [customer, items, orderRefunds] = await Promise.all([
+      storage.getCustomer(order.customerId),
+      storage.getOrderItems(order.id),
+      storage.getRefundsByOrderId(order.id),
+    ]);
 
-    res.json({ ...order, customer, items });
+    const { computeRefundSummary } = await import("../../services/refund.service");
+    const refundSummary = computeRefundSummary(order, orderRefunds);
+
+    res.json({ ...order, customer, items, refunds: orderRefunds, ...refundSummary });
   } catch (error) {
     res.status(500).json({ message: "Failed to fetch order" });
   }

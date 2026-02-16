@@ -9,9 +9,15 @@ router.get("/:orderId/status", async (req, res) => {
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
     }
-    const items = await storage.getOrderItems(order.id);
-    const customer = await storage.getCustomer(order.customerId);
-    const shipments = await storage.getShipments(order.id);
+    const [items, customer, shipments, orderRefunds] = await Promise.all([
+      storage.getOrderItems(order.id),
+      storage.getCustomer(order.customerId),
+      storage.getShipments(order.id),
+      storage.getRefundsByOrderId(order.id),
+    ]);
+
+    const { computeRefundSummary } = await import("../../services/refund.service");
+    const refundSummary = computeRefundSummary(order, orderRefunds);
 
     res.json({
       id: order.id,
@@ -37,6 +43,8 @@ router.get("/:orderId/status", async (req, res) => {
       shipments,
       isManualOrder: order.isManualOrder,
       stripePaymentIntentId: order.stripePaymentIntentId,
+      paymentStatus: refundSummary.paymentStatus,
+      refundedAmount: refundSummary.refundedAmount,
     });
   } catch (error) {
     console.error("Public order status error:", error);

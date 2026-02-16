@@ -214,8 +214,12 @@ export interface IStorage {
   // Refunds
   getRefunds(): Promise<Refund[]>;
   getRefundsByOrderId(orderId: string): Promise<Refund[]>;
+  getRefundByStripeRefundId(stripeRefundId: string): Promise<Refund | undefined>;
   createRefund(refund: InsertRefund): Promise<Refund>;
   updateRefund(id: string, refund: Partial<InsertRefund>): Promise<Refund | undefined>;
+
+  // Order lookups
+  getOrderByPaymentIntentId(paymentIntentId: string): Promise<Order | undefined>;
 
   // Shipping Zones
   getShippingZones(): Promise<ShippingZone[]>;
@@ -1098,6 +1102,11 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(refunds).where(eq(refunds.orderId, orderId));
   }
 
+  async getRefundByStripeRefundId(stripeRefundId: string): Promise<Refund | undefined> {
+    const [refund] = await db.select().from(refunds).where(eq(refunds.stripeRefundId, stripeRefundId));
+    return refund || undefined;
+  }
+
   async createRefund(refund: InsertRefund): Promise<Refund> {
     const [newRefund] = await db.insert(refunds).values(refund).returning();
     return newRefund;
@@ -1106,6 +1115,12 @@ export class DatabaseStorage implements IStorage {
   async updateRefund(id: string, refund: Partial<InsertRefund>): Promise<Refund | undefined> {
     const [updated] = await db.update(refunds).set(refund).where(eq(refunds.id, id)).returning();
     return updated || undefined;
+  }
+
+  // Order lookups
+  async getOrderByPaymentIntentId(paymentIntentId: string): Promise<Order | undefined> {
+    const [order] = await db.select().from(orders).where(eq(orders.stripePaymentIntentId, paymentIntentId));
+    return order || undefined;
   }
 
   // Shipping Zones

@@ -88,6 +88,13 @@ app.use(requestLoggerMiddleware);
         console.error("[MIGRATION] Failed to run order discount migration:", error);
       }
 
+      try {
+        const { addRefundAndPaymentStatusColumns } = await import("./src/migrations/addRefundAndPaymentStatusColumns");
+        await addRefundAndPaymentStatusColumns();
+      } catch (error) {
+        console.error("[MIGRATION] Failed to run refund/payment status migration:", error);
+      }
+
       // Ensure default CMS pages exist
       try {
         const { ensureCmsDefaults } = await import("./seed");

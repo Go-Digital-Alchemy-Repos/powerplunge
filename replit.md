@@ -60,6 +60,7 @@ The Power Plunge e-commerce platform utilizes a modern full-stack architecture.
 - **Twilio SMS Integration Settings:** Admin UI for configuring Twilio SMS, with encrypted storage for auth token.
 - **Admin Settings & Branding:** Themes moved to main admin settings. Logo branding with upload, preview, and dynamic display from R2 storage.
 - **Site Presets Removed:** The Site Presets feature (pre-configured site personalities) was removed in favor of the simpler theme selector under System Settings. Related database tables (`site_presets`, `preset_apply_history`), schema fields (`activePresetId`, `navPreset`, `footerPreset`), routes, services, repositories, and UI components were all removed. Campaign generator was simplified to use pack defaults only.
+- **Stripe-Backed Refunds:** End-to-end refund system using Stripe as source of truth. Admin refund endpoint creates real Stripe refunds with idempotency keys. Webhook handlers sync `charge.refunded` and `refund.updated` events. Orders have a computed `paymentStatus` field (unpaid/paid/refund_pending/partially_refunded/refunded/refund_failed). Refund records track `stripeRefundId`, `source` (stripe/manual), `reasonCode`. Over-refund protection validates against refundable amount. Admin and public order APIs expose refund summary (paymentStatus, refundedAmount, refundCount). Service: `server/src/services/refund.service.ts`. Migration: `server/src/migrations/addRefundAndPaymentStatusColumns.ts`.
 
 ## External Dependencies
 - **Google Analytics 4:** For product performance and customer behavior analytics.

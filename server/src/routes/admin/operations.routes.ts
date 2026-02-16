@@ -89,7 +89,21 @@ router.get("/refunds", async (req, res) => {
 
 router.patch("/refunds/:id", async (req: any, res) => {
   try {
-    const refund = await storage.updateRefund(req.params.id, req.body);
+    const { status, reason, reasonCode } = req.body;
+    const updateData: any = {};
+
+    if (status) {
+      const validStatuses = ["pending", "processed", "rejected", "failed"];
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({ message: `Invalid status. Must be one of: ${validStatuses.join(", ")}`, code: "INVALID_STATUS" });
+      }
+      updateData.status = status;
+    }
+    if (reason !== undefined) updateData.reason = reason;
+    if (reasonCode !== undefined) updateData.reasonCode = reasonCode;
+    if (status === "processed") updateData.processedAt = new Date();
+
+    const refund = await storage.updateRefund(req.params.id, updateData);
     if (!refund) {
       return res.status(404).json({ message: "Refund not found" });
     }
@@ -103,9 +117,13 @@ router.patch("/refunds/:id", async (req: any, res) => {
       metadata: { 
         orderId: refund.orderId, 
         newStatus: refund.status,
+        stripeRefundId: refund.stripeRefundId,
         changes: req.body,
       },
     });
+
+    const { updateOrderPaymentStatus } = await import("../../services/refund.service");
+    await updateOrderPaymentStatus(refund.orderId);
 
     res.json(refund);
   } catch (error) {
@@ -234,33 +252,47 @@ export const refundOrderRoutes = Router();
 
 refundOrderRoutes.post("/:orderId/refunds", async (req: any, res) => {
   try {
-    const { amount, reason, type } = req.body;
-    const order = await storage.getOrder(req.params.orderId);
-    
-    if (!order) {
-      return res.status(404).json({ message: "Order not found" });
+    const { amount, reason, reasonCode, type, source } = req.body;
+    const adminEmail = req.adminUser?.email || req.session?.adminEmail || "admin";
+
+    if (!amount || typeof amount !== "number" || amount <= 0) {
+      return res.status(400).json({ message: "Amount must be a positive number (in cents)", code: "INVALID_AMOUNT" });
+    }
+
+    if (!reasonCode) {
+      return res.status(400).json({ message: "Reason code is required", code: "MISSING_REASON_CODE" });
+    }
+
+    const { createStripeRefund, createManualRefund, RefundError } = await import("../../services/refund.service");
+
+    let refund;
+    if (source === "manual") {
+      refund = await createManualRefund({
+        orderId: req.params.orderId,
+        amount,
+        reason,
+        reasonCode,
+        type: type || "full",
+        adminEmail,
+      });
+    } else {
+      refund = await createStripeRefund({
+        orderId: req.params.orderId,
+        amount,
+        reason,
+        reasonCode,
+        type: type || "full",
+        adminEmail,
+      });
     }
     
-    const refund = await storage.createRefund({
-      orderId: req.params.orderId,
-      amount,
-      reason,
-      type: type || "full",
-      status: "pending",
-    });
-
-    const adminEmail = req.adminUser?.email || req.session?.adminEmail || "admin";
-    await storage.createAuditLog({
-      actor: adminEmail,
-      action: "refund.created",
-      entityType: "refund",
-      entityId: refund.id,
-      metadata: { orderId: req.params.orderId, amount, reason, type: type || "full" },
-    });
-    
     res.json(refund);
-  } catch (error) {
-    res.status(500).json({ message: "Failed to create refund" });
+  } catch (error: any) {
+    if (error.name === "RefundError") {
+      return res.status(error.statusCode).json({ message: error.message, code: error.code });
+    }
+    console.error("Failed to create refund:", error);
+    res.status(500).json({ message: "Failed to create refund", code: "INTERNAL_ERROR" });
   }
 });
 

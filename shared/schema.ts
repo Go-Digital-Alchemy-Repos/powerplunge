@@ -139,6 +139,7 @@ export const orders = pgTable("orders", {
   shippingState: text("shipping_state"),
   shippingZip: text("shipping_zip"),
   shippingCountry: text("shipping_country").default("US"),
+  paymentStatus: text("payment_status").notNull().default("unpaid"),
   billingSameAsShipping: boolean("billing_same_as_shipping").default(true),
   billingName: text("billing_name"),
   billingCompany: text("billing_company"),
@@ -730,9 +731,11 @@ export const refunds = pgTable("refunds", {
   orderId: varchar("order_id").notNull().references(() => orders.id),
   amount: integer("amount").notNull(), // in cents
   reason: text("reason"),
+  reasonCode: text("reason_code"), // structured reason: duplicate, fraudulent, requested_by_customer, product_not_received, product_unacceptable, other
   type: text("type").notNull().default("full"), // full, partial
+  source: text("source").notNull().default("stripe"), // stripe, manual
   stripeRefundId: text("stripe_refund_id"),
-  status: text("status").notNull().default("pending"), // pending, approved, processed, rejected
+  status: text("status").notNull().default("pending"), // pending, processed, rejected, failed
   processedBy: varchar("processed_by").references(() => adminUsers.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   processedAt: timestamp("processed_at"),
