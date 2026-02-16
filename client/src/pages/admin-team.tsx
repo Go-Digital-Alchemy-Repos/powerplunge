@@ -225,7 +225,12 @@ export default function AdminTeam() {
               const roleInfo = ROLE_LABELS[member.role] || ROLE_LABELS.admin;
               const RoleIcon = roleInfo.icon;
               return (
-                <Card key={member.id} data-testid={`card-member-${member.id}`}>
+                <Card 
+                  key={member.id} 
+                  data-testid={`card-member-${member.id}`}
+                  className="hover:border-primary/50 cursor-pointer"
+                  onClick={() => openEditPanel(member)}
+                >
                   <CardContent className="flex items-center justify-between py-4">
                     <div className="flex items-center gap-4">
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center ${roleInfo.color}`}>

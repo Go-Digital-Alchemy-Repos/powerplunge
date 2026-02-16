@@ -273,6 +273,7 @@ export default function AdminCustomers() {
                   key={customer.id} 
                   className="hover:border-primary/50 cursor-pointer"
                   onClick={() => setProfileDrawerCustomerId(customer.id)}
+                  data-testid={`card-customer-${customer.id}`}
                 >
                   <CardContent className="p-4 flex items-center justify-between">
                     <div className="flex items-center gap-4">
