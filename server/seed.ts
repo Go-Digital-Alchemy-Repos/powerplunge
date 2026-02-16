@@ -1,6 +1,6 @@
 import { storage } from "./storage";
 import { db } from "./db";
-import { adminUsers, products } from "@shared/schema";
+import { adminUsers, products, affiliates } from "@shared/schema";
 import { eq, asc, isNull } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { slugify } from "./src/utils/slugify";
@@ -74,6 +74,73 @@ export async function seedTestAdminUsers() {
     });
     console.log(`  Created test user: ${testUser.email} (${testUser.role})`);
   }
+}
+
+const TEST_AFFILIATE = {
+  email: "affiliate@test.com",
+  password: "testpass123",
+  name: "Test Affiliate",
+  affiliateCode: "TESTFF",
+};
+
+export async function seedTestAffiliateAccount() {
+  if (process.env.NODE_ENV === "production") {
+    return;
+  }
+
+  const existing = await storage.getCustomerByEmail(TEST_AFFILIATE.email);
+  if (existing) {
+    const existingAffiliate = await storage.getAffiliateByCustomerId(existing.id);
+    if (existingAffiliate) {
+      return;
+    }
+  }
+
+  console.log("Seeding test affiliate account (dev only)...");
+
+  let customer = await storage.getCustomerByEmail(TEST_AFFILIATE.email);
+  if (!customer) {
+    const passwordHash = await bcrypt.hash(TEST_AFFILIATE.password, 10);
+    customer = await storage.createCustomer({
+      email: TEST_AFFILIATE.email,
+      name: TEST_AFFILIATE.name,
+      passwordHash,
+    });
+    console.log(`  Created test customer: ${TEST_AFFILIATE.email}`);
+  }
+
+  const existingAffiliateByCode = await db
+    .select()
+    .from(affiliates)
+    .where(eq(affiliates.affiliateCode, TEST_AFFILIATE.affiliateCode))
+    .then((r) => r[0]);
+
+  if (existingAffiliateByCode) {
+    console.log(`  Affiliate code ${TEST_AFFILIATE.affiliateCode} already in use, skipping`);
+    return;
+  }
+
+  const affiliate = await storage.createAffiliate({
+    customerId: customer.id,
+    affiliateCode: TEST_AFFILIATE.affiliateCode,
+    status: "active",
+    totalEarnings: 0,
+    pendingBalance: 0,
+    paidBalance: 0,
+    totalReferrals: 0,
+    totalSales: 0,
+    paypalEmail: TEST_AFFILIATE.email,
+    ffEnabled: true,
+  });
+
+  await storage.createAffiliateAgreement({
+    affiliateId: affiliate.id,
+    agreementText: "Standard Affiliate Agreement v1.0",
+    signatureName: TEST_AFFILIATE.name,
+    signatureIp: "127.0.0.1",
+  });
+
+  console.log(`  Created test affiliate: ${TEST_AFFILIATE.email} (code: ${TEST_AFFILIATE.affiliateCode})`);
 }
 
 const firstNames = ["John", "Sarah", "Michael", "Emily", "David", "Jessica", "Chris", "Amanda", "James", "Ashley"];
