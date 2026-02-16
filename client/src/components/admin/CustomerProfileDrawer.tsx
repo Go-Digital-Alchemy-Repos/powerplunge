@@ -1205,7 +1205,7 @@ export function CustomerProfileDrawer({
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
                       <p className="font-medium">Account Status</p>
                       <p className="text-sm text-muted-foreground">
@@ -1215,15 +1215,15 @@ export function CustomerProfileDrawer({
                       </p>
                     </div>
                     {profile?.customer.isDisabled ? (
-                      <Badge variant="destructive">Disabled</Badge>
+                      <Badge variant="destructive" className="w-fit">Disabled</Badge>
                     ) : (
-                      <Badge variant="secondary" className="bg-green-500/20 text-green-500">
+                      <Badge variant="secondary" className="bg-green-500/20 text-green-500 w-fit">
                         Active
                       </Badge>
                     )}
                   </div>
                   <Separator />
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
                       <p className="font-medium">Account Created</p>
                       <p className="text-sm text-muted-foreground">
