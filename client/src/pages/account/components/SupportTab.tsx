@@ -149,7 +149,6 @@ function TicketDetailDialog({
         <div className="flex-1 overflow-y-auto space-y-4 py-2 min-h-0" data-testid="ticket-conversation-thread">
           {thread.map((entry, idx) => {
             const isAdmin = entry.type === "admin_reply";
-            const isHtml = isAdmin && entry.text.includes("<") && entry.text.includes(">");
             return (
               <div key={idx} className="flex gap-3" data-testid={`thread-entry-${idx}`}>
                 <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${isAdmin ? "bg-blue-500/20 text-blue-400" : "bg-primary/20 text-primary"}`}>
