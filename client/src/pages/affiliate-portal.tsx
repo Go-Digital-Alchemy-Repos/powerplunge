@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, LogOut, User, Link2, DollarSign, Users, Copy, CheckCircle, ExternalLink, Loader2, CreditCard, AlertCircle, Crown, Calendar, AlertTriangle, Clock, Download, Edit3, X, Save } from "lucide-react";
 import DynamicNav from "@/components/DynamicNav";
 import { useBranding } from "@/hooks/use-branding";
-import { QRCodeSVG } from "qrcode.react";
+
 
 interface AffiliateData {
   affiliate: {
@@ -567,56 +567,70 @@ export default function AffiliatePortal() {
           </Card>
 
           {affiliateData.ffEnabled && (
-            <Card className="border-primary/30 bg-primary/5">
+            <Card>
               <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Users className="w-5 h-5" />
-                  Friends & Family Code
-                </CardTitle>
+                <CardTitle className="text-lg">Friends & Family Link</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Share this special link with friends and family for an exclusive discount.
-                  {affiliateData.programTerms && (
-                    <> You earn {formatCommissionLabel(affiliateData.programTerms.friendsAndFamily.commission.type, affiliateData.programTerms.friendsAndFamily.commission.value)}.
-                    Your friends & family get {formatDiscountLabel(affiliateData.programTerms.friendsAndFamily.discount.type, affiliateData.programTerms.friendsAndFamily.discount.value)}.</>
-                  )}
-                </p>
-                <div className="flex gap-2">
-                  <Input 
-                    value={`${window.location.origin}?ref=FF${affiliateData.affiliate.code}`}
-                    readOnly
-                    className="text-sm"
-                    data-testid="input-ff-referral-link"
-                  />
-                  <Button onClick={copyFfLink} className="gap-2" data-testid="button-copy-ff-link">
-                    {ffCopied ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                    {ffCopied ? "Copied!" : "Copy"}
-                  </Button>
-                </div>
-                <div className="mt-3 p-3 bg-primary/10 rounded-lg border border-primary/20">
-                  <p className="text-sm">
-                    <span className="font-medium">F&F code:</span>{" "}
-                    <code className="bg-background px-2 py-1 rounded" data-testid="text-ff-code">FF{affiliateData.affiliate.code}</code>
-                  </p>
-                  {affiliateData.ffMaxUses > 0 && (
-                    <p className="text-sm mt-2">
-                      <span className="font-medium">Uses:</span>{" "}
-                      <span data-testid="text-ff-usage">{affiliateData.ffUsageCount} / {affiliateData.ffMaxUses}</span>
-                      {affiliateData.ffUsageCount >= affiliateData.ffMaxUses && (
-                        <Badge variant="destructive" className="ml-2">Limit reached</Badge>
+                <div className="flex flex-col md:flex-row gap-6">
+                  <div className="flex-1">
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Share this special link with friends and family for an exclusive discount.
+                      {affiliateData.programTerms && (
+                        <> You earn {formatCommissionLabel(affiliateData.programTerms.friendsAndFamily.commission.type, affiliateData.programTerms.friendsAndFamily.commission.value)}.
+                        Your friends & family get {formatDiscountLabel(affiliateData.programTerms.friendsAndFamily.discount.type, affiliateData.programTerms.friendsAndFamily.discount.value)}.</>
                       )}
                     </p>
-                  )}
-                </div>
-                <div className="mt-4 flex justify-center">
-                  <div className="bg-white p-3 rounded-lg border" data-testid="ff-qr-code">
-                    <QRCodeSVG
-                      value={`${window.location.origin}?ref=FF${affiliateData.affiliate.code}`}
-                      size={160}
-                      level="M"
-                    />
-                    <p className="text-xs text-center text-muted-foreground mt-2">Scan to share F&F discount</p>
+                    <div className="flex gap-2">
+                      <Input 
+                        value={`${window.location.origin}?ref=FF${affiliateData.affiliate.code}`}
+                        readOnly
+                        className="text-sm"
+                        data-testid="input-ff-referral-link"
+                      />
+                      <Button onClick={copyFfLink} className="gap-2" data-testid="button-copy-ff-link">
+                        {ffCopied ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                        {ffCopied ? "Copied!" : "Copy"}
+                      </Button>
+                    </div>
+                    <div className="mt-4 p-3 bg-primary/10 rounded-lg border border-primary/20">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm">
+                          <span className="font-medium">F&F code:</span>{" "}
+                          <code className="bg-background px-2 py-1 rounded" data-testid="text-ff-code">FF{affiliateData.affiliate.code}</code>
+                        </p>
+                        {affiliateData.ffMaxUses > 0 && (
+                          <p className="text-sm">
+                            <span className="font-medium">Uses:</span>{" "}
+                            <span data-testid="text-ff-usage">{affiliateData.ffUsageCount} / {affiliateData.ffMaxUses}</span>
+                            {affiliateData.ffUsageCount >= affiliateData.ffMaxUses && (
+                              <Badge variant="destructive" className="ml-2">Limit reached</Badge>
+                            )}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <p className="text-sm text-muted-foreground mb-2">QR Code</p>
+                    <div className="p-4 bg-white rounded-lg">
+                      <img 
+                        src={generateQRCodeUrl(`FF${affiliateData.affiliate.code}`)} 
+                        alt="F&F Referral QR Code"
+                        className="w-32 h-32"
+                        data-testid="ff-qr-code"
+                      />
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="mt-3 gap-2"
+                      onClick={() => downloadQRCode(`FF${affiliateData.affiliate!.code}`)}
+                      data-testid="button-download-ff-qr"
+                    >
+                      <Download className="w-4 h-4" />
+                      Save to Photos
+                    </Button>
                   </div>
                 </div>
               </CardContent>
