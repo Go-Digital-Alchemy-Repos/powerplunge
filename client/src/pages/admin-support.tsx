@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { useAdmin } from "@/hooks/use-admin";
@@ -500,15 +501,15 @@ export default function AdminSupport() {
         </Card>
       </div>
 
-      {/* Ticket Detail Modal */}
-      <Dialog open={!!selectedTicket} onOpenChange={() => setSelectedTicket(null)}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+      {/* Ticket Detail Drawer */}
+      <Sheet open={!!selectedTicket} onOpenChange={() => setSelectedTicket(null)}>
+        <SheetContent side="right" className="w-[80vw] sm:max-w-none overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
               <MessageSquare className="w-5 h-5" />
               Ticket #{selectedTicket?.id.slice(0, 8)}
-            </DialogTitle>
-          </DialogHeader>
+            </SheetTitle>
+          </SheetHeader>
 
           {selectedTicket && (
             <div className="space-y-6">
@@ -533,7 +534,7 @@ export default function AdminSupport() {
 
               <div className="space-y-3" data-testid="ticket-thread">
                 <Label className="text-xs text-muted-foreground uppercase tracking-wider">Conversation</Label>
-                <div className="space-y-3 max-h-[40vh] overflow-y-auto pr-1" data-testid="thread-container">
+                <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1" data-testid="thread-container">
                   {buildThread(selectedTicket).map((entry, idx) => {
                     const isAdmin = entry.type === "admin_reply";
                     const isCustomer = entry.type === "customer_original" || entry.type === "customer_reply";
@@ -634,8 +635,8 @@ export default function AdminSupport() {
               </div>
             </div>
           )}
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
 
       {/* Create Ticket Dialog */}
       <Dialog open={showCreateDialog} onOpenChange={(open) => { if (!open) { setShowCreateDialog(false); resetCreateForm(); } }}>
