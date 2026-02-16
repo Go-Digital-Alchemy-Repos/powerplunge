@@ -116,6 +116,33 @@ router.patch("/:id", async (req: Request, res: Response) => {
   }
 });
 
+router.delete("/bulk", requireFullAccess, async (req: Request, res: Response) => {
+  try {
+    const { ids } = req.body;
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ message: "Order IDs required" });
+    }
+    const deletedCount = await storage.deleteOrders(ids);
+    res.json({ deletedCount });
+  } catch (error) {
+    console.error("Failed to delete orders:", error);
+    res.status(500).json({ message: "Failed to delete orders" });
+  }
+});
+
+router.delete("/:id", requireFullAccess, async (req: Request, res: Response) => {
+  try {
+    const deleted = await storage.deleteOrder(req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Failed to delete order:", error);
+    res.status(500).json({ message: "Failed to delete order" });
+  }
+});
+
 router.post("/", requireFullAccess, async (req: Request, res: Response) => {
   try {
     const { customerId, items, notes, status = "pending" } = req.body;

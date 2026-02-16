@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useAdmin } from "@/hooks/use-admin";
-import { Package, Calendar, User, ChevronRight, Truck, Mail, RefreshCw, ExternalLink, Search, Download, Filter, Plus } from "lucide-react";
+import { Package, Calendar, User, ChevronRight, Truck, Mail, RefreshCw, ExternalLink, Search, Download, Filter, Plus, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import AdminNav from "@/components/admin/AdminNav";
 import { ManualOrderWizard } from "@/components/admin/ManualOrderWizard";
@@ -316,6 +316,61 @@ export default function AdminOrders() {
     },
   });
 
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ type: "single" | "bulk"; id?: string } | null>(null);
+
+  const deleteOrderMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/admin/orders/${id}`, {
+        credentials: "include",
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Failed to delete order");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
+      setSelectedOrder(null);
+      toast({ title: "Order deleted" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to delete order", variant: "destructive" });
+    },
+  });
+
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const res = await fetch(`/api/admin/orders/bulk`, {
+        credentials: "include",
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids }),
+      });
+      if (!res.ok) throw new Error("Failed to delete orders");
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
+      clearSelection();
+      setSelectedOrder(null);
+      toast({ title: `Deleted ${data.deletedCount} orders` });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to delete orders", variant: "destructive" });
+    },
+  });
+
+  const confirmDelete = () => {
+    if (!deleteTarget) return;
+    if (deleteTarget.type === "single" && deleteTarget.id) {
+      deleteOrderMutation.mutate(deleteTarget.id);
+    } else if (deleteTarget.type === "bulk") {
+      bulkDeleteMutation.mutate(Array.from(selectedIds));
+    }
+    setDeleteConfirmOpen(false);
+    setDeleteTarget(null);
+  };
+
   // Export CSV function
   const exportCSV = () => {
     const ordersToExport = selectedCount > 0 ? selectedItems : filteredOrders;
@@ -362,6 +417,15 @@ export default function AdminOrders() {
       icon: <Download className="w-4 h-4 mr-1" />,
       onClick: exportCSV,
       variant: "outline" as const,
+    },
+    {
+      label: "Delete",
+      icon: <Trash2 className="w-4 h-4 mr-1" />,
+      onClick: () => {
+        setDeleteTarget({ type: "bulk" });
+        setDeleteConfirmOpen(true);
+      },
+      variant: "destructive" as const,
     },
   ];
 
@@ -693,6 +757,19 @@ export default function AdminOrders() {
                         </Button>
                       )}
 
+                      <Button 
+                        variant="destructive" 
+                        className="w-full mt-3 gap-2"
+                        onClick={() => {
+                          setDeleteTarget({ type: "single", id: currentOrder.id });
+                          setDeleteConfirmOpen(true);
+                        }}
+                        data-testid="button-delete-order"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Delete Order
+                      </Button>
+
                       <Dialog open={shipDialogOpen} onOpenChange={setShipDialogOpen}>
                         <DialogContent>
                           <DialogHeader>
@@ -876,6 +953,43 @@ export default function AdminOrders() {
               )}
             </Button>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Delete</DialogTitle>
+            <p className="text-sm text-muted-foreground pt-2">
+              {deleteTarget?.type === "bulk"
+                ? `Are you sure you want to permanently delete ${selectedCount} selected order${selectedCount !== 1 ? "s" : ""}? This will also remove all related data (items, shipments, refunds, etc.) and cannot be undone.`
+                : "Are you sure you want to permanently delete this order? This will also remove all related data (items, shipments, refunds, etc.) and cannot be undone."}
+            </p>
+          </DialogHeader>
+          <div className="flex justify-end gap-2 pt-4">
+            <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)} data-testid="button-cancel-delete">
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDelete}
+              disabled={deleteOrderMutation.isPending || bulkDeleteMutation.isPending}
+              data-testid="button-confirm-delete"
+            >
+              {(deleteOrderMutation.isPending || bulkDeleteMutation.isPending) ? (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete {deleteTarget?.type === "bulk" ? `${selectedCount} Orders` : "Order"}
+                </>
+              )}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

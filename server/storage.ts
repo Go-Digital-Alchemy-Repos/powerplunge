@@ -102,6 +102,8 @@ export interface IStorage {
   getOrderByStripeSession(sessionId: string): Promise<Order | undefined>;
   createOrder(order: InsertOrder): Promise<Order>;
   updateOrder(id: string, order: Partial<InsertOrder>): Promise<Order | undefined>;
+  deleteOrder(id: string): Promise<boolean>;
+  deleteOrders(ids: string[]): Promise<number>;
 
   // Order Items
   getOrderItems(orderId: string): Promise<OrderItem[]>;
@@ -548,6 +550,33 @@ export class DatabaseStorage implements IStorage {
   async updateOrder(id: string, order: Partial<InsertOrder>): Promise<Order | undefined> {
     const [updated] = await db.update(orders).set({ ...order, updatedAt: new Date() }).where(eq(orders.id, id)).returning();
     return updated || undefined;
+  }
+
+  async deleteOrder(id: string): Promise<boolean> {
+    const deleted = await this.deleteOrders([id]);
+    return deleted > 0;
+  }
+
+  async deleteOrders(ids: string[]): Promise<number> {
+    if (ids.length === 0) return 0;
+    const idsArray = sql`ARRAY[${sql.join(ids.map(id => sql`${id}`), sql`, `)}]::varchar[]`;
+    return await db.transaction(async (tx) => {
+      await tx.delete(orderItems).where(inArray(orderItems.orderId, ids));
+      await tx.delete(shipments).where(inArray(shipments.orderId, ids));
+      await tx.delete(affiliateReferrals).where(inArray(affiliateReferrals.orderId, ids));
+      await tx.delete(couponRedemptions).where(inArray(couponRedemptions.orderId, ids));
+      await tx.delete(refunds).where(inArray(refunds.orderId, ids));
+      await tx.execute(sql`DELETE FROM failed_payments WHERE order_id = ANY(${idsArray})`);
+      await tx.execute(sql`UPDATE email_events SET order_id = NULL WHERE order_id = ANY(${idsArray})`);
+      await tx.execute(sql`UPDATE inventory_ledger SET order_id = NULL WHERE order_id = ANY(${idsArray})`);
+      await tx.execute(sql`UPDATE upsell_events SET order_id = NULL WHERE order_id = ANY(${idsArray})`);
+      await tx.execute(sql`UPDATE vip_activity_log SET order_id = NULL WHERE order_id = ANY(${idsArray})`);
+      await tx.execute(sql`UPDATE recovery_events SET order_id = NULL WHERE order_id = ANY(${idsArray})`);
+      await tx.execute(sql`UPDATE support_tickets SET order_id = NULL WHERE order_id = ANY(${idsArray})`);
+      await tx.execute(sql`UPDATE abandoned_carts SET recovered_order_id = NULL WHERE recovered_order_id = ANY(${idsArray})`);
+      const result = await tx.delete(orders).where(inArray(orders.id, ids)).returning();
+      return result.length;
+    });
   }
 
   // Order Items
