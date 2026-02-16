@@ -258,7 +258,7 @@ export default function AdminCustomers() {
                         <Badge variant="secondary">{customer.orderCount}</Badge>
                       </td>
                       <td className="px-6 py-4 text-right font-medium">
-                        {customer.totalSpent === 0 && customer.orderCount > 0 ? (
+                        {customer.totalSpent === 0 ? (
                           <span className="text-primary font-bold">FREE</span>
                         ) : (
                           `$${(customer.totalSpent / 100).toLocaleString()}`
@@ -296,7 +296,7 @@ export default function AdminCustomers() {
                     </div>
                     <div className="text-right flex flex-col items-end gap-1 shrink-0">
                       <p className="font-bold text-sm">
-                        {customer.totalSpent === 0 && customer.orderCount > 0 ? (
+                        {customer.totalSpent === 0 ? (
                           <span className="text-primary font-bold">FREE</span>
                         ) : (
                           `$${(customer.totalSpent / 100).toLocaleString()}`

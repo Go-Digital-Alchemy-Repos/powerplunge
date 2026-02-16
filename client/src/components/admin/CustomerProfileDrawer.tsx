@@ -573,7 +573,7 @@ export function CustomerProfileDrawer({
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold" data-testid="stat-total-spent">
-                      {profile?.totalSpent === 0 && (profile?.orderCount || 0) > 0 ? (
+                      {profile?.totalSpent === 0 ? (
                         <span className="text-primary font-bold">FREE</span>
                       ) : (
                         formatCurrency(profile?.totalSpent || 0)
