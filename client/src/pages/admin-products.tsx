@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { MobileTabsList } from "@/components/ui/mobile-tabs-list";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AmountTypeInput } from "@/components/ui/amount-type-input";
 import { SlideOutPanel, PanelFooter } from "@/components/ui/slide-out-panel";
@@ -577,24 +578,17 @@ export default function AdminProducts() {
         }
       >
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="w-full grid grid-cols-4 mb-6">
-            <TabsTrigger value="overview" className="gap-2" data-testid="tab-overview">
-              <FileText className="w-4 h-4" />
-              Overview
-            </TabsTrigger>
-            <TabsTrigger value="photos" className="gap-2" data-testid="tab-photos">
-              <ImageIcon className="w-4 h-4" />
-              Photos
-            </TabsTrigger>
-            <TabsTrigger value="affiliate" className="gap-2" data-testid="tab-affiliate">
-              <Tag className="w-4 h-4" />
-              Affiliate
-            </TabsTrigger>
-            <TabsTrigger value="seo" className="gap-2" data-testid="tab-seo">
-              <Search className="w-4 h-4" />
-              SEO
-            </TabsTrigger>
-          </TabsList>
+          <MobileTabsList
+            tabs={[
+              { value: "overview", label: "Overview", icon: <FileText className="w-4 h-4" />, "data-testid": "tab-overview" },
+              { value: "photos", label: "Photos", icon: <ImageIcon className="w-4 h-4" />, "data-testid": "tab-photos" },
+              { value: "affiliate", label: "Affiliate", icon: <Tag className="w-4 h-4" />, "data-testid": "tab-affiliate" },
+              { value: "seo", label: "SEO", icon: <Search className="w-4 h-4" />, "data-testid": "tab-seo" },
+            ]}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            className="mb-6"
+          />
 
           <TabsContent value="overview" className="space-y-6 mt-0">
             <div className="space-y-4">

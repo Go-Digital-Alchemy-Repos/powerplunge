@@ -9,7 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useAdmin } from "@/hooks/use-admin";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { MobileTabsList } from "@/components/ui/mobile-tabs-list";
 import AdminNav from "@/components/admin/AdminNav";
 
 interface ShippingZone {
@@ -41,6 +42,7 @@ export default function AdminShipping() {
   const [editingRate, setEditingRate] = useState<ShippingRate | null>(null);
   const [selectedZoneId, setSelectedZoneId] = useState<string>("");
   
+  const [activeTab, setActiveTab] = useState("zones");
   const [zoneForm, setZoneForm] = useState({ name: "", countries: "USA", active: true });
   const [rateForm, setRateForm] = useState({
     name: "",
@@ -241,11 +243,15 @@ export default function AdminShipping() {
           </div>
         </div>
 
-        <Tabs defaultValue="zones" className="space-y-6">
-          <TabsList className="bg-slate-800">
-            <TabsTrigger value="zones" data-testid="tab-zones">Shipping Zones</TabsTrigger>
-            <TabsTrigger value="rates" data-testid="tab-rates">Shipping Rates</TabsTrigger>
-          </TabsList>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <MobileTabsList
+            tabs={[
+              { value: "zones", label: "Shipping Zones", "data-testid": "tab-zones" },
+              { value: "rates", label: "Shipping Rates", "data-testid": "tab-rates" },
+            ]}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+          />
 
           <TabsContent value="zones" className="space-y-6">
             <div className="flex justify-end">

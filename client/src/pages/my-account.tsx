@@ -3,7 +3,8 @@ import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useCustomerAuth } from "@/hooks/use-customer-auth";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { MobileTabsList } from "@/components/ui/mobile-tabs-list";
 import { Badge } from "@/components/ui/badge";
 import { Package, ArrowLeft, LogOut, Link2, Settings, Headset, Crown } from "lucide-react";
 import UserAvatar from "@/components/UserAvatar";
@@ -36,6 +37,21 @@ export default function MyAccount() {
   });
 
   const isAffiliate = !!affiliateCheck?.affiliate;
+
+  const handleTabChange = (value: string) => {
+    if (value === "affiliate") {
+      setLocation('/affiliate-portal');
+      return;
+    }
+    setActiveTab(value);
+  };
+
+  const accountTabs = [
+    { value: "orders", label: "My Orders", icon: <Package className="w-4 h-4" />, "data-testid": "tab-orders" },
+    { value: "account", label: "Account Details", icon: <Settings className="w-4 h-4" />, "data-testid": "tab-account" },
+    ...(isAffiliate ? [{ value: "affiliate", label: "Affiliate Program", icon: <Link2 className="w-4 h-4" />, "data-testid": "tab-affiliate", onClick: (e: React.MouseEvent) => { e.preventDefault(); setLocation('/affiliate-portal'); } }] : []),
+    { value: "support", label: "Support", icon: <Headset className="w-4 h-4" />, "data-testid": "tab-support" },
+  ];
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -86,26 +102,12 @@ export default function MyAccount() {
 
       <main className="max-w-4xl mx-auto px-6 py-12">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-8">
-            <TabsTrigger value="orders" className="gap-2" data-testid="tab-orders">
-              <Package className="w-4 h-4" />
-              My Orders
-            </TabsTrigger>
-            <TabsTrigger value="account" className="gap-2" data-testid="tab-account">
-              <Settings className="w-4 h-4" />
-              Account Details
-            </TabsTrigger>
-            {isAffiliate && (
-              <TabsTrigger value="affiliate" className="gap-2" data-testid="tab-affiliate" onClick={(e) => { e.preventDefault(); setLocation('/affiliate-portal'); }}>
-                <Link2 className="w-4 h-4" />
-                Affiliate Program
-              </TabsTrigger>
-            )}
-            <TabsTrigger value="support" className="gap-2" data-testid="tab-support">
-              <Headset className="w-4 h-4" />
-              Support
-            </TabsTrigger>
-          </TabsList>
+          <MobileTabsList
+            tabs={accountTabs}
+            activeTab={activeTab}
+            onTabChange={handleTabChange}
+            className="mb-8"
+          />
 
           <TabsContent value="orders">
             <OrdersTab />

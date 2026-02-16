@@ -5,12 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { MobileTabsList } from "@/components/ui/mobile-tabs-list";
 import AdminNav from "@/components/admin/AdminNav";
 import { useAdmin } from "@/hooks/use-admin";
 
 export default function AdminReports() {
   const { role, hasFullAccess, isLoading: adminLoading } = useAdmin();
+  const [activeTab, setActiveTab] = useState("sales");
   const [dateRange, setDateRange] = useState({
     startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
     endDate: new Date().toISOString().split("T")[0],
@@ -77,12 +79,16 @@ export default function AdminReports() {
           </div>
         </div>
 
-        <Tabs defaultValue="sales" className="space-y-6">
-          <TabsList className="bg-slate-800">
-            <TabsTrigger value="sales" data-testid="tab-sales">Sales</TabsTrigger>
-            <TabsTrigger value="products" data-testid="tab-products">Products</TabsTrigger>
-            <TabsTrigger value="customers" data-testid="tab-customers">Customers</TabsTrigger>
-          </TabsList>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <MobileTabsList
+            tabs={[
+              { value: "sales", label: "Sales", "data-testid": "tab-sales" },
+              { value: "products", label: "Products", "data-testid": "tab-products" },
+              { value: "customers", label: "Customers", "data-testid": "tab-customers" },
+            ]}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+          />
 
           <TabsContent value="sales" className="space-y-6">
             <Card className="bg-slate-800 border-slate-700">

@@ -7,7 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { MobileTabsList } from "@/components/ui/mobile-tabs-list";
 import {
   Table,
   TableBody,
@@ -191,6 +192,7 @@ export default function AdminRevenue() {
   const [customEnd, setCustomEnd] = useState("");
   const [channel, setChannel] = useState("all");
   const [productId, setProductId] = useState("");
+  const [activeTab, setActiveTab] = useState("products");
 
   const queryParams = getQueryParams(preset, customStart, customEnd, channel, productId);
 
@@ -362,26 +364,18 @@ export default function AdminRevenue() {
         </div>
 
         {!metricsLoading && (
-          <Tabs defaultValue="products" className="w-full mb-8">
-            <TabsList>
-              <TabsTrigger value="products">
-                Top Products
-              </TabsTrigger>
-              <TabsTrigger value="affiliates">
-                Top Affiliates
-              </TabsTrigger>
-              <TabsTrigger value="customers">
-                Top Customers
-              </TabsTrigger>
-              <TabsTrigger value="upsells">
-                <Link2 className="w-4 h-4 mr-1" />
-                Top Upsells
-              </TabsTrigger>
-              <TabsTrigger value="vip">
-                <Crown className="w-4 h-4 mr-1" />
-                VIP Stats
-              </TabsTrigger>
-            </TabsList>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mb-8">
+            <MobileTabsList
+              tabs={[
+                { value: "products", label: "Top Products" },
+                { value: "affiliates", label: "Top Affiliates" },
+                { value: "customers", label: "Top Customers" },
+                { value: "upsells", label: "Top Upsells", icon: <Link2 className="w-4 h-4" /> },
+                { value: "vip", label: "VIP Stats", icon: <Crown className="w-4 h-4" /> },
+              ]}
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+            />
 
             <TabsContent value="products">
               <Card>

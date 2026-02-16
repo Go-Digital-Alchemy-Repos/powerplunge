@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { MobileTabsList } from "@/components/ui/mobile-tabs-list";
 import { useToast } from "@/hooks/use-toast";
 import { useAdmin } from "@/hooks/use-admin";
 import { Crown, Users, DollarSign, TrendingUp, Loader2, Save, Ban, Truck, Gift, Zap, Eye, Settings, UserPlus, Sparkles } from "lucide-react";
@@ -58,6 +59,7 @@ export default function AdminVip() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { role, hasFullAccess, isLoading: adminLoading } = useAdmin();
+  const [activeTab, setActiveTab] = useState("analytics");
   const [searchTerm, setSearchTerm] = useState("");
 
   const { data: settings, isLoading: loadingSettings } = useQuery<VipSettings>({
@@ -178,18 +180,17 @@ export default function AdminVip() {
           </div>
         </div>
 
-        <Tabs defaultValue="analytics">
-              <TabsList className="mb-6">
-                <TabsTrigger value="analytics" className="gap-2">
-                  <TrendingUp className="w-4 h-4" /> Analytics
-                </TabsTrigger>
-                <TabsTrigger value="customers" className="gap-2">
-                  <Users className="w-4 h-4" /> VIP Customers
-                </TabsTrigger>
-                <TabsTrigger value="settings" className="gap-2">
-                  <Settings className="w-4 h-4" /> Settings
-                </TabsTrigger>
-              </TabsList>
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <MobileTabsList
+                tabs={[
+                  { value: "analytics", label: "Analytics", icon: <TrendingUp className="w-4 h-4" /> },
+                  { value: "customers", label: "VIP Customers", icon: <Users className="w-4 h-4" /> },
+                  { value: "settings", label: "Settings", icon: <Settings className="w-4 h-4" /> },
+                ]}
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+                className="mb-6"
+              />
 
               <TabsContent value="analytics">
                 {loadingAnalytics ? (

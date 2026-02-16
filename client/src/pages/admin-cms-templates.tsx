@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { useAdmin } from "@/hooks/use-admin";
 import { useLocation, useSearch } from "wouter";
 import CmsLayout from "@/components/admin/CmsLayout";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { MobileTabsList } from "@/components/ui/mobile-tabs-list";
 import { FileText, Sparkles, Layers, Plus, BookTemplate, PanelRight, Wand2, Package2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -280,24 +281,17 @@ export default function AdminCmsTemplates() {
         </div>
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className="mb-6" data-testid="templates-tab-list">
-            <TabsTrigger value="pages" className="flex items-center gap-2" data-testid="tab-page-templates">
-              <FileText className="w-3.5 h-3.5" />
-              Page Templates
-            </TabsTrigger>
-            <TabsTrigger value="sections" className="flex items-center gap-2" data-testid="tab-section-templates">
-              <Layers className="w-3.5 h-3.5" />
-              Section Templates
-            </TabsTrigger>
-            <TabsTrigger value="widgets" className="flex items-center gap-2" data-testid="tab-widget-templates">
-              <PanelRight className="w-3.5 h-3.5" />
-              Widget Templates
-            </TabsTrigger>
-            <TabsTrigger value="generators" className="flex items-center gap-2" data-testid="tab-generators">
-              <Wand2 className="w-3.5 h-3.5" />
-              Landing Page Generators
-            </TabsTrigger>
-          </TabsList>
+          <MobileTabsList
+            tabs={[
+              { value: "pages", label: "Page Templates", icon: <FileText className="w-3.5 h-3.5" />, "data-testid": "tab-page-templates" },
+              { value: "sections", label: "Section Templates", icon: <Layers className="w-3.5 h-3.5" />, "data-testid": "tab-section-templates" },
+              { value: "widgets", label: "Widget Templates", icon: <PanelRight className="w-3.5 h-3.5" />, "data-testid": "tab-widget-templates" },
+              { value: "generators", label: "Landing Page Generators", icon: <Wand2 className="w-3.5 h-3.5" />, "data-testid": "tab-generators" },
+            ]}
+            activeTab={activeTab}
+            onTabChange={handleTabChange}
+            className="mb-6"
+          />
           <TabsContent value="pages" data-testid="panel-page-templates">
             <PageTemplatesContent onUseTemplate={handleUseTemplate} />
           </TabsContent>

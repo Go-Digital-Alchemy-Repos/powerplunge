@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { MobileTabsList } from "@/components/ui/mobile-tabs-list";
 import { useToast } from "@/hooks/use-toast";
 import { useAdmin } from "@/hooks/use-admin";
 import { Building2, Save, Mail, ImageIcon, Upload, Trash2, Scale, Shield } from "lucide-react";
@@ -34,6 +35,7 @@ export default function AdminSettings() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { role, hasFullAccess, isLoading: adminLoading } = useAdmin();
+  const [activeTab, setActiveTab] = useState("company");
   const [formData, setFormData] = useState<Partial<SiteSettings>>({});
   const [logoUploading, setLogoUploading] = useState(false);
   const [adminIconUploading, setAdminIconUploading] = useState(false);
@@ -313,29 +315,18 @@ export default function AdminSettings() {
         {isLoading ? (
           <div className="text-center py-12 text-muted-foreground">Loading settings...</div>
         ) : (
-          <Tabs defaultValue="company" className="space-y-6" data-testid="settings-tabs">
-            <TabsList className="grid w-full grid-cols-6">
-              <TabsTrigger value="company" className="gap-2" data-testid="tab-company">
-                <Building2 className="w-4 h-4 hidden sm:inline" />
-                Company
-              </TabsTrigger>
-              <TabsTrigger value="branding" className="gap-2" data-testid="tab-branding">
-                <ImageIcon className="w-4 h-4 hidden sm:inline" />
-                Branding
-              </TabsTrigger>
-              <TabsTrigger value="email" className="gap-2" data-testid="tab-email">
-                <Mail className="w-4 h-4 hidden sm:inline" />
-                Email
-              </TabsTrigger>
-              <TabsTrigger value="legal" className="gap-2" data-testid="tab-legal">
-                <Scale className="w-4 h-4 hidden sm:inline" />
-                Legal
-              </TabsTrigger>
-              <TabsTrigger value="gdpr" className="gap-2" data-testid="tab-gdpr">
-                <Shield className="w-4 h-4 hidden sm:inline" />
-                GDPR
-              </TabsTrigger>
-            </TabsList>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6" data-testid="settings-tabs">
+            <MobileTabsList
+              tabs={[
+                { value: "company", label: "Company", icon: <Building2 className="w-4 h-4" />, "data-testid": "tab-company" },
+                { value: "branding", label: "Branding", icon: <ImageIcon className="w-4 h-4" />, "data-testid": "tab-branding" },
+                { value: "email", label: "Email", icon: <Mail className="w-4 h-4" />, "data-testid": "tab-email" },
+                { value: "legal", label: "Legal", icon: <Scale className="w-4 h-4" />, "data-testid": "tab-legal" },
+                { value: "gdpr", label: "GDPR", icon: <Shield className="w-4 h-4" />, "data-testid": "tab-gdpr" },
+              ]}
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+            />
 
             <form id="settings-form" onSubmit={handleSubmit}>
               <TabsContent value="company" className="space-y-6">

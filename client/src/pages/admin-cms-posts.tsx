@@ -16,7 +16,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { MobileTabsList } from "@/components/ui/mobile-tabs-list";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuSeparator, DropdownMenuTrigger,
@@ -874,20 +875,16 @@ export default function AdminCmsPosts() {
         <h1 className="text-2xl font-bold" data-testid="text-posts-title">Posts</h1>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="mb-6" data-testid="posts-tab-list">
-            <TabsTrigger value="posts" className="flex items-center gap-2" data-testid="tab-all-posts">
-              <PenLine className="w-4 h-4" />
-              All Posts
-            </TabsTrigger>
-            <TabsTrigger value="categories" className="flex items-center gap-2" data-testid="tab-categories">
-              <FolderOpen className="w-4 h-4" />
-              Categories
-            </TabsTrigger>
-            <TabsTrigger value="tags" className="flex items-center gap-2" data-testid="tab-tags">
-              <Tag className="w-4 h-4" />
-              Tags
-            </TabsTrigger>
-          </TabsList>
+          <MobileTabsList
+            tabs={[
+              { value: "posts", label: "All Posts", icon: <PenLine className="w-4 h-4" />, "data-testid": "tab-all-posts" },
+              { value: "categories", label: "Categories", icon: <FolderOpen className="w-4 h-4" />, "data-testid": "tab-categories" },
+              { value: "tags", label: "Tags", icon: <Tag className="w-4 h-4" />, "data-testid": "tab-tags" },
+            ]}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            className="mb-6"
+          />
 
           <TabsContent value="posts">
             <PostsTab />

@@ -7,7 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { MobileTabsList } from "@/components/ui/mobile-tabs-list";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -1271,20 +1272,15 @@ export default function AdminAffiliates() {
 
             {/* Profile Tabs */}
             <Tabs value={profileTab} onValueChange={(v) => setProfileTab(v as typeof profileTab)}>
-              <TabsList>
-                <TabsTrigger value="commissions" data-testid="tab-commissions">
-                  <DollarSign className="w-4 h-4 mr-2" />
-                  Commission Ledger
-                </TabsTrigger>
-                <TabsTrigger value="customers" data-testid="tab-customers">
-                  <Users className="w-4 h-4 mr-2" />
-                  Referred Customers
-                </TabsTrigger>
-                <TabsTrigger value="payouts" data-testid="tab-affiliate-payouts">
-                  <Wallet className="w-4 h-4 mr-2" />
-                  Payout History
-                </TabsTrigger>
-              </TabsList>
+              <MobileTabsList
+                tabs={[
+                  { value: "commissions", label: "Commission Ledger", icon: <DollarSign className="w-4 h-4" />, "data-testid": "tab-commissions" },
+                  { value: "customers", label: "Referred Customers", icon: <Users className="w-4 h-4" />, "data-testid": "tab-customers" },
+                  { value: "payouts", label: "Payout History", icon: <Wallet className="w-4 h-4" />, "data-testid": "tab-affiliate-payouts" },
+                ]}
+                activeTab={profileTab}
+                onTabChange={(v) => setProfileTab(v as typeof profileTab)}
+              />
 
               <TabsContent value="commissions" className="mt-4">
                 <Card>

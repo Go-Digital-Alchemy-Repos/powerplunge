@@ -6,7 +6,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { MobileTabsList } from "@/components/ui/mobile-tabs-list";
 import { SlideOutPanel, PanelFooter } from "@/components/ui/slide-out-panel";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -413,16 +414,15 @@ export default function AdminUserManagement() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-6">
-            <TabsTrigger value="customers" className="gap-2">
-              <User className="w-4 h-4" />
-              Customers
-            </TabsTrigger>
-            <TabsTrigger value="admins" className="gap-2">
-              <Shield className="w-4 h-4" />
-              Admins & Managers
-            </TabsTrigger>
-          </TabsList>
+          <MobileTabsList
+            tabs={[
+              { value: "customers", label: "Customers", icon: <Users className="w-4 h-4" /> },
+              { value: "admins", label: "Admin Users", icon: <Shield className="w-4 h-4" /> },
+            ]}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            className="mb-6"
+          />
 
           <TabsContent value="customers" className="space-y-4">
             <div className="flex gap-2">

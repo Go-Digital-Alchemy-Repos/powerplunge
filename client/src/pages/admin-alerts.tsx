@@ -2,7 +2,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Bell, AlertTriangle, CheckCircle, TrendingDown, Percent, CreditCard, RefreshCw, Settings, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { MobileTabsList } from "@/components/ui/mobile-tabs-list";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -67,6 +68,7 @@ export default function AdminAlerts() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { role, hasFullAccess, isLoading: adminLoading } = useAdmin();
+  const [activeTab, setActiveTab] = useState("active");
 
   const { data: stats } = useQuery<AlertStats>({
     queryKey: ["/api/alerts/admin/stats"],
@@ -239,19 +241,16 @@ export default function AdminAlerts() {
           </div>
         )}
 
-        <Tabs defaultValue="active" className="space-y-6">
-          <TabsList className="bg-slate-800 border-slate-700">
-            <TabsTrigger value="active" className="data-[state=active]:bg-cyan-500" data-testid="tab-active-alerts">
-              Active Alerts ({activeAlerts.length})
-            </TabsTrigger>
-            <TabsTrigger value="history" className="data-[state=active]:bg-cyan-500" data-testid="tab-alert-history">
-              History
-            </TabsTrigger>
-            <TabsTrigger value="thresholds" className="data-[state=active]:bg-cyan-500" data-testid="tab-thresholds">
-              <Settings className="w-4 h-4 mr-2" />
-              Thresholds
-            </TabsTrigger>
-          </TabsList>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <MobileTabsList
+            tabs={[
+              { value: "active", label: `Active Alerts (${activeAlerts.length})`, "data-testid": "tab-active-alerts" },
+              { value: "history", label: "Alert History", "data-testid": "tab-alert-history" },
+              { value: "thresholds", label: "Thresholds", icon: <Settings className="w-4 h-4" />, "data-testid": "tab-thresholds" },
+            ]}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+          />
 
           <TabsContent value="active">
             {activeAlerts.length === 0 ? (

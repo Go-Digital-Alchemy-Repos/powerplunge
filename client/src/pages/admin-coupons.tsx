@@ -10,7 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SlideOutPanel } from "@/components/ui/slide-out-panel";
 import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { MobileTabsList } from "@/components/ui/mobile-tabs-list";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useAdmin } from "@/hooks/use-admin";
@@ -603,16 +604,14 @@ export default function AdminCoupons() {
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="bg-card border border-border">
-            <TabsTrigger value="coupons" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <Tag className="w-4 h-4 mr-2" />
-              All Coupons
-            </TabsTrigger>
-            <TabsTrigger value="performance" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <BarChart3 className="w-4 h-4 mr-2" />
-              Performance
-            </TabsTrigger>
-          </TabsList>
+          <MobileTabsList
+            tabs={[
+              { value: "coupons", label: "All Coupons", icon: <Tag className="w-4 h-4" /> },
+              { value: "performance", label: "Performance", icon: <BarChart3 className="w-4 h-4" /> },
+            ]}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+          />
 
           <TabsContent value="coupons">
             {isLoading ? (

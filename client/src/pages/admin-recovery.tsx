@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ShoppingCart, CreditCard, TrendingUp, Mail, AlertTriangle, RefreshCw, DollarSign, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { MobileTabsList } from "@/components/ui/mobile-tabs-list";
 import { useToast } from "@/hooks/use-toast";
 import { useAdmin } from "@/hooks/use-admin";
 import AdminNav from "@/components/admin/AdminNav";
@@ -70,6 +72,7 @@ export default function AdminRecovery() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { role, hasFullAccess, isLoading: adminLoading } = useAdmin();
+  const [activeTab, setActiveTab] = useState("abandoned");
 
   const { data: analytics } = useQuery<RecoveryAnalytics>({
     queryKey: ["/api/recovery/admin/analytics"],
@@ -215,17 +218,15 @@ export default function AdminRecovery() {
           </div>
         )}
 
-        <Tabs defaultValue="abandoned" className="space-y-6">
-          <TabsList className="bg-slate-800 border-slate-700">
-            <TabsTrigger value="abandoned" className="data-[state=active]:bg-cyan-500">
-              <ShoppingCart className="w-4 h-4 mr-2" />
-              Abandoned Carts ({abandonedCarts.filter(c => !c.recoveredAt).length})
-            </TabsTrigger>
-            <TabsTrigger value="failed" className="data-[state=active]:bg-cyan-500">
-              <CreditCard className="w-4 h-4 mr-2" />
-              Failed Payments ({failedPayments.filter(p => !p.recoveredAt && !p.expiredAt).length})
-            </TabsTrigger>
-          </TabsList>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <MobileTabsList
+            tabs={[
+              { value: "abandoned", label: `Abandoned Carts (${abandonedCarts.filter(c => !c.recoveredAt).length})`, icon: <ShoppingCart className="w-4 h-4" /> },
+              { value: "failed", label: `Failed Payments (${failedPayments.filter(p => !p.recoveredAt && !p.expiredAt).length})`, icon: <CreditCard className="w-4 h-4" /> },
+            ]}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+          />
 
           <TabsContent value="abandoned">
             {analytics && (

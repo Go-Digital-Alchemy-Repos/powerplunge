@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { MobileTabsList } from "@/components/ui/mobile-tabs-list";
 import { useToast } from "@/hooks/use-toast";
 import { useAdmin } from "@/hooks/use-admin";
 import { Plus, Trash2, Link2, TrendingUp, Eye, MousePointer, ShoppingCart, Loader2, Target, Package } from "lucide-react";
@@ -52,6 +53,7 @@ export default function AdminUpsells() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { role, hasFullAccess, isLoading: adminLoading } = useAdmin();
+  const [activeTab, setActiveTab] = useState("analytics");
   const [selectedProduct, setSelectedProduct] = useState<string>("");
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [newRelation, setNewRelation] = useState({
@@ -168,15 +170,16 @@ export default function AdminUpsells() {
           </Button>
         </div>
 
-        <Tabs defaultValue="analytics">
-              <TabsList className="mb-6">
-                <TabsTrigger value="analytics" className="gap-2">
-                  <TrendingUp className="w-4 h-4" /> Analytics
-                </TabsTrigger>
-                <TabsTrigger value="relationships" className="gap-2">
-                  <Link2 className="w-4 h-4" /> Relationships
-                </TabsTrigger>
-              </TabsList>
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <MobileTabsList
+                tabs={[
+                  { value: "analytics", label: "Analytics", icon: <TrendingUp className="w-4 h-4" /> },
+                  { value: "relationships", label: "Relationships", icon: <Link2 className="w-4 h-4" /> },
+                ]}
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+                className="mb-6"
+              />
 
               <TabsContent value="analytics">
                 {loadingAnalytics ? (
