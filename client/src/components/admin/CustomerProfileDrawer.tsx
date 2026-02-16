@@ -62,6 +62,7 @@ import {
 import { MobileTabsList } from "@/components/ui/mobile-tabs-list";
 import { Label } from "@/components/ui/label";
 import { ManualOrderWizard } from "./ManualOrderWizard";
+import RichTextEditor from "./RichTextEditor";
 
 interface CustomerProfile {
   customer: {
@@ -240,7 +241,7 @@ export function CustomerProfileDrawer({
   };
 
   const handleAddNote = async () => {
-    if (!customerId || !newNote.trim()) return;
+    if (!customerId || !newNote.trim() || newNote === "<p></p>") return;
     try {
       const res = await fetch(`/api/admin/customers/${customerId}/notes`, {
         method: "POST",
@@ -843,29 +844,37 @@ export function CustomerProfileDrawer({
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex gap-2">
-                    <Textarea
+                  <div className="flex flex-col gap-3">
+                    <RichTextEditor
                       placeholder="Add a note about this customer..."
                       value={newNote}
-                      onChange={(e) => setNewNote(e.target.value)}
-                      className="flex-1"
+                      onChange={setNewNote}
+                      className="min-h-[150px]"
                       data-testid="input-new-note"
                     />
-                    <Button onClick={handleAddNote} disabled={!newNote.trim()} data-testid="button-add-note">
+                    <Button 
+                      onClick={handleAddNote} 
+                      disabled={!newNote.trim() || newNote === "<p></p>"} 
+                      className="w-full md:w-auto self-end"
+                      data-testid="button-add-note"
+                    >
                       <Plus className="w-4 h-4 mr-2" />
-                      Add
+                      Add Note
                     </Button>
                   </div>
-                  <div className="space-y-3 max-h-48 overflow-y-auto">
+                  <div className="space-y-3 max-h-80 overflow-y-auto">
                     {notes.map((note) => (
                       <div
                         key={note.id}
                         className="bg-muted p-3 rounded-lg flex justify-between items-start"
                         data-testid={`note-${note.id}`}
                       >
-                        <div className="flex-1">
-                          <p className="text-sm">{note.note}</p>
-                          <p className="text-xs text-muted-foreground mt-1">
+                        <div className="flex-1 min-w-0">
+                          <div 
+                            className="text-sm prose prose-invert prose-sm max-w-none break-words"
+                            dangerouslySetInnerHTML={{ __html: note.note }}
+                          />
+                          <p className="text-xs text-muted-foreground mt-2 pt-2 border-t border-muted-foreground/10">
                             {formatDate(note.createdAt)}
                             {note.createdByAdminName && (
                               <span className="ml-1 border-l pl-1.5 border-muted-foreground/30 italic">
@@ -877,6 +886,7 @@ export function CustomerProfileDrawer({
                         <Button
                           variant="ghost"
                           size="icon"
+                          className="shrink-0 ml-2"
                           onClick={() => handleDeleteNote(note.id)}
                           data-testid={`delete-note-${note.id}`}
                         >
