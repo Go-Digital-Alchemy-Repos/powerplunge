@@ -284,9 +284,13 @@ export function CustomerProfileDrawer({
       if (res.ok) {
         setEditingContact(false);
         fetchCustomerData();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(data.message || "Failed to update customer");
       }
     } catch (error) {
       console.error("Failed to update customer:", error);
+      alert("Failed to update customer");
     }
   };
 
@@ -609,7 +613,21 @@ export function CustomerProfileDrawer({
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => setEditingContact(true)}
+                          onClick={() => {
+                            if (profile) {
+                              setContactForm({
+                                name: profile.customer.name || "",
+                                email: profile.customer.email || "",
+                                phone: profile.customer.phone || "",
+                                address: profile.customer.address || "",
+                                city: profile.customer.city || "",
+                                state: profile.customer.state || "",
+                                zipCode: profile.customer.zipCode || "",
+                                country: profile.customer.country || "",
+                              });
+                            }
+                            setEditingContact(true);
+                          }}
                           data-testid="button-edit-contact"
                         >
                           <Pencil className="w-4 h-4" />
