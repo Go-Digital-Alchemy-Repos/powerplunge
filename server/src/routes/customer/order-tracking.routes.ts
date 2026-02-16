@@ -130,6 +130,7 @@ router.get("/support", requireCustomerAuth, async (req: AuthenticatedRequest, re
       status: supportTickets.status,
       priority: supportTickets.priority,
       orderId: supportTickets.orderId,
+      adminNotes: supportTickets.adminNotes,
       createdAt: supportTickets.createdAt,
       updatedAt: supportTickets.updatedAt,
       resolvedAt: supportTickets.resolvedAt,

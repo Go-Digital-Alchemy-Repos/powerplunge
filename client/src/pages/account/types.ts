@@ -143,6 +143,13 @@ export interface ConnectStatus {
   currency?: string;
 }
 
+export interface AdminNote {
+  text: string;
+  adminId: string;
+  adminName: string;
+  createdAt: string;
+}
+
 export interface SupportTicket {
   id: string;
   subject: string;
@@ -151,6 +158,7 @@ export interface SupportTicket {
   status: string;
   priority: string;
   orderId: string | null;
+  adminNotes: AdminNote[] | null;
   createdAt: string;
   updatedAt: string;
   resolvedAt: string | null;

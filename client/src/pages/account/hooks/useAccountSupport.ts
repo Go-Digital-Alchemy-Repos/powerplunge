@@ -27,6 +27,8 @@ export function useAccountSupport() {
       return res.json();
     },
     enabled: isAuthenticated,
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const createTicketMutation = useMutation({
