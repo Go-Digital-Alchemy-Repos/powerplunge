@@ -7,6 +7,9 @@ import {
   createSessionToken,
   AuthenticatedRequest 
 } from "../../middleware/customer-auth.middleware";
+import { db } from "../../../db";
+import { supportTickets, orders } from "@shared/schema";
+import { eq, and, desc } from "drizzle-orm";
 
 const router = Router();
 
@@ -117,7 +120,25 @@ router.get("/order/:orderId", requireCustomerAuth, async (req: AuthenticatedRequ
 
 router.get("/support", requireCustomerAuth, async (req: AuthenticatedRequest, res) => {
   try {
-    res.json({ tickets: [] });
+    const customerId = req.customerSession!.customerId;
+
+    const tickets = await db.select({
+      id: supportTickets.id,
+      subject: supportTickets.subject,
+      message: supportTickets.message,
+      type: supportTickets.type,
+      status: supportTickets.status,
+      priority: supportTickets.priority,
+      orderId: supportTickets.orderId,
+      createdAt: supportTickets.createdAt,
+      updatedAt: supportTickets.updatedAt,
+      resolvedAt: supportTickets.resolvedAt,
+    })
+    .from(supportTickets)
+    .where(eq(supportTickets.customerId, customerId))
+    .orderBy(desc(supportTickets.createdAt));
+
+    res.json({ tickets });
   } catch (error: any) {
     console.error("Fetch support tickets error:", error);
     res.status(500).json({ message: "Failed to fetch support tickets" });
@@ -125,16 +146,38 @@ router.get("/support", requireCustomerAuth, async (req: AuthenticatedRequest, re
 });
 
 const createTicketSchema = z.object({
-  subject: z.string().min(1, "Subject is required"),
-  message: z.string().min(1, "Message is required"),
+  subject: z.string().min(1, "Subject is required").max(200),
+  message: z.string().min(1, "Message is required").max(5000),
   orderId: z.string().optional(),
-  type: z.string().optional(),
+  type: z.enum(["general", "return", "refund", "shipping", "technical"]).default("general"),
 });
 
 router.post("/support", requireCustomerAuth, async (req: AuthenticatedRequest, res) => {
   try {
+    const customerId = req.customerSession!.customerId;
     const data = createTicketSchema.parse(req.body);
-    res.json({ success: true, message: "Support request submitted" });
+
+    if (data.orderId) {
+      const order = await db.query.orders.findFirst({
+        where: and(
+          eq(orders.id, data.orderId),
+          eq(orders.customerId, customerId)
+        ),
+      });
+      if (!order) {
+        return res.status(400).json({ message: "Order not found or does not belong to you" });
+      }
+    }
+
+    const [ticket] = await db.insert(supportTickets).values({
+      customerId,
+      orderId: data.orderId || null,
+      subject: data.subject,
+      message: data.message,
+      type: data.type,
+    }).returning();
+
+    res.status(201).json({ success: true, ticket });
   } catch (error: any) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ message: error.errors[0].message });
