@@ -666,7 +666,8 @@ export default function AdminOrders() {
                       <p className="text-sm text-muted-foreground mb-2">Items</p>
                       {currentOrder.items.map((item, i) => (
                         <div key={i} className="flex justify-between py-2 border-b border-border last:border-0">
-                          <p className="font-medium text-sm">{item.productName}</p>
+                          <div>
+                            <p className="font-medium text-sm">{item.productName}</p>
                             <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
                           </div>
                           <p className="font-medium">
