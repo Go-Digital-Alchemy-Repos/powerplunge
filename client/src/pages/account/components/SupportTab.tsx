@@ -163,7 +163,7 @@ function TicketDetailDialog({
                   </div>
                   <div className={`rounded-lg p-3 text-sm ${isAdmin ? "bg-blue-500/10 border border-blue-500/20" : "bg-muted/50 border"}`}>
                     {isHtml ? (
-                      <div className="prose prose-sm prose-invert max-w-none [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1" dangerouslySetInnerHTML={{ __html: entry.text }} data-testid={`thread-text-${idx}`} />
+                      <div className="prose prose-sm prose-invert max-w-none [&_p]:my-2 [&_p:empty]:h-4 [&_ul]:my-2 [&_ol]:my-2 [&_li]:my-0.5" dangerouslySetInnerHTML={{ __html: entry.text }} data-testid={`thread-text-${idx}`} />
                     ) : (
                       <p className="whitespace-pre-wrap" data-testid={`thread-text-${idx}`}>{entry.text}</p>
                     )}
