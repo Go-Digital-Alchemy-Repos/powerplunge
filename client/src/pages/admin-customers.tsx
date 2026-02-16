@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useAdmin } from "@/hooks/use-admin";
-import { Package, Search, Mail, Phone, MapPin, DollarSign, Calendar, Plus } from "lucide-react";
+import { Package, Search, Mail, Phone, MapPin, DollarSign, Calendar, Plus, User } from "lucide-react";
 import { format } from "date-fns";
 import { CustomerProfileDrawer } from "@/components/admin/CustomerProfileDrawer";
 import AdminNav from "@/components/admin/AdminNav";
@@ -216,59 +216,97 @@ export default function AdminCustomers() {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
           </div>
         ) : (
-          <div className="bg-card rounded-xl border border-border overflow-hidden overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-muted/50">
-                <tr>
-                  <th className="text-left px-6 py-3 text-sm font-medium text-muted-foreground">Customer</th>
-                  <th className="text-left px-6 py-3 text-sm font-medium text-muted-foreground">Contact</th>
-                  <th className="text-center px-6 py-3 text-sm font-medium text-muted-foreground">Orders</th>
-                  <th className="text-right px-6 py-3 text-sm font-medium text-muted-foreground">Total Spent</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {filteredCustomers?.map((customer) => (
-                  <tr
-                    key={customer.id}
-                    className="hover:bg-muted/30 cursor-pointer"
-                    onClick={() => setProfileDrawerCustomerId(customer.id)}
-                    data-testid={`row-customer-${customer.id}`}
-                  >
-                    <td className="px-6 py-4">
-                      <p className="font-medium">{customer.name}</p>
-                      {customer.city && customer.state && (
-                        <p className="text-sm text-muted-foreground">{customer.city}, {customer.state}</p>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-1 text-sm">
-                        <Mail className="w-3 h-3 text-muted-foreground" />
-                        {customer.email}
-                      </div>
-                      {customer.phone && (
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                          <Phone className="w-3 h-3" />
-                          {customer.phone}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <Badge variant="secondary">{customer.orderCount}</Badge>
-                    </td>
-                    <td className="px-6 py-4 text-right font-medium">
-                      ${(customer.totalSpent / 100).toLocaleString()}
-                    </td>
-                  </tr>
-                ))}
-                {filteredCustomers?.length === 0 && (
+          <div className="grid gap-4">
+            {/* Desktop Table View */}
+            <div className="hidden md:block bg-card rounded-xl border border-border overflow-hidden overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-muted/50">
                   <tr>
-                    <td colSpan={4} className="px-6 py-12 text-center text-muted-foreground">
-                      No customers found
-                    </td>
+                    <th className="text-left px-6 py-3 text-sm font-medium text-muted-foreground">Customer</th>
+                    <th className="text-left px-6 py-3 text-sm font-medium text-muted-foreground">Contact</th>
+                    <th className="text-center px-6 py-3 text-sm font-medium text-muted-foreground">Orders</th>
+                    <th className="text-right px-6 py-3 text-sm font-medium text-muted-foreground">Total Spent</th>
                   </tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {filteredCustomers?.map((customer) => (
+                    <tr
+                      key={customer.id}
+                      className="hover:bg-muted/30 cursor-pointer"
+                      onClick={() => setProfileDrawerCustomerId(customer.id)}
+                      data-testid={`row-customer-${customer.id}`}
+                    >
+                      <td className="px-6 py-4">
+                        <p className="font-medium">{customer.name}</p>
+                        {customer.city && customer.state && (
+                          <p className="text-sm text-muted-foreground">{customer.city}, {customer.state}</p>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-1 text-sm">
+                          <Mail className="w-3 h-3 text-muted-foreground" />
+                          {customer.email}
+                        </div>
+                        {customer.phone && (
+                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                            <Phone className="w-3 h-3" />
+                            {customer.phone}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <Badge variant="secondary">{customer.orderCount}</Badge>
+                      </td>
+                      <td className="px-6 py-4 text-right font-medium">
+                        ${(customer.totalSpent / 100).toLocaleString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-4">
+              {filteredCustomers?.map((customer) => (
+                <Card 
+                  key={customer.id} 
+                  className="hover:border-primary/50 cursor-pointer"
+                  onClick={() => setProfileDrawerCustomerId(customer.id)}
+                >
+                  <CardContent className="p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                        <User className="w-5 h-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-medium truncate">{customer.name}</p>
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1 truncate">
+                            <Mail className="w-3 h-3" />
+                            {customer.email}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right flex flex-col items-end gap-1 shrink-0">
+                      <p className="font-bold text-sm">
+                        ${(customer.totalSpent / 100).toLocaleString()}
+                      </p>
+                      <Badge variant="outline" className="text-[10px] py-0 h-4">
+                        {customer.orderCount} orders
+                      </Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {filteredCustomers?.length === 0 && (
+              <div className="py-12 text-center text-muted-foreground">
+                No customers found
+              </div>
+            )}
           </div>
         )}
       </main>

@@ -11,7 +11,13 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAdmin } from "@/hooks/use-admin";
-import { Trash2, Mail, Phone, UserPlus, Users, Shield, Package, Edit } from "lucide-react";
+import { Trash2, Mail, Phone, UserPlus, Users, Shield, Package, Edit, MoreVertical } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import AdminNav from "@/components/admin/AdminNav";
 
 interface TeamMember {
@@ -247,26 +253,52 @@ export default function AdminTeam() {
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openEditPanel(member)}
-                        data-testid={`button-edit-${member.id}`}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      {member.role !== "super_admin" && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-destructive hover:text-destructive"
-                        onClick={() => setDeleteConfirm(member)}
-                        disabled={deleteMemberMutation.isPending}
-                        data-testid={`button-delete-${member.id}`}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                      )}
+                      <div className="hidden md:flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openEditPanel(member)}
+                          data-testid={`button-edit-${member.id}`}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        {member.role !== "super_admin" && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => setDeleteConfirm(member)}
+                          disabled={deleteMemberMutation.isPending}
+                          data-testid={`button-delete-${member.id}`}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                        )}
+                      </div>
+                      <div className="md:hidden">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreVertical className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => openEditPanel(member)}>
+                              <Edit className="w-4 h-4 mr-2" />
+                              Edit
+                            </DropdownMenuItem>
+                            {member.role !== "super_admin" && (
+                              <DropdownMenuItem 
+                                className="text-destructive" 
+                                onClick={() => setDeleteConfirm(member)}
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Remove
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
