@@ -5,7 +5,8 @@ import { useCustomerAuth } from "@/hooks/use-customer-auth";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Package, ArrowLeft, LogOut, User, Link2, Settings, Headset, Crown } from "lucide-react";
+import { Package, ArrowLeft, LogOut, Link2, Settings, Headset, Crown } from "lucide-react";
+import UserAvatar from "@/components/UserAvatar";
 import DynamicNav from "@/components/DynamicNav";
 import { useBranding } from "@/hooks/use-branding";
 import { useAccountVip } from "./account/hooks/useAccountVip";
@@ -66,7 +67,7 @@ export default function MyAccount() {
           </div>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 text-sm">
-              <User className="w-4 h-4 text-muted-foreground" />
+              <UserAvatar name={authCustomer?.name} avatarUrl={authCustomer?.avatarUrl} size="sm" />
               <span>{authCustomer?.name || authCustomer?.email}</span>
               {vipData?.isVip && (
                 <Badge className="bg-gradient-to-r from-amber-500 to-yellow-400 text-black border-0 gap-1" data-testid="badge-vip">

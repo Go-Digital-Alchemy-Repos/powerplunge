@@ -116,6 +116,7 @@ router.post("/login", authLimiter, async (req: any, res) => {
         id: customerRecord.id,
         email: customerRecord.email,
         name: customerRecord.name,
+        avatarUrl: customerRecord.avatarUrl || null,
       },
     });
   } catch (error: any) {
@@ -183,6 +184,7 @@ router.post("/verify-magic-link", passwordResetLimiter, async (req, res) => {
         id: customer.id,
         email: customer.email,
         name: customer.name,
+        avatarUrl: customer.avatarUrl || null,
       },
     });
   } catch (error: any) {

@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { ProfileForm, PasswordForm } from "../types";
 
 export function useAccountProfile() {
-  const { isAuthenticated, getAuthHeader } = useCustomerAuth();
+  const { isAuthenticated, getAuthHeader, refreshSession } = useCustomerAuth();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -123,6 +123,7 @@ export function useAccountProfile() {
         body: JSON.stringify({ avatarUrl }),
       });
       queryClient.invalidateQueries({ queryKey: ["/api/customer/auth/me"] });
+      await refreshSession();
       toast({ title: "Avatar updated" });
     } catch {
       toast({ title: "Failed to upload avatar", variant: "destructive" });
@@ -137,6 +138,7 @@ export function useAccountProfile() {
         body: JSON.stringify({ avatarUrl: null }),
       });
       queryClient.invalidateQueries({ queryKey: ["/api/customer/auth/me"] });
+      await refreshSession();
       toast({ title: "Avatar removed" });
     } catch {
       toast({ title: "Failed to remove avatar", variant: "destructive" });
