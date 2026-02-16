@@ -63,11 +63,11 @@ router.put("/:customerId/tags", async (req: any, res) => {
     if (!Array.isArray(tags)) {
       return res.status(400).json({ message: "Tags must be an array" });
     }
-    const adminId = (req as any).adminUser?.id;
+    const adminId = req.session?.adminId;
     const updatedTags = await storage.setCustomerTags(req.params.customerId, tags, adminId);
     
     await storage.createAdminAuditLog({
-      adminId: adminId || "system",
+      adminId,
       action: "update_tags",
       targetType: "customer",
       targetId: req.params.customerId,
@@ -119,9 +119,9 @@ router.patch("/:customerId", async (req: any, res) => {
 
     const updated = await storage.updateCustomer(req.params.customerId, updateData);
 
-    const adminId = (req as any).adminUser?.id;
+    const adminId = req.session?.adminId;
     await storage.createAdminAuditLog({
-      adminId: adminId || "system",
+      adminId,
       action: "update_customer_profile",
       targetType: "customer",
       targetId: req.params.customerId,
@@ -165,13 +165,13 @@ router.post("/:customerId/disable", async (req: any, res) => {
       return res.status(404).json({ message: "Customer not found" });
     }
     
-    const adminId = (req as any).adminUser?.id;
+    const adminId = req.session?.adminId;
     await storage.updateCustomer(req.params.customerId, { 
       isDisabled: true 
     } as any);
     
     await storage.createAdminAuditLog({
-      adminId: adminId || "system",
+      adminId,
       action: "disable_account",
       targetType: "customer",
       targetId: req.params.customerId,
@@ -192,13 +192,13 @@ router.post("/:customerId/enable", async (req: any, res) => {
       return res.status(404).json({ message: "Customer not found" });
     }
     
-    const adminId = (req as any).adminUser?.id;
+    const adminId = req.session?.adminId;
     await storage.updateCustomer(req.params.customerId, { 
       isDisabled: false 
     } as any);
     
     await storage.createAdminAuditLog({
-      adminId: adminId || "system",
+      adminId,
       action: "enable_account",
       targetType: "customer",
       targetId: req.params.customerId,
@@ -219,10 +219,10 @@ router.post("/:customerId/send-password-reset", async (req: any, res) => {
       return res.status(404).json({ message: "Customer not found" });
     }
     
-    const adminId = (req as any).adminUser?.id;
+    const adminId = req.session?.adminId;
     
     await storage.createAdminAuditLog({
-      adminId: adminId || "system",
+      adminId,
       action: "send_password_reset",
       targetType: "customer",
       targetId: req.params.customerId,
@@ -248,7 +248,7 @@ router.post("/:customerId/reset-password", async (req: any, res) => {
       return res.status(404).json({ message: "Customer not found" });
     }
     
-    const adminId = (req as any).adminUser?.id;
+    const adminId = req.session?.adminId;
     
     const hashedPassword = await bcrypt.hash(password, 10);
     
@@ -256,14 +256,20 @@ router.post("/:customerId/reset-password", async (req: any, res) => {
       passwordHash: hashedPassword,
     });
     
-    await storage.createAdminAuditLog({
-      adminId: adminId || "system",
-      action: "admin_password_reset",
-      targetType: "customer",
-      targetId: req.params.customerId,
-      details: { email: customer.email },
-      ipAddress: req.ip || null,
-    });
+    if (adminId) {
+      try {
+        await storage.createAdminAuditLog({
+          adminId,
+          action: "admin_password_reset",
+          targetType: "customer",
+          targetId: req.params.customerId,
+          details: { email: customer.email },
+          ipAddress: req.ip || null,
+        });
+      } catch (auditError) {
+        console.error("Failed to create audit log for password reset:", auditError);
+      }
+    }
     
     res.json({ success: true, message: "Password reset successfully" });
   } catch (error) {
@@ -279,14 +285,14 @@ router.post("/:customerId/force-logout", async (req: any, res) => {
       return res.status(404).json({ message: "Customer not found" });
     }
     
-    const adminId = (req as any).adminUser?.id;
+    const adminId = req.session?.adminId;
     
     await storage.updateCustomer(req.params.customerId, {
       sessionInvalidatedAt: new Date(),
     });
     
     await storage.createAdminAuditLog({
-      adminId: adminId || "system",
+      adminId,
       action: "force_logout",
       targetType: "customer",
       targetId: req.params.customerId,
