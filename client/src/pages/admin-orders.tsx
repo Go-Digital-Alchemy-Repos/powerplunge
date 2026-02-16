@@ -444,7 +444,7 @@ export default function AdminOrders() {
             <h2 className="font-display text-3xl font-bold">Orders</h2>
             <p className="text-muted-foreground mt-1">Manage and track customer orders</p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
             <SavedFiltersPanel
               savedFilters={savedFilters}
               filterName={filterName}
@@ -455,11 +455,11 @@ export default function AdminOrders() {
               currentFilters={filters}
               hasActiveFilters={hasActiveFilters}
             />
-            <Button onClick={() => setShowNewOrder(true)} size="sm" className="gap-2" data-testid="button-new-order">
+            <Button onClick={() => setShowNewOrder(true)} size="sm" className="gap-2 flex-1 md:flex-initial" data-testid="button-new-order">
               <Plus className="w-4 h-4" />
               Manual Order
             </Button>
-            <Button variant="outline" size="sm" onClick={exportCSV} data-testid="button-export-all">
+            <Button variant="outline" size="sm" onClick={exportCSV} className="flex-1 md:flex-initial" data-testid="button-export-all">
               <Download className="w-4 h-4 mr-2" />
               Export All
             </Button>
