@@ -7,23 +7,27 @@ import { sendOrderNotification } from "../public/payments.routes";
 const router = Router();
 
 router.post("/stripe", async (req, res) => {
-  const stripeSecretKey = process.env.STRIPE_SECRET_KEY_TEST || process.env.STRIPE_SECRET_KEY_LIVE;
-  const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET_TEST || process.env.STRIPE_WEBHOOK_SECRET_LIVE;
-  if (!stripeSecretKey || !stripeWebhookSecret) {
+  const { stripeService } = await import("../../integrations/stripe/StripeService");
+
+  const config = await stripeService.getConfig();
+  if (!config.configured || !config.secretKey) {
+    console.error("[WEBHOOK] Stripe not configured. Source:", config.source, "Mode:", config.resolvedMode);
     return res.status(400).json({ message: "Stripe not configured" });
   }
 
-  const Stripe = (await import("stripe")).default;
-  const stripe = new Stripe(stripeSecretKey);
+  if (!config.webhookSecret) {
+    console.error("[WEBHOOK] Stripe webhook secret not configured. Source:", config.source, "Mode:", config.resolvedMode);
+    return res.status(400).json({ message: "Stripe webhook secret not configured" });
+  }
 
   const sig = req.headers["stripe-signature"] as string;
   let event;
 
   try {
-    event = stripe.webhooks.constructEvent(
+    event = await stripeService.constructWebhookEvent(
       req.rawBody as Buffer,
       sig,
-      stripeWebhookSecret
+      config.webhookSecret
     );
   } catch (err: any) {
     console.error("Webhook signature verification failed:", err.message);

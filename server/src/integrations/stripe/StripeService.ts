@@ -170,7 +170,7 @@ class StripeService {
     if (resolvedMode === "live") {
       envSecretKey = process.env.STRIPE_SECRET_KEY_LIVE || "";
       envPublishableKey = process.env.STRIPE_PUBLISHABLE_KEY_LIVE || "";
-      envWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET_LIVE || "";
+      envWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET_LIVE || process.env.STRIPE_LIVE_WEBHOOK_SECRET || process.env.STRIPE_WEBHOOK_SECRET || "";
       if (!envSecretKey) {
         console.warn("[STRIPE] ENV mode set to 'live' but STRIPE_SECRET_KEY_LIVE is missing. NOT falling back to test keys to prevent mode mismatch.");
         this.configCache = {
@@ -188,7 +188,7 @@ class StripeService {
     } else {
       envSecretKey = process.env.STRIPE_SECRET_KEY_TEST || "";
       envPublishableKey = process.env.STRIPE_PUBLISHABLE_KEY_TEST || "";
-      envWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET_TEST || "";
+      envWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET_TEST || process.env.STRIPE_DEV_WEBHOOK_SECRET || process.env.STRIPE_WEBHOOK_SECRET || "";
       if (!envSecretKey) {
         console.warn("[STRIPE] ENV mode is 'test' but no test keys found. NOT falling back to live keys to prevent mode mismatch.");
         this.configCache = {
