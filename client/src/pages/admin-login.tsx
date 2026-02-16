@@ -182,6 +182,27 @@ export default function AdminLogin() {
                 </div>
               </div>
             ))}
+            <div className="pt-1 border-t border-border/30">
+              <p className="text-[10px] text-muted-foreground mb-1.5 uppercase tracking-wider">Customer Account</p>
+              <div className="flex items-center justify-between rounded-md border border-border/50 px-3 py-2 text-sm">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs">affiliate@test.com</span>
+                  <span className="text-muted-foreground text-xs">pw: testpass123</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-xs">Affiliate</Badge>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs"
+                    data-testid="dev-login-affiliate"
+                    onClick={() => setLocation("/login?dev=affiliate")}
+                  >
+                    Use
+                  </Button>
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
       )}

@@ -14,8 +14,9 @@ import { CustomerAuthForm } from "@/components/CustomerAuthModal";
 export default function CustomerLogin() {
   const [, setLocation] = useLocation();
   const { logoSrc } = useBranding();
-  const { verifyMagicLink, isAuthenticated, isLoading: authLoading } = useCustomerAuth();
+  const { verifyMagicLink, login, isAuthenticated, isLoading: authLoading } = useCustomerAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -23,7 +24,23 @@ export default function CustomerLogin() {
     if (token) {
       handleMagicLinkVerification(token);
     }
+    if (import.meta.env.DEV && params.get("dev") === "affiliate") {
+      handleDevLogin("affiliate@test.com", "testpass123");
+    }
   }, []);
+
+  const handleDevLogin = async (email: string, password: string) => {
+    setIsLoading(true);
+    try {
+      await login(email, password);
+      toast({ title: "Dev login", description: `Signed in as ${email}` });
+      setLocation("/affiliate-portal");
+    } catch (error: any) {
+      toast({ title: "Dev login failed", description: error.message, variant: "destructive" });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!authLoading && isAuthenticated) {
