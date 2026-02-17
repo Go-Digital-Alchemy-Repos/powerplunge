@@ -67,6 +67,8 @@ import adminOperationsRoutes, { refundOrderRoutes, dashboardRoutes } from "./src
 import adminCustomerMgmtRoutes from "./src/routes/admin/customer-management.routes";
 import adminReportsRoutes from "./src/routes/admin/reports.routes";
 import adminAnalyticsRoutes from "./src/routes/admin/analytics.routes";
+import adminNotificationsRoutes from "./src/routes/admin/notifications.routes";
+import customerNotificationsRoutes from "./src/routes/customer/notifications.routes";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -154,6 +156,8 @@ export async function registerRoutes(
   app.use("/api/admin/cms/site-settings", requireFullAccess, siteSettingsRouter);
   app.use("/api/customer/orders", orderTrackingRoutes);
   app.use("/api/customer/auth", customerAuthRoutes);
+  app.use("/api/customer/notifications", customerNotificationsRoutes);
+  app.use("/api/admin/notifications", adminNotificationsRoutes);
   app.use("/api/orders", publicOrderStatusRoutes);
 
   // CMS routes (public)
