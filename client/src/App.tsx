@@ -50,6 +50,7 @@ const AffiliatePortal = lazyRetry(() => import("@/pages/affiliate-portal"));
 const ResetPassword = lazyRetry(() => import("@/pages/reset-password"));
 const OrderStatusPage = lazyRetry(() => import("@/pages/order-status"));
 const LegalPage = lazyRetry(() => import("@/pages/legal-page"));
+const ContactPage = lazyRetry(() => import("@/pages/contact"));
 
 const AdminSetup = lazyRetry(() => import("@/pages/admin-setup"));
 const AdminLogin = lazyRetry(() => import("@/pages/admin-login"));
@@ -172,6 +173,7 @@ function Router() {
         <Route path="/blog">{() => <BlogIndexPage />}</Route>
         <Route path="/privacy-policy" component={LegalPage} />
         <Route path="/terms-and-conditions" component={LegalPage} />
+        <Route path="/contact" component={ContactPage} />
         <Route path="/page/:slug" component={PageView} />
         <Route path="/admin" component={AdminRedirect} />
         <Route path="/admin/setup" component={AdminSetup} />

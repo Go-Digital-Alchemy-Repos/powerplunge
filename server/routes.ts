@@ -47,6 +47,7 @@ import { publicMenuRoutes } from "./src/routes/public/blog.routes";
 import publicBlogRoutes from "./src/routes/public/blog-v2.routes";
 import publicGoogleReviewsRoutes from "./src/routes/public/google-reviews.routes";
 import publicNewsletterRoutes from "./src/routes/public/newsletter.routes";
+import publicContactRoutes from "./src/routes/public/contact.routes";
 
 // Newly-extracted route modules
 import paymentsRoutes from "./src/routes/public/payments.routes";
@@ -172,6 +173,7 @@ export async function registerRoutes(
   app.use("/api/menus", publicMenuRoutes);
   app.use("/api/google-reviews", publicGoogleReviewsRoutes);
   app.use("/api/newsletter", publicNewsletterRoutes);
+  app.use("/api/contact", publicContactRoutes);
 
   app.get("/api/health/config", (req, res) => {
     res.json({ cmsEnabled: true });
