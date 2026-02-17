@@ -74,7 +74,7 @@ router.post("/verify-token", async (req, res) => {
   }
 });
 
-router.get("/orders", requireCustomerAuth, async (req: AuthenticatedRequest, res) => {
+router.get("/", requireCustomerAuth, async (req: AuthenticatedRequest, res) => {
   try {
     const customerId = req.customerSession!.customerId;
     
