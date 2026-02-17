@@ -41,6 +41,48 @@ function extractSenderName(sender: string): string | null {
   return null;
 }
 
+function extractEmailAddress(raw: string): string {
+  const angleMatch = raw.match(/<([^>]+)>/);
+  if (angleMatch) return angleMatch[1].trim().toLowerCase();
+  return raw.trim().toLowerCase();
+}
+
+function decodeCafEnvelope(email: string): string | null {
+  const cafMatch = email.match(/^info\+caf_=(.+)@/i);
+  if (!cafMatch) return null;
+  const encoded = cafMatch[1];
+  const lastEquals = encoded.lastIndexOf("=");
+  if (lastEquals === -1) return null;
+  const user = encoded.substring(0, lastEquals);
+  const domain = encoded.substring(lastEquals + 1);
+  return `${user}@${domain}`.toLowerCase();
+}
+
+function resolveRealSender(body: Record<string, any>): { email: string; name: string | null } {
+  const fromHeader = body?.From || body?.from || "";
+  const senderField = body?.sender || "";
+
+  const fromEmail = fromHeader ? extractEmailAddress(fromHeader) : "";
+  const fromName = fromHeader ? extractSenderName(fromHeader) : null;
+
+  const senderEmail = senderField ? extractEmailAddress(senderField) : "";
+
+  if (fromEmail && fromEmail.includes("@") && !fromEmail.startsWith("info+caf_")) {
+    return { email: fromEmail, name: fromName };
+  }
+
+  const decoded = decodeCafEnvelope(senderEmail) || decodeCafEnvelope(fromEmail);
+  if (decoded) {
+    return { email: decoded, name: fromName };
+  }
+
+  if (senderEmail && senderEmail.includes("@") && !senderEmail.startsWith("info+caf_")) {
+    return { email: senderEmail, name: fromName || extractSenderName(senderField) };
+  }
+
+  return { email: fromEmail || senderEmail, name: fromName };
+}
+
 function stripQuotedText(text: string): string {
   const lines = text.split("\n");
   const cleaned: string[] = [];
@@ -113,16 +155,15 @@ router.post("/inbound", async (req: Request, res: Response) => {
     }
 
     const recipientRaw = req.body?.recipient || req.body?.To || "";
-    const senderEmail = req.body?.sender || req.body?.from || req.body?.From || "";
     const strippedText = req.body?.["stripped-text"] || req.body?.["body-plain"] || "";
     const subject = req.body?.subject || req.body?.Subject || "";
 
-    const emailFromAddress = senderEmail.replace(/.*<(.+)>.*/, "$1").trim().toLowerCase();
+    const { email: emailFromAddress, name: senderName } = resolveRealSender(req.body);
     if (!emailFromAddress || !emailFromAddress.includes("@")) {
       console.warn("[MAILGUN INBOUND] Missing or invalid sender email, ignoring");
       return res.status(200).json({ message: "ok" });
     }
-    const senderName = extractSenderName(senderEmail) || emailFromAddress;
+    console.log(`[MAILGUN INBOUND] Resolved sender: ${emailFromAddress} (name: ${senderName || "unknown"})`);
 
     const messageText = stripQuotedText(strippedText);
     if (!messageText || messageText.length < 1) {
@@ -199,7 +240,7 @@ router.post("/inbound", async (req: Request, res: Response) => {
       if (!customer) {
         const [newCustomer] = await db.insert(customers).values({
           email: emailFromAddress,
-          name: senderName,
+          name: senderName || emailFromAddress,
         }).returning();
         customer = newCustomer;
         console.log(`[MAILGUN INBOUND] Created new customer ${customer.id} for ${emailFromAddress}`);
