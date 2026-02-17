@@ -260,12 +260,20 @@ export default function OrderSuccess() {
           <p className="text-muted-foreground">
             You'll receive an email confirmation with your order details and tracking information once your order ships.
           </p>
-          <Link href="/">
-            <Button className="gap-2" data-testid="button-continue-shopping">
-              Continue Shopping
-              <ArrowRight className="w-4 h-4" />
-            </Button>
-          </Link>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Link href="/my-account?tab=orders">
+              <Button className="gap-2 w-full sm:w-auto" data-testid="button-view-dashboard">
+                <Package className="w-4 h-4" />
+                View My Orders
+              </Button>
+            </Link>
+            <Link href="/">
+              <Button variant="outline" className="gap-2 w-full sm:w-auto" data-testid="button-continue-shopping">
+                Continue Shopping
+                <ArrowRight className="w-4 h-4" />
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
     </div>

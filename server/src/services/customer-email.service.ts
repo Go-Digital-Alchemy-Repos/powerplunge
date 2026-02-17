@@ -218,11 +218,11 @@ class CustomerEmailService {
 
         <!-- View Order Button -->
         <div style="text-align: center; margin: 32px 0;">
-          <a href="${baseUrl}/order-status/${orderId}" style="display: inline-block; background: #0891b2; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-weight: 600; font-size: 16px;">View Order Details</a>
+          <a href="${baseUrl}/my-account?tab=orders" style="display: inline-block; background: #0891b2; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-weight: 600; font-size: 16px;">View My Orders</a>
         </div>
 
         <p style="margin: 24px 0 0; color: #6b7280; font-size: 14px; text-align: center;">
-          Questions about your order? Contact us at <a href="mailto:${company.supportEmail}" style="color: #0891b2; text-decoration: none;">${company.supportEmail}</a>
+          Questions about your order? <a href="${baseUrl}/my-account?tab=support" style="color: #0891b2; text-decoration: none;">Contact support</a> or email us at <a href="mailto:${company.supportEmail}" style="color: #0891b2; text-decoration: none;">${company.supportEmail}</a>
         </p>
       </div>
 
@@ -332,11 +332,11 @@ class CustomerEmailService {
 
         <!-- Track Order Button -->
         <div style="text-align: center; margin: 32px 0;">
-          <a href="${baseUrl}/order-status/${orderId}" style="display: inline-block; background: #0891b2; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-weight: 600; font-size: 16px;">View Order Details</a>
+          <a href="${baseUrl}/my-account?tab=orders" style="display: inline-block; background: #0891b2; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-weight: 600; font-size: 16px;">View My Orders</a>
         </div>
 
         <p style="margin: 24px 0 0; color: #6b7280; font-size: 14px; text-align: center;">
-          Questions? Contact us at ${company.supportEmail || "support@example.com"}
+          Questions? <a href="${baseUrl}/my-account?tab=support" style="color: #0891b2; text-decoration: none;">Contact support</a> or email ${company.supportEmail || "support@example.com"}
         </p>
       </div>
 

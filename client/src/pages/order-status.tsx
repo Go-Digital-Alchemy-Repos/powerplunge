@@ -3,8 +3,9 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Package, ArrowLeft, Truck, CheckCircle, Clock, XCircle, ExternalLink, Loader2 } from "lucide-react";
+import { Package, ArrowLeft, Truck, CheckCircle, Clock, XCircle, ExternalLink, Loader2, LayoutDashboard, Headset } from "lucide-react";
 import { ORDER_STATUS_CONFIG, getOrderStatusLabel, getOrderStatusSubtext, getOrderStatusBgColor } from "@shared/orderStatus";
+import { useCustomerAuth } from "@/hooks/use-customer-auth";
 
 interface OrderItem {
   id: string;
@@ -83,6 +84,7 @@ function getStatusIcon(status: string) {
 export default function OrderStatus() {
   const params = useParams<{ orderId: string }>();
   const orderId = params.orderId;
+  const { isAuthenticated, isLoading: authLoading } = useCustomerAuth();
 
   const { data: order, isLoading, error } = useQuery<OrderData>({
     queryKey: ["/api/orders", orderId, "status"],
@@ -143,11 +145,22 @@ export default function OrderStatus() {
               Back to Store
             </Button>
           </Link>
-          <Link href="/track-order">
-            <Button variant="outline" size="sm" data-testid="link-all-orders">
-              View All Orders
-            </Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            {!authLoading && isAuthenticated ? (
+              <Link href="/my-account?tab=orders">
+                <Button variant="outline" size="sm" data-testid="link-dashboard">
+                  <LayoutDashboard className="w-4 h-4 mr-2" />
+                  My Dashboard
+                </Button>
+              </Link>
+            ) : (
+              <Link href="/track-order">
+                <Button variant="outline" size="sm" data-testid="link-all-orders">
+                  View All Orders
+                </Button>
+              </Link>
+            )}
+          </div>
         </div>
       </nav>
 
@@ -287,9 +300,32 @@ export default function OrderStatus() {
           </Card>
         )}
 
-        <div className="text-center text-sm text-muted-foreground" data-testid="text-help-footer">
-          <p>Need help with your order? <Link href="/track-order" className="text-primary hover:underline" data-testid="link-sign-in-orders">Sign in to view all orders</Link> or contact our support team.</p>
-        </div>
+        {!authLoading && isAuthenticated ? (
+          <Card className="bg-muted/20 border-dashed" data-testid="card-dashboard-cta">
+            <CardContent className="py-5">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <LayoutDashboard className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Manage everything from your dashboard</p>
+                    <p className="text-xs text-muted-foreground">Track orders, contact support, and manage your account</p>
+                  </div>
+                </div>
+                <Link href="/my-account?tab=orders">
+                  <Button size="sm" data-testid="button-go-to-dashboard">
+                    My Dashboard
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="text-center text-sm text-muted-foreground" data-testid="text-help-footer">
+            <p>Need help with your order? <Link href="/login?redirect=/my-account" className="text-primary hover:underline" data-testid="link-sign-in-orders">Sign in to your dashboard</Link> to track orders and contact support.</p>
+          </div>
+        )}
       </main>
     </div>
   );
