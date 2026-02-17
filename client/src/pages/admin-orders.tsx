@@ -872,14 +872,14 @@ export default function AdminOrders() {
                     </div>
                   </CardContent>
                 </Card>
-              ) : (
-                <Card>
-                  <CardContent className="py-12 text-center text-muted-foreground">
-                    Select an order to view details
-                  </CardContent>
-                </Card>
-              )}
-            </div>
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="py-12 text-center text-muted-foreground">
+                  Select an order to view details
+                </CardContent>
+              </Card>
+            )}
           </div>
         )}
       </div>

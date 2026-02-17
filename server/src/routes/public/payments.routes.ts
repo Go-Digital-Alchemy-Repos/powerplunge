@@ -1141,13 +1141,13 @@ export async function sendOrderNotification(orderId: string) {
       const orderTime = new Date(order.createdAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
       const formatCents = (cents: number) => `$${(cents / 100).toFixed(2)}`;
       const isFreeOrder = !!order.isManualOrder && !order.stripePaymentIntentId;
-      const formatOrderTotal = isFreeOrder ? "FREE" : formatCents(order.totalAmount);
+      const formatOrderTotal = isFreeOrder ? "$0.00" : formatCents(order.totalAmount);
 
       const itemsHtml = items.map(item => `
             <tr>
               <td style="padding: 12px 16px; border-bottom: 1px solid #e5e7eb; color: #374151; font-size: 14px;">${item.productName}</td>
               <td style="padding: 12px 16px; border-bottom: 1px solid #e5e7eb; text-align: center; color: #374151; font-size: 14px;">${item.quantity}</td>
-              <td style="padding: 12px 16px; border-bottom: 1px solid #e5e7eb; text-align: right; color: #111827; font-weight: 500; font-size: 14px;">${isFreeOrder ? "FREE" : formatCents(item.unitPrice * item.quantity)}</td>
+              <td style="padding: 12px 16px; border-bottom: 1px solid #e5e7eb; text-align: right; color: #111827; font-weight: 500; font-size: 14px;">${isFreeOrder ? "$0.00" : formatCents(item.unitPrice * item.quantity)}</td>
             </tr>`).join("");
 
       const html = `
