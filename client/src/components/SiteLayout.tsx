@@ -11,7 +11,7 @@ import { useCustomerAuth } from "@/hooks/use-customer-auth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useBranding } from "@/hooks/use-branding";
 import { CustomerAuthModal } from "@/components/CustomerAuthModal";
-import { ThemeSelector } from "@/components/ThemeSelector";
+
 
 interface CartItem {
   id: string;
@@ -206,7 +206,7 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
                 </span>
               )}
             </Button>
-            <ThemeSelector />
+
           </div>
         </div>
       </nav>
