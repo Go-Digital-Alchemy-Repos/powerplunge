@@ -35,8 +35,12 @@ async function getMailgunDomain(): Promise<string | null> {
   return settings?.mailgunDomain || null;
 }
 
+function getTicketPrefix(): string {
+  return process.env.NODE_ENV === "production" ? "ticket" : "devticket";
+}
+
 function buildTicketReplyToAddress(ticketId: string, domain: string): string {
-  return `support+ticket-${ticketId}@${domain}`;
+  return `support+${getTicketPrefix()}-${ticketId}@${domain}`;
 }
 
 function getBaseUrl(): string {

@@ -28,7 +28,7 @@ function verifyMailgunSignature(
 }
 
 function extractTicketId(recipient: string): string | null {
-  const match = recipient.match(/support\+ticket-([a-f0-9-]+)@/i);
+  const match = recipient.match(/support\+(?:dev)?ticket-([a-f0-9-]+)@/i);
   return match ? match[1] : null;
 }
 
