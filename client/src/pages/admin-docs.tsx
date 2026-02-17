@@ -499,7 +499,10 @@ export default function AdminDocs() {
               className="absolute inset-0 bg-black/50"
               onClick={() => setMobileSidebarOpen(false)}
             />
-            <div className="absolute inset-y-0 left-0 w-[85%] max-w-sm bg-theme-bg border-r border-theme-border flex flex-col z-50 shadow-xl animate-in slide-in-from-left duration-200">
+            <div
+              className="absolute inset-y-0 left-0 w-[85%] max-w-sm bg-theme-bg border-r border-theme-border flex flex-col z-50 shadow-xl animate-in slide-in-from-left duration-200"
+              style={{ backgroundColor: "var(--theme-bg)" }}
+            >
               {sidebarContent}
             </div>
           </div>
