@@ -793,6 +793,9 @@ export default function Home() {
             </div>
             <div className="flex flex-col items-center gap-3 md:items-end">
               <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4">
+                <Link href="/contact" className="text-muted-foreground text-sm hover:text-foreground transition-colors py-1" data-testid="link-contact-us">
+                  Contact Us
+                </Link>
                 <Link href="/privacy-policy" className="text-muted-foreground text-sm hover:text-foreground transition-colors py-1" data-testid="link-privacy-policy">
                   Privacy Policy
                 </Link>
