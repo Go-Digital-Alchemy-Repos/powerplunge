@@ -1,15 +1,26 @@
 import { emailService, type EmailOptions } from "../integrations/mailgun/EmailService";
 import { db } from "../../db";
-import { siteSettings, emailSettings } from "@shared/schema";
+import { siteSettings, emailSettings, customers } from "@shared/schema";
 import { eq } from "drizzle-orm";
 
 interface TicketData {
   ticketId: string;
+  customerId?: string;
   customerName: string;
   customerEmail: string;
   subject: string;
   message: string;
   type: string;
+}
+
+async function isRegisteredCustomer(customerId?: string): Promise<boolean> {
+  if (!customerId) return false;
+  const customer = await db.query.customers.findFirst({
+    where: eq(customers.id, customerId),
+    columns: { passwordHash: true, userId: true },
+  });
+  if (!customer) return false;
+  return !!(customer.passwordHash || customer.userId);
 }
 
 async function getSupportSettings() {
@@ -113,6 +124,7 @@ export async function sendNewTicketAdminNotification(ticket: TicketData): Promis
 
 interface AdminReplyData {
   ticketId: string;
+  customerId?: string;
   customerName: string;
   customerEmail: string;
   subject: string;
@@ -122,6 +134,7 @@ interface AdminReplyData {
 
 interface StatusChangeData {
   ticketId: string;
+  customerId?: string;
   customerName: string;
   customerEmail: string;
   subject: string;
@@ -141,6 +154,7 @@ export async function sendAdminReplyToCustomer(data: AdminReplyData): Promise<vo
     if (!settings.notifyOnReply) return;
 
     const baseUrl = getBaseUrl();
+    const registered = await isRegisteredCustomer(data.customerId);
 
     let replyTo: string | undefined;
     if (settings.inboundRepliesEnabled) {
@@ -150,9 +164,23 @@ export async function sendAdminReplyToCustomer(data: AdminReplyData): Promise<vo
       }
     }
 
-    const replyInstructions = replyTo
-      ? `You can reply directly to this email or click the button below to respond through your account.`
-      : `If you have additional questions, click Respond below to reply through your account.`;
+    let replyInstructions: string;
+    let portalButtonHtml: string;
+
+    if (registered) {
+      replyInstructions = replyTo
+        ? `You can reply directly to this email or click the button below to view your full conversation.`
+        : `Click the button below to view your full conversation and respond.`;
+      portalButtonHtml = `
+            <div style="margin-top: 24px; text-align: center;">
+              <a href="${baseUrl}/my-account?tab=support" style="display: inline-block; padding: 10px 24px; background: #0891b2; color: white; text-decoration: none; border-radius: 6px; font-weight: 500;">View in Dashboard</a>
+            </div>`;
+    } else {
+      replyInstructions = replyTo
+        ? `Simply reply to this email to continue the conversation.`
+        : `If you have additional questions, please contact us again through our website.`;
+      portalButtonHtml = "";
+    }
 
     const result = await emailService.sendEmail({
       to: data.customerEmail,
@@ -174,10 +202,7 @@ export async function sendAdminReplyToCustomer(data: AdminReplyData): Promise<vo
             <div style="padding: 12px; background: #1a1a1a; border-radius: 6px;">
               <p style="margin: 0 0 4px 0; color: #a3a3a3; font-size: 13px;">Reference: #${data.ticketId.slice(0, 8)}</p>
               <p style="margin: 0; color: #a3a3a3; font-size: 13px;">Subject: ${data.subject}</p>
-            </div>
-            <div style="margin-top: 24px; text-align: center;">
-              <a href="${baseUrl}/my-account?tab=support" style="display: inline-block; padding: 10px 24px; background: #0891b2; color: white; text-decoration: none; border-radius: 6px; font-weight: 500;">Respond</a>
-            </div>
+            </div>${portalButtonHtml}
             <p style="margin-top: 16px; color: #a3a3a3; font-size: 13px;">${replyInstructions}</p>
           </div>
         </div>
@@ -200,6 +225,14 @@ export async function sendStatusChangeToCustomer(data: StatusChangeData): Promis
 
     const baseUrl = getBaseUrl();
     const statusLabel = statusLabels[data.newStatus] || data.newStatus;
+    const registered = await isRegisteredCustomer(data.customerId);
+
+    const portalButtonHtml = registered
+      ? `
+            <div style="margin-top: 24px; text-align: center;">
+              <a href="${baseUrl}/my-account?tab=support" style="display: inline-block; padding: 10px 24px; background: #0891b2; color: white; text-decoration: none; border-radius: 6px; font-weight: 500;">View in Dashboard</a>
+            </div>`
+      : "";
 
     const result = await emailService.sendEmail({
       to: data.customerEmail,
@@ -220,10 +253,7 @@ export async function sendStatusChangeToCustomer(data: StatusChangeData): Promis
             <div style="padding: 12px; background: #1a1a1a; border-radius: 6px;">
               <p style="margin: 0 0 4px 0; color: #a3a3a3; font-size: 13px;">Reference: #${data.ticketId.slice(0, 8)}</p>
               <p style="margin: 0; color: #a3a3a3; font-size: 13px;">Subject: ${data.subject}</p>
-            </div>
-            <div style="margin-top: 24px; text-align: center;">
-              <a href="${baseUrl}/my-account?tab=support" style="display: inline-block; padding: 10px 24px; background: #0891b2; color: white; text-decoration: none; border-radius: 6px; font-weight: 500;">Respond</a>
-            </div>
+            </div>${portalButtonHtml}
           </div>
         </div>
       `,
@@ -243,10 +273,24 @@ export async function sendTicketConfirmationToCustomer(ticket: TicketData): Prom
     const settings = await getSupportSettings();
     if (!settings.autoReplyEnabled) return;
 
+    const baseUrl = getBaseUrl();
+    const registered = await isRegisteredCustomer(ticket.customerId);
+
     let autoReplyBody = settings.autoReplyMessage ||
       `Thank you for contacting ${settings.companyName}. We've received your message and will respond within {{sla_hours}} hours.`;
 
     autoReplyBody = autoReplyBody.replace(/\{\{sla_hours\}\}/g, String(settings.slaHours));
+
+    const portalButtonHtml = registered
+      ? `
+            <div style="margin-top: 20px; text-align: center;">
+              <a href="${baseUrl}/my-account?tab=support" style="display: inline-block; padding: 10px 24px; background: #0891b2; color: white; text-decoration: none; border-radius: 6px; font-weight: 500;">View in Dashboard</a>
+            </div>`
+      : "";
+
+    const followUpText = registered
+      ? `If you have additional details, simply reply to this email or view your ticket in your account dashboard.`
+      : `If you have additional details, simply reply to this email.`;
 
     const result = await emailService.sendEmail({
       to: ticket.customerEmail,
@@ -263,8 +307,8 @@ export async function sendTicketConfirmationToCustomer(ticket: TicketData): Prom
             <div style="margin-top: 16px; padding: 12px; background: #1a1a1a; border-radius: 6px;">
               <p style="margin: 0 0 4px 0; color: #a3a3a3; font-size: 13px;">Reference: #${ticket.ticketId.slice(0, 8)}</p>
               <p style="margin: 0; color: #a3a3a3; font-size: 13px;">Subject: ${ticket.subject}</p>
-            </div>
-            <p style="margin-top: 16px; color: #a3a3a3; font-size: 13px;">If you have additional details, simply reply to this email or visit our contact page.</p>
+            </div>${portalButtonHtml}
+            <p style="margin-top: 16px; color: #a3a3a3; font-size: 13px;">${followUpText}</p>
           </div>
         </div>
       `,

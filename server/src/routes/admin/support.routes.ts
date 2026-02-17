@@ -270,6 +270,7 @@ adminSupportRouter.patch("/:id", requireAdmin, async (req, res, next) => {
       if (customer?.email) {
         sendAdminReplyToCustomer({
           ticketId: existing.id,
+          customerId: existing.customerId,
           customerName: customer.name || "Customer",
           customerEmail: customer.email,
           subject: existing.subject,
@@ -290,6 +291,7 @@ adminSupportRouter.patch("/:id", requireAdmin, async (req, res, next) => {
       if (customer?.email && !parsed.data.noteText) {
         sendStatusChangeToCustomer({
           ticketId: existing.id,
+          customerId: existing.customerId,
           customerName: customer.name || "Customer",
           customerEmail: customer.email,
           subject: existing.subject,

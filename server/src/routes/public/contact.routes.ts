@@ -64,6 +64,7 @@ router.post("/", contactRateLimiter, async (req, res, next) => {
 
     const ticketData = {
       ticketId: ticket.id,
+      customerId: customer.id,
       customerName: name,
       customerEmail: email,
       subject,
