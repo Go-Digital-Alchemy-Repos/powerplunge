@@ -200,6 +200,7 @@ export function useCustomerAuth() {
     verifyMagicLink,
     logout,
     getAuthHeader,
+    getToken,
     refreshSession: verifySession,
   };
 }

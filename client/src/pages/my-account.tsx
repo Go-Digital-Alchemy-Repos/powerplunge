@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCustomerAuth } from "@/hooks/use-customer-auth";
+import { useRealtimeNotifications } from "@/hooks/use-realtime-notifications";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { MobileTabsList } from "@/components/ui/mobile-tabs-list";
@@ -163,10 +164,13 @@ function CustomerNotificationBell({ getAuthHeader, onTabChange }: { getAuthHeade
 export default function MyAccount() {
   const [, setLocation] = useLocation();
   const { logoSrc, companyName } = useBranding();
-  const { customer: authCustomer, isLoading: authLoading, isAuthenticated, logout, getAuthHeader } = useCustomerAuth();
+  const { customer: authCustomer, isLoading: authLoading, isAuthenticated, logout, getAuthHeader, getToken } = useCustomerAuth();
   const initialTab = new URLSearchParams(window.location.search).get("tab") || "orders";
   const [activeTab, setActiveTab] = useState(initialTab);
   const { vipData } = useAccountVip();
+  const customerToken = isAuthenticated ? getToken() || undefined : undefined;
+
+  useRealtimeNotifications({ role: "customer", token: customerToken, enabled: isAuthenticated && !!customerToken });
 
   const { data: affiliateCheck } = useQuery<{ affiliate: any | null }>({
     queryKey: ["/api/customer/affiliate-portal"],

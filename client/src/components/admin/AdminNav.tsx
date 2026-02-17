@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRealtimeNotifications } from "@/hooks/use-realtime-notifications";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -317,6 +318,8 @@ export default function AdminNav({ currentPage, role = "admin" }: AdminNavProps)
   const [searchQuery, setSearchQuery] = useState("");
   const queryClient = useQueryClient();
   const { admin } = useAdmin();
+
+  useRealtimeNotifications({ role: "admin", enabled: true });
 
   const { data: legacyThemes } = useQuery<ThemePreset[]>({
     queryKey: ["/api/admin/cms/themes"],

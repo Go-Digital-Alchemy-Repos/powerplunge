@@ -10,15 +10,40 @@ export class NotificationService {
       .values(data)
       .onConflictDoNothing({ target: notifications.dedupeKey })
       .returning();
-    return result[0] ?? null;
+
+    const created = result[0] ?? null;
+
+    if (created) {
+      this.emitNewNotification(created).catch(() => {});
+    }
+
+    return created;
   }
 
-  async createMany(items: InsertNotification[]): Promise<void> {
-    if (items.length === 0) return;
-    await db
+  async createMany(items: InsertNotification[]): Promise<Notification[]> {
+    if (items.length === 0) return [];
+    const result = await db
       .insert(notifications)
       .values(items)
-      .onConflictDoNothing({ target: notifications.dedupeKey });
+      .onConflictDoNothing({ target: notifications.dedupeKey })
+      .returning();
+
+    for (const n of result) {
+      this.emitNewNotification(n).catch(() => {});
+    }
+
+    return result;
+  }
+
+  private async emitNewNotification(notification: Notification): Promise<void> {
+    try {
+      const { emitNotification, emitUnreadCount } = await import("../realtime/socketServer");
+      const role = notification.recipientType as "admin" | "customer";
+      emitNotification(role, notification.recipientId, notification);
+      await emitUnreadCount(role, notification.recipientId);
+    } catch (err) {
+      // Socket not available yet or emit failed — non-critical
+    }
   }
 
   async listForRecipient(
@@ -78,6 +103,11 @@ export class NotificationService {
         )
       )
       .returning({ id: notifications.id });
+
+    if (result.length > 0) {
+      this.emitUpdatedUnreadCount(recipientType as "admin" | "customer", recipientId);
+    }
+
     return result.length > 0;
   }
 
@@ -93,7 +123,18 @@ export class NotificationService {
         )
       )
       .returning({ id: notifications.id });
+
+    if (result.length > 0) {
+      this.emitUpdatedUnreadCount(recipientType, recipientId);
+    }
+
     return result.length;
+  }
+
+  private emitUpdatedUnreadCount(role: "admin" | "customer", userId: string): void {
+    import("../realtime/socketServer")
+      .then(({ emitUnreadCount }) => emitUnreadCount(role, userId))
+      .catch(() => {});
   }
 
   // --- Ticket-specific helpers ---
@@ -118,7 +159,11 @@ export class NotificationService {
       dedupeKey: `ticket.new:${ticket.id}:${admin.id}`,
       metadata: { ticketType: ticket.type },
     }));
-    await this.createMany(items);
+    const created = await this.createMany(items);
+
+    if (created.length > 0) {
+      this.emitTicketUpdate("admin", admins.map(a => a.id), ticket.id);
+    }
   }
 
   async notifyAdminsOfCustomerReply(ticket: {
@@ -139,7 +184,11 @@ export class NotificationService {
       dedupeKey: `ticket.reply.customer:${ticket.id}:${admin.id}:${Date.now()}`,
       metadata: {},
     }));
-    await this.createMany(items);
+    const created = await this.createMany(items);
+
+    if (created.length > 0) {
+      this.emitTicketUpdate("admin", admins.map(a => a.id), ticket.id);
+    }
   }
 
   async notifyCustomerOfAdminReply(ticket: {
@@ -148,7 +197,7 @@ export class NotificationService {
     customerId: string;
     adminName?: string;
   }): Promise<void> {
-    await this.create({
+    const created = await this.create({
       recipientType: "customer",
       recipientId: ticket.customerId,
       type: "ticket.message.admin",
@@ -160,6 +209,10 @@ export class NotificationService {
       dedupeKey: `ticket.reply.admin:${ticket.id}:${ticket.customerId}:${Date.now()}`,
       metadata: {},
     });
+
+    if (created) {
+      this.emitTicketUpdate("customer", [ticket.customerId], ticket.id);
+    }
   }
 
   async notifyCustomerOfStatusChange(ticket: {
@@ -168,7 +221,7 @@ export class NotificationService {
     customerId: string;
     newStatus: string;
   }): Promise<void> {
-    await this.create({
+    const created = await this.create({
       recipientType: "customer",
       recipientId: ticket.customerId,
       type: "ticket.status",
@@ -180,6 +233,20 @@ export class NotificationService {
       dedupeKey: `ticket.status:${ticket.id}:${ticket.newStatus}:${Date.now()}`,
       metadata: { newStatus: ticket.newStatus },
     });
+
+    if (created) {
+      this.emitTicketUpdate("customer", [ticket.customerId], ticket.id);
+    }
+  }
+
+  private emitTicketUpdate(role: "admin" | "customer", userIds: string[], ticketId: string): void {
+    import("../realtime/socketServer")
+      .then(({ emitTicketUpdated }) => {
+        for (const uid of userIds) {
+          emitTicketUpdated(role, uid, { ticketId, needsAttention: true });
+        }
+      })
+      .catch(() => {});
   }
 }
 

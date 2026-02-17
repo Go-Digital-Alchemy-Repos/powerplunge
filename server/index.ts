@@ -52,6 +52,9 @@ app.use(requestLoggerMiddleware);
 (async () => {
   enforceEnv();
 
+  const { initializeSocketServer } = await import("./src/realtime/socketServer");
+  initializeSocketServer(httpServer);
+
   await registerRoutes(httpServer, app);
 
   app.use(errorHandler);
