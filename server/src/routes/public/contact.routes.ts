@@ -4,6 +4,7 @@ import { db } from "../../../db";
 import { supportTickets, customers } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { createRateLimiter } from "../../middleware/rate-limiter";
+import { sendNewTicketAdminNotification, sendTicketConfirmationToCustomer } from "../../services/support-email.service";
 
 const router = Router();
 
@@ -60,6 +61,17 @@ router.post("/", contactRateLimiter, async (req, res, next) => {
       message,
       type,
     }).returning();
+
+    const ticketData = {
+      ticketId: ticket.id,
+      customerName: name,
+      customerEmail: email,
+      subject,
+      message,
+      type,
+    };
+    sendNewTicketAdminNotification(ticketData).catch(() => {});
+    sendTicketConfirmationToCustomer(ticketData).catch(() => {});
 
     res.status(201).json({
       success: true,

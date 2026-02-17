@@ -25,6 +25,7 @@ import affiliateRoutes from "./src/routes/admin/affiliates-v2.routes";
 import affiliatePortalRoutes from "./src/routes/customer/affiliate-portal.routes";
 import upsellRoutes from "./src/routes/admin/upsells.routes";
 import supportRoutes, { adminSupportRouter } from "./src/routes/admin/support.routes";
+import adminSupportSettingsRoutes from "./src/routes/admin/support-settings.routes";
 import docsRouter from "./src/routes/admin/docs.router";
 import cmsRouter from "./src/routes/admin/cms.router";
 import cmsSidebarsRouter from "./src/routes/admin/cms-sidebars.routes";
@@ -148,6 +149,7 @@ export async function registerRoutes(
   app.use("/api/recovery", requireFullAccess, recoveryRoutes);
   app.use("/api/alerts", requireFullAccess, alertsRoutes);
   app.use("/api/customer/support", isAuthenticated, supportRoutes);
+  app.use("/api/admin/support/settings", requireFullAccess, adminSupportSettingsRoutes);
   app.use("/api/admin/support", requireAdmin, adminSupportRouter);
   app.use("/api/admin/docs", requireFullAccess, docsRouter);
   app.use("/api/admin/cms", requireFullAccess, cmsPostsRouter);

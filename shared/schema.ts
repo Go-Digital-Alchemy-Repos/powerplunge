@@ -219,6 +219,14 @@ export const siteSettings = pgTable("site_settings", {
   privacyPolicy: text("privacy_policy"),
   termsAndConditions: text("terms_and_conditions"),
   consentSettings: jsonb("consent_settings"),
+  // Support settings
+  supportNotifyEmails: text("support_notify_emails"),
+  supportNotifyOnNew: boolean("support_notify_on_new").default(true),
+  supportNotifyOnReply: boolean("support_notify_on_reply").default(true),
+  supportAutoReplyEnabled: boolean("support_auto_reply_enabled").default(true),
+  supportAutoReplyMessage: text("support_auto_reply_message"),
+  supportSlaHours: integer("support_sla_hours").default(24),
+  supportBusinessHours: text("support_business_hours"),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 

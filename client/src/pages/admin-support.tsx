@@ -14,7 +14,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useAdmin } from "@/hooks/use-admin";
 import AdminNav from "@/components/admin/AdminNav";
 import RichTextEditor from "@/components/admin/RichTextEditor";
-import { Headset, MessageSquare, CheckCircle, Clock, AlertCircle, Eye, Search, Filter, RefreshCw, Plus, User } from "lucide-react";
+import { Headset, MessageSquare, CheckCircle, Clock, AlertCircle, Eye, Search, Filter, RefreshCw, Plus, User, Settings } from "lucide-react";
+import { Link } from "wouter";
 
 interface AdminNote {
   text: string;
@@ -331,6 +332,12 @@ export default function AdminSupport() {
               <Plus className="w-4 h-4" />
               New Ticket
             </Button>
+            <Link href="/admin/support/settings">
+              <Button variant="outline" className="gap-2 w-full sm:w-auto flex-1" data-testid="button-support-settings">
+                <Settings className="w-4 h-4" />
+                Settings
+              </Button>
+            </Link>
             <Button variant="outline" className="w-full sm:w-auto flex-1" onClick={() => refetch()} data-testid="button-refresh">
               <RefreshCw className="w-4 h-4 mr-2" />
               Refresh
