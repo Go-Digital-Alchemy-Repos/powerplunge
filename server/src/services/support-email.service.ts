@@ -149,9 +149,9 @@ export async function sendAdminReplyToCustomer(data: AdminReplyData): Promise<vo
               <p style="margin: 0; color: #a3a3a3; font-size: 13px;">Subject: ${data.subject}</p>
             </div>
             <div style="margin-top: 24px; text-align: center;">
-              <a href="${baseUrl}/my-account?tab=support" style="display: inline-block; padding: 10px 24px; background: #0891b2; color: white; text-decoration: none; border-radius: 6px; font-weight: 500;">View Full Conversation</a>
+              <a href="${baseUrl}/my-account?tab=support" style="display: inline-block; padding: 10px 24px; background: #0891b2; color: white; text-decoration: none; border-radius: 6px; font-weight: 500;">Respond</a>
             </div>
-            <p style="margin-top: 16px; color: #a3a3a3; font-size: 13px;">If you have additional questions, you can reply directly from your account or visit our contact page.</p>
+            <p style="margin-top: 16px; color: #a3a3a3; font-size: 13px;">If you have additional questions, click Respond above to reply through your account.</p>
           </div>
         </div>
       `,
@@ -195,7 +195,7 @@ export async function sendStatusChangeToCustomer(data: StatusChangeData): Promis
               <p style="margin: 0; color: #a3a3a3; font-size: 13px;">Subject: ${data.subject}</p>
             </div>
             <div style="margin-top: 24px; text-align: center;">
-              <a href="${baseUrl}/my-account?tab=support" style="display: inline-block; padding: 10px 24px; background: #0891b2; color: white; text-decoration: none; border-radius: 6px; font-weight: 500;">View Ticket Details</a>
+              <a href="${baseUrl}/my-account?tab=support" style="display: inline-block; padding: 10px 24px; background: #0891b2; color: white; text-decoration: none; border-radius: 6px; font-weight: 500;">Respond</a>
             </div>
           </div>
         </div>
