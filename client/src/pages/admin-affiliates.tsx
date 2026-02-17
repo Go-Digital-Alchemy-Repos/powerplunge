@@ -887,31 +887,33 @@ export default function AdminAffiliates() {
         </div>
 
         {/* Main Tabs */}
-        <MobileTabsList
-          tabs={[
-            { value: "leaderboard", label: "Leaderboard", icon: <Trophy className="w-4 h-4" />, "data-testid": "tab-leaderboard" },
-            { value: "payouts", label: "Payout Queue", icon: <Wallet className="w-4 h-4" />, "data-testid": "tab-payouts" },
-            { 
-              value: "review", 
-              label: "Fraud Review", 
-              icon: (
-                <div className="relative">
-                  <ShieldAlert className="w-4 h-4" />
-                  {flaggedCommissions && flaggedCommissions.length > 0 && (
-                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
-                      {flaggedCommissions.length}
-                    </span>
-                  )}
-                </div>
-              ), 
-              "data-testid": "tab-review" 
-            },
-            { value: "invites", label: "Invites", icon: <Ticket className="w-4 h-4" />, "data-testid": "tab-invites" },
-          ]}
-          activeTab={activeTab}
-          onTabChange={(v) => { setActiveTab(v); setSelectedAffiliateId(null); }}
-          className="mb-6"
-        />
+        <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v as typeof activeTab); setSelectedAffiliateId(null); }}>
+          <MobileTabsList
+            tabs={[
+              { value: "leaderboard", label: "Leaderboard", icon: <Trophy className="w-4 h-4" />, "data-testid": "tab-leaderboard" },
+              { value: "payouts", label: "Payout Queue", icon: <Wallet className="w-4 h-4" />, "data-testid": "tab-payouts" },
+              { 
+                value: "review", 
+                label: "Fraud Review", 
+                icon: (
+                  <div className="relative">
+                    <ShieldAlert className="w-4 h-4" />
+                    {flaggedCommissions && flaggedCommissions.length > 0 && (
+                      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
+                        {flaggedCommissions.length}
+                      </span>
+                    )}
+                  </div>
+                ), 
+                "data-testid": "tab-review" 
+              },
+              { value: "invites", label: "Invites", icon: <Ticket className="w-4 h-4" />, "data-testid": "tab-invites" },
+            ]}
+            activeTab={activeTab}
+            onTabChange={(v) => { setActiveTab(v as typeof activeTab); setSelectedAffiliateId(null); }}
+            className="mb-6"
+          />
+        </Tabs>
 
         {activeTab === "leaderboard" && !selectedAffiliateId && (
           <Card>
