@@ -37,13 +37,8 @@ export default function AdminAffiliateInviteSender() {
   const { toast } = useToast();
   const { admin, isLoading: adminLoading, isAuthenticated, role, hasFullAccess } = useAdmin();
 
-  const [sharedOptions, setSharedOptions] = useState({
-    maxUses: "1",
-    expiresInDays: "7",
-  });
-
-  const [textForm, setTextForm] = useState({ targetPhone: "", targetName: "" });
-  const [emailForm, setEmailForm] = useState({ targetEmail: "", targetName: "" });
+  const [targetPhone, setTargetPhone] = useState("");
+  const [targetEmail, setTargetEmail] = useState("");
 
   const [copied, setCopied] = useState(false);
   const [tipDismissed, setTipDismissed] = useState(false);
@@ -81,8 +76,6 @@ export default function AdminAffiliateInviteSender() {
     mutationFn: async () => {
       return sendInvite({
         deliveryMethod: "contacts" as DeliveryMethod,
-        maxUses: parseInt(sharedOptions.maxUses) || 1,
-        expiresInDays: parseInt(sharedOptions.expiresInDays) || 7,
       });
     },
     onSuccess: async (data) => {
@@ -110,15 +103,12 @@ export default function AdminAffiliateInviteSender() {
 
   const sendViaSms = useMutation({
     mutationFn: async () => {
-      if (!textForm.targetPhone.trim()) {
+      if (!targetPhone.trim()) {
         throw new Error("Phone number is required");
       }
       return sendInvite({
         deliveryMethod: "text" as DeliveryMethod,
-        targetPhone: textForm.targetPhone.trim(),
-        targetName: textForm.targetName.trim() || undefined,
-        maxUses: parseInt(sharedOptions.maxUses) || 1,
-        expiresInDays: parseInt(sharedOptions.expiresInDays) || 7,
+        targetPhone: targetPhone.trim(),
       });
     },
     onSuccess: (data) => {
@@ -132,7 +122,7 @@ export default function AdminAffiliateInviteSender() {
         });
         setFallbackUrl(data.inviteUrl);
       }
-      setTextForm({ targetPhone: "", targetName: "" });
+      setTargetPhone("");
     },
     onError: (error: any) => {
       toast({ title: "Failed", description: error.message, variant: "destructive" });
@@ -141,15 +131,12 @@ export default function AdminAffiliateInviteSender() {
 
   const sendViaEmail = useMutation({
     mutationFn: async () => {
-      if (!emailForm.targetEmail.trim()) {
+      if (!targetEmail.trim()) {
         throw new Error("Email address is required");
       }
       return sendInvite({
         deliveryMethod: "email" as DeliveryMethod,
-        targetEmail: emailForm.targetEmail.trim(),
-        targetName: emailForm.targetName.trim() || undefined,
-        maxUses: parseInt(sharedOptions.maxUses) || 1,
-        expiresInDays: parseInt(sharedOptions.expiresInDays) || 7,
+        targetEmail: targetEmail.trim(),
       });
     },
     onSuccess: (data) => {
@@ -163,7 +150,7 @@ export default function AdminAffiliateInviteSender() {
         });
         setFallbackUrl(data.inviteUrl);
       }
-      setEmailForm({ targetEmail: "", targetName: "" });
+      setTargetEmail("");
     },
     onError: (error: any) => {
       toast({ title: "Failed", description: error.message, variant: "destructive" });
@@ -208,33 +195,6 @@ export default function AdminAffiliateInviteSender() {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 mb-6">
-          <div className="space-y-2">
-            <Label htmlFor="maxUses" className="text-xs text-muted-foreground">Max Uses</Label>
-            <Input
-              id="maxUses"
-              type="number"
-              min="1"
-              value={sharedOptions.maxUses}
-              onChange={(e) => setSharedOptions(prev => ({ ...prev, maxUses: e.target.value }))}
-              className="h-10"
-              data-testid="input-max-uses"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="expiresInDays" className="text-xs text-muted-foreground">Expires In (days)</Label>
-            <Input
-              id="expiresInDays"
-              type="number"
-              min="1"
-              value={sharedOptions.expiresInDays}
-              onChange={(e) => setSharedOptions(prev => ({ ...prev, expiresInDays: e.target.value }))}
-              className="h-10"
-              data-testid="input-expires-in-days"
-            />
-          </div>
-        </div>
-
         <Card className="mb-4" data-testid="card-share-contacts">
           <CardContent className="pt-5 pb-5">
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2" data-testid="text-contacts-heading">
@@ -273,27 +233,15 @@ export default function AdminAffiliateInviteSender() {
             </h2>
             <form onSubmit={handleSmsSubmit} className="space-y-3">
               <div className="space-y-1.5">
-                <Label htmlFor="smsPhone">Phone Number *</Label>
+                <Label htmlFor="smsPhone">Phone Number</Label>
                 <Input
                   id="smsPhone"
                   type="tel"
-                  placeholder="+1 (555) 123-4567"
-                  value={textForm.targetPhone}
-                  onChange={(e) => setTextForm(prev => ({ ...prev, targetPhone: e.target.value }))}
+                  placeholder="(555) 123-4567"
+                  value={targetPhone}
+                  onChange={(e) => setTargetPhone(e.target.value)}
                   className="h-11"
                   data-testid="input-sms-phone"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="smsName">Name (optional)</Label>
-                <Input
-                  id="smsName"
-                  type="text"
-                  placeholder="Jane Smith"
-                  value={textForm.targetName}
-                  onChange={(e) => setTextForm(prev => ({ ...prev, targetName: e.target.value }))}
-                  className="h-11"
-                  data-testid="input-sms-name"
                 />
               </div>
               <Button
@@ -326,28 +274,16 @@ export default function AdminAffiliateInviteSender() {
             </h2>
             <form onSubmit={handleEmailSubmit} className="space-y-3">
               <div className="space-y-1.5">
-                <Label htmlFor="emailAddress">Email Address *</Label>
+                <Label htmlFor="emailAddress">Email Address</Label>
                 <Input
                   id="emailAddress"
                   type="email"
                   placeholder="affiliate@example.com"
-                  value={emailForm.targetEmail}
-                  onChange={(e) => setEmailForm(prev => ({ ...prev, targetEmail: e.target.value }))}
+                  value={targetEmail}
+                  onChange={(e) => setTargetEmail(e.target.value)}
                   className="h-11"
                   autoComplete="email"
                   data-testid="input-email-address"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="emailName">Name (optional)</Label>
-                <Input
-                  id="emailName"
-                  type="text"
-                  placeholder="Jane Smith"
-                  value={emailForm.targetName}
-                  onChange={(e) => setEmailForm(prev => ({ ...prev, targetName: e.target.value }))}
-                  className="h-11"
-                  data-testid="input-email-name"
                 />
               </div>
               <Button
