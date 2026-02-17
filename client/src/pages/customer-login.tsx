@@ -25,16 +25,19 @@ export default function CustomerLogin() {
       handleMagicLinkVerification(token);
     }
     if (import.meta.env.DEV && params.get("dev") === "affiliate") {
-      handleDevLogin("affiliate@test.com", "testpass123");
+      handleDevLogin("affiliate@test.com", "testpass123", "/affiliate-portal");
+    }
+    if (import.meta.env.DEV && params.get("dev") === "customer") {
+      handleDevLogin("customer@test.com", "testpass123", "/dashboard");
     }
   }, []);
 
-  const handleDevLogin = async (email: string, password: string) => {
+  const handleDevLogin = async (email: string, password: string, redirect?: string) => {
     setIsLoading(true);
     try {
       await login(email, password);
       toast({ title: "Dev login", description: `Signed in as ${email}` });
-      setLocation("/affiliate-portal");
+      setLocation(redirect || "/");
     } catch (error: any) {
       toast({ title: "Dev login failed", description: error.message, variant: "destructive" });
     } finally {
