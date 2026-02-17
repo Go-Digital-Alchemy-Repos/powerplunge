@@ -1,6 +1,9 @@
 import { customersRepository, type CustomerWithStats, type CustomerWithOrders } from "../db/repositories/customers.repo";
 import { NotFoundError, BadRequestError, ConflictError } from "../errors";
 import type { InsertCustomer } from "@shared/schema";
+import { db } from "../../db";
+import { customers, supportTickets, customerMagicLinkTokens, customerNotes, affiliates, couponRedemptions, upsellEvents, abandonedCarts, failedPayments, notifications } from "@shared/schema";
+import { eq, and } from "drizzle-orm";
 
 class CustomersService {
   async getAllCustomersWithStats(): Promise<CustomerWithStats[]> {
@@ -65,7 +68,20 @@ class CustomersService {
       );
     }
 
-    await customersRepository.delete(customerId);
+    await db.transaction(async (tx) => {
+      await tx.delete(supportTickets).where(eq(supportTickets.customerId, customerId));
+      await tx.delete(customerMagicLinkTokens).where(eq(customerMagicLinkTokens.customerId, customerId));
+      await tx.delete(customerNotes).where(eq(customerNotes.customerId, customerId));
+      await tx.delete(couponRedemptions).where(eq(couponRedemptions.customerId, customerId));
+      await tx.delete(upsellEvents).where(eq(upsellEvents.customerId, customerId));
+      await tx.delete(abandonedCarts).where(eq(abandonedCarts.customerId, customerId));
+      await tx.delete(failedPayments).where(eq(failedPayments.customerId, customerId));
+      await tx.delete(notifications).where(
+        and(eq(notifications.recipientType, "customer"), eq(notifications.recipientId, customerId))
+      );
+      await tx.delete(affiliates).where(eq(affiliates.customerId, customerId));
+      await tx.delete(customers).where(eq(customers.id, customerId));
+    });
   }
 }
 

@@ -62,6 +62,8 @@ import {
 import { MobileTabsList } from "@/components/ui/mobile-tabs-list";
 import { Label } from "@/components/ui/label";
 import { ManualOrderWizard } from "./ManualOrderWizard";
+import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface CustomerProfile {
   customer: {
@@ -132,6 +134,8 @@ export function CustomerProfileDrawer({
   open,
   onOpenChange,
 }: CustomerProfileDrawerProps) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [profile, setProfile] = useState<CustomerProfile | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [notes, setNotes] = useState<CustomerNote[]>([]);
@@ -447,15 +451,15 @@ export function CustomerProfileDrawer({
       });
       const data = await res.json();
       if (res.ok) {
-        alert("Customer deleted successfully");
+        toast({ title: "Customer deleted successfully" });
         onOpenChange(false);
-        window.location.reload();
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/customers"] });
       } else {
-        alert(data.message || "Failed to delete customer");
+        toast({ title: data.message || "Failed to delete customer", variant: "destructive" });
       }
     } catch (error) {
       console.error("Failed to delete customer:", error);
-      alert("Failed to delete customer");
+      toast({ title: "Failed to delete customer", variant: "destructive" });
     }
   };
 
