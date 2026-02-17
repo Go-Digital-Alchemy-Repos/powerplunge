@@ -245,6 +245,7 @@ export const emailSettings = pgTable("email_settings", {
   mailgunFromEmail: text("mailgun_from_email"),
   mailgunReplyTo: text("mailgun_reply_to"),
   mailgunApiKeyEncrypted: text("mailgun_api_key_encrypted"),
+  mailgunWebhookSigningKeyEncrypted: text("mailgun_webhook_signing_key_encrypted"),
   mailgunRegion: text("mailgun_region").default("us"), // us, eu
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   updatedByUserId: varchar("updated_by_user_id"),

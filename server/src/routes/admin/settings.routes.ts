@@ -134,6 +134,7 @@ router.get("/email", async (req: any, res) => {
       mailgunReplyTo: settings.mailgunReplyTo,
       mailgunRegion: settings.mailgunRegion,
       hasApiKey: !!settings.mailgunApiKeyEncrypted,
+      hasWebhookSigningKey: !!settings.mailgunWebhookSigningKeyEncrypted,
       updatedAt: settings.updatedAt,
     });
   } catch (error) {
@@ -144,7 +145,7 @@ router.get("/email", async (req: any, res) => {
 router.patch("/email", async (req: any, res) => {
   try {
     const { encrypt } = await import("../../utils/encryption");
-    const { provider, mailgunApiKey, mailgunDomain, mailgunFromEmail, mailgunFromName, mailgunReplyTo, mailgunRegion } = req.body;
+    const { provider, mailgunApiKey, mailgunDomain, mailgunFromEmail, mailgunFromName, mailgunReplyTo, mailgunRegion, mailgunWebhookSigningKey } = req.body;
 
     const updateData: any = { provider };
     
@@ -157,6 +158,9 @@ router.patch("/email", async (req: any, res) => {
       if (mailgunApiKey) {
         updateData.mailgunApiKeyEncrypted = encrypt(mailgunApiKey);
       }
+      if (mailgunWebhookSigningKey) {
+        updateData.mailgunWebhookSigningKeyEncrypted = encrypt(mailgunWebhookSigningKey);
+      }
     }
 
     const settings = await storage.updateEmailSettings(updateData);
@@ -168,7 +172,7 @@ router.patch("/email", async (req: any, res) => {
         action: "update_email_settings",
         targetType: "settings",
         targetId: "email",
-        details: { provider, hasApiKey: !!mailgunApiKey },
+        details: { provider, hasApiKey: !!mailgunApiKey, hasWebhookSigningKey: !!mailgunWebhookSigningKey },
         ipAddress: req.ip || null,
       });
     }
@@ -181,6 +185,7 @@ router.patch("/email", async (req: any, res) => {
       mailgunReplyTo: settings.mailgunReplyTo,
       mailgunRegion: settings.mailgunRegion,
       hasApiKey: !!settings.mailgunApiKeyEncrypted,
+      hasWebhookSigningKey: !!settings.mailgunWebhookSigningKeyEncrypted,
       updatedAt: settings.updatedAt,
     });
   } catch (error) {

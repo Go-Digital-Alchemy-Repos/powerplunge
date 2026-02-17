@@ -118,6 +118,7 @@ interface EmailSettings {
   mailgunReplyTo?: string;
   mailgunRegion?: string;
   hasApiKey?: boolean;
+  hasWebhookSigningKey?: boolean;
   updatedAt?: string;
 }
 
@@ -547,6 +548,7 @@ function MailgunConfigDialog({ open, onOpenChange, onSuccess }: {
     mailgunFromName: "",
     mailgunReplyTo: "",
     mailgunRegion: "us",
+    mailgunWebhookSigningKey: "",
   });
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -567,12 +569,13 @@ function MailgunConfigDialog({ open, onOpenChange, onSuccess }: {
     if (emailSettings) {
       setFormData({
         provider: "mailgun",
-        mailgunApiKey: "", // Never show the actual API key
+        mailgunApiKey: "",
         mailgunDomain: emailSettings.mailgunDomain || "",
         mailgunFromEmail: emailSettings.mailgunFromEmail || "",
         mailgunFromName: emailSettings.mailgunFromName || "",
         mailgunReplyTo: emailSettings.mailgunReplyTo || "",
         mailgunRegion: emailSettings.mailgunRegion || "us",
+        mailgunWebhookSigningKey: "",
       });
     }
   }, [emailSettings]);
@@ -731,6 +734,19 @@ function MailgunConfigDialog({ open, onOpenChange, onSuccess }: {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="mailgunWebhookSigningKey">Webhook Signing Key</Label>
+              <SecretInput
+                id="mailgunWebhookSigningKey"
+                value={formData.mailgunWebhookSigningKey}
+                onChange={(e) => setFormData({ ...formData, mailgunWebhookSigningKey: e.target.value })}
+                hasSavedValue={emailSettings?.hasWebhookSigningKey}
+                placeholder="Enter your Mailgun HTTP webhook signing key"
+                data-testid="input-mailgun-webhook-signing-key"
+              />
+              <p className="text-xs text-muted-foreground">Required for inbound email replies. Found in Mailgun Dashboard &rarr; API Keys &rarr; HTTP Webhook Signing Key</p>
             </div>
 
             {emailSettings?.hasApiKey && (

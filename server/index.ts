@@ -112,6 +112,13 @@ app.use(requestLoggerMiddleware);
         console.error("[MIGRATION] Failed to run support settings migration:", error);
       }
 
+      try {
+        const { runMailgunWebhookSigningKeyMigration } = await import("./src/migrations/addMailgunWebhookSigningKey");
+        await runMailgunWebhookSigningKeyMigration();
+      } catch (error) {
+        console.error("[MIGRATION] Failed to run mailgun webhook signing key migration:", error);
+      }
+
       // Ensure default CMS pages exist
       try {
         const { ensureCmsDefaults } = await import("./seed");
