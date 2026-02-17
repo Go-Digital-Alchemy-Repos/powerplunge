@@ -2,7 +2,7 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Package, Truck, CheckCircle, Clock, ExternalLink, MapPinned, PackageCheck } from "lucide-react";
+import { Package, Truck, CheckCircle, Clock, ExternalLink, MapPinned, PackageCheck, Headset, MessageSquare } from "lucide-react";
 import { useAccountOrders } from "../hooks/useAccountOrders";
 import { statusConfig, shipmentSteps } from "../types";
 import type { ShipmentStatus } from "../types";
@@ -71,7 +71,7 @@ function ShipmentTimeline({ status, updatedAt }: { status: string; updatedAt?: s
   );
 }
 
-export default function OrdersTab() {
+export default function OrdersTab({ onContactSupport }: { onContactSupport?: (orderId?: string) => void }) {
   const [, setLocation] = useLocation();
   const { orders, isLoading } = useAccountOrders();
 
@@ -273,11 +273,53 @@ export default function OrdersTab() {
                       </p>
                     </div>
                   )}
+
+                  {onContactSupport && (
+                    <div className="mt-4 pt-4 border-t border-border">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-muted-foreground hover:text-primary"
+                        onClick={() => onContactSupport(order.id)}
+                        data-testid={`button-order-help-${order.id}`}
+                      >
+                        <Headset className="w-4 h-4 mr-2" />
+                        Need help with this order?
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             );
           })}
         </div>
+      )}
+
+      {onContactSupport && (
+        <Card className="mt-8 bg-muted/20 border-dashed" data-testid="card-contact-support-cta">
+          <CardContent className="py-6">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <MessageSquare className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-medium text-sm">Have a question or need assistance?</h3>
+                  <p className="text-xs text-muted-foreground">Our support team is here to help with any questions or concerns.</p>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onContactSupport()}
+                data-testid="button-contact-support"
+              >
+                <Headset className="w-4 h-4 mr-2" />
+                Contact Support
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       )}
     </>
   );

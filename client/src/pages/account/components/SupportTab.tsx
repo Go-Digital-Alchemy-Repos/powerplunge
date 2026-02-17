@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense } from "react";
+import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -220,7 +220,7 @@ function TicketDetailDialog({
   );
 }
 
-export default function SupportTab() {
+export default function SupportTab({ prefillOrderId, onPrefillConsumed }: { prefillOrderId?: string; onPrefillConsumed?: () => void } = {}) {
   const { toast } = useToast();
   const {
     supportForm,
@@ -232,6 +232,16 @@ export default function SupportTab() {
   } = useAccountSupport();
   const { orders } = useAccountOrders();
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
+  const lastPrefillRef = useRef<string | undefined>(undefined);
+
+  useEffect(() => {
+    if (prefillOrderId && prefillOrderId !== lastPrefillRef.current) {
+      lastPrefillRef.current = prefillOrderId;
+      setSupportForm((prev) => ({ ...prev, orderId: prefillOrderId }));
+      onPrefillConsumed?.();
+    }
+  }, [prefillOrderId]);
+
   const selectedTicket = selectedTicketId
     ? supportTickets?.tickets?.find((t) => t.id === selectedTicketId) ?? null
     : null;

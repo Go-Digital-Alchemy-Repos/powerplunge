@@ -187,12 +187,19 @@ export default function MyAccount() {
 
   const isAffiliate = !!affiliateCheck?.affiliate;
 
+  const [prefillOrderId, setPrefillOrderId] = useState<string | undefined>(undefined);
+
   const handleTabChange = (value: string) => {
     if (value === "affiliate") {
       setLocation('/affiliate-portal');
       return;
     }
     setActiveTab(value);
+  };
+
+  const handleContactSupport = (orderId?: string) => {
+    setPrefillOrderId(orderId);
+    setActiveTab("support");
   };
 
   const accountTabs = [
@@ -260,7 +267,7 @@ export default function MyAccount() {
           />
 
           <TabsContent value="orders">
-            <OrdersTab />
+            <OrdersTab onContactSupport={handleContactSupport} />
           </TabsContent>
 
           <TabsContent value="account">
@@ -274,7 +281,7 @@ export default function MyAccount() {
           )}
 
           <TabsContent value="support">
-            <SupportTab />
+            <SupportTab prefillOrderId={prefillOrderId} onPrefillConsumed={() => setPrefillOrderId(undefined)} />
           </TabsContent>
         </Tabs>
       </main>
