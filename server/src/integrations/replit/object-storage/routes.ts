@@ -92,71 +92,94 @@ export function registerObjectStorageRoutes(app: Express): void {
     const sanitizedName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, "_");
     const uniqueFilename = `${Date.now()}_${objectId}_${sanitizedName}`;
 
-    try {
-      const privateObjectDir = objectStorageService.getPrivateObjectDir();
-      const fullPath = `${privateObjectDir}/uploads/${uniqueFilename}`;
-      const pathParts = fullPath.startsWith("/") ? fullPath.slice(1).split("/") : fullPath.split("/");
-      const bucketName = pathParts[0];
-      const objectName = pathParts.slice(1).join("/");
+    const privateObjectDir = objectStorageService.getPrivateObjectDir();
+    const fullPath = `${privateObjectDir}/uploads/${uniqueFilename}`;
+    const pathParts = fullPath.startsWith("/") ? fullPath.slice(1).split("/") : fullPath.split("/");
+    const bucketName = pathParts[0];
+    const objectName = pathParts.slice(1).join("/");
 
-      const bucket = objectStorageClient.bucket(bucketName);
-      const gcsFile = bucket.file(objectName);
+    const bucket = objectStorageClient.bucket(bucketName);
+    const gcsFile = bucket.file(objectName);
 
-      await Promise.race([
-        gcsFile.save(file.buffer, {
-          contentType: file.mimetype || "application/octet-stream",
-          resumable: false,
-        }),
-        new Promise((_, reject) => setTimeout(() => reject(new Error("Object Storage upload timeout (3s)")), 3000))
-      ]);
+    const maxRetries = 2;
+    const timeoutMs = 15000;
 
-      const objectPath = `/objects/uploads/${uniqueFilename}`;
-      console.log("[Object Storage] File uploaded successfully:", objectPath);
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        await Promise.race([
+          gcsFile.save(file.buffer, {
+            contentType: file.mimetype || "application/octet-stream",
+            resumable: false,
+          }),
+          new Promise((_, reject) => setTimeout(() => reject(new Error(`Object Storage upload timeout (${timeoutMs / 1000}s)`)), timeoutMs))
+        ]);
 
-      return res.json({
-        objectPath,
-        metadata: {
-          name: file.originalname,
-          size: file.size,
-          contentType: file.mimetype,
-          publicUrl: objectPath,
-        },
-      });
-    } catch (objStorageError) {
-      const errMsg = (objStorageError as Error).message;
-      console.warn("[Object Storage] Cloud upload failed, using local filesystem fallback:", errMsg);
-    }
+        const objectPath = `/objects/uploads/${uniqueFilename}`;
+        console.log("[Object Storage] File uploaded successfully:", objectPath);
 
-    try {
-      fs.mkdirSync(LOCAL_UPLOADS_DIR, { recursive: true });
-      const filePath = path.join(LOCAL_UPLOADS_DIR, uniqueFilename);
-      fs.writeFileSync(filePath, file.buffer);
-
-      const objectPath = `/local-uploads/${uniqueFilename}`;
-      console.log("[Local Storage] File saved to local filesystem:", objectPath);
-
-      res.json({
-        objectPath,
-        metadata: {
-          name: file.originalname,
-          size: file.size,
-          contentType: file.mimetype,
-          publicUrl: objectPath,
-        },
-      });
-    } catch (localError) {
-      console.error("[Local Storage] Error saving file locally:", localError);
-      res.status(500).json({ error: "Failed to upload file" });
+        return res.json({
+          objectPath,
+          metadata: {
+            name: file.originalname,
+            size: file.size,
+            contentType: file.mimetype,
+            publicUrl: objectPath,
+          },
+        });
+      } catch (objStorageError) {
+        const errMsg = (objStorageError as Error).message;
+        if (attempt < maxRetries) {
+          console.warn(`[Object Storage] Upload attempt ${attempt} failed, retrying:`, errMsg);
+        } else {
+          console.error(`[Object Storage] Upload failed after ${maxRetries} attempts:`, errMsg);
+          return res.status(500).json({ error: "Failed to upload file to cloud storage. Please try again." });
+        }
+      }
     }
   });
 
-  app.get("/local-uploads/:filename", (req, res) => {
+  app.get("/local-uploads/:filename", async (req, res) => {
     const filename = req.params.filename;
     const filePath = path.join(LOCAL_UPLOADS_DIR, filename);
+
     if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ error: "File not found" });
+      return res.status(404).json({ error: "File not found. This image was stored temporarily and is no longer available. Please re-upload your avatar." });
     }
-    res.sendFile(filePath);
+
+    try {
+      const fileBuffer = fs.readFileSync(filePath);
+      const ext = path.extname(filename).toLowerCase();
+      const mimeMap: Record<string, string> = { ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".gif": "image/gif", ".webp": "image/webp" };
+      const contentType = mimeMap[ext] || "application/octet-stream";
+
+      const privateObjectDir = objectStorageService.getPrivateObjectDir();
+      const fullObjPath = `${privateObjectDir}/uploads/${filename}`;
+      const pp = fullObjPath.startsWith("/") ? fullObjPath.slice(1).split("/") : fullObjPath.split("/");
+      const bucket = objectStorageClient.bucket(pp[0]);
+      const gcsFile = bucket.file(pp.slice(1).join("/"));
+
+      await Promise.race([
+        gcsFile.save(fileBuffer, { contentType, resumable: false }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 10000))
+      ]);
+
+      const newObjectPath = `/objects/uploads/${filename}`;
+      console.log(`[Migration] Re-uploaded local file to Object Storage: ${newObjectPath}`);
+
+      const { db } = await import("../../../db");
+      const { customers, adminUsers } = await import("@shared/schema");
+      const { eq } = await import("drizzle-orm");
+      const oldPath = `/local-uploads/${filename}`;
+      await db.transaction(async (tx) => {
+        await tx.update(customers).set({ avatarUrl: newObjectPath }).where(eq(customers.avatarUrl, oldPath));
+        await tx.update(adminUsers).set({ avatarUrl: newObjectPath }).where(eq(adminUsers.avatarUrl, oldPath));
+      });
+
+      res.redirect(newObjectPath);
+    } catch (migrationError) {
+      console.warn("[Migration] Failed to re-upload local file, serving directly:", (migrationError as Error).message);
+      res.sendFile(filePath);
+    }
   });
 
   /**

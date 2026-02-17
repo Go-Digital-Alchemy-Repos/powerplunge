@@ -110,10 +110,31 @@ export function useAccountProfile() {
     try {
       const fd = new FormData();
       fd.append("file", file);
-      const res = await fetch("/api/uploads/upload", {
-        method: "POST",
-        body: fd,
-      });
+      fd.append("folder", "uploads");
+
+      let res: Response;
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
+        res = await fetch("/api/r2/upload", {
+          method: "POST",
+          body: fd,
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+      } catch {
+        res = new Response(null, { status: 503 });
+      }
+
+      if (res.status === 404 || res.status === 500 || res.status === 503) {
+        const fallbackFd = new FormData();
+        fallbackFd.append("file", file);
+        res = await fetch("/api/uploads/upload", {
+          method: "POST",
+          body: fallbackFd,
+        });
+      }
+
       if (!res.ok) throw new Error("Upload failed");
       const data = await res.json();
       const avatarUrl = data.objectPath || data.metadata?.publicUrl;

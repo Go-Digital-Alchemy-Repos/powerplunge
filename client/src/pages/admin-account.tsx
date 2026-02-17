@@ -115,11 +115,33 @@ export default function AdminAccount() {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const res = await fetch("/api/uploads/upload", {
-        method: "POST",
-        credentials: "include",
-        body: formData,
-      });
+      formData.append("folder", "uploads");
+
+      let res: Response;
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
+        res = await fetch("/api/r2/upload", {
+          method: "POST",
+          credentials: "include",
+          body: formData,
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+      } catch {
+        res = new Response(null, { status: 503 });
+      }
+
+      if (res.status === 404 || res.status === 500 || res.status === 503) {
+        const fallbackFd = new FormData();
+        fallbackFd.append("file", file);
+        res = await fetch("/api/uploads/upload", {
+          method: "POST",
+          credentials: "include",
+          body: fallbackFd,
+        });
+      }
+
       if (!res.ok) throw new Error("Upload failed");
       const data = await res.json();
       const newAvatarUrl = data.objectPath || data.metadata?.publicUrl;
