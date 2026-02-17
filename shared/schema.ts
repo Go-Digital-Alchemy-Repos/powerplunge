@@ -1802,3 +1802,25 @@ export const sidebarWidgets = pgTable("sidebar_widgets", {
 export const insertSidebarWidgetSchema = createInsertSchema(sidebarWidgets).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertSidebarWidget = z.infer<typeof insertSidebarWidgetSchema>;
 export type SidebarWidget = typeof sidebarWidgets.$inferSelect;
+
+// Notifications — generic, extensible notification system
+export const notifications = pgTable("notifications", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  recipientType: text("recipient_type").notNull(), // "admin" | "customer"
+  recipientId: varchar("recipient_id").notNull(), // admin_users.id or customers.id
+  type: text("type").notNull(), // namespaced: "ticket.new", "ticket.message.customer", "ticket.message.admin"
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  linkUrl: text("link_url"),
+  entityType: text("entity_type"), // "ticket", "order", etc.
+  entityId: varchar("entity_id"),
+  metadata: jsonb("metadata").$type<Record<string, any>>().default({}),
+  isRead: boolean("is_read").notNull().default(false),
+  readAt: timestamp("read_at"),
+  dedupeKey: text("dedupe_key").unique(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertNotificationSchema = createInsertSchema(notifications).omit({ id: true, createdAt: true, readAt: true });
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+export type Notification = typeof notifications.$inferSelect;
