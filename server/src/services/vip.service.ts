@@ -35,8 +35,10 @@ export class VipService {
     const settings = await this.getSettings();
     const orders = await storage.getOrdersByCustomerId(customerId);
     
-    // Calculate lifetime spend (only paid orders)
-    const paidOrders = orders.filter((o: { status: string }) => o.status === "paid" || o.status === "shipped" || o.status === "delivered");
+    // Calculate lifetime spend (only orders with actual payment received)
+    const paidOrders = orders.filter((o: any) => 
+      (o.status === "paid" || o.status === "shipped" || o.status === "delivered") && !!o.stripePaymentIntentId
+    );
     const lifetimeSpend = paidOrders.reduce((sum: number, o: { totalAmount: number }) => sum + o.totalAmount, 0);
     const orderCount = paidOrders.length;
 

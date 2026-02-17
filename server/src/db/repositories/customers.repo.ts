@@ -13,6 +13,9 @@ export interface CustomerWithOrders {
     status: string;
     totalAmount: number;
     createdAt: Date;
+    isManualOrder: boolean | null;
+    stripePaymentIntentId: string | null;
+    paymentStatus: string;
     items: Array<{
       productName: string;
       quantity: number;

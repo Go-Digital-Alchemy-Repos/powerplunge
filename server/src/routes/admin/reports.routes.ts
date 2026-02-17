@@ -54,7 +54,7 @@ router.get("/customers", async (req: Request, res: Response) => {
     const customerStats = customers.map(c => {
       const customerOrders = orders.filter(o => o.customerId === c.id);
       const totalSpent = customerOrders
-        .filter(o => o.status === "paid" || o.status === "shipped" || o.status === "delivered")
+        .filter(o => !!o.stripePaymentIntentId)
         .reduce((sum, o) => sum + o.totalAmount, 0);
       return {
         ...c,

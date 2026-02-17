@@ -114,7 +114,7 @@ router.get("/admin/customers/:customerId", requireAdmin, asyncHandler(async (req
   }
 
   const lifetimeSpend = orders
-    .filter(o => ["paid", "shipped", "delivered"].includes(o.status))
+    .filter(o => ["paid", "shipped", "delivered"].includes(o.status) && !!o.stripePaymentIntentId)
     .reduce((sum, o) => sum + o.totalAmount, 0);
 
   res.json({

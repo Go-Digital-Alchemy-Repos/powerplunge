@@ -375,18 +375,30 @@ export default function AdminCustomers() {
                           </div>
                           <Badge className={statusColors[order.status]}>{order.status}</Badge>
                         </div>
-                        <div className="space-y-1">
-                          {order.items.map((item, i) => (
-                            <div key={i} className="flex justify-between text-sm">
-                              <span className="text-muted-foreground">{item.productName} x{item.quantity}</span>
-                              <span>${((item.unitPrice * item.quantity) / 100).toLocaleString()}</span>
-                            </div>
-                          ))}
-                        </div>
-                        <div className="flex justify-between mt-3 pt-3 border-t border-border font-medium">
-                          <span>Total</span>
-                          <span className="text-primary">${(order.totalAmount / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                        </div>
+                        {(() => {
+                          const bypassed = !order.stripePaymentIntentId && (order.isManualOrder || order.paymentStatus === "unpaid");
+                          return (
+                            <>
+                              <div className="space-y-1">
+                                {order.items.map((item, i) => (
+                                  <div key={i} className="flex justify-between text-sm">
+                                    <span className="text-muted-foreground">{item.productName} x{item.quantity}</span>
+                                    <span>{bypassed ? "$0.00" : `$${((item.unitPrice * item.quantity) / 100).toLocaleString()}`}</span>
+                                  </div>
+                                ))}
+                              </div>
+                              <div className="flex justify-between mt-3 pt-3 border-t border-border font-medium">
+                                <span>Total</span>
+                                <span className="text-primary">
+                                  {bypassed ? "$0.00" : `$${(order.totalAmount / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                                </span>
+                              </div>
+                              {bypassed && (
+                                <p className="text-xs text-amber-400 mt-1">Payment bypassed</p>
+                              )}
+                            </>
+                          );
+                        })()}
                       </CardContent>
                     </Card>
                   ))}

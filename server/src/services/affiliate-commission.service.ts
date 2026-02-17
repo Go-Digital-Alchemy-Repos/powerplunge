@@ -682,7 +682,7 @@ export class AffiliateCommissionService {
         customerId: customers.id,
         customerName: customers.name,
         email: customers.email,
-        totalSpent: sql<number>`COALESCE(SUM(${orders.totalAmount}), 0)::int`,
+        totalSpent: sql<number>`COALESCE(SUM(CASE WHEN ${orders.stripePaymentIntentId} IS NOT NULL THEN ${orders.totalAmount} ELSE 0 END), 0)::int`,
         orderCount: sql<number>`COUNT(DISTINCT ${orders.id})::int`,
         firstOrderDate: sql<string>`MIN(${orders.createdAt})::text`,
         lastOrderDate: sql<string>`MAX(${orders.createdAt})::text`,
