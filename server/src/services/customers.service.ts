@@ -2,8 +2,8 @@ import { customersRepository, type CustomerWithStats, type CustomerWithOrders } 
 import { NotFoundError, BadRequestError, ConflictError } from "../errors";
 import type { InsertCustomer } from "@shared/schema";
 import { db } from "../../db";
-import { customers, supportTickets, customerMagicLinkTokens, customerNotes, affiliates, couponRedemptions, upsellEvents, abandonedCarts, failedPayments, notifications } from "@shared/schema";
-import { eq, and } from "drizzle-orm";
+import { customers, supportTickets, customerMagicLinkTokens, customerNotes, affiliates, couponRedemptions, upsellEvents, abandonedCarts, failedPayments, notifications, orders, orderItems, affiliateReferrals, refunds, shipments, emailEvents, inventoryLedger, postPurchaseOffers, vipActivityLog, recoveryEvents, customerTags, vipCustomers } from "@shared/schema";
+import { eq, and, inArray } from "drizzle-orm";
 
 class CustomersService {
   async getAllCustomersWithStats(): Promise<CustomerWithStats[]> {
@@ -59,19 +59,29 @@ class CustomersService {
       throw new NotFoundError("Customer");
     }
 
-    const allOrders = await customersRepository.getAllOrders();
-    const customerOrders = allOrders.filter(o => o.customerId === customerId);
-    
-    if (customerOrders.length > 0) {
-      throw new BadRequestError(
-        "Cannot delete customer with existing orders. Delete orders first or disable the account instead."
-      );
-    }
+    const customerOrders = await customersRepository.getOrdersByCustomerId(customerId);
+    const orderIds = customerOrders.map(o => o.id);
 
     await db.transaction(async (tx) => {
+      if (orderIds.length > 0) {
+        await tx.delete(orderItems).where(inArray(orderItems.orderId, orderIds));
+        await tx.delete(refunds).where(inArray(refunds.orderId, orderIds));
+        await tx.delete(affiliateReferrals).where(inArray(affiliateReferrals.orderId, orderIds));
+        await tx.delete(shipments).where(inArray(shipments.orderId, orderIds));
+        await tx.delete(emailEvents).where(inArray(emailEvents.orderId, orderIds));
+        await tx.delete(inventoryLedger).where(inArray(inventoryLedger.orderId, orderIds));
+        await tx.delete(postPurchaseOffers).where(inArray(postPurchaseOffers.orderId, orderIds));
+        await tx.delete(recoveryEvents).where(inArray(recoveryEvents.orderId, orderIds));
+        await tx.delete(couponRedemptions).where(inArray(couponRedemptions.orderId, orderIds));
+        await tx.delete(upsellEvents).where(inArray(upsellEvents.orderId, orderIds));
+        await tx.delete(orders).where(eq(orders.customerId, customerId));
+      }
       await tx.delete(supportTickets).where(eq(supportTickets.customerId, customerId));
       await tx.delete(customerMagicLinkTokens).where(eq(customerMagicLinkTokens.customerId, customerId));
       await tx.delete(customerNotes).where(eq(customerNotes.customerId, customerId));
+      await tx.delete(customerTags).where(eq(customerTags.customerId, customerId));
+      await tx.delete(vipCustomers).where(eq(vipCustomers.customerId, customerId));
+      await tx.delete(vipActivityLog).where(eq(vipActivityLog.customerId, customerId));
       await tx.delete(couponRedemptions).where(eq(couponRedemptions.customerId, customerId));
       await tx.delete(upsellEvents).where(eq(upsellEvents.customerId, customerId));
       await tx.delete(abandonedCarts).where(eq(abandonedCarts.customerId, customerId));
