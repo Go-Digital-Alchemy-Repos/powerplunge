@@ -371,6 +371,8 @@ export const affiliateSettings = pgTable("affiliate_settings", {
   ffCommissionType: text("ff_commission_type").notNull().default("PERCENT"),
   ffCommissionValue: integer("ff_commission_value").notNull().default(0),
   ffMaxUses: integer("ff_max_uses").notNull().default(0),
+  inviteDefaultMaxUses: integer("invite_default_max_uses").notNull().default(1),
+  inviteDefaultExpirationDays: integer("invite_default_expiration_days").notNull().default(0),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 

@@ -104,6 +104,8 @@ const affiliateSettingsPatchSchema = z.object({
   ffCommissionType: z.enum(["PERCENT", "FIXED"]).optional(),
   ffCommissionValue: z.number().int().min(0).optional(),
   ffMaxUses: z.number().int().min(0).optional(),
+  inviteDefaultMaxUses: z.number().int().min(1).optional(),
+  inviteDefaultExpirationDays: z.number().int().min(0).optional(),
 }).refine((data) => {
   if (data.defaultCommissionType === "PERCENT" && data.defaultCommissionValue !== undefined && data.defaultCommissionValue > 100) {
     return false;
@@ -455,6 +457,10 @@ router.post("/affiliate-invites/send", async (req: any, res) => {
       normalizedPhone = phoneResult.e164;
     }
 
+    const affSettings = await storage.getAffiliateSettings();
+    const defaultMaxUses = affSettings?.inviteDefaultMaxUses ?? 1;
+    const defaultExpirationDays = affSettings?.inviteDefaultExpirationDays ?? 0;
+
     let expirationDate: Date | null = null;
     if (expiresAt) {
       expirationDate = new Date(expiresAt);
@@ -464,6 +470,9 @@ router.post("/affiliate-invites/send", async (req: any, res) => {
     } else if (expiresInDays) {
       expirationDate = new Date();
       expirationDate.setDate(expirationDate.getDate() + expiresInDays);
+    } else if (defaultExpirationDays > 0) {
+      expirationDate = new Date();
+      expirationDate.setDate(expirationDate.getDate() + defaultExpirationDays);
     }
 
     const { randomBytes } = await import("crypto");
@@ -476,7 +485,7 @@ router.post("/affiliate-invites/send", async (req: any, res) => {
       targetName: targetName || null,
       createdByAdminId: req.adminUser?.id || null,
       expiresAt: expirationDate,
-      maxUses: maxUses || 1,
+      maxUses: maxUses || defaultMaxUses,
       notes: notes || null,
     });
 

@@ -40,6 +40,8 @@ interface AffiliateSettings {
   ffCommissionType: string;
   ffCommissionValue: number;
   ffMaxUses: number;
+  inviteDefaultMaxUses: number;
+  inviteDefaultExpirationDays: number;
   updatedAt: string;
 }
 
@@ -64,6 +66,8 @@ export default function AdminAffiliateSettings() {
     ffCommissionType: "PERCENT",
     ffCommissionValue: 0,
     ffMaxUses: 0,
+    inviteDefaultMaxUses: 1,
+    inviteDefaultExpirationDays: 0,
   });
 
   const { data: settings, isLoading } = useQuery<AffiliateSettings>({
@@ -104,6 +108,8 @@ export default function AdminAffiliateSettings() {
           ? Math.round((settings.ffCommissionValue ?? 0) / 100 * 100) / 100
           : settings.ffCommissionValue ?? 0),
         ffMaxUses: settings.ffMaxUses ?? 0,
+        inviteDefaultMaxUses: settings.inviteDefaultMaxUses ?? 1,
+        inviteDefaultExpirationDays: settings.inviteDefaultExpirationDays ?? 0,
       });
     }
   }, [settings]);
@@ -382,6 +388,37 @@ export default function AdminAffiliateSettings() {
                       data-testid="input-cookie-duration"
                     />
                     <p className="text-xs text-muted-foreground">How long referral tracking lasts</p>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t">
+                  <h4 className="font-medium text-sm mb-4">Invite Link Defaults</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="inviteDefaultMaxUses">Default Max Uses Per Link</Label>
+                      <Input
+                        id="inviteDefaultMaxUses"
+                        type="number"
+                        min="1"
+                        value={formData.inviteDefaultMaxUses}
+                        onChange={(e) => setFormData({ ...formData, inviteDefaultMaxUses: parseInt(e.target.value) || 1 })}
+                        data-testid="input-invite-default-max-uses"
+                      />
+                      <p className="text-xs text-muted-foreground">How many times a new invite link can be used before it expires</p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="inviteDefaultExpirationDays">Default Expiration (days)</Label>
+                      <Input
+                        id="inviteDefaultExpirationDays"
+                        type="number"
+                        min="0"
+                        value={formData.inviteDefaultExpirationDays}
+                        onChange={(e) => setFormData({ ...formData, inviteDefaultExpirationDays: parseInt(e.target.value) || 0 })}
+                        data-testid="input-invite-default-expiration-days"
+                      />
+                      <p className="text-xs text-muted-foreground">How many days until new invite links expire (0 = never expires)</p>
+                    </div>
                   </div>
                 </div>
               </div>
