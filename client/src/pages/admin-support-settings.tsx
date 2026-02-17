@@ -19,6 +19,7 @@ interface SupportSettings {
   supportNotifyOnReply: boolean;
   supportAutoReplyEnabled: boolean;
   supportAutoReplyMessage: string;
+  supportFromEmail: string;
   supportSlaHours: number;
   supportBusinessHours: string;
   supportEmail: string;
@@ -37,6 +38,7 @@ export default function AdminSupportSettings() {
     supportNotifyOnReply: true,
     supportAutoReplyEnabled: true,
     supportAutoReplyMessage: "",
+    supportFromEmail: "",
     supportSlaHours: 24,
     supportBusinessHours: "",
     supportEmail: "",
@@ -64,6 +66,7 @@ export default function AdminSupportSettings() {
         supportNotifyOnReply: settings.supportNotifyOnReply ?? true,
         supportAutoReplyEnabled: settings.supportAutoReplyEnabled ?? true,
         supportAutoReplyMessage: settings.supportAutoReplyMessage ?? "",
+        supportFromEmail: settings.supportFromEmail ?? "",
         supportSlaHours: settings.supportSlaHours ?? 24,
         supportBusinessHours: settings.supportBusinessHours ?? "",
         supportEmail: settings.supportEmail ?? "",
@@ -197,6 +200,19 @@ export default function AdminSupportSettings() {
                   onCheckedChange={(checked) => setFormData({ ...formData, supportAutoReplyEnabled: checked })}
                   data-testid="switch-supportAutoReplyEnabled"
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="supportFromEmail">From Email Address</Label>
+                <Input
+                  id="supportFromEmail"
+                  type="email"
+                  value={formData.supportFromEmail}
+                  onChange={(e) => setFormData({ ...formData, supportFromEmail: e.target.value })}
+                  placeholder="support@powerplunge.com"
+                  data-testid="input-supportFromEmail"
+                />
+                <p className="text-xs text-muted-foreground">The email address support emails are sent from. Leave empty to use the default Mailgun sender.</p>
               </div>
 
               <div className="space-y-2">

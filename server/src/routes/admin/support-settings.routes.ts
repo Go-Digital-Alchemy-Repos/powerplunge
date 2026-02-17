@@ -18,6 +18,7 @@ router.get("/", async (_req, res, next) => {
       supportNotifyOnReply: settings?.supportNotifyOnReply ?? true,
       supportAutoReplyEnabled: settings?.supportAutoReplyEnabled ?? true,
       supportAutoReplyMessage: settings?.supportAutoReplyMessage || "",
+      supportFromEmail: settings?.supportFromEmail || "",
       supportSlaHours: settings?.supportSlaHours ?? 24,
       supportBusinessHours: settings?.supportBusinessHours || "",
       supportEmail: settings?.supportEmail || "",
@@ -34,6 +35,7 @@ const updateSchema = z.object({
   supportNotifyOnReply: z.boolean().optional(),
   supportAutoReplyEnabled: z.boolean().optional(),
   supportAutoReplyMessage: z.string().max(2000).optional(),
+  supportFromEmail: z.string().max(200).optional(),
   supportSlaHours: z.number().int().min(1).max(168).optional(),
   supportBusinessHours: z.string().max(500).optional(),
   supportEmail: z.string().max(200).optional(),
@@ -55,6 +57,7 @@ router.put("/", async (req, res, next) => {
     if (d.supportNotifyOnReply !== undefined) updateData.supportNotifyOnReply = d.supportNotifyOnReply;
     if (d.supportAutoReplyEnabled !== undefined) updateData.supportAutoReplyEnabled = d.supportAutoReplyEnabled;
     if (d.supportAutoReplyMessage !== undefined) updateData.supportAutoReplyMessage = d.supportAutoReplyMessage;
+    if (d.supportFromEmail !== undefined) updateData.supportFromEmail = d.supportFromEmail;
     if (d.supportSlaHours !== undefined) updateData.supportSlaHours = d.supportSlaHours;
     if (d.supportBusinessHours !== undefined) updateData.supportBusinessHours = d.supportBusinessHours;
     if (d.supportEmail !== undefined) updateData.supportEmail = d.supportEmail;

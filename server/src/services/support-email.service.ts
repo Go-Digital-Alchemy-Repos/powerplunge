@@ -1,4 +1,4 @@
-import { emailService } from "../integrations/mailgun/EmailService";
+import { emailService, type EmailOptions } from "../integrations/mailgun/EmailService";
 import { db } from "../../db";
 import { siteSettings } from "@shared/schema";
 import { eq } from "drizzle-orm";
@@ -22,6 +22,7 @@ async function getSupportSettings() {
     notifyOnReply: settings?.supportNotifyOnReply ?? true,
     autoReplyEnabled: settings?.supportAutoReplyEnabled ?? true,
     autoReplyMessage: settings?.supportAutoReplyMessage || "",
+    fromEmail: settings?.supportFromEmail || "",
     slaHours: settings?.supportSlaHours ?? 24,
     companyName: settings?.companyName || "Power Plunge",
     supportEmail: settings?.supportEmail || "",
@@ -62,6 +63,7 @@ export async function sendNewTicketAdminNotification(ticket: TicketData): Promis
     const result = await emailService.sendEmail({
       to: emails,
       subject: `New Support Ticket: ${ticket.subject}`,
+      ...(settings.fromEmail ? { from: settings.fromEmail } : {}),
       html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; background: #0a0a0a; color: #e5e5e5; border-radius: 8px; overflow: hidden;">
           <div style="background: linear-gradient(135deg, #0c4a6e 0%, #164e63 100%); padding: 24px; text-align: center;">
@@ -108,6 +110,7 @@ export async function sendTicketConfirmationToCustomer(ticket: TicketData): Prom
     const result = await emailService.sendEmail({
       to: ticket.customerEmail,
       subject: `Re: ${ticket.subject} - We've received your message`,
+      ...(settings.fromEmail ? { from: settings.fromEmail } : {}),
       html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; background: #0a0a0a; color: #e5e5e5; border-radius: 8px; overflow: hidden;">
           <div style="background: linear-gradient(135deg, #0c4a6e 0%, #164e63 100%); padding: 24px; text-align: center;">

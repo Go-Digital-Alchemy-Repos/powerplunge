@@ -225,6 +225,7 @@ export const siteSettings = pgTable("site_settings", {
   supportNotifyOnReply: boolean("support_notify_on_reply").default(true),
   supportAutoReplyEnabled: boolean("support_auto_reply_enabled").default(true),
   supportAutoReplyMessage: text("support_auto_reply_message"),
+  supportFromEmail: text("support_from_email"),
   supportSlaHours: integer("support_sla_hours").default(24),
   supportBusinessHours: text("support_business_hours"),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),

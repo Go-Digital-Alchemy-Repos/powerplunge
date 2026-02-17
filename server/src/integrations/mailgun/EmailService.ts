@@ -9,6 +9,7 @@ export interface EmailOptions {
   html?: string;
   text?: string;
   replyTo?: string;
+  from?: string;
 }
 
 export interface EmailResult {
@@ -86,9 +87,10 @@ class EmailService {
     try {
       const client = this.getMailgunClient(config.apiKey, config.region);
       
+      const fromAddress = options.from || config.fromEmail;
       const from = config.fromName 
-        ? `${config.fromName} <${config.fromEmail}>`
-        : config.fromEmail;
+        ? `${config.fromName} <${fromAddress}>`
+        : fromAddress;
 
       const messageData: any = {
         from,

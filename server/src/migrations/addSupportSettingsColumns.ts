@@ -9,6 +9,7 @@ export async function runSupportSettingsMigration() {
       { name: "support_notify_on_reply", type: "BOOLEAN DEFAULT true" },
       { name: "support_auto_reply_enabled", type: "BOOLEAN DEFAULT true" },
       { name: "support_auto_reply_message", type: "TEXT" },
+      { name: "support_from_email", type: "TEXT" },
       { name: "support_sla_hours", type: "INTEGER DEFAULT 24" },
       { name: "support_business_hours", type: "TEXT" },
     ];
