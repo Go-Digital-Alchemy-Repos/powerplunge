@@ -6,12 +6,60 @@ The Power Plunge affiliate program is an invite-only referral system that allows
 
 ## Invite Flow
 
-Affiliate signups are invite-only. Admins create invites via the admin panel specifying:
+Affiliate signups are invite-only. The invite sender page (`/admin/affiliate-invite-sender`) provides three distinct delivery methods:
 
-- Target email and/or phone number
-- Custom expiry date
-- Usage limits (single-use or multi-use)
-- Optional personalized message
+### Delivery Methods
+
+**1. Share from Contacts**
+- Creates an invite with shared options (max uses, expiry) and no target contact info.
+- On mobile devices with Web Share API support, opens the native share sheet (Messages, WhatsApp, etc.).
+- On desktop or unsupported browsers, copies the invite link to the clipboard with a toast notification.
+- `deliveryMethod: "contacts"` is recorded in audit metadata.
+
+**2. Share via Text (SMS)**
+- Form with phone number (required) and name (optional), plus shared invite options.
+- Sends the invite through the backend SMS path using Twilio.
+- If SMS fails but the invite was created, the invite URL is displayed with a copy option as fallback.
+- `deliveryMethod: "text"` is recorded in audit metadata.
+
+**3. Share via Email**
+- Form with email address (required) and name (optional), plus shared invite options.
+- Sends the invite through the backend Mailgun email path.
+- If email fails but the invite was created, the invite URL is displayed with a copy option as fallback.
+- `deliveryMethod: "email"` is recorded in audit metadata.
+
+### Shared Invite Options
+
+All three methods share configurable options displayed above the method cards:
+- **Max Uses** — how many times the invite code can be used (default: 1)
+- **Expires In (days)** — number of days before the invite expires (default: 7)
+
+### Fallback Matrix
+
+| Platform | Contacts | Text | Email |
+|----------|----------|------|-------|
+| Mobile (Web Share API) | Native share sheet | Backend SMS | Backend email |
+| Desktop / unsupported | Copy to clipboard | Backend SMS | Backend email |
+| SMS service unavailable | N/A | Fallback: show + copy link | N/A |
+| Email service unavailable | N/A | N/A | Fallback: show + copy link |
+
+### API Contract
+
+`POST /api/admin/affiliate-invites/send` accepts an optional `deliveryMethod` field:
+
+```
+deliveryMethod: "contacts" | "text" | "email"  // optional, defaults to legacy behavior
+```
+
+When `deliveryMethod` is provided, the backend uses it to determine which channel to send through:
+- `"contacts"` — creates invite only, no email/SMS sent from backend
+- `"text"` — sends SMS if phone is provided
+- `"email"` — sends email if email is provided
+- Omitted — legacy behavior (email if provided, SMS if phone and no email)
+
+The field is included in `affiliate_invite.sent` audit logs for reporting.
+
+### Invite Validation
 
 When a potential affiliate receives an invite, they visit the signup page with a unique `?code=` parameter. The system validates:
 

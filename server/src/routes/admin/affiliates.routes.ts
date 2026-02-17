@@ -423,6 +423,7 @@ router.post("/affiliate-invites/send", async (req: any, res) => {
       expiresInDays: z.number().positive().optional(),
       maxUses: z.number().int().positive().optional(),
       notes: z.string().optional(),
+      deliveryMethod: z.enum(["contacts", "text", "email"]).optional(),
     });
 
     const parseResult = sendInviteSchema.safeParse(req.body);
@@ -433,7 +434,15 @@ router.post("/affiliate-invites/send", async (req: any, res) => {
       });
     }
 
-    const { targetEmail, targetPhone, targetName, expiresAt, expiresInDays, maxUses, notes } = parseResult.data;
+    const { targetEmail, targetPhone, targetName, expiresAt, expiresInDays, maxUses, notes, deliveryMethod } = parseResult.data;
+
+    if (deliveryMethod === "text" && (!targetPhone || !targetPhone.trim())) {
+      return res.status(400).json({ message: "Phone number is required for text delivery" });
+    }
+    if (deliveryMethod === "email" && (!targetEmail || !targetEmail.trim())) {
+      return res.status(400).json({ message: "Email address is required for email delivery" });
+    }
+
     const normalizedEmail = targetEmail?.trim().toLowerCase() || null;
 
     let normalizedPhone: string | null = null;
@@ -478,14 +487,17 @@ router.post("/affiliate-invites/send", async (req: any, res) => {
     let smsResult = { success: false, error: "No phone number provided" } as any;
     let sentVia: string[] = [];
 
-    if (normalizedEmail) {
+    const shouldSendEmail = normalizedEmail && (deliveryMethod === "email" || !deliveryMethod);
+    const shouldSendSms = normalizedPhone && (deliveryMethod === "text" || (!deliveryMethod && !normalizedEmail));
+
+    if (shouldSendEmail) {
       try {
         const { escapeHtml } = await import("../../utils/html-escape");
-        const recipientName = targetName || normalizedEmail.split("@")[0];
+        const recipientName = targetName || normalizedEmail!.split("@")[0];
         const safeRecipientName = escapeHtml(recipientName);
         const safeInviteUrl = escapeHtml(inviteUrl);
         emailResult = await emailService.sendEmail({
-          to: normalizedEmail,
+          to: normalizedEmail!,
           subject: `${recipientName}, you're invited to partner with Power Plunge`,
           html: `<div style="font-family: sans-serif; max-width: 560px; margin: 0 auto;">
 <p>Hi ${safeRecipientName},</p>
@@ -510,10 +522,10 @@ ${expirationDate ? `<p style="color: #666; font-size: 13px;">This link expires o
       }
     }
 
-    if (normalizedPhone && !normalizedEmail) {
+    if (shouldSendSms) {
       try {
         const { smsService } = await import("../../services/sms.service");
-        smsResult = await smsService.sendInviteSms(normalizedPhone, inviteUrl, targetName || undefined);
+        smsResult = await smsService.sendInviteSms(normalizedPhone!, inviteUrl, targetName || undefined);
         if (smsResult.success) sentVia.push("sms");
       } catch (smsError: any) {
         console.error("Failed to send affiliate invite SMS:", smsError);
@@ -529,6 +541,7 @@ ${expirationDate ? `<p style="color: #666; font-size: 13px;">This link expires o
       entityId: invite.id,
       metadata: {
         inviteCode,
+        deliveryMethod: deliveryMethod || "legacy",
         targetEmail: normalizedEmail,
         targetPhone: normalizedPhone,
         targetName,
