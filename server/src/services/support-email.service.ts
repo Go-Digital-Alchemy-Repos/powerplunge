@@ -97,6 +97,120 @@ export async function sendNewTicketAdminNotification(ticket: TicketData): Promis
   }
 }
 
+interface AdminReplyData {
+  ticketId: string;
+  customerName: string;
+  customerEmail: string;
+  subject: string;
+  replyText: string;
+  adminName: string;
+}
+
+interface StatusChangeData {
+  ticketId: string;
+  customerName: string;
+  customerEmail: string;
+  subject: string;
+  newStatus: string;
+}
+
+const statusLabels: Record<string, string> = {
+  open: "Open",
+  in_progress: "In Progress",
+  resolved: "Resolved",
+  closed: "Closed",
+};
+
+export async function sendAdminReplyToCustomer(data: AdminReplyData): Promise<void> {
+  try {
+    const settings = await getSupportSettings();
+    if (!settings.notifyOnReply) return;
+
+    const baseUrl = getBaseUrl();
+
+    const result = await emailService.sendEmail({
+      to: data.customerEmail,
+      subject: `Re: ${data.subject}`,
+      ...(settings.fromEmail ? { from: settings.fromEmail } : {}),
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; background: #0a0a0a; color: #e5e5e5; border-radius: 8px; overflow: hidden;">
+          <div style="background: linear-gradient(135deg, #0c4a6e 0%, #164e63 100%); padding: 24px; text-align: center;">
+            <h1 style="margin: 0; color: #67e8f9; font-size: 20px;">${settings.companyName} Support</h1>
+          </div>
+          <div style="padding: 24px;">
+            <p style="color: #e5e5e5; margin-bottom: 8px;">Hi ${data.customerName},</p>
+            <p style="color: #d4d4d4; margin-bottom: 16px;">You have a new response from our support team regarding your ticket:</p>
+            <div style="margin-bottom: 16px; padding: 16px; background: #1a1a1a; border-radius: 6px; border-left: 3px solid #67e8f9;">
+              <p style="margin: 0 0 8px 0; color: #a3a3a3; font-size: 13px; font-weight: 600;">${data.adminName}</p>
+              <p style="margin: 0; color: #e5e5e5; white-space: pre-wrap; line-height: 1.6;">${data.replyText}</p>
+            </div>
+            <div style="padding: 12px; background: #1a1a1a; border-radius: 6px;">
+              <p style="margin: 0 0 4px 0; color: #a3a3a3; font-size: 13px;">Reference: #${data.ticketId.slice(0, 8)}</p>
+              <p style="margin: 0; color: #a3a3a3; font-size: 13px;">Subject: ${data.subject}</p>
+            </div>
+            <div style="margin-top: 24px; text-align: center;">
+              <a href="${baseUrl}/my-account?tab=support" style="display: inline-block; padding: 10px 24px; background: #0891b2; color: white; text-decoration: none; border-radius: 6px; font-weight: 500;">View Full Conversation</a>
+            </div>
+            <p style="margin-top: 16px; color: #a3a3a3; font-size: 13px;">If you have additional questions, you can reply directly from your account or visit our contact page.</p>
+          </div>
+        </div>
+      `,
+    });
+    if (result.success) {
+      console.log(`[SUPPORT EMAIL] Admin reply sent to customer: ${data.customerEmail}`);
+    } else {
+      console.error(`[SUPPORT EMAIL] Admin reply email failed: ${result.error}`);
+    }
+  } catch (error) {
+    console.error("[SUPPORT EMAIL] Failed to send admin reply email:", error);
+  }
+}
+
+export async function sendStatusChangeToCustomer(data: StatusChangeData): Promise<void> {
+  try {
+    const settings = await getSupportSettings();
+    if (!settings.notifyOnReply) return;
+
+    const baseUrl = getBaseUrl();
+    const statusLabel = statusLabels[data.newStatus] || data.newStatus;
+
+    const result = await emailService.sendEmail({
+      to: data.customerEmail,
+      subject: `Ticket Update: ${data.subject} - ${statusLabel}`,
+      ...(settings.fromEmail ? { from: settings.fromEmail } : {}),
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; background: #0a0a0a; color: #e5e5e5; border-radius: 8px; overflow: hidden;">
+          <div style="background: linear-gradient(135deg, #0c4a6e 0%, #164e63 100%); padding: 24px; text-align: center;">
+            <h1 style="margin: 0; color: #67e8f9; font-size: 20px;">${settings.companyName} Support</h1>
+          </div>
+          <div style="padding: 24px;">
+            <p style="color: #e5e5e5; margin-bottom: 8px;">Hi ${data.customerName},</p>
+            <p style="color: #d4d4d4; margin-bottom: 16px;">The status of your support ticket has been updated:</p>
+            <div style="margin-bottom: 16px; padding: 16px; background: #1a1a1a; border-radius: 6px; text-align: center;">
+              <p style="margin: 0 0 8px 0; color: #a3a3a3; font-size: 13px;">New Status</p>
+              <p style="margin: 0; color: #67e8f9; font-size: 18px; font-weight: 600;">${statusLabel}</p>
+            </div>
+            <div style="padding: 12px; background: #1a1a1a; border-radius: 6px;">
+              <p style="margin: 0 0 4px 0; color: #a3a3a3; font-size: 13px;">Reference: #${data.ticketId.slice(0, 8)}</p>
+              <p style="margin: 0; color: #a3a3a3; font-size: 13px;">Subject: ${data.subject}</p>
+            </div>
+            <div style="margin-top: 24px; text-align: center;">
+              <a href="${baseUrl}/my-account?tab=support" style="display: inline-block; padding: 10px 24px; background: #0891b2; color: white; text-decoration: none; border-radius: 6px; font-weight: 500;">View Ticket Details</a>
+            </div>
+          </div>
+        </div>
+      `,
+    });
+    if (result.success) {
+      console.log(`[SUPPORT EMAIL] Status change email sent to customer: ${data.customerEmail}`);
+    } else {
+      console.error(`[SUPPORT EMAIL] Status change email failed: ${result.error}`);
+    }
+  } catch (error) {
+    console.error("[SUPPORT EMAIL] Failed to send status change email:", error);
+  }
+}
+
 export async function sendTicketConfirmationToCustomer(ticket: TicketData): Promise<void> {
   try {
     const settings = await getSupportSettings();

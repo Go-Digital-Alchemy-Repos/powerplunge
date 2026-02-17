@@ -5,6 +5,7 @@ import { supportTickets, customers, orders, adminUsers } from "@shared/schema";
 import { eq, desc, and, sql, or, ilike } from "drizzle-orm";
 import { requireAdmin } from "../../middleware";
 import { notificationService } from "../../services/notification.service";
+import { sendAdminReplyToCustomer, sendStatusChangeToCustomer } from "../../services/support-email.service";
 
 const router = Router();
 
@@ -250,6 +251,10 @@ adminSupportRouter.patch("/:id", requireAdmin, async (req, res, next) => {
       .where(eq(supportTickets.id, id))
       .returning();
 
+    const customer = existing.customerId
+      ? await db.query.customers.findFirst({ where: eq(customers.id, existing.customerId) })
+      : null;
+
     if (parsed.data.noteText && existing.customerId) {
       const admin = await db.query.adminUsers.findFirst({
         where: eq(adminUsers.id, adminId),
@@ -261,6 +266,17 @@ adminSupportRouter.patch("/:id", requireAdmin, async (req, res, next) => {
         customerId: existing.customerId,
         adminName,
       }).catch((err) => console.error("Failed to create admin reply notification:", err));
+
+      if (customer?.email) {
+        sendAdminReplyToCustomer({
+          ticketId: existing.id,
+          customerName: customer.name || "Customer",
+          customerEmail: customer.email,
+          subject: existing.subject,
+          replyText: parsed.data.noteText,
+          adminName,
+        }).catch((err) => console.error("Failed to send admin reply email:", err));
+      }
     }
 
     if (parsed.data.status && parsed.data.status !== existing.status && existing.customerId) {
@@ -270,6 +286,16 @@ adminSupportRouter.patch("/:id", requireAdmin, async (req, res, next) => {
         customerId: existing.customerId,
         newStatus: parsed.data.status,
       }).catch((err) => console.error("Failed to create status change notification:", err));
+
+      if (customer?.email && !parsed.data.noteText) {
+        sendStatusChangeToCustomer({
+          ticketId: existing.id,
+          customerName: customer.name || "Customer",
+          customerEmail: customer.email,
+          subject: existing.subject,
+          newStatus: parsed.data.status,
+        }).catch((err) => console.error("Failed to send status change email:", err));
+      }
     }
 
     res.json({ ticket: updated });
