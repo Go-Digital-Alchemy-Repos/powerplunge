@@ -84,8 +84,11 @@ function CustomerNotificationBell({ getAuthHeader, onTabChange }: { getAuthHeade
 
   const handleClick = (n: any) => {
     if (!n.isRead) markReadMutation.mutate(n.id);
-    if (n.linkUrl?.includes("tab=support")) {
-      onTabChange("support");
+    if (n.linkUrl) {
+      const tabMatch = n.linkUrl.match(/[?&]tab=(\w+)/);
+      if (tabMatch) {
+        onTabChange(tabMatch[1]);
+      }
     }
   };
 

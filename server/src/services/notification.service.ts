@@ -4,13 +4,13 @@ import { eq, and, desc, sql, isNull } from "drizzle-orm";
 import type { InsertNotification, Notification } from "@shared/schema";
 
 export class NotificationService {
-  async create(data: InsertNotification): Promise<Notification> {
-    const [notification] = await db
+  async create(data: InsertNotification): Promise<Notification | null> {
+    const result = await db
       .insert(notifications)
       .values(data)
       .onConflictDoNothing({ target: notifications.dedupeKey })
       .returning();
-    return notification;
+    return result[0] ?? null;
   }
 
   async createMany(items: InsertNotification[]): Promise<void> {
