@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { requireCustomerAuth, AuthenticatedRequest } from "../../middleware/customer-auth";
+import { requireCustomerAuth, AuthenticatedRequest } from "../../middleware/customer-auth.middleware";
 import { notificationService } from "../../services/notification.service";
 
 const router = Router();

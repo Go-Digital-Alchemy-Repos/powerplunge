@@ -45,6 +45,7 @@ import {
   Menu,
   Tag,
   Search,
+  Bell,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { applyThemeVariables } from "@/components/ThemeProvider";
@@ -176,6 +177,132 @@ function ThemeSelectorDrawerItem({
         </div>
       )}
     </div>
+  );
+}
+
+function AdminNotificationBell({ navigate }: { navigate: (path: string) => void }) {
+  const queryClient = useQueryClient();
+
+  const { data: unreadData } = useQuery<{ count: number }>({
+    queryKey: ["/api/admin/notifications/unread-count"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/notifications/unread-count", { credentials: "include" });
+      if (!res.ok) return { count: 0 };
+      return res.json();
+    },
+    refetchInterval: 30000,
+    staleTime: 10000,
+  });
+
+  const { data: notificationsData } = useQuery<{ notifications: any[]; total: number }>({
+    queryKey: ["/api/admin/notifications"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/notifications?limit=10", { credentials: "include" });
+      if (!res.ok) return { notifications: [], total: 0 };
+      return res.json();
+    },
+    staleTime: 15000,
+  });
+
+  const markReadMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await fetch(`/api/admin/notifications/${id}/read`, {
+        method: "PATCH",
+        credentials: "include",
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/notifications/unread-count"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/notifications"] });
+    },
+  });
+
+  const markAllReadMutation = useMutation({
+    mutationFn: async () => {
+      await fetch("/api/admin/notifications/mark-all-read", {
+        method: "PATCH",
+        credentials: "include",
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/notifications/unread-count"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/notifications"] });
+    },
+  });
+
+  const unreadCount = unreadData?.count ?? 0;
+  const items = notificationsData?.notifications ?? [];
+
+  const handleClick = (n: any) => {
+    if (!n.isRead) markReadMutation.mutate(n.id);
+    if (n.linkUrl) navigate(n.linkUrl);
+  };
+
+  const formatTime = (dateStr: string) => {
+    const d = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - d.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    if (diffMins < 1) return "Just now";
+    if (diffMins < 60) return `${diffMins}m ago`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    return `${diffDays}d ago`;
+  };
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="sm" className="relative h-8 w-8 p-0" data-testid="button-admin-notifications">
+          <Bell className="w-4 h-4" />
+          {unreadCount > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[16px] h-4 px-1 text-[10px] font-bold rounded-full bg-destructive text-destructive-foreground" data-testid="badge-notification-count">
+              {unreadCount > 99 ? "99+" : unreadCount}
+            </span>
+          )}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-80 max-h-96 overflow-y-auto">
+        <div className="flex items-center justify-between px-3 py-2">
+          <DropdownMenuLabel className="p-0 text-sm">Notifications</DropdownMenuLabel>
+          {unreadCount > 0 && (
+            <button
+              onClick={(e) => { e.stopPropagation(); markAllReadMutation.mutate(); }}
+              className="text-xs text-primary hover:underline"
+              data-testid="button-mark-all-read"
+            >
+              Mark all read
+            </button>
+          )}
+        </div>
+        <DropdownMenuSeparator />
+        {items.length === 0 ? (
+          <div className="px-3 py-6 text-center text-sm text-muted-foreground">
+            No notifications yet
+          </div>
+        ) : (
+          items.map((n) => (
+            <DropdownMenuItem
+              key={n.id}
+              onClick={() => handleClick(n)}
+              className={cn(
+                "flex flex-col items-start gap-1 py-2.5 px-3 cursor-pointer",
+                !n.isRead && "bg-primary/5"
+              )}
+              data-testid={`notification-item-${n.id}`}
+            >
+              <div className="flex items-start justify-between w-full gap-2">
+                <span className={cn("text-xs font-medium line-clamp-1", !n.isRead && "text-foreground")}>{n.title}</span>
+                {!n.isRead && <span className="w-2 h-2 rounded-full bg-primary flex-shrink-0 mt-1" />}
+              </div>
+              <span className="text-xs text-muted-foreground line-clamp-2">{n.body}</span>
+              <span className="text-[10px] text-muted-foreground">{formatTime(n.createdAt)}</span>
+            </DropdownMenuItem>
+          ))
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -586,6 +713,7 @@ export default function AdminNav({ currentPage, role = "admin" }: AdminNavProps)
             <SharedThemeSelector
               triggerClassName="h-8 w-8 p-0"
             />
+            <AdminNotificationBell navigate={navigate} />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
@@ -643,6 +771,7 @@ export default function AdminNav({ currentPage, role = "admin" }: AdminNavProps)
                 Fulfillment
               </span>
             )}
+            <AdminNotificationBell navigate={navigate} />
             <SharedThemeSelector
               triggerClassName="h-9 w-9 p-0"
               testIdSuffix="-mobile"

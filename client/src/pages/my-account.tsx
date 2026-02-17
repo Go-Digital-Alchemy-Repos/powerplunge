@@ -1,26 +1,168 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCustomerAuth } from "@/hooks/use-customer-auth";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { MobileTabsList } from "@/components/ui/mobile-tabs-list";
 import { Badge } from "@/components/ui/badge";
-import { Package, ArrowLeft, LogOut, Link2, Settings, Headset, Crown } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from "@/components/ui/dropdown-menu";
+import { Package, ArrowLeft, LogOut, Link2, Settings, Headset, Crown, Bell } from "lucide-react";
 import UserAvatar from "@/components/UserAvatar";
 import DynamicNav from "@/components/DynamicNav";
 import { useBranding } from "@/hooks/use-branding";
 import { useAccountVip } from "./account/hooks/useAccountVip";
+import { cn } from "@/lib/utils";
 import OrdersTab from "./account/components/OrdersTab";
 import AccountTab from "./account/components/AccountTab";
 import AffiliateTab from "./account/components/AffiliateTab";
 import SupportTab from "./account/components/SupportTab";
 
+function CustomerNotificationBell({ getAuthHeader, onTabChange }: { getAuthHeader: () => Record<string, string>; onTabChange: (tab: string) => void }) {
+  const queryClient = useQueryClient();
+
+  const { data: unreadData } = useQuery<{ count: number }>({
+    queryKey: ["/api/customer/notifications/unread-count"],
+    queryFn: async () => {
+      const res = await fetch("/api/customer/notifications/unread-count", {
+        headers: { ...getAuthHeader() },
+      });
+      if (!res.ok) return { count: 0 };
+      return res.json();
+    },
+    refetchInterval: 30000,
+    staleTime: 10000,
+  });
+
+  const { data: notificationsData } = useQuery<{ notifications: any[]; total: number }>({
+    queryKey: ["/api/customer/notifications"],
+    queryFn: async () => {
+      const res = await fetch("/api/customer/notifications?limit=10", {
+        headers: { ...getAuthHeader() },
+      });
+      if (!res.ok) return { notifications: [], total: 0 };
+      return res.json();
+    },
+    staleTime: 15000,
+  });
+
+  const markReadMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await fetch(`/api/customer/notifications/${id}/read`, {
+        method: "PATCH",
+        headers: { ...getAuthHeader() },
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/customer/notifications/unread-count"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/customer/notifications"] });
+    },
+  });
+
+  const markAllReadMutation = useMutation({
+    mutationFn: async () => {
+      await fetch("/api/customer/notifications/mark-all-read", {
+        method: "PATCH",
+        headers: { ...getAuthHeader() },
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/customer/notifications/unread-count"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/customer/notifications"] });
+    },
+  });
+
+  const unreadCount = unreadData?.count ?? 0;
+  const items = notificationsData?.notifications ?? [];
+
+  const handleClick = (n: any) => {
+    if (!n.isRead) markReadMutation.mutate(n.id);
+    if (n.linkUrl?.includes("tab=support")) {
+      onTabChange("support");
+    }
+  };
+
+  const formatTime = (dateStr: string) => {
+    const d = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - d.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    if (diffMins < 1) return "Just now";
+    if (diffMins < 60) return `${diffMins}m ago`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    return `${diffDays}d ago`;
+  };
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="relative" data-testid="button-customer-notifications">
+          <Bell className="w-5 h-5" />
+          {unreadCount > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[16px] h-4 px-1 text-[10px] font-bold rounded-full bg-destructive text-destructive-foreground" data-testid="badge-customer-notification-count">
+              {unreadCount > 99 ? "99+" : unreadCount}
+            </span>
+          )}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-80 max-h-96 overflow-y-auto">
+        <div className="flex items-center justify-between px-3 py-2">
+          <DropdownMenuLabel className="p-0 text-sm">Notifications</DropdownMenuLabel>
+          {unreadCount > 0 && (
+            <button
+              onClick={(e) => { e.stopPropagation(); markAllReadMutation.mutate(); }}
+              className="text-xs text-primary hover:underline"
+              data-testid="button-customer-mark-all-read"
+            >
+              Mark all read
+            </button>
+          )}
+        </div>
+        <DropdownMenuSeparator />
+        {items.length === 0 ? (
+          <div className="px-3 py-6 text-center text-sm text-muted-foreground">
+            No notifications yet
+          </div>
+        ) : (
+          items.map((n) => (
+            <DropdownMenuItem
+              key={n.id}
+              onClick={() => handleClick(n)}
+              className={cn(
+                "flex flex-col items-start gap-1 py-2.5 px-3 cursor-pointer",
+                !n.isRead && "bg-primary/5"
+              )}
+              data-testid={`customer-notification-item-${n.id}`}
+            >
+              <div className="flex items-start justify-between w-full gap-2">
+                <span className={cn("text-xs font-medium line-clamp-1", !n.isRead && "text-foreground")}>{n.title}</span>
+                {!n.isRead && <span className="w-2 h-2 rounded-full bg-primary flex-shrink-0 mt-1" />}
+              </div>
+              <span className="text-xs text-muted-foreground line-clamp-2">{n.body}</span>
+              <span className="text-[10px] text-muted-foreground">{formatTime(n.createdAt)}</span>
+            </DropdownMenuItem>
+          ))
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 export default function MyAccount() {
   const [, setLocation] = useLocation();
   const { logoSrc, companyName } = useBranding();
   const { customer: authCustomer, isLoading: authLoading, isAuthenticated, logout, getAuthHeader } = useCustomerAuth();
-  const [activeTab, setActiveTab] = useState("orders");
+  const initialTab = new URLSearchParams(window.location.search).get("tab") || "orders";
+  const [activeTab, setActiveTab] = useState(initialTab);
   const { vipData } = useAccountVip();
 
   const { data: affiliateCheck } = useQuery<{ affiliate: any | null }>({
@@ -92,6 +234,7 @@ export default function MyAccount() {
                 </Badge>
               )}
             </div>
+            <CustomerNotificationBell getAuthHeader={getAuthHeader} onTabChange={setActiveTab} />
             <Button variant="outline" size="sm" onClick={() => logout()} data-testid="button-logout">
               <LogOut className="w-4 h-4 mr-2" />
               Logout
