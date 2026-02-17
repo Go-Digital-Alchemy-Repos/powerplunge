@@ -10,6 +10,7 @@ import {
 import { db } from "../../../db";
 import { supportTickets, orders, customers } from "@shared/schema";
 import { eq, and, desc } from "drizzle-orm";
+import { notificationService } from "../../services/notification.service";
 
 const router = Router();
 
@@ -179,6 +180,17 @@ router.post("/support", requireCustomerAuth, async (req: AuthenticatedRequest, r
       type: data.type,
     }).returning();
 
+    const customer = await db.query.customers.findFirst({
+      where: eq(customers.id, customerId),
+    });
+    notificationService.notifyAdminsOfNewTicket({
+      id: ticket.id,
+      subject: ticket.subject,
+      message: ticket.message,
+      type: ticket.type || "general",
+      customerName: customer?.name || undefined,
+    }).catch((err) => console.error("Failed to create new ticket notification:", err));
+
     res.status(201).json({ success: true, ticket });
   } catch (error: any) {
     if (error instanceof z.ZodError) {
@@ -233,6 +245,12 @@ router.post("/support/:id/reply", requireCustomerAuth, async (req: Authenticated
       })
       .where(eq(supportTickets.id, id))
       .returning();
+
+    notificationService.notifyAdminsOfCustomerReply({
+      id: existing.id,
+      subject: existing.subject,
+      customerName: customer?.name || undefined,
+    }).catch((err) => console.error("Failed to create customer reply notification:", err));
 
     res.json({ success: true, ticket: updated });
   } catch (error: any) {

@@ -4,6 +4,7 @@ import { db } from "../../../db";
 import { supportTickets, customers, orders, adminUsers } from "@shared/schema";
 import { eq, desc, and, sql, or, ilike } from "drizzle-orm";
 import { requireAdmin } from "../../middleware";
+import { notificationService } from "../../services/notification.service";
 
 const router = Router();
 
@@ -249,6 +250,28 @@ adminSupportRouter.patch("/:id", requireAdmin, async (req, res, next) => {
       .where(eq(supportTickets.id, id))
       .returning();
 
+    if (parsed.data.noteText && existing.customerId) {
+      const admin = await db.query.adminUsers.findFirst({
+        where: eq(adminUsers.id, adminId),
+      });
+      const adminName = admin ? `${admin.firstName} ${admin.lastName}`.trim() || admin.name : "Support team";
+      notificationService.notifyCustomerOfAdminReply({
+        id: existing.id,
+        subject: existing.subject,
+        customerId: existing.customerId,
+        adminName,
+      }).catch((err) => console.error("Failed to create admin reply notification:", err));
+    }
+
+    if (parsed.data.status && parsed.data.status !== existing.status && existing.customerId) {
+      notificationService.notifyCustomerOfStatusChange({
+        id: existing.id,
+        subject: existing.subject,
+        customerId: existing.customerId,
+        newStatus: parsed.data.status,
+      }).catch((err) => console.error("Failed to create status change notification:", err));
+    }
+
     res.json({ ticket: updated });
   } catch (error) {
     next(error);
@@ -329,6 +352,13 @@ adminSupportRouter.post("/", requireAdmin, async (req, res, next) => {
       type: parsed.data.type,
       priority: parsed.data.priority,
     }).returning();
+
+    notificationService.notifyCustomerOfAdminReply({
+      id: ticket.id,
+      subject: ticket.subject,
+      customerId: parsed.data.customerId,
+      adminName: "Support team",
+    }).catch((err) => console.error("Failed to create admin-created ticket notification:", err));
 
     res.status(201).json({ ticket });
   } catch (error) {
