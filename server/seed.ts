@@ -143,6 +143,80 @@ export async function seedTestAffiliateAccount() {
   console.log(`  Created test affiliate: ${TEST_AFFILIATE.email} (code: ${TEST_AFFILIATE.affiliateCode})`);
 }
 
+const TEST_CUSTOMER = {
+  email: "customer@test.com",
+  password: "testpass123",
+  name: "Test Customer",
+  phone: "(555) 123-4567",
+  address: "123 Test Street",
+  city: "Austin",
+  state: "TX",
+  zipCode: "78701",
+  country: "USA",
+};
+
+export async function seedTestCustomerAccount() {
+  if (process.env.NODE_ENV === "production") {
+    return;
+  }
+
+  const existing = await storage.getCustomerByEmail(TEST_CUSTOMER.email);
+  if (existing) {
+    const orders = await storage.getOrdersByCustomerId(existing.id);
+    if (orders.length > 0) {
+      return;
+    }
+  }
+
+  console.log("Seeding test customer account (dev only)...");
+
+  let customer = await storage.getCustomerByEmail(TEST_CUSTOMER.email);
+  if (!customer) {
+    const passwordHash = await bcrypt.hash(TEST_CUSTOMER.password, 10);
+    customer = await storage.createCustomer({
+      email: TEST_CUSTOMER.email,
+      name: TEST_CUSTOMER.name,
+      passwordHash,
+      phone: TEST_CUSTOMER.phone,
+      address: TEST_CUSTOMER.address,
+      city: TEST_CUSTOMER.city,
+      state: TEST_CUSTOMER.state,
+      zipCode: TEST_CUSTOMER.zipCode,
+      country: TEST_CUSTOMER.country,
+    });
+  }
+
+  const activeProducts = await storage.getActiveProducts();
+  if (activeProducts.length > 0) {
+    const product = activeProducts[0];
+    const order = await storage.createOrder({
+      customerId: customer.id,
+      status: "delivered",
+      totalAmount: product.price,
+      shippingName: TEST_CUSTOMER.name,
+      shippingAddress: TEST_CUSTOMER.address,
+      shippingCity: TEST_CUSTOMER.city,
+      shippingState: TEST_CUSTOMER.state,
+      shippingZip: TEST_CUSTOMER.zipCode,
+      shippingCountry: TEST_CUSTOMER.country,
+    });
+
+    await storage.createOrderItem({
+      orderId: order.id,
+      productId: product.id,
+      productName: product.name,
+      quantity: 1,
+      unitPrice: product.price,
+    });
+
+    console.log(`  Created test customer: ${TEST_CUSTOMER.email} (password: ${TEST_CUSTOMER.password})`);
+    console.log(`  Created test order: ${order.id} (1x ${product.name}, status: delivered)`);
+  } else {
+    console.log(`  Created test customer: ${TEST_CUSTOMER.email} (password: ${TEST_CUSTOMER.password})`);
+    console.log("  No products found, skipped order creation");
+  }
+}
+
 const firstNames = ["John", "Sarah", "Michael", "Emily", "David", "Jessica", "Chris", "Amanda", "James", "Ashley"];
 const lastNames = ["Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis", "Rodriguez", "Martinez"];
 const cities = ["New York", "Los Angeles", "Chicago", "Houston", "Phoenix", "Philadelphia", "San Antonio", "San Diego", "Dallas", "Austin"];

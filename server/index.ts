@@ -146,11 +146,13 @@ app.use(requestLoggerMiddleware);
       // Seed test admin users in development only
       if (process.env.NODE_ENV !== "production") {
         try {
-          const { seedTestAdminUsers, seedTestAffiliateAccount } = await import("./seed");
+          const { seedTestAdminUsers, seedTestAffiliateAccount, seedTestCustomerAccount } = await import("./seed");
           await seedTestAdminUsers();
           log("Test admin users verified");
           await seedTestAffiliateAccount();
           log("Test affiliate account verified");
+          await seedTestCustomerAccount();
+          log("Test customer account verified");
         } catch (error) {
           console.error("[SEED] Failed to seed test admin users:", error);
         }
