@@ -4,6 +4,7 @@ import { db } from "../../../db";
 import { supportTickets, customers, siteSettings, emailSettings } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { notificationService } from "../../services/notification.service";
+import { sendNewTicketAdminNotification, sendTicketConfirmationToCustomer } from "../../services/support-email.service";
 
 const router = Router();
 
@@ -30,6 +31,14 @@ function verifyMailgunSignature(
 function extractTicketId(recipient: string): string | null {
   const match = recipient.match(/support\+(?:dev)?ticket-([a-f0-9-]+)@/i);
   return match ? match[1] : null;
+}
+
+function extractSenderName(sender: string): string | null {
+  const match = sender.match(/^(.+?)\s*<.+>/);
+  if (match) {
+    return match[1].replace(/^["']|["']$/g, "").trim() || null;
+  }
+  return null;
 }
 
 function stripQuotedText(text: string): string {
@@ -103,77 +112,124 @@ router.post("/inbound", async (req: Request, res: Response) => {
       return res.status(200).json({ message: "ok" });
     }
 
-    const recipient = req.body?.recipient || req.body?.To || "";
+    const recipientRaw = req.body?.recipient || req.body?.To || "";
     const senderEmail = req.body?.sender || req.body?.from || req.body?.From || "";
     const strippedText = req.body?.["stripped-text"] || req.body?.["body-plain"] || "";
     const subject = req.body?.subject || req.body?.Subject || "";
 
-    const ticketId = extractTicketId(recipient);
-    if (!ticketId) {
-      console.warn(`[MAILGUN INBOUND] Could not extract ticket ID from: ${recipient}`);
-      return res.status(200).json({ message: "ok" });
-    }
-
-    const replyText = stripQuotedText(strippedText);
-    if (!replyText || replyText.length < 1) {
-      console.warn(`[MAILGUN INBOUND] Empty reply for ticket ${ticketId}`);
-      return res.status(200).json({ message: "ok" });
-    }
-
-    const ticket = await db.query.supportTickets.findFirst({
-      where: eq(supportTickets.id, ticketId),
-    });
-
-    if (!ticket) {
-      console.warn(`[MAILGUN INBOUND] Ticket not found: ${ticketId}`);
-      return res.status(200).json({ message: "ok" });
-    }
-
-    if (ticket.status === "closed") {
-      console.log(`[MAILGUN INBOUND] Ticket ${ticketId} is closed, ignoring reply`);
-      return res.status(200).json({ message: "ok" });
-    }
-
-    const customer = await db.query.customers.findFirst({
-      where: eq(customers.id, ticket.customerId),
-    });
-
     const emailFromAddress = senderEmail.replace(/.*<(.+)>.*/, "$1").trim().toLowerCase();
-    if (customer?.email && customer.email.toLowerCase() !== emailFromAddress) {
-      console.warn(
-        `[MAILGUN INBOUND] Sender ${emailFromAddress} does not match ticket customer ${customer.email} for ticket ${ticketId}`
-      );
+    if (!emailFromAddress || !emailFromAddress.includes("@")) {
+      console.warn("[MAILGUN INBOUND] Missing or invalid sender email, ignoring");
+      return res.status(200).json({ message: "ok" });
+    }
+    const senderName = extractSenderName(senderEmail) || emailFromAddress;
+
+    const messageText = stripQuotedText(strippedText);
+    if (!messageText || messageText.length < 1) {
+      console.warn(`[MAILGUN INBOUND] Empty message from ${emailFromAddress}`);
       return res.status(200).json({ message: "ok" });
     }
 
-    const existingReplies = Array.isArray(ticket.customerReplies) ? ticket.customerReplies : [];
-    await db
-      .update(supportTickets)
-      .set({
-        customerReplies: [
-          ...existingReplies,
-          {
-            text: replyText,
-            customerName: customer?.name || emailFromAddress,
-            createdAt: new Date().toISOString(),
-          },
-        ],
-        status: ticket.status === "resolved" ? "open" : ticket.status,
-        updatedAt: new Date(),
-      })
-      .where(eq(supportTickets.id, ticketId));
+    const recipients = recipientRaw.split(",").map((r: string) => r.trim());
+    let ticketId: string | null = null;
+    for (const r of recipients) {
+      ticketId = extractTicketId(r);
+      if (ticketId) break;
+    }
 
-    notificationService
-      .notifyAdminsOfCustomerReply({
-        id: ticket.id,
-        subject: ticket.subject,
-        customerName: customer?.name || emailFromAddress,
-      })
-      .catch((err) => console.error("Failed to create inbound reply notification:", err));
+    if (ticketId) {
+      const ticket = await db.query.supportTickets.findFirst({
+        where: eq(supportTickets.id, ticketId),
+      });
 
-    console.log(
-      `[MAILGUN INBOUND] Reply added to ticket ${ticketId} from ${emailFromAddress} (${replyText.length} chars)`
-    );
+      if (!ticket) {
+        console.warn(`[MAILGUN INBOUND] Ticket not found: ${ticketId}`);
+        return res.status(200).json({ message: "ok" });
+      }
+
+      if (ticket.status === "closed") {
+        console.log(`[MAILGUN INBOUND] Ticket ${ticketId} is closed, ignoring reply`);
+        return res.status(200).json({ message: "ok" });
+      }
+
+      const customer = await db.query.customers.findFirst({
+        where: eq(customers.id, ticket.customerId),
+      });
+
+      if (customer?.email && customer.email.toLowerCase() !== emailFromAddress) {
+        console.warn(
+          `[MAILGUN INBOUND] Sender ${emailFromAddress} does not match ticket customer ${customer.email} for ticket ${ticketId}`
+        );
+        return res.status(200).json({ message: "ok" });
+      }
+
+      const existingReplies = Array.isArray(ticket.customerReplies) ? ticket.customerReplies : [];
+      await db
+        .update(supportTickets)
+        .set({
+          customerReplies: [
+            ...existingReplies,
+            {
+              text: messageText,
+              customerName: customer?.name || emailFromAddress,
+              createdAt: new Date().toISOString(),
+            },
+          ],
+          status: ticket.status === "resolved" ? "open" : ticket.status,
+          updatedAt: new Date(),
+        })
+        .where(eq(supportTickets.id, ticketId));
+
+      notificationService
+        .notifyAdminsOfCustomerReply({
+          id: ticket.id,
+          subject: ticket.subject,
+          customerName: customer?.name || emailFromAddress,
+        })
+        .catch((err) => console.error("Failed to create inbound reply notification:", err));
+
+      console.log(
+        `[MAILGUN INBOUND] Reply added to ticket ${ticketId} from ${emailFromAddress} (${messageText.length} chars)`
+      );
+    } else {
+      let customer = await db.query.customers.findFirst({
+        where: eq(customers.email, emailFromAddress),
+      });
+
+      if (!customer) {
+        const [newCustomer] = await db.insert(customers).values({
+          email: emailFromAddress,
+          name: senderName,
+        }).returning();
+        customer = newCustomer;
+        console.log(`[MAILGUN INBOUND] Created new customer ${customer.id} for ${emailFromAddress}`);
+      }
+
+      const ticketSubject = subject?.trim() || "Email inquiry";
+
+      const [ticket] = await db.insert(supportTickets).values({
+        customerId: customer.id,
+        subject: ticketSubject,
+        message: messageText,
+        type: "general",
+      }).returning();
+
+      const ticketData = {
+        ticketId: ticket.id,
+        customerId: customer.id,
+        customerName: customer.name || emailFromAddress,
+        customerEmail: emailFromAddress,
+        subject: ticketSubject,
+        message: messageText,
+        type: "general",
+      };
+      sendNewTicketAdminNotification(ticketData).catch(() => {});
+      sendTicketConfirmationToCustomer(ticketData).catch(() => {});
+
+      console.log(
+        `[MAILGUN INBOUND] New ticket ${ticket.id} created from ${emailFromAddress}: "${ticketSubject}" (${messageText.length} chars)`
+      );
+    }
 
     res.status(200).json({ message: "ok" });
   } catch (error) {
