@@ -608,7 +608,7 @@ export default function AdminOrders() {
               </div>
             </div>
 
-            {selectedOrder && (
+            {currentOrder ? (
               <div className="w-full">
                 <Card className="w-full">
                   <CardHeader>
@@ -870,6 +870,12 @@ export default function AdminOrders() {
                         </DialogContent>
                       </Dialog>
                     </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card>
+                  <CardContent className="py-12 text-center text-muted-foreground">
+                    Select an order to view details
                   </CardContent>
                 </Card>
               )}
