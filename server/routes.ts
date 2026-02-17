@@ -54,6 +54,7 @@ import publicContactRoutes from "./src/routes/public/contact.routes";
 import paymentsRoutes from "./src/routes/public/payments.routes";
 import stripeWebhookRoutes from "./src/routes/webhooks/stripe.routes";
 import twilioWebhookRoutes from "./src/routes/webhooks/twilio.routes";
+import mailgunInboundRoutes from "./src/routes/webhooks/mailgun-inbound.routes";
 import customerProfileRoutes from "./src/routes/customer/profile.routes";
 import customerAffiliateRoutes, { publicAffiliateRoutes } from "./src/routes/customer/affiliates.routes";
 import adminAuthRoutes from "./src/routes/admin/auth.routes";
@@ -199,6 +200,7 @@ export async function registerRoutes(
   app.use("/api", paymentsRoutes);
   app.use("/api/webhook", stripeWebhookRoutes);
   app.use("/api/webhooks/twilio", twilioWebhookRoutes);
+  app.use("/api/webhooks/mailgun", mailgunInboundRoutes);
   app.use("/api/affiliate", publicAffiliateRoutes);
   app.use("/api/coupons", publicCouponRoutes);
 

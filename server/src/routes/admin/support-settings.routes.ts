@@ -23,6 +23,7 @@ router.get("/", async (_req, res, next) => {
       supportBusinessHours: settings?.supportBusinessHours || "",
       supportEmail: settings?.supportEmail || "",
       supportPhone: settings?.supportPhone || "",
+      supportInboundRepliesEnabled: settings?.supportInboundRepliesEnabled ?? false,
     });
   } catch (error) {
     next(error);
@@ -40,6 +41,7 @@ const updateSchema = z.object({
   supportBusinessHours: z.string().max(500).optional(),
   supportEmail: z.string().max(200).optional(),
   supportPhone: z.string().max(50).optional(),
+  supportInboundRepliesEnabled: z.boolean().optional(),
 });
 
 router.put("/", async (req, res, next) => {
@@ -62,6 +64,7 @@ router.put("/", async (req, res, next) => {
     if (d.supportBusinessHours !== undefined) updateData.supportBusinessHours = d.supportBusinessHours;
     if (d.supportEmail !== undefined) updateData.supportEmail = d.supportEmail;
     if (d.supportPhone !== undefined) updateData.supportPhone = d.supportPhone;
+    if (d.supportInboundRepliesEnabled !== undefined) updateData.supportInboundRepliesEnabled = d.supportInboundRepliesEnabled;
 
     if (Object.keys(updateData).length === 0) {
       return res.status(400).json({ message: "No fields to update" });

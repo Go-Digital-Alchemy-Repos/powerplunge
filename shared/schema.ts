@@ -228,6 +228,7 @@ export const siteSettings = pgTable("site_settings", {
   supportFromEmail: text("support_from_email"),
   supportSlaHours: integer("support_sla_hours").default(24),
   supportBusinessHours: text("support_business_hours"),
+  supportInboundRepliesEnabled: boolean("support_inbound_replies_enabled").default(false),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 

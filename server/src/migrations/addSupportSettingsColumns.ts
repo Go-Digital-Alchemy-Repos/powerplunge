@@ -12,6 +12,7 @@ export async function runSupportSettingsMigration() {
       { name: "support_from_email", type: "TEXT" },
       { name: "support_sla_hours", type: "INTEGER DEFAULT 24" },
       { name: "support_business_hours", type: "TEXT" },
+      { name: "support_inbound_replies_enabled", type: "BOOLEAN DEFAULT false" },
     ];
 
     for (const col of columns) {

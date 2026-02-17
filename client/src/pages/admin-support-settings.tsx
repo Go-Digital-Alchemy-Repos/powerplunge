@@ -24,6 +24,7 @@ interface SupportSettings {
   supportBusinessHours: string;
   supportEmail: string;
   supportPhone: string;
+  supportInboundRepliesEnabled: boolean;
 }
 
 export default function AdminSupportSettings() {
@@ -43,6 +44,7 @@ export default function AdminSupportSettings() {
     supportBusinessHours: "",
     supportEmail: "",
     supportPhone: "",
+    supportInboundRepliesEnabled: false,
   });
 
   const { data: settings, isLoading } = useQuery<SupportSettings>({
@@ -71,6 +73,7 @@ export default function AdminSupportSettings() {
         supportBusinessHours: settings.supportBusinessHours ?? "",
         supportEmail: settings.supportEmail ?? "",
         supportPhone: settings.supportPhone ?? "",
+        supportInboundRepliesEnabled: settings.supportInboundRepliesEnabled ?? false,
       });
     }
   }, [settings]);
@@ -227,6 +230,40 @@ export default function AdminSupportSettings() {
                 />
                 <p className="text-xs text-muted-foreground">Use &#123;&#123;sla_hours&#125;&#125; to insert your SLA response time</p>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gray-900/50 border-gray-800/60">
+            <CardHeader>
+              <CardTitle>Inbound Email Replies</CardTitle>
+              <CardDescription>Allow customers to reply directly to support emails instead of logging in</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>Enable Email Replies</Label>
+                  <p className="text-sm text-muted-foreground">When enabled, support emails include a reply-to address so customers can respond directly via email. Their reply is automatically added to the ticket.</p>
+                </div>
+                <Switch
+                  checked={formData.supportInboundRepliesEnabled}
+                  onCheckedChange={(checked) => setFormData({ ...formData, supportInboundRepliesEnabled: checked })}
+                  data-testid="switch-supportInboundRepliesEnabled"
+                />
+              </div>
+              {formData.supportInboundRepliesEnabled && (
+                <div className="rounded-lg border border-cyan-800/40 bg-cyan-950/20 p-4 space-y-2">
+                  <p className="text-sm font-medium text-cyan-300">Mailgun Configuration Required</p>
+                  <p className="text-xs text-muted-foreground">
+                    To receive inbound email replies, you need to configure a Mailgun inbound route in your Mailgun dashboard:
+                  </p>
+                  <ol className="text-xs text-muted-foreground list-decimal list-inside space-y-1">
+                    <li>Go to Mailgun Dashboard &rarr; Receiving &rarr; Create Route</li>
+                    <li>Set filter to: <code className="bg-gray-800 px-1 rounded">match_recipient("support\+ticket-.*@yourdomain.com")</code></li>
+                    <li>Set action to: <code className="bg-gray-800 px-1 rounded">forward("https://yourdomain.com/api/webhooks/mailgun/inbound")</code></li>
+                    <li>Set <code className="bg-gray-800 px-1 rounded">MAILGUN_WEBHOOK_SIGNING_KEY</code> in your environment secrets (found in Mailgun Dashboard &rarr; Settings &rarr; API Keys &rarr; HTTP Webhook Signing Key)</li>
+                  </ol>
+                </div>
+              )}
             </CardContent>
           </Card>
 

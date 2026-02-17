@@ -1,6 +1,6 @@
 import { emailService, type EmailOptions } from "../integrations/mailgun/EmailService";
 import { db } from "../../db";
-import { siteSettings } from "@shared/schema";
+import { siteSettings, emailSettings } from "@shared/schema";
 import { eq } from "drizzle-orm";
 
 interface TicketData {
@@ -26,7 +26,17 @@ async function getSupportSettings() {
     slaHours: settings?.supportSlaHours ?? 24,
     companyName: settings?.companyName || "Power Plunge",
     supportEmail: settings?.supportEmail || "",
+    inboundRepliesEnabled: settings?.supportInboundRepliesEnabled ?? false,
   };
+}
+
+async function getMailgunDomain(): Promise<string | null> {
+  const settings = await db.query.emailSettings.findFirst();
+  return settings?.mailgunDomain || null;
+}
+
+function buildTicketReplyToAddress(ticketId: string, domain: string): string {
+  return `support+ticket-${ticketId}@${domain}`;
 }
 
 function getBaseUrl(): string {
@@ -128,10 +138,23 @@ export async function sendAdminReplyToCustomer(data: AdminReplyData): Promise<vo
 
     const baseUrl = getBaseUrl();
 
+    let replyTo: string | undefined;
+    if (settings.inboundRepliesEnabled) {
+      const domain = await getMailgunDomain();
+      if (domain) {
+        replyTo = buildTicketReplyToAddress(data.ticketId, domain);
+      }
+    }
+
+    const replyInstructions = replyTo
+      ? `You can reply directly to this email or click the button below to respond through your account.`
+      : `If you have additional questions, click Respond below to reply through your account.`;
+
     const result = await emailService.sendEmail({
       to: data.customerEmail,
       subject: `Re: ${data.subject}`,
       ...(settings.fromEmail ? { from: settings.fromEmail } : {}),
+      ...(replyTo ? { replyTo } : {}),
       html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; background: #0a0a0a; color: #e5e5e5; border-radius: 8px; overflow: hidden;">
           <div style="background: linear-gradient(135deg, #0c4a6e 0%, #164e63 100%); padding: 24px; text-align: center;">
@@ -151,7 +174,7 @@ export async function sendAdminReplyToCustomer(data: AdminReplyData): Promise<vo
             <div style="margin-top: 24px; text-align: center;">
               <a href="${baseUrl}/my-account?tab=support" style="display: inline-block; padding: 10px 24px; background: #0891b2; color: white; text-decoration: none; border-radius: 6px; font-weight: 500;">Respond</a>
             </div>
-            <p style="margin-top: 16px; color: #a3a3a3; font-size: 13px;">If you have additional questions, click Respond above to reply through your account.</p>
+            <p style="margin-top: 16px; color: #a3a3a3; font-size: 13px;">${replyInstructions}</p>
           </div>
         </div>
       `,
