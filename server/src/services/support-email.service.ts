@@ -59,7 +59,7 @@ export async function sendNewTicketAdminNotification(ticket: TicketData): Promis
 
     const baseUrl = getBaseUrl();
 
-    await emailService.sendEmail({
+    const result = await emailService.sendEmail({
       to: emails,
       subject: `New Support Ticket: ${ticket.subject}`,
       html: `
@@ -85,6 +85,11 @@ export async function sendNewTicketAdminNotification(ticket: TicketData): Promis
         </div>
       `,
     });
+    if (result.success) {
+      console.log(`[SUPPORT EMAIL] Admin notification sent to: ${emails.join(", ")}`);
+    } else {
+      console.error(`[SUPPORT EMAIL] Admin notification failed: ${result.error}`);
+    }
   } catch (error) {
     console.error("[SUPPORT EMAIL] Failed to send admin notification:", error);
   }
@@ -100,7 +105,7 @@ export async function sendTicketConfirmationToCustomer(ticket: TicketData): Prom
 
     autoReplyBody = autoReplyBody.replace(/\{\{sla_hours\}\}/g, String(settings.slaHours));
 
-    await emailService.sendEmail({
+    const result = await emailService.sendEmail({
       to: ticket.customerEmail,
       subject: `Re: ${ticket.subject} - We've received your message`,
       html: `
@@ -120,6 +125,11 @@ export async function sendTicketConfirmationToCustomer(ticket: TicketData): Prom
         </div>
       `,
     });
+    if (result.success) {
+      console.log(`[SUPPORT EMAIL] Customer confirmation sent to: ${ticket.customerEmail}`);
+    } else {
+      console.error(`[SUPPORT EMAIL] Customer confirmation failed: ${result.error}`);
+    }
   } catch (error) {
     console.error("[SUPPORT EMAIL] Failed to send customer confirmation:", error);
   }
