@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useAdmin } from "@/hooks/use-admin";
-import { Package, Calendar, User, ChevronRight, Truck, Mail, RefreshCw, ExternalLink, Search, Download, Filter, Plus, Trash2 } from "lucide-react";
+import { Package, Calendar, User, ChevronRight, Truck, Mail, RefreshCw, ExternalLink, Search, Download, Filter, Plus, Trash2, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import AdminNav from "@/components/admin/AdminNav";
 import { ManualOrderWizard } from "@/components/admin/ManualOrderWizard";
@@ -56,11 +56,14 @@ interface Order {
   shipments?: Shipment[];
 }
 
-function isPaymentBypassed(order: { isManualOrder?: boolean; stripePaymentIntentId?: string | null }): boolean {
-  return !!order.isManualOrder && !order.stripePaymentIntentId;
+function wasPaymentBypassed(order: { isManualOrder?: boolean; stripePaymentIntentId?: string | null; paymentStatus?: string }): boolean {
+  return !order.stripePaymentIntentId && (order.isManualOrder === true || order.paymentStatus === "unpaid");
 }
 
-function formatOrderPrice(order: { totalAmount: number; isManualOrder?: boolean; stripePaymentIntentId?: string | null }): string {
+function formatOrderPrice(order: { totalAmount: number; isManualOrder?: boolean; stripePaymentIntentId?: string | null; paymentStatus?: string }): string {
+  if (wasPaymentBypassed(order)) {
+    return "$0.00";
+  }
   return `$${(order.totalAmount / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
@@ -671,7 +674,7 @@ export default function AdminOrders() {
                             <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
                           </div>
                           <p className="font-medium">
-                            {isPaymentBypassed(currentOrder) ? "$0.00" : `$${((item.unitPrice * item.quantity) / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                            {wasPaymentBypassed(currentOrder) ? "$0.00" : `$${((item.unitPrice * item.quantity) / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                           </p>
                         </div>
                       ))}
@@ -679,7 +682,7 @@ export default function AdminOrders() {
 
                     <div className="flex justify-between pt-4 border-t border-border">
                       <p className="font-semibold">Total</p>
-                      <p className="font-display font-bold text-xl text-primary">
+                      <p className="font-display font-bold text-xl text-primary" data-testid="text-order-total">
                         {formatOrderPrice(currentOrder)}
                       </p>
                     </div>
@@ -688,6 +691,13 @@ export default function AdminOrders() {
                       <Calendar className="w-4 h-4" />
                       {format(new Date(currentOrder.createdAt), "MMMM d, yyyy 'at' h:mm a")}
                     </div>
+
+                    {wasPaymentBypassed(currentOrder) && (
+                      <div className="flex items-center gap-2 text-sm text-amber-400" data-testid="text-payment-bypassed">
+                        <AlertTriangle className="w-4 h-4" />
+                        Payment processing was bypassed
+                      </div>
+                    )}
 
                     {/* Shipping Section */}
                     <div className="pt-4 border-t border-border">
