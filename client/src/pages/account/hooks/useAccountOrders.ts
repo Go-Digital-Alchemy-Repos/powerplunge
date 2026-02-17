@@ -6,9 +6,9 @@ export function useAccountOrders() {
   const { isAuthenticated, getAuthHeader } = useCustomerAuth();
 
   const { data, isLoading } = useQuery<CustomerData>({
-    queryKey: ["/api/customer/orders/orders"],
+    queryKey: ["/api/customer/orders"],
     queryFn: async () => {
-      const res = await fetch("/api/customer/orders/orders", {
+      const res = await fetch("/api/customer/orders", {
         headers: { ...getAuthHeader() },
       });
       if (!res.ok) throw new Error("Failed to fetch orders");

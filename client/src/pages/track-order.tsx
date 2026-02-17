@@ -138,7 +138,7 @@ export default function TrackOrder() {
     queryKey: ["/api/customer/orders", customerSession?.customerId],
     queryFn: async () => {
       if (!customerSession?.sessionToken) return [];
-      const response = await fetch("/api/customer/orders/orders", {
+      const response = await fetch("/api/customer/orders", {
         headers: {
           Authorization: `Bearer ${customerSession.sessionToken}`,
         },
