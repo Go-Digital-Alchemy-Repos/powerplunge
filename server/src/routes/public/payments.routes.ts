@@ -4,6 +4,7 @@ import { insertCustomerSchema, type Product, type AffiliateSettings, type Affili
 import { checkoutLimiter, paymentLimiter } from "../../middleware/rate-limiter";
 import { affiliateCommissionService } from "../../services/affiliate-commission.service";
 import { normalizeEmail } from "../../services/customer-identity.service";
+import { verifySessionToken } from "../../middleware/customer-auth.middleware";
 import { normalizeState } from "@shared/us-states";
 import { validateEmail, validatePhone, validateAddress, validateZip, normalizeAddress, type ValidationError } from "@shared/validation";
 import { stripeService } from "../../integrations/stripe/StripeService";
@@ -234,6 +235,15 @@ router.post("/create-payment-intent", paymentLimiter, async (req: any, res) => {
 
     const userId = req.user?.claims?.sub;
 
+    let loggedInCustomerId: string | null = null;
+    const authHeader = req.headers?.authorization;
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      const tokenResult = verifySessionToken(authHeader.slice(7));
+      if (tokenResult.valid && tokenResult.customerId) {
+        loggedInCustomerId = tokenResult.customerId;
+      }
+    }
+
     if (affiliate && affiliate.status === "active") {
       const affiliateCustomer = await storage.getCustomer(affiliate.customerId);
       if (affiliateCustomer && normalizeEmail(affiliateCustomer.email) === customerData.email) {
@@ -255,6 +265,14 @@ router.post("/create-payment-intent", paymentLimiter, async (req: any, res) => {
         userId: existingCustomer.userId || userId,
       });
       if (updated) existingCustomer = updated;
+    }
+
+    if (loggedInCustomerId && loggedInCustomerId !== existingCustomer.id) {
+      const loggedInCustomer = await storage.getCustomer(loggedInCustomerId);
+      if (loggedInCustomer && !loggedInCustomer.isDisabled) {
+        console.log(`[CHECKOUT] Logged-in customer ${loggedInCustomerId} using checkout email ${customerData.email} (customer ${existingCustomer.id}). Assigning order to logged-in account.`);
+        existingCustomer = loggedInCustomer;
+      }
     }
 
     let subtotalAmount = 0;

@@ -22,6 +22,7 @@ import { validateEmail, validatePhone, validateRequired } from "@shared/validati
 import { trackCheckoutEvent } from "@/lib/checkout-analytics";
 import { trackBeginCheckout, trackPurchase, trackAddShippingInfo, trackAddPaymentInfo, trackRemoveFromCart } from "@/lib/analytics";
 import { useBranding } from "@/hooks/use-branding";
+import { useCustomerAuth } from "@/hooks/use-customer-auth";
 import SiteLayout from "@/components/SiteLayout";
 
 interface CartItem {
@@ -438,6 +439,7 @@ export default function Checkout() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { logoSrc, companyName } = useBranding();
+  const { getAuthHeader } = useCustomerAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState<"shipping" | "payment">("shipping");
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -766,7 +768,7 @@ export default function Checkout() {
 
       const response = await fetch(endpoint, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getAuthHeader() },
         body: JSON.stringify(body),
       });
 

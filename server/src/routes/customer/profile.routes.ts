@@ -2,7 +2,7 @@ import { Router } from "express";
 import { storage } from "../../../storage";
 import { db } from "../../../db";
 import { customers, orders as ordersTable } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { passwordResetLimiter } from "../../middleware/rate-limiter";
 import { customerIdentityService, normalizeEmail } from "../../services/customer-identity.service";
 
@@ -15,10 +15,34 @@ router.get("/orders", async (req: any, res) => {
       return res.json({ orders: [] });
     }
     const customer = identityResult.identity.customer;
-    const orders = await storage.getOrdersByCustomerId(customer.id);
+
+    const customerIds = new Set<string>([customer.id]);
+    if (customer.email) {
+      const relatedCustomers = await db.select({ id: customers.id })
+        .from(customers)
+        .where(eq(customers.email, normalizeEmail(customer.email)));
+      for (const rc of relatedCustomers) {
+        customerIds.add(rc.id);
+      }
+    }
+    const mergedCustomers = await db.select({ id: customers.id })
+      .from(customers)
+      .where(eq(customers.mergedIntoCustomerId, customer.id));
+    for (const mc of mergedCustomers) {
+      customerIds.add(mc.id);
+    }
+
+    let allOrders: any[] = [];
+    for (const cid of customerIds) {
+      const custOrders = await storage.getOrdersByCustomerId(cid);
+      allOrders.push(...custOrders);
+    }
+
+    const uniqueOrders = Array.from(new Map(allOrders.map(o => [o.id, o])).values());
+    uniqueOrders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     
     const ordersWithItems = await Promise.all(
-      orders.map(async (order) => {
+      uniqueOrders.map(async (order) => {
         const items = await storage.getOrderItems(order.id);
         const shipments = await storage.getShipments(order.id);
         return { ...order, items, shipments };
@@ -41,7 +65,23 @@ router.get("/orders/:id", async (req: any, res) => {
     const customer = identityResult.identity.customer;
     
     const order = await storage.getOrder(req.params.id);
-    if (!order || order.customerId !== customer.id) {
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    const customerIds = new Set<string>([customer.id]);
+    if (customer.email) {
+      const relatedCustomers = await db.select({ id: customers.id })
+        .from(customers)
+        .where(eq(customers.email, normalizeEmail(customer.email)));
+      for (const rc of relatedCustomers) customerIds.add(rc.id);
+    }
+    const mergedCustomers = await db.select({ id: customers.id })
+      .from(customers)
+      .where(eq(customers.mergedIntoCustomerId, customer.id));
+    for (const mc of mergedCustomers) customerIds.add(mc.id);
+
+    if (!customerIds.has(order.customerId)) {
       return res.status(404).json({ message: "Order not found" });
     }
     
