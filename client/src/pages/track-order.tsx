@@ -134,10 +134,10 @@ export default function TrackOrder() {
     }
   };
 
-  const { data: orders, isLoading: ordersLoading, error: ordersError } = useQuery<Order[]>({
+  const { data: ordersData, isLoading: ordersLoading, error: ordersError } = useQuery<{ orders: Order[] }>({
     queryKey: ["/api/customer/orders", customerSession?.customerId],
     queryFn: async () => {
-      if (!customerSession?.sessionToken) return [];
+      if (!customerSession?.sessionToken) return { orders: [] };
       const response = await fetch("/api/customer/orders", {
         headers: {
           Authorization: `Bearer ${customerSession.sessionToken}`,
@@ -152,6 +152,7 @@ export default function TrackOrder() {
     },
     enabled: !!customerSession?.sessionToken,
   });
+  const orders = ordersData?.orders || [];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

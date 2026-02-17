@@ -12,6 +12,7 @@ import {
 } from "../../middleware/customer-auth.middleware";
 import { normalizeEmail } from "../../services/customer-identity.service";
 import { authLimiter, passwordResetLimiter } from "../../middleware/rate-limiter";
+import { claimOrdersByEmail } from "../../services/order-claim.service";
 
 const router = Router();
 
@@ -28,7 +29,7 @@ router.post("/register", authLimiter, async (req, res) => {
     const { password, name } = parsed;
     
     const existingCustomer = await storage.getCustomerByEmail(email);
-    if (existingCustomer) {
+    if (existingCustomer && !existingCustomer.isDisabled) {
       if (existingCustomer.passwordHash) {
         return res.status(400).json({ message: "An account with this email already exists. Please sign in instead." });
       }
@@ -36,6 +37,9 @@ router.post("/register", authLimiter, async (req, res) => {
       await storage.updateCustomer(existingCustomer.id, { passwordHash, name });
       
       const sessionToken = createSessionToken(existingCustomer.id, email);
+      claimOrdersByEmail(existingCustomer.id, email, "register-upgrade").catch(
+        (err) => console.error("[ORDER-CLAIM] register-upgrade failed:", err)
+      );
       return res.json({
         success: true,
         sessionToken,
@@ -55,6 +59,9 @@ router.post("/register", authLimiter, async (req, res) => {
     });
     
     const sessionToken = createSessionToken(customer.id, email);
+    claimOrdersByEmail(customer.id, email, "register-new").catch(
+      (err) => console.error("[ORDER-CLAIM] register-new failed:", err)
+    );
     
     res.json({
       success: true,
@@ -108,6 +115,9 @@ router.post("/login", authLimiter, async (req: any, res) => {
     }
     
     const sessionToken = createSessionToken(customerRecord.id, email);
+    claimOrdersByEmail(customerRecord.id, email, "login").catch(
+      (err) => console.error("[ORDER-CLAIM] login failed:", err)
+    );
     
     return res.json({
       success: true,
@@ -176,6 +186,9 @@ router.post("/verify-magic-link", passwordResetLimiter, async (req, res) => {
     }
 
     const sessionToken = createSessionToken(customer.id, customer.email);
+    claimOrdersByEmail(customer.id, customer.email, "magic-link").catch(
+      (err) => console.error("[ORDER-CLAIM] magic-link failed:", err)
+    );
 
     res.json({ 
       success: true, 
@@ -398,6 +411,9 @@ router.post("/reset-password", passwordResetLimiter, async (req, res) => {
     await storage.markPasswordResetTokenUsed(token);
 
     const sessionToken = createSessionToken(customer.id, customer.email);
+    claimOrdersByEmail(customer.id, customer.email, "password-reset").catch(
+      (err) => console.error("[ORDER-CLAIM] password-reset failed:", err)
+    );
 
     res.json({
       success: true,

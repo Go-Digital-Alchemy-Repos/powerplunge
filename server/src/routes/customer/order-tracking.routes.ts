@@ -11,6 +11,7 @@ import { db } from "../../../db";
 import { supportTickets, orders, customers } from "@shared/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { notificationService } from "../../services/notification.service";
+import { normalizeEmail } from "../../services/customer-identity.service";
 
 const router = Router();
 
@@ -77,17 +78,37 @@ router.post("/verify-token", async (req, res) => {
 router.get("/", requireCustomerAuth, async (req: AuthenticatedRequest, res) => {
   try {
     const customerId = req.customerSession!.customerId;
-    
-    const orders = await storage.getOrdersByCustomerId(customerId);
-    
+
+    const customerIds = new Set<string>([customerId]);
+
+    const merged = await db
+      .select({ id: customers.id })
+      .from(customers)
+      .where(eq(customers.mergedIntoCustomerId, customerId));
+    for (const m of merged) customerIds.add(m.id);
+
+    let allOrders: any[] = [];
+    for (const cid of customerIds) {
+      const custOrders = await storage.getOrdersByCustomerId(cid);
+      allOrders.push(...custOrders);
+    }
+
+    const uniqueOrders = Array.from(
+      new Map(allOrders.map((o) => [o.id, o])).values()
+    );
+    uniqueOrders.sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+
     const ordersWithItems = await Promise.all(
-      orders.map(async (order) => {
+      uniqueOrders.map(async (order) => {
         const items = await storage.getOrderItems(order.id);
-        return { ...order, items };
+        const shipments = await storage.getShipments(order.id);
+        return { ...order, items, shipments };
       })
     );
 
-    res.json(ordersWithItems);
+    res.json({ orders: ordersWithItems });
   } catch (error: any) {
     console.error("Fetch orders error:", error);
     res.status(500).json({ message: "Failed to fetch orders" });
