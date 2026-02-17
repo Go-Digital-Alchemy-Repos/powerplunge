@@ -4,7 +4,7 @@ import {
   Search, ChevronRight, ChevronDown, RefreshCw, FileText, Rocket,
   Layers, Sparkles, Code, Monitor, Server, Shield, Database, TestTube,
   Cloud, Terminal, Settings, Plug, AlertTriangle, BookOpen, History,
-  FileJson, ClipboardList, Folder, ExternalLink, Download
+  FileJson, ClipboardList, Folder, ExternalLink, Download, Menu, X, ArrowLeft
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -282,6 +282,7 @@ export default function AdminDocs() {
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   const { data: docsData, isLoading } = useQuery<{ categories: CategoryGroup[] }>({
     queryKey: ["/api/admin/docs"],
@@ -368,117 +369,161 @@ export default function AdminDocs() {
     );
   }
 
+  const selectDoc = (docId: string) => {
+    setSelectedDocId(docId);
+    setMobileSidebarOpen(false);
+  };
+
+  const sidebarContent = (
+    <>
+      <div className="p-3 border-b border-theme-border space-y-2">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-theme-text-muted uppercase tracking-wider">Documentation</h2>
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="text-xs" data-testid="badge-doc-count">{totalDocs} docs</Badge>
+            <button
+              onClick={() => setMobileSidebarOpen(false)}
+              className="md:hidden p-1 rounded hover:bg-theme-bg-elevated text-theme-text-muted"
+              data-testid="button-close-mobile-sidebar"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+        <div className="relative">
+          <Search className="absolute left-2.5 top-2.5 w-4 h-4 text-theme-text-muted" />
+          <Input
+            placeholder="Search docs..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9 bg-theme-bg-card border-theme-border h-9 text-sm text-theme-text"
+            data-testid="input-search-docs"
+          />
+        </div>
+        <div className="flex gap-1.5">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => syncMutation.mutate()}
+            disabled={syncMutation.isPending}
+            className="flex-1 text-xs h-8 border-theme-border text-theme-text hover:bg-theme-bg-elevated"
+            data-testid="button-sync-api-docs"
+          >
+            <Download className="w-3.5 h-3.5 mr-1" />
+            {syncMutation.isPending ? "Syncing..." : "Sync API Docs"}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/admin/docs"] })}
+            className="h-8 px-2 border-theme-border text-theme-text hover:bg-theme-bg-elevated"
+            data-testid="button-refresh-docs"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+          </Button>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto">
+        {isLoading ? (
+          <div className="p-4 text-theme-text-muted text-sm">Loading docs...</div>
+        ) : filteredCategories.length === 0 ? (
+          <div className="p-4 text-theme-text-muted text-sm">
+            {searchQuery ? "No matching documents" : "No documentation found"}
+          </div>
+        ) : (
+          filteredCategories.map(cat => {
+            const IconComponent = ICON_MAP[cat.icon] || FileText;
+            const isExpanded = allDocsExpanded.has(cat.id);
+
+            return (
+              <div key={cat.id} className="border-b border-theme-border/50" data-testid={`category-${cat.id}`}>
+                <button
+                  onClick={() => toggleCategory(cat.id)}
+                  className="w-full flex items-center gap-2 px-3 py-2 hover:bg-theme-bg-elevated text-left text-sm"
+                  data-testid={`button-toggle-category-${cat.id}`}
+                >
+                  {isExpanded ? (
+                    <ChevronDown className="w-3.5 h-3.5 text-theme-text-muted flex-shrink-0" />
+                  ) : (
+                    <ChevronRight className="w-3.5 h-3.5 text-theme-text-muted flex-shrink-0" />
+                  )}
+                  <IconComponent className="w-4 h-4 text-theme-primary flex-shrink-0" style={{ color: "var(--theme-primary)" }} />
+                  <span className="text-theme-text font-medium truncate flex-1">{cat.displayName}</span>
+                  <Badge variant="outline" className="text-xs px-1.5 py-0 border-theme-border text-theme-text-muted">
+                    {cat.docs.length}
+                  </Badge>
+                </button>
+
+                {isExpanded && (
+                  <div className="pb-1">
+                    {cat.docs.map(doc => (
+                      <button
+                        key={doc.id}
+                        onClick={() => selectDoc(doc.id)}
+                        className={`w-full text-left px-3 py-1.5 pl-10 text-sm truncate transition-colors ${
+                          selectedDocId === doc.id
+                            ? "bg-theme-primary/10 text-theme-primary border-r-2 border-theme-primary"
+                            : "text-theme-text-muted hover:bg-theme-bg-elevated hover:text-theme-text"
+                        }`}
+                        style={selectedDocId === doc.id ? { backgroundColor: "var(--theme-primary-muted)", color: "var(--theme-primary)", borderColor: "var(--theme-primary)" } : {}}
+                        data-testid={`button-select-doc-${doc.id}`}
+                      >
+                        {doc.title}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
+    </>
+  );
+
   return (
     <div className="min-h-screen bg-theme-bg text-theme-text" data-testid="admin-docs-page">
       <AdminNav currentPage="docs" role={role} />
 
       <div className="flex h-[calc(100vh-64px)]">
-        <div className="w-80 border-r border-theme-border flex flex-col bg-theme-bg">
-          <div className="p-3 border-b border-theme-border space-y-2">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-theme-text-muted uppercase tracking-wider">Documentation</h2>
-              <Badge variant="secondary" className="text-xs" data-testid="badge-doc-count">{totalDocs} docs</Badge>
-            </div>
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 w-4 h-4 text-theme-text-muted" />
-              <Input
-                placeholder="Search docs..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 bg-theme-bg-card border-theme-border h-9 text-sm text-theme-text"
-                data-testid="input-search-docs"
-              />
-            </div>
-            <div className="flex gap-1.5">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => syncMutation.mutate()}
-                disabled={syncMutation.isPending}
-                className="flex-1 text-xs h-8 border-theme-border text-theme-text hover:bg-theme-bg-elevated"
-                data-testid="button-sync-api-docs"
-              >
-                <Download className="w-3.5 h-3.5 mr-1" />
-                {syncMutation.isPending ? "Syncing..." : "Sync API Docs"}
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/admin/docs"] })}
-                className="h-8 px-2 border-theme-border text-theme-text hover:bg-theme-bg-elevated"
-                data-testid="button-refresh-docs"
-              >
-                <RefreshCw className="w-3.5 h-3.5" />
-              </Button>
-            </div>
-          </div>
-
-          <div className="flex-1 overflow-y-auto">
-            {isLoading ? (
-              <div className="p-4 text-theme-text-muted text-sm">Loading docs...</div>
-            ) : filteredCategories.length === 0 ? (
-              <div className="p-4 text-theme-text-muted text-sm">
-                {searchQuery ? "No matching documents" : "No documentation found"}
-              </div>
-            ) : (
-              filteredCategories.map(cat => {
-                const IconComponent = ICON_MAP[cat.icon] || FileText;
-                const isExpanded = allDocsExpanded.has(cat.id);
-
-                return (
-                  <div key={cat.id} className="border-b border-theme-border/50" data-testid={`category-${cat.id}`}>
-                    <button
-                      onClick={() => toggleCategory(cat.id)}
-                      className="w-full flex items-center gap-2 px-3 py-2 hover:bg-theme-bg-elevated text-left text-sm"
-                      data-testid={`button-toggle-category-${cat.id}`}
-                    >
-                      {isExpanded ? (
-                        <ChevronDown className="w-3.5 h-3.5 text-theme-text-muted flex-shrink-0" />
-                      ) : (
-                        <ChevronRight className="w-3.5 h-3.5 text-theme-text-muted flex-shrink-0" />
-                      )}
-                      <IconComponent className="w-4 h-4 text-theme-primary flex-shrink-0" style={{ color: "var(--theme-primary)" }} />
-                      <span className="text-theme-text font-medium truncate flex-1">{cat.displayName}</span>
-                      <Badge variant="outline" className="text-xs px-1.5 py-0 border-theme-border text-theme-text-muted">
-                        {cat.docs.length}
-                      </Badge>
-                    </button>
-
-                    {isExpanded && (
-                      <div className="pb-1">
-                        {cat.docs.map(doc => (
-                          <button
-                            key={doc.id}
-                            onClick={() => setSelectedDocId(doc.id)}
-                            className={`w-full text-left px-3 py-1.5 pl-10 text-sm truncate transition-colors ${
-                              selectedDocId === doc.id
-                                ? "bg-theme-primary/10 text-theme-primary border-r-2 border-theme-primary"
-                                : "text-theme-text-muted hover:bg-theme-bg-elevated hover:text-theme-text"
-                            }`}
-                            style={selectedDocId === doc.id ? { backgroundColor: "var(--theme-primary-muted)", color: "var(--theme-primary)", borderColor: "var(--theme-primary)" } : {}}
-                            data-testid={`button-select-doc-${doc.id}`}
-                          >
-                            {doc.title}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })
-            )}
-          </div>
+        {/* Desktop sidebar - unchanged */}
+        <div className="hidden md:flex w-80 border-r border-theme-border flex-col bg-theme-bg">
+          {sidebarContent}
         </div>
 
+        {/* Mobile sidebar overlay */}
+        {mobileSidebarOpen && (
+          <div className="md:hidden fixed inset-0 z-40" data-testid="mobile-sidebar-overlay">
+            <div
+              className="absolute inset-0 bg-black/50"
+              onClick={() => setMobileSidebarOpen(false)}
+            />
+            <div className="absolute inset-y-0 left-0 w-[85%] max-w-sm bg-theme-bg border-r border-theme-border flex flex-col z-50 shadow-xl animate-in slide-in-from-left duration-200">
+              {sidebarContent}
+            </div>
+          </div>
+        )}
+
+        {/* Main content area */}
         <div className="flex-1 overflow-y-auto bg-theme-bg">
           {selectedDocId && selectedDoc ? (
-            <div className="max-w-4xl mx-auto p-6" data-testid="doc-viewer">
-              <div className="flex items-center gap-3 text-xs text-theme-text-muted mb-4 pb-3 border-b border-theme-border">
-                <span>{selectedDoc.relativePath}</span>
-                <span>|</span>
-                <span>{formatBytes(selectedDoc.sizeBytes)}</span>
-                <span>|</span>
-                <span>Modified {formatDate(selectedDoc.modifiedAt)}</span>
+            <div className="max-w-4xl mx-auto p-4 md:p-6" data-testid="doc-viewer">
+              <div className="flex items-center gap-2 mb-4 pb-3 border-b border-theme-border">
+                <button
+                  onClick={() => { setSelectedDocId(null); setMobileSidebarOpen(true); }}
+                  className="md:hidden p-1.5 -ml-1.5 rounded hover:bg-theme-bg-elevated text-theme-text-muted"
+                  data-testid="button-mobile-back"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                </button>
+                <div className="flex items-center gap-3 text-xs text-theme-text-muted flex-wrap">
+                  <span className="truncate max-w-[200px] md:max-w-none">{selectedDoc.relativePath}</span>
+                  <span className="hidden sm:inline">|</span>
+                  <span className="hidden sm:inline">{formatBytes(selectedDoc.sizeBytes)}</span>
+                  <span className="hidden sm:inline">|</span>
+                  <span className="hidden sm:inline">Modified {formatDate(selectedDoc.modifiedAt)}</span>
+                </div>
               </div>
               <MarkdownRenderer content={selectedDoc.content} />
             </div>
@@ -488,13 +533,25 @@ export default function AdminDocs() {
             </div>
           ) : (
             <div className="flex items-center justify-center h-full" data-testid="doc-welcome">
-              <div className="text-center max-w-lg">
+              <div className="text-center max-w-lg px-4">
+                {/* Mobile menu button on welcome screen */}
+                <div className="md:hidden mb-6">
+                  <Button
+                    variant="outline"
+                    onClick={() => setMobileSidebarOpen(true)}
+                    className="border-theme-border text-theme-text hover:bg-theme-bg-elevated"
+                    data-testid="button-open-mobile-sidebar"
+                  >
+                    <Menu className="w-4 h-4 mr-2" />
+                    Browse Documents
+                  </Button>
+                </div>
                 <FileText className="w-16 h-16 text-theme-border mx-auto mb-4" />
                 <h2 className="text-xl font-semibold text-theme-text mb-2">App Documentation</h2>
                 <p className="text-theme-text-muted mb-6">
                   Browse project documentation organized by category. Select a document from the sidebar to view its contents.
                 </p>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {categories.slice(0, 4).map(cat => {
                     const IconComp = ICON_MAP[cat.icon] || FileText;
                     return (
@@ -508,7 +565,7 @@ export default function AdminDocs() {
                             base.add(cat.id);
                             return base;
                           });
-                          if (cat.docs.length > 0) setSelectedDocId(cat.docs[0].id);
+                          if (cat.docs.length > 0) selectDoc(cat.docs[0].id);
                         }}
                         data-testid={`card-quick-link-${cat.id}`}
                       >
@@ -525,6 +582,18 @@ export default function AdminDocs() {
                 </div>
               </div>
             </div>
+          )}
+
+          {/* Mobile floating menu button when viewing a doc */}
+          {!mobileSidebarOpen && selectedDocId && (
+            <button
+              onClick={() => setMobileSidebarOpen(true)}
+              className="md:hidden fixed bottom-6 right-6 z-30 w-12 h-12 rounded-full bg-theme-primary text-white shadow-lg flex items-center justify-center hover:opacity-90 transition-opacity"
+              style={{ backgroundColor: "var(--theme-primary)" }}
+              data-testid="button-mobile-fab-menu"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
           )}
         </div>
       </div>
