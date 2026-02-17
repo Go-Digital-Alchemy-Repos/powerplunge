@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useAdmin } from "@/hooks/use-admin";
-import { DollarSign, Link2, Eye, Wallet, TrendingUp, Trophy, CheckCircle, XCircle, Clock, Settings, Users, Play, FileSearch, AlertCircle, AlertTriangle, CreditCard, ShieldAlert, Mail, Ticket, Copy, Trash2, Plus, ChevronDown, ChevronUp } from "lucide-react";
+import { DollarSign, Link2, Eye, Wallet, TrendingUp, Trophy, CheckCircle, XCircle, Clock, Settings, Users, Play, FileSearch, AlertCircle, AlertTriangle, CreditCard, ShieldAlert, Mail, Ticket, Copy, Trash2, Plus, ChevronDown, ChevronUp, Share2, MessageSquare, X } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
 import AdminNav from "@/components/admin/AdminNav";
@@ -252,11 +252,31 @@ export default function AdminAffiliates() {
   const [showCreateInvite, setShowCreateInvite] = useState(false);
   const [inviteForm, setInviteForm] = useState({
     targetEmail: "",
+    targetPhone: "",
     targetName: "",
     maxUses: 1,
     expiresInDays: 7,
     notes: "",
   });
+  const [inviteFallbackUrl, setInviteFallbackUrl] = useState<string | null>(null);
+  const [inviteCopied, setInviteCopied] = useState(false);
+  const [showInviteOptions, setShowInviteOptions] = useState(false);
+
+  const copyInviteLink = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+    }
+    setInviteCopied(true);
+    toast({ title: "Copied!", description: "Invite link copied to clipboard" });
+    setTimeout(() => setInviteCopied(false), 2000);
+  };
 
   // Custom rates state
   const [customRatesEnabled, setCustomRatesEnabled] = useState(false);
@@ -394,37 +414,101 @@ export default function AdminAffiliates() {
     },
   });
 
-  // Create invite mutation — uses /send endpoint so the email is delivered
-  const createInviteMutation = useMutation({
-    mutationFn: async (data: typeof inviteForm) => {
-      const res = await fetch("/api/admin/affiliate-invites/send", {
-        credentials: "include",
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          targetEmail: data.targetEmail || undefined,
-          targetName: data.targetName || undefined,
-          maxUses: data.maxUses,
-          expiresInDays: data.expiresInDays > 0 ? data.expiresInDays : undefined,
-          notes: data.notes || undefined,
-        }),
-      });
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.message || "Failed to create invite");
-      return result;
+  const sendInviteApi = async (payload: Record<string, any>) => {
+    const res = await fetch("/api/admin/affiliate-invites/send", {
+      credentials: "include",
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.message || "Failed to create invite");
+    return result;
+  };
+
+  const getInviteOptionalFields = () => ({
+    targetName: inviteForm.targetName || undefined,
+    maxUses: inviteForm.maxUses,
+    expiresInDays: inviteForm.expiresInDays > 0 ? inviteForm.expiresInDays : undefined,
+    notes: inviteForm.notes || undefined,
+  });
+
+  const resetInviteForm = () => {
+    setInviteForm({ targetEmail: "", targetPhone: "", targetName: "", maxUses: 1, expiresInDays: 7, notes: "" });
+    setInviteFallbackUrl(null);
+    setInviteCopied(false);
+    setShowInviteOptions(false);
+  };
+
+  const shareWithContactsMutation = useMutation({
+    mutationFn: async () => {
+      return sendInviteApi({ deliveryMethod: "contacts", ...getInviteOptionalFields() });
     },
-    onSuccess: (data: any) => {
+    onSuccess: async (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/affiliate-invites"] });
-      setShowCreateInvite(false);
-      setInviteForm({ targetEmail: "", targetName: "", maxUses: 1, expiresInDays: 7, notes: "" });
-      if (data.emailSent) {
-        toast({ title: "Invite created & sent", description: `Email sent to ${data.invite?.targetEmail}` });
+      const shareText = `Here's your private Power Plunge affiliate signup link: ${data.inviteUrl}`;
+      if (typeof navigator !== "undefined" && navigator.share) {
+        try {
+          await navigator.share({ title: "Power Plunge Affiliate Invite", text: shareText });
+          toast({ title: "Invite Shared!", description: "Your invite link was shared successfully." });
+        } catch (err: any) {
+          if (err.name === "AbortError") return;
+          await copyInviteLink(data.inviteUrl);
+        }
       } else {
-        toast({ title: "Invite created", description: data.emailError ? `Email could not be sent: ${data.emailError}` : "Invite link created (no email sent)" });
+        await copyInviteLink(data.inviteUrl);
       }
     },
     onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Failed to create invite", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const sendViaSms = useMutation({
+    mutationFn: async () => {
+      if (!inviteForm.targetPhone.trim()) throw new Error("Phone number is required");
+      return sendInviteApi({
+        deliveryMethod: "text",
+        targetPhone: inviteForm.targetPhone.trim(),
+        ...getInviteOptionalFields(),
+      });
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/affiliate-invites"] });
+      if (data.smsSent) {
+        toast({ title: "Text Sent!", description: `Invite SMS sent to ${data.invite.targetPhone}` });
+      } else {
+        toast({ title: "Invite Created", description: data.smsError || "SMS could not be sent. You can copy the invite link instead.", variant: "destructive" });
+        setInviteFallbackUrl(data.inviteUrl);
+      }
+      setInviteForm(f => ({ ...f, targetPhone: "" }));
+    },
+    onError: (error: Error) => {
+      toast({ title: "Failed", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const sendViaEmailMutation = useMutation({
+    mutationFn: async () => {
+      if (!inviteForm.targetEmail.trim()) throw new Error("Email address is required");
+      return sendInviteApi({
+        deliveryMethod: "email",
+        targetEmail: inviteForm.targetEmail.trim(),
+        ...getInviteOptionalFields(),
+      });
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/affiliate-invites"] });
+      if (data.emailSent) {
+        toast({ title: "Email Sent!", description: `Invite email sent to ${data.invite.targetEmail}` });
+      } else {
+        toast({ title: "Invite Created", description: "Email could not be sent, but the invite link is ready to copy.", variant: "destructive" });
+        setInviteFallbackUrl(data.inviteUrl);
+      }
+      setInviteForm(f => ({ ...f, targetEmail: "" }));
+    },
+    onError: (error: Error) => {
+      toast({ title: "Failed", description: error.message, variant: "destructive" });
     },
   });
 
@@ -1998,94 +2082,200 @@ export default function AdminAffiliates() {
         )}
 
         {/* Create Invite Dialog */}
-        <Dialog open={showCreateInvite} onOpenChange={setShowCreateInvite}>
-          <DialogContent>
+        <Dialog open={showCreateInvite} onOpenChange={(open) => { setShowCreateInvite(open); if (!open) { resetInviteForm(); } }}>
+          <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle>Create Affiliate Invite</DialogTitle>
+              <DialogTitle>Invite Affiliate</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4 py-4">
-              <p className="text-sm text-muted-foreground">
-                Create an invite link to share with potential affiliates. Leave email blank for a generic invite anyone can use.
-              </p>
-              
-              <div className="space-y-2">
-                <Label htmlFor="target-email">Target Email (optional)</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    id="target-email"
-                    type="email"
-                    placeholder="Leave blank for anyone"
-                    value={inviteForm.targetEmail}
-                    onChange={(e) => setInviteForm({ ...inviteForm, targetEmail: e.target.value })}
-                    className="pl-10"
-                    data-testid="input-target-email"
-                  />
-                </div>
-              </div>
+            <ScrollArea className="max-h-[70vh]">
+              <div className="space-y-4 py-2 pr-2">
+                <p className="text-sm text-muted-foreground">
+                  Choose how you'd like to send an invite.
+                </p>
 
-              <div className="space-y-2">
-                <Label htmlFor="target-name">Target Name (optional)</Label>
-                <Input
-                  id="target-name"
-                  placeholder="Pre-fill name on signup"
-                  value={inviteForm.targetName}
-                  onChange={(e) => setInviteForm({ ...inviteForm, targetName: e.target.value })}
-                  data-testid="input-target-name"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="max-uses">Max Uses</Label>
-                  <Input
-                    id="max-uses"
-                    type="number"
-                    min={1}
-                    value={inviteForm.maxUses}
-                    onChange={(e) => setInviteForm({ ...inviteForm, maxUses: parseInt(e.target.value) || 1 })}
-                    data-testid="input-max-uses"
-                  />
+                <div className="rounded-lg border p-4" data-testid="card-dialog-share-contacts">
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-2">
+                    <Share2 className="w-4 h-4" />
+                    Share from Contacts
+                  </h3>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Creates an invite link and opens your device's share sheet. On desktop, the link is copied to your clipboard.
+                  </p>
+                  <Button
+                    className="w-full h-11 font-semibold"
+                    onClick={() => shareWithContactsMutation.mutate()}
+                    disabled={shareWithContactsMutation.isPending}
+                    data-testid="button-dialog-share-contacts"
+                  >
+                    {shareWithContactsMutation.isPending ? (
+                      <><Clock className="w-4 h-4 mr-2 animate-spin" /> Creating Invite...</>
+                    ) : (
+                      <><Share2 className="w-4 h-4 mr-2" /> Share with Contacts</>
+                    )}
+                  </Button>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="expires-in">Expires in (days)</Label>
-                  <Input
-                    id="expires-in"
-                    type="number"
-                    min={0}
-                    value={inviteForm.expiresInDays}
-                    onChange={(e) => setInviteForm({ ...inviteForm, expiresInDays: parseInt(e.target.value) || 0 })}
-                    data-testid="input-expires-in"
-                  />
-                  <p className="text-xs text-muted-foreground">Set to 0 for no expiration</p>
+                <div className="rounded-lg border p-4" data-testid="card-dialog-share-text">
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
+                    <MessageSquare className="w-4 h-4" />
+                    Share via Text
+                  </h3>
+                  <form onSubmit={(e) => { e.preventDefault(); sendViaSms.mutate(); }} className="space-y-3">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="dialog-sms-phone">Phone Number</Label>
+                      <Input
+                        id="dialog-sms-phone"
+                        type="tel"
+                        placeholder="(555) 123-4567"
+                        value={inviteForm.targetPhone}
+                        onChange={(e) => setInviteForm({ ...inviteForm, targetPhone: e.target.value })}
+                        className="h-11"
+                        data-testid="input-dialog-sms-phone"
+                      />
+                    </div>
+                    <Button
+                      type="submit"
+                      disabled={sendViaSms.isPending}
+                      className="w-full h-11 font-semibold bg-green-600 hover:bg-green-700 text-white"
+                      data-testid="button-dialog-send-sms"
+                    >
+                      {sendViaSms.isPending ? (
+                        <><Clock className="w-4 h-4 mr-2 animate-spin" /> Sending Text...</>
+                      ) : (
+                        <><MessageSquare className="w-4 h-4 mr-2" /> Send Text Invite</>
+                      )}
+                    </Button>
+                  </form>
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="notes">Notes (internal)</Label>
-                <Textarea
-                  id="notes"
-                  placeholder="Optional notes about this invite..."
-                  value={inviteForm.notes}
-                  onChange={(e) => setInviteForm({ ...inviteForm, notes: e.target.value })}
-                  data-testid="input-notes"
-                />
-              </div>
+                <div className="rounded-lg border p-4" data-testid="card-dialog-share-email">
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
+                    <Mail className="w-4 h-4" />
+                    Share via Email
+                  </h3>
+                  <form onSubmit={(e) => { e.preventDefault(); sendViaEmailMutation.mutate(); }} className="space-y-3">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="dialog-email-address">Email Address</Label>
+                      <Input
+                        id="dialog-email-address"
+                        type="email"
+                        placeholder="affiliate@example.com"
+                        value={inviteForm.targetEmail}
+                        onChange={(e) => setInviteForm({ ...inviteForm, targetEmail: e.target.value })}
+                        className="h-11"
+                        autoComplete="email"
+                        data-testid="input-dialog-email-address"
+                      />
+                    </div>
+                    <Button
+                      type="submit"
+                      disabled={sendViaEmailMutation.isPending}
+                      className="w-full h-11 font-semibold bg-cyan-500 hover:bg-cyan-600 text-black"
+                      data-testid="button-dialog-send-email"
+                    >
+                      {sendViaEmailMutation.isPending ? (
+                        <><Clock className="w-4 h-4 mr-2 animate-spin" /> Sending Email...</>
+                      ) : (
+                        <><Mail className="w-4 h-4 mr-2" /> Send Email Invite</>
+                      )}
+                    </Button>
+                  </form>
+                </div>
 
-              <div className="flex justify-end gap-2 pt-4">
-                <Button variant="outline" onClick={() => setShowCreateInvite(false)}>
-                  Cancel
-                </Button>
-                <Button 
-                  onClick={() => createInviteMutation.mutate(inviteForm)}
-                  disabled={createInviteMutation.isPending}
-                  data-testid="button-submit-invite"
-                >
-                  {createInviteMutation.isPending ? "Creating..." : "Create Invite"}
-                </Button>
+                <div className="rounded-lg border p-4" data-testid="card-dialog-options">
+                  <button
+                    type="button"
+                    className="w-full flex items-center justify-between text-sm font-semibold text-muted-foreground uppercase tracking-wide"
+                    onClick={() => setShowInviteOptions(!showInviteOptions)}
+                    data-testid="button-toggle-options"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Settings className="w-4 h-4" />
+                      Invite Options
+                    </span>
+                    {showInviteOptions ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  </button>
+                  {showInviteOptions && (
+                    <div className="space-y-3 mt-3 pt-3 border-t">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="dialog-target-name">Recipient Name (optional)</Label>
+                        <Input
+                          id="dialog-target-name"
+                          placeholder="Pre-fill name on signup"
+                          value={inviteForm.targetName}
+                          onChange={(e) => setInviteForm({ ...inviteForm, targetName: e.target.value })}
+                          data-testid="input-dialog-target-name"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <Label htmlFor="dialog-max-uses">Max Uses</Label>
+                          <Input
+                            id="dialog-max-uses"
+                            type="number"
+                            min={1}
+                            value={inviteForm.maxUses}
+                            onChange={(e) => setInviteForm({ ...inviteForm, maxUses: parseInt(e.target.value) || 1 })}
+                            data-testid="input-dialog-max-uses"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor="dialog-expires-in">Expires in (days)</Label>
+                          <Input
+                            id="dialog-expires-in"
+                            type="number"
+                            min={0}
+                            value={inviteForm.expiresInDays}
+                            onChange={(e) => setInviteForm({ ...inviteForm, expiresInDays: parseInt(e.target.value) || 0 })}
+                            data-testid="input-dialog-expires-in"
+                          />
+                          <p className="text-xs text-muted-foreground">0 = no expiration</p>
+                        </div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="dialog-notes">Notes (internal)</Label>
+                        <Textarea
+                          id="dialog-notes"
+                          placeholder="Optional notes about this invite..."
+                          value={inviteForm.notes}
+                          onChange={(e) => setInviteForm({ ...inviteForm, notes: e.target.value })}
+                          data-testid="input-dialog-notes"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {inviteFallbackUrl && (
+                  <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/5 p-4" data-testid="card-dialog-fallback-url">
+                    <div className="flex items-start gap-3">
+                      <Link2 className="w-5 h-5 text-yellow-500 mt-0.5 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium mb-1">Invite link ready</p>
+                        <p className="text-xs text-muted-foreground break-all mb-2" data-testid="text-dialog-fallback-url">{inviteFallbackUrl}</p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => copyInviteLink(inviteFallbackUrl)}
+                          data-testid="button-dialog-copy-fallback"
+                        >
+                          <Copy className="w-4 h-4 mr-1.5" />
+                          {inviteCopied ? "Copied!" : "Copy Link"}
+                        </Button>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setInviteFallbackUrl(null)}
+                        className="text-muted-foreground hover:text-foreground"
+                        data-testid="button-dialog-dismiss-fallback"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
+            </ScrollArea>
           </DialogContent>
         </Dialog>
 
