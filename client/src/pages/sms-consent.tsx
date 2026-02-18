@@ -42,6 +42,9 @@ export default function SmsConsentPage() {
           <p>
             By registering as an affiliate with Power Plunge and accepting the Affiliate Program Agreement during signup, you consent to receive SMS text messages related to your affiliate account.
           </p>
+          <p>
+            Invitations are sent only to individuals who have a prior relationship with Power Plunge or its owner (e.g., personal contacts, networking, or prior customers).
+          </p>
 
           <h2>What messages will you receive?</h2>
           <ul>
