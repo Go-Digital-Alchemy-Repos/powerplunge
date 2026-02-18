@@ -255,6 +255,9 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
                 <Link href="/affiliate-agreement" className="text-muted-foreground text-sm hover:text-foreground transition-colors py-1" data-testid="link-affiliate-agreement">
                   Affiliate Agreement
                 </Link>
+                <Link href="/sms-consent" className="text-muted-foreground text-sm hover:text-foreground transition-colors py-1" data-testid="link-sms-consent">
+                  SMS Consent
+                </Link>
                 <button onClick={openConsentPreferences} className="text-muted-foreground text-sm hover:text-foreground transition-colors py-1" data-testid="link-cookie-preferences">
                   Cookie Preferences
                 </button>
