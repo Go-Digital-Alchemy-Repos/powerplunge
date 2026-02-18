@@ -404,7 +404,7 @@ export default function SupportTab({ prefillOrderId, onPrefillConsumed }: { pref
                           <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
                         </div>
                       </div>
-                      <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{ticket.message}</p>
+                      <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{ticket.message.replace(/<[^>]*>/g, '')}</p>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <Badge variant="secondary" className="text-xs">
                           {typeLabel(ticket.type)}
