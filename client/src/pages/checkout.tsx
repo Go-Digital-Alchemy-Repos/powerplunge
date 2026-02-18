@@ -846,10 +846,10 @@ export default function Checkout() {
     }
   }, [buildCustomerPayload, buildBillingPayload, getAffiliateCode, orderId, clientSecret, appliedCoupon, cart, billingSameAsShipping, toast]);
 
-  const validateReferralCode = async (code: string) => {
+  const validateReferralCode = async (code: string, { skipAutoRefresh = false } = {}): Promise<string | null> => {
     if (!code || code.length < 3) {
       setReferralStatus("idle");
-      return;
+      return null;
     }
     setReferralStatus("checking");
     try {
@@ -860,22 +860,25 @@ export default function Checkout() {
         setReferralStatus("valid");
         localStorage.setItem("affiliateCode", data.code);
         localStorage.setItem("affiliateCodeExpiry", String(Date.now() + 30 * 24 * 60 * 60 * 1000));
-        if (canAutoRefresh()) {
+        if (!skipAutoRefresh && canAutoRefresh()) {
           refreshPricing({ moveToPaymentStep: false });
         }
+        return data.code;
       } else {
         setReferralStatus("invalid");
+        return null;
       }
     } catch {
       setReferralStatus("invalid");
+      return null;
     }
   };
 
-  const validateCouponCode = async (code: string) => {
+  const validateCouponCode = async (code: string, { skipAutoRefresh = false } = {}): Promise<string | null> => {
     if (!code || code.length < 2) {
       setCouponStatus("idle");
       setCouponError("");
-      return;
+      return null;
     }
     setCouponStatus("checking");
     setCouponError("");
@@ -890,18 +893,21 @@ export default function Checkout() {
         setCouponStatus("valid");
         setAppliedCoupon(data.coupon);
         setCouponError("");
-        if (canAutoRefresh()) {
+        if (!skipAutoRefresh && canAutoRefresh()) {
           refreshPricing({ moveToPaymentStep: false, couponCodeOverride: data.coupon.code });
         }
+        return data.coupon.code;
       } else {
         setCouponStatus("invalid");
         setCouponError(data.message || "Invalid coupon code");
         setAppliedCoupon(null);
+        return null;
       }
     } catch {
       setCouponStatus("invalid");
       setCouponError("Failed to validate coupon");
       setAppliedCoupon(null);
+      return null;
     }
   };
 
@@ -963,7 +969,17 @@ export default function Checkout() {
     });
 
     try {
-      await refreshPricing({ moveToPaymentStep: true });
+      if (referralCode.trim() && referralStatus !== "valid" && referralStatus !== "checking") {
+        await validateReferralCode(referralCode.trim(), { skipAutoRefresh: true });
+      }
+      let autoAppliedCouponCode: string | null = null;
+      if (couponCode.trim() && couponStatus !== "valid" && couponStatus !== "checking" && !appliedCoupon) {
+        autoAppliedCouponCode = await validateCouponCode(couponCode.trim(), { skipAutoRefresh: true });
+      }
+      await refreshPricing({
+        moveToPaymentStep: true,
+        ...(autoAppliedCouponCode ? { couponCodeOverride: autoAppliedCouponCode } : {}),
+      });
     } finally {
       setIsLoading(false);
     }
