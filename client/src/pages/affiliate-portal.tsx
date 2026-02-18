@@ -726,7 +726,8 @@ export default function AffiliatePortal() {
                     </div>
                   )}
 
-                  {!connectStatus.detailsSubmitted && (
+                  {(!connectStatus.detailsSubmitted || !connectStatus.payoutsEnabled || 
+                    (connectStatus.requirements?.currently_due && connectStatus.requirements.currently_due.length > 0)) && (
                     <Button 
                       onClick={() => startConnectMutation.mutate()}
                       disabled={startConnectMutation.isPending}
@@ -738,7 +739,7 @@ export default function AffiliatePortal() {
                       ) : (
                         <ExternalLink className="w-4 h-4" />
                       )}
-                      Complete Stripe Onboarding
+                      {connectStatus.detailsSubmitted ? "Complete Setup" : "Complete Stripe Onboarding"}
                     </Button>
                   )}
                 </div>
