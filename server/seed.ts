@@ -23,10 +23,13 @@ export async function ensureSuperAdmin() {
   );
 }
 
+function getTestPassword(): string {
+  return process.env.SEED_TEST_PASSWORD || "testpass123";
+}
+
 const TEST_ADMIN_USERS = [
   {
     email: "admin@test.com",
-    password: "testpass123",
     firstName: "Test",
     lastName: "Admin",
     name: "Test Admin",
@@ -34,7 +37,6 @@ const TEST_ADMIN_USERS = [
   },
   {
     email: "manager@test.com",
-    password: "testpass123",
     firstName: "Test",
     lastName: "Manager",
     name: "Test Manager",
@@ -42,7 +44,6 @@ const TEST_ADMIN_USERS = [
   },
   {
     email: "fulfillment@test.com",
-    password: "testpass123",
     firstName: "Test",
     lastName: "Fulfillment",
     name: "Test Fulfillment",
@@ -57,13 +58,14 @@ export async function seedTestAdminUsers() {
 
   console.log("Seeding test admin users (dev only)...");
 
+  const testPassword = getTestPassword();
   for (const testUser of TEST_ADMIN_USERS) {
     const existing = await storage.getAdminUserByEmail(testUser.email);
     if (existing) {
       continue;
     }
 
-    const hashedPassword = await bcrypt.hash(testUser.password, 12);
+    const hashedPassword = await bcrypt.hash(testPassword, 12);
     await storage.createAdminUser({
       email: testUser.email,
       password: hashedPassword,
@@ -78,7 +80,6 @@ export async function seedTestAdminUsers() {
 
 const TEST_AFFILIATE = {
   email: "affiliate@test.com",
-  password: "testpass123",
   name: "Test Affiliate",
   affiliateCode: "TESTFF",
 };
@@ -100,7 +101,7 @@ export async function seedTestAffiliateAccount() {
 
   let customer = await storage.getCustomerByEmail(TEST_AFFILIATE.email);
   if (!customer) {
-    const passwordHash = await bcrypt.hash(TEST_AFFILIATE.password, 10);
+    const passwordHash = await bcrypt.hash(getTestPassword(), 10);
     customer = await storage.createCustomer({
       email: TEST_AFFILIATE.email,
       name: TEST_AFFILIATE.name,
@@ -145,7 +146,6 @@ export async function seedTestAffiliateAccount() {
 
 const TEST_CUSTOMER = {
   email: "customer@test.com",
-  password: "testpass123",
   name: "Test Customer",
   phone: "(555) 123-4567",
   address: "123 Test Street",
@@ -172,7 +172,7 @@ export async function seedTestCustomerAccount() {
 
   let customer = await storage.getCustomerByEmail(TEST_CUSTOMER.email);
   if (!customer) {
-    const passwordHash = await bcrypt.hash(TEST_CUSTOMER.password, 10);
+    const passwordHash = await bcrypt.hash(getTestPassword(), 10);
     customer = await storage.createCustomer({
       email: TEST_CUSTOMER.email,
       name: TEST_CUSTOMER.name,
@@ -209,10 +209,10 @@ export async function seedTestCustomerAccount() {
       unitPrice: product.price,
     });
 
-    console.log(`  Created test customer: ${TEST_CUSTOMER.email} (password: ${TEST_CUSTOMER.password})`);
+    console.log(`  Created test customer: ${TEST_CUSTOMER.email}`);
     console.log(`  Created test order: ${order.id} (1x ${product.name}, status: delivered)`);
   } else {
-    console.log(`  Created test customer: ${TEST_CUSTOMER.email} (password: ${TEST_CUSTOMER.password})`);
+    console.log(`  Created test customer: ${TEST_CUSTOMER.email}`);
     console.log("  No products found, skipped order creation");
   }
 }

@@ -49,6 +49,26 @@ These are used during `npm run build` only (not at runtime).
 
 The `vite-plugin-meta-images` plugin checks `PUBLIC_SITE_URL` first, then `VITE_PUBLIC_SITE_URL`. If neither is set, production builds print a warning and fall back to the Replit dev domain.
 
+## Development / Testing Variables
+
+These variables are used only in development (`NODE_ENV=development`). They are **never** read in production.
+
+| Variable | Feature | Description | Example |
+|---|---|---|---|
+| `SEED_TEST_PASSWORD` | Dev Seed | Password used for all seeded test accounts (admin, customer, affiliate). Falls back to `testpass123` if unset. | `my-secret-test-pw` |
+
+### Test user seeding
+
+Run `npm run seed:dev-users -- --confirm` to create deterministic test users. The script:
+
+- **Refuses to run** when `NODE_ENV=production`
+- **Requires** the `--confirm` flag as a safety guard
+- Reads `SEED_TEST_PASSWORD` for the shared password (default: `testpass123`)
+- **Never logs plaintext passwords**
+- Is idempotent — safe to run repeatedly
+
+See `.agents/skills/playwright-testing/SKILL.md` for the full list of seeded accounts and Playwright usage instructions.
+
 ## Informational Variables (set automatically)
 
 | Variable | Feature | Description |

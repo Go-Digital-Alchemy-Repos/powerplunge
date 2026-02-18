@@ -149,19 +149,6 @@ app.use(requestLoggerMiddleware);
         console.error("[SUPER-ADMIN] Failed to ensure super admin:", error);
       }
 
-      // ONE-TIME: Reset password for admin@powerplunge.com — remove after deploy
-      try {
-        const bcryptMod = await import("bcryptjs");
-        const { db: resetDb } = await import("./db");
-        const { adminUsers: resetTable } = await import("@shared/schema");
-        const { eq: resetEq } = await import("drizzle-orm");
-        const hashed = await bcryptMod.default.hash("12super34", 12);
-        const [updated] = await resetDb.update(resetTable).set({ password: hashed }).where(resetEq(resetTable.email, "admin@powerplunge.com")).returning({ id: resetTable.id });
-        if (updated) log("Password reset for admin@powerplunge.com");
-      } catch (error) {
-        console.error("[PW-RESET] Failed:", error);
-      }
-
       // Seed test admin users in development only
       if (process.env.NODE_ENV !== "production") {
         try {
