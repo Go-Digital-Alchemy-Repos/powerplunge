@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAdmin } from "@/hooks/use-admin";
 import AdminNav from "@/components/admin/AdminNav";
 import {
-  Loader2, UserPlus, Share2, MessageSquare, Mail, Copy, X, Link2,
+  Loader2, UserPlus, Share2, MessageSquare, Mail, Copy, X, Link2, Smartphone, Monitor,
 } from "lucide-react";
 
 interface InviteResponse {
@@ -32,10 +32,29 @@ interface InviteResponse {
 
 type DeliveryMethod = "contacts" | "text" | "email";
 
+function detectIsMobile(): boolean {
+  if (typeof window === "undefined" || typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent || "";
+  const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+  const hasTouch = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+  const isSmallScreen = window.innerWidth <= 768;
+  return isMobileUA || (hasTouch && isSmallScreen);
+}
+
+function formatPhoneForSms(phone: string): string {
+  if (phone.startsWith("+")) return phone;
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length === 10) return `+1${digits}`;
+  if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;
+  return `+${digits}`;
+}
+
 export default function AdminAffiliateInviteSender() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { admin, isLoading: adminLoading, isAuthenticated, role, hasFullAccess } = useAdmin();
+
+  const isMobile = useMemo(() => detectIsMobile(), []);
 
   const [targetPhone, setTargetPhone] = useState("");
   const [targetEmail, setTargetEmail] = useState("");
@@ -106,12 +125,37 @@ export default function AdminAffiliateInviteSender() {
       if (!targetPhone.trim()) {
         throw new Error("Phone number is required");
       }
+      if (isMobile) {
+        return sendInvite({
+          deliveryMethod: "contacts" as DeliveryMethod,
+          targetPhone: targetPhone.trim(),
+        });
+      }
       return sendInvite({
         deliveryMethod: "text" as DeliveryMethod,
         targetPhone: targetPhone.trim(),
       });
     },
     onSuccess: (data) => {
+      if (isMobile) {
+        const smsNumber = data.invite.targetPhone
+          ? formatPhoneForSms(data.invite.targetPhone)
+          : formatPhoneForSms(targetPhone.trim());
+        const smsBody = encodeURIComponent(
+          `Here's your private Power Plunge affiliate signup link: ${data.inviteUrl}`
+        );
+        const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent || "");
+        const smsUrl = isIOS
+          ? `sms:${smsNumber}&body=${smsBody}`
+          : `sms:${smsNumber}?body=${smsBody}`;
+        window.location.href = smsUrl;
+        toast({
+          title: "Opening Messages",
+          description: "Your messaging app should open with the invite pre-filled. Just tap send!",
+        });
+        setTargetPhone("");
+        return;
+      }
       if (data.smsSent) {
         toast({ title: "Text Sent!", description: `Invite SMS sent to ${data.invite.targetPhone}` });
       } else {
@@ -227,10 +271,23 @@ export default function AdminAffiliateInviteSender() {
 
         <Card className="mb-4" data-testid="card-share-text">
           <CardContent className="pt-5 pb-5">
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-4 flex items-center gap-2" data-testid="text-sms-heading">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2" data-testid="text-sms-heading">
               <MessageSquare className="w-4 h-4" />
               Share via Text
             </h2>
+            <div className="flex items-center gap-1.5 mb-3" data-testid="text-sms-mode">
+              {isMobile ? (
+                <span className="inline-flex items-center gap-1 text-xs text-green-600 bg-green-500/10 px-2 py-0.5 rounded-full font-medium">
+                  <Smartphone className="w-3 h-3" />
+                  Mobile — opens your messaging app
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 text-xs text-blue-600 bg-blue-500/10 px-2 py-0.5 rounded-full font-medium">
+                  <Monitor className="w-3 h-3" />
+                  Desktop — sends via server
+                </span>
+              )}
+            </div>
             <form onSubmit={handleSmsSubmit} className="space-y-3">
               <div className="space-y-1.5">
                 <Label htmlFor="smsPhone">Phone Number</Label>
@@ -253,12 +310,12 @@ export default function AdminAffiliateInviteSender() {
                 {sendViaSms.isPending ? (
                   <>
                     <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    Sending Text...
+                    {isMobile ? "Creating Invite..." : "Sending Text..."}
                   </>
                 ) : (
                   <>
                     <MessageSquare className="w-5 h-5 mr-2" />
-                    Send Text Invite
+                    {isMobile ? "Text Invite" : "Send Text Invite"}
                   </>
                 )}
               </Button>
