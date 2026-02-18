@@ -828,7 +828,7 @@ export default function AdminSupport() {
                   <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-1" data-testid="thread-container">
                     {buildThread(selectedTicket).map((entry, idx) => {
                       const isAdmin = entry.type === "admin_reply";
-                      const isHtml = isAdmin && entry.text.includes("<") && entry.text.includes(">");
+                      const isHtml = entry.text.includes("<") && entry.text.includes(">");
                       return (
                         <div
                           key={idx}
