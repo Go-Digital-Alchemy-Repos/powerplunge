@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test";
 const ADMIN_EMAIL = "admin@test.com";
 const ADMIN_PASSWORD = process.env.SEED_TEST_PASSWORD || "testpass123";
 
-test.describe("Admin Authentication", () => {
+test.describe("Admin Authentication @admin", () => {
   test("can log in with valid credentials", async ({ page }) => {
     await page.goto("/admin/login");
     await page.locator('[data-testid="input-email"]').fill(ADMIN_EMAIL);

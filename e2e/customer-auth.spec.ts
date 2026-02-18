@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test";
 const CUSTOMER_EMAIL = "customer@test.com";
 const CUSTOMER_PASSWORD = process.env.SEED_TEST_PASSWORD || "testpass123";
 
-test.describe("Customer Authentication", () => {
+test.describe("Customer Authentication @customer", () => {
   test("customer login page loads", async ({ page }) => {
     await page.goto("/login");
     await expect(page.locator("#login-email")).toBeVisible();
