@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAdmin } from "@/hooks/use-admin";
 import AdminNav from "@/components/admin/AdminNav";
 import RichTextEditor from "@/components/admin/RichTextEditor";
-import { Headset, MessageSquare, CheckCircle, Clock, AlertCircle, Eye, Search, Filter, RefreshCw, Plus, User, Settings } from "lucide-react";
+import { Headset, MessageSquare, CheckCircle, Clock, AlertCircle, Eye, Search, Filter, RefreshCw, Plus, User, Settings, Package, ChevronDown, ChevronRight, ShoppingBag, DollarSign, ExternalLink } from "lucide-react";
 import { Link } from "wouter";
 
 interface AdminNote {
@@ -88,6 +88,31 @@ function buildThread(ticket: SupportTicket): ThreadEntry[] {
   return entries;
 }
 
+interface CustomerOrderItem {
+  id: string;
+  orderId: string;
+  productName: string;
+  quantity: number;
+  unitPrice: number;
+}
+
+interface CustomerOrder {
+  id: string;
+  status: string;
+  totalAmount: number;
+  paymentStatus: string;
+  createdAt: string;
+  shippingName: string | null;
+  items: CustomerOrderItem[];
+}
+
+interface CustomerOrderHistory {
+  customer: { id: string; name: string; email: string; createdAt: string };
+  orders: CustomerOrder[];
+  totalSpent: number;
+  orderCount: number;
+}
+
 interface TicketStats {
   status: string;
   count: number;
@@ -133,6 +158,9 @@ export default function AdminSupport() {
   const [newStatus, setNewStatus] = useState("");
   const [newPriority, setNewPriority] = useState("");
 
+  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+  const [showOrderHistory, setShowOrderHistory] = useState(true);
+
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [customerSearch, setCustomerSearch] = useState("");
   const [customerResults, setCustomerResults] = useState<CustomerSearchResult[]>([]);
@@ -143,6 +171,16 @@ export default function AdminSupport() {
     message: "",
     type: "general",
     priority: "normal",
+  });
+
+  const { data: orderHistoryData, isLoading: orderHistoryLoading } = useQuery<CustomerOrderHistory>({
+    queryKey: ["/api/admin/support/customers", selectedTicket?.customerId, "orders"],
+    queryFn: async () => {
+      const res = await fetch(`/api/admin/support/customers/${selectedTicket!.customerId}/orders`, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch order history");
+      return res.json();
+    },
+    enabled: !!selectedTicket?.customerId,
   });
 
   const { data, isLoading, refetch } = useQuery<{ tickets: SupportTicket[]; stats: TicketStats[] }>({
@@ -264,6 +302,8 @@ export default function AdminSupport() {
     setNewNoteText("");
     setNewStatus(ticket.status);
     setNewPriority(ticket.priority);
+    setExpandedOrderId(null);
+    setShowOrderHistory(true);
   };
 
   const handleUpdateTicket = () => {
@@ -583,7 +623,124 @@ export default function AdminSupport() {
                     )}
                   </div>
                 </div>
+
+                {orderHistoryData && (
+                  <div className="flex items-center gap-4 mt-3 pt-3 border-t border-border/50 text-sm">
+                    <div className="flex items-center gap-1.5">
+                      <ShoppingBag className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span className="text-muted-foreground">Orders:</span>
+                      <span className="font-medium">{orderHistoryData.orderCount}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <DollarSign className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span className="text-muted-foreground">Total Spent:</span>
+                      <span className="font-medium">${(orderHistoryData.totalSpent / 100).toFixed(2)}</span>
+                    </div>
+                  </div>
+                )}
               </div>
+
+              {/* Order History Section */}
+              {selectedTicket.customerId && (
+                <div className="rounded-lg border" data-testid="order-history-section">
+                  <button
+                    type="button"
+                    className="w-full flex items-center justify-between p-4 hover:bg-muted/30 transition-colors"
+                    onClick={() => setShowOrderHistory(!showOrderHistory)}
+                    data-testid="button-toggle-order-history"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Package className="w-4 h-4 text-primary" />
+                      <span className="font-medium text-sm">Order History</span>
+                      {orderHistoryData && (
+                        <Badge variant="outline" className="text-xs">{orderHistoryData.orderCount} orders</Badge>
+                      )}
+                    </div>
+                    {showOrderHistory ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+                  </button>
+
+                  {showOrderHistory && (
+                    <div className="border-t px-4 pb-4">
+                      {orderHistoryLoading ? (
+                        <div className="py-4 text-center">
+                          <div className="animate-spin w-5 h-5 border-2 border-primary border-t-transparent rounded-full mx-auto" />
+                          <p className="text-xs text-muted-foreground mt-2">Loading orders...</p>
+                        </div>
+                      ) : !orderHistoryData?.orders?.length ? (
+                        <div className="py-4 text-center">
+                          <ShoppingBag className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
+                          <p className="text-sm text-muted-foreground">No orders found for this customer</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-2 pt-3 max-h-[300px] overflow-y-auto">
+                          {orderHistoryData.orders.map((order) => (
+                            <div
+                              key={order.id}
+                              className={`rounded-lg border transition-colors ${selectedTicket.orderId === order.id ? "border-primary/50 bg-primary/5" : "bg-muted/20"}`}
+                              data-testid={`order-card-${order.id}`}
+                            >
+                              <button
+                                type="button"
+                                className="w-full flex items-center justify-between p-3 text-left"
+                                onClick={() => setExpandedOrderId(expandedOrderId === order.id ? null : order.id)}
+                                data-testid={`button-expand-order-${order.id}`}
+                              >
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-sm font-medium">#{order.id.slice(0, 8)}</span>
+                                      {selectedTicket.orderId === order.id && (
+                                        <Badge className="bg-primary/20 text-primary text-[10px] px-1.5 py-0">Related</Badge>
+                                      )}
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">
+                                      {new Date(order.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <div className="text-right">
+                                    <p className="text-sm font-medium">${(order.totalAmount / 100).toFixed(2)}</p>
+                                    <Badge className={`text-[10px] px-1.5 py-0 ${
+                                      order.status === "delivered" ? "bg-green-500/20 text-green-500" :
+                                      order.status === "shipped" ? "bg-blue-500/20 text-blue-500" :
+                                      order.status === "cancelled" ? "bg-red-500/20 text-red-500" :
+                                      order.status === "paid" ? "bg-emerald-500/20 text-emerald-500" :
+                                      "bg-yellow-500/20 text-yellow-500"
+                                    }`}>
+                                      {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                                    </Badge>
+                                  </div>
+                                  {expandedOrderId === order.id ? <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />}
+                                </div>
+                              </button>
+
+                              {expandedOrderId === order.id && order.items.length > 0 && (
+                                <div className="border-t px-3 py-2 space-y-1.5" data-testid={`order-items-${order.id}`}>
+                                  {order.items.map((item) => (
+                                    <div key={item.id} className="flex items-center justify-between text-xs">
+                                      <span className="text-muted-foreground truncate max-w-[60%]">{item.productName} x{item.quantity}</span>
+                                      <span className="font-medium">${((item.unitPrice * item.quantity) / 100).toFixed(2)}</span>
+                                    </div>
+                                  ))}
+                                  <div className="pt-1.5 border-t">
+                                    <Link href={`/admin/orders`}>
+                                      <span className="text-xs text-primary hover:underline flex items-center gap-1 cursor-pointer" data-testid={`link-view-order-${order.id}`}>
+                                        <ExternalLink className="w-3 h-3" />
+                                        View full order details
+                                      </span>
+                                    </Link>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div>
                 <div className="flex flex-wrap items-center gap-2 mb-3">

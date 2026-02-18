@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { db } from "../../../db";
-import { supportTickets, customers, orders, adminUsers } from "@shared/schema";
+import { supportTickets, customers, orders, orderItems, adminUsers } from "@shared/schema";
 import { eq, desc, and, sql, or, ilike } from "drizzle-orm";
 import { requireAdmin } from "../../middleware";
 import { notificationService } from "../../services/notification.service";
@@ -389,6 +389,73 @@ adminSupportRouter.post("/", requireAdmin, async (req, res, next) => {
     }).catch((err) => console.error("Failed to create admin-created ticket notification:", err));
 
     res.status(201).json({ ticket });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminSupportRouter.get("/customers/:customerId/orders", requireAdmin, async (req, res, next) => {
+  try {
+    const { customerId } = req.params;
+
+    const customer = await db.query.customers.findFirst({
+      where: eq(customers.id, customerId),
+    });
+
+    if (!customer) {
+      return res.status(404).json({ message: "Customer not found" });
+    }
+
+    const customerOrders = await db.select({
+      id: orders.id,
+      status: orders.status,
+      totalAmount: orders.totalAmount,
+      paymentStatus: orders.paymentStatus,
+      createdAt: orders.createdAt,
+      shippingName: orders.shippingName,
+    })
+    .from(orders)
+    .where(eq(orders.customerId, customerId))
+    .orderBy(desc(orders.createdAt))
+    .limit(20);
+
+    const [aggregates] = await db.select({
+      totalSpent: sql<number>`coalesce(sum(case when ${orders.status} != 'cancelled' then ${orders.totalAmount} else 0 end), 0)::int`,
+      orderCount: sql<number>`count(*)::int`,
+    })
+    .from(orders)
+    .where(eq(orders.customerId, customerId));
+
+    const orderIds = customerOrders.map(o => o.id);
+    let items: Array<{ id: string; orderId: string; productName: string; quantity: number; unitPrice: number }> = [];
+    if (orderIds.length > 0) {
+      items = await db.select({
+        id: orderItems.id,
+        orderId: orderItems.orderId,
+        productName: orderItems.productName,
+        quantity: orderItems.quantity,
+        unitPrice: orderItems.unitPrice,
+      })
+      .from(orderItems)
+      .where(sql`${orderItems.orderId} = ANY(${orderIds})`);
+    }
+
+    const ordersWithItems = customerOrders.map(order => ({
+      ...order,
+      items: items.filter(i => i.orderId === order.id),
+    }));
+
+    res.json({
+      customer: {
+        id: customer.id,
+        name: customer.name,
+        email: customer.email,
+        createdAt: customer.createdAt,
+      },
+      orders: ordersWithItems,
+      totalSpent: aggregates.totalSpent,
+      orderCount: aggregates.orderCount,
+    });
   } catch (error) {
     next(error);
   }
