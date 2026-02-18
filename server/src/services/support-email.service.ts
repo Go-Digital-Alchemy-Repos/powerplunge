@@ -1,7 +1,39 @@
-import { emailService, type EmailOptions } from "../integrations/mailgun/EmailService";
+import { emailService, type EmailOptions, type EmailResult } from "../integrations/mailgun/EmailService";
 import { db } from "../../db";
-import { siteSettings, emailSettings, customers } from "@shared/schema";
+import { siteSettings, emailSettings, customers, emailLogs } from "@shared/schema";
 import { eq } from "drizzle-orm";
+
+export async function logEmail(params: {
+  ticketId: string;
+  direction: "outbound" | "inbound";
+  fromAddress: string;
+  toAddress: string;
+  subject: string;
+  htmlBody?: string;
+  textBody?: string;
+  emailType: string;
+  status: "success" | "failed";
+  error?: string;
+  messageId?: string;
+}): Promise<void> {
+  try {
+    await db.insert(emailLogs).values({
+      ticketId: params.ticketId,
+      direction: params.direction,
+      fromAddress: params.fromAddress,
+      toAddress: params.toAddress,
+      subject: params.subject,
+      htmlBody: params.htmlBody || null,
+      textBody: params.textBody || null,
+      emailType: params.emailType,
+      status: params.status,
+      error: params.error || null,
+      messageId: params.messageId || null,
+    });
+  } catch (err) {
+    console.error("[EMAIL LOG] Failed to log email:", err);
+  }
+}
 
 interface TicketData {
   ticketId: string;
@@ -85,11 +117,8 @@ export async function sendNewTicketAdminNotification(ticket: TicketData): Promis
 
     const baseUrl = getBaseUrl();
 
-    const result = await emailService.sendEmail({
-      to: emails,
-      subject: `New Support Ticket: ${ticket.subject}`,
-      ...(settings.fromEmail ? { from: settings.fromEmail } : {}),
-      html: `
+    const emailSubject = `New Support Ticket: ${ticket.subject}`;
+    const emailHtml = `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; background: #0a0a0a; color: #e5e5e5; border-radius: 8px; overflow: hidden;">
           <div style="background: linear-gradient(135deg, #0c4a6e 0%, #164e63 100%); padding: 24px; text-align: center;">
             <h1 style="margin: 0; color: #67e8f9; font-size: 20px;">New Support Ticket</h1>
@@ -110,7 +139,24 @@ export async function sendNewTicketAdminNotification(ticket: TicketData): Promis
             </div>
           </div>
         </div>
-      `,
+      `;
+    const result = await emailService.sendEmail({
+      to: emails,
+      subject: emailSubject,
+      ...(settings.fromEmail ? { from: settings.fromEmail } : {}),
+      html: emailHtml,
+    });
+    await logEmail({
+      ticketId: ticket.ticketId,
+      direction: "outbound",
+      fromAddress: settings.fromEmail || "system",
+      toAddress: emails.join(", "),
+      subject: emailSubject,
+      htmlBody: emailHtml,
+      emailType: "admin_notification",
+      status: result.success ? "success" : "failed",
+      error: result.error,
+      messageId: result.messageId,
     });
     if (result.success) {
       console.log(`[SUPPORT EMAIL] Admin notification sent to: ${emails.join(", ")}`);
@@ -182,12 +228,8 @@ export async function sendAdminReplyToCustomer(data: AdminReplyData): Promise<vo
       portalButtonHtml = "";
     }
 
-    const result = await emailService.sendEmail({
-      to: data.customerEmail,
-      subject: `Re: ${data.subject}`,
-      ...(settings.fromEmail ? { from: settings.fromEmail } : {}),
-      ...(replyTo ? { replyTo } : {}),
-      html: `
+    const replySubject = `Re: ${data.subject}`;
+    const replyHtml = `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; background: #0a0a0a; color: #e5e5e5; border-radius: 8px; overflow: hidden;">
           <div style="background: linear-gradient(135deg, #0c4a6e 0%, #164e63 100%); padding: 24px; text-align: center;">
             <h1 style="margin: 0; color: #67e8f9; font-size: 20px;">${settings.companyName} Support</h1>
@@ -206,7 +248,25 @@ export async function sendAdminReplyToCustomer(data: AdminReplyData): Promise<vo
             <p style="margin-top: 16px; color: #a3a3a3; font-size: 13px;">${replyInstructions}</p>
           </div>
         </div>
-      `,
+      `;
+    const result = await emailService.sendEmail({
+      to: data.customerEmail,
+      subject: replySubject,
+      ...(settings.fromEmail ? { from: settings.fromEmail } : {}),
+      ...(replyTo ? { replyTo } : {}),
+      html: replyHtml,
+    });
+    await logEmail({
+      ticketId: data.ticketId,
+      direction: "outbound",
+      fromAddress: settings.fromEmail || "system",
+      toAddress: data.customerEmail,
+      subject: replySubject,
+      htmlBody: replyHtml,
+      emailType: "admin_reply",
+      status: result.success ? "success" : "failed",
+      error: result.error,
+      messageId: result.messageId,
     });
     if (result.success) {
       console.log(`[SUPPORT EMAIL] Admin reply sent to customer: ${data.customerEmail}`);
@@ -234,11 +294,8 @@ export async function sendStatusChangeToCustomer(data: StatusChangeData): Promis
             </div>`
       : "";
 
-    const result = await emailService.sendEmail({
-      to: data.customerEmail,
-      subject: `Ticket Update: ${data.subject} - ${statusLabel}`,
-      ...(settings.fromEmail ? { from: settings.fromEmail } : {}),
-      html: `
+    const statusSubject = `Ticket Update: ${data.subject} - ${statusLabel}`;
+    const statusHtml = `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; background: #0a0a0a; color: #e5e5e5; border-radius: 8px; overflow: hidden;">
           <div style="background: linear-gradient(135deg, #0c4a6e 0%, #164e63 100%); padding: 24px; text-align: center;">
             <h1 style="margin: 0; color: #67e8f9; font-size: 20px;">${settings.companyName} Support</h1>
@@ -256,7 +313,24 @@ export async function sendStatusChangeToCustomer(data: StatusChangeData): Promis
             </div>${portalButtonHtml}
           </div>
         </div>
-      `,
+      `;
+    const result = await emailService.sendEmail({
+      to: data.customerEmail,
+      subject: statusSubject,
+      ...(settings.fromEmail ? { from: settings.fromEmail } : {}),
+      html: statusHtml,
+    });
+    await logEmail({
+      ticketId: data.ticketId,
+      direction: "outbound",
+      fromAddress: settings.fromEmail || "system",
+      toAddress: data.customerEmail,
+      subject: statusSubject,
+      htmlBody: statusHtml,
+      emailType: "status_change",
+      status: result.success ? "success" : "failed",
+      error: result.error,
+      messageId: result.messageId,
     });
     if (result.success) {
       console.log(`[SUPPORT EMAIL] Status change email sent to customer: ${data.customerEmail}`);
@@ -292,11 +366,8 @@ export async function sendTicketConfirmationToCustomer(ticket: TicketData): Prom
       ? `If you have additional details, simply reply to this email or view your ticket in your account dashboard.`
       : `If you have additional details, simply reply to this email.`;
 
-    const result = await emailService.sendEmail({
-      to: ticket.customerEmail,
-      subject: `Re: ${ticket.subject} - We've received your message`,
-      ...(settings.fromEmail ? { from: settings.fromEmail } : {}),
-      html: `
+    const confirmSubject = `Re: ${ticket.subject} - We've received your message`;
+    const confirmHtml = `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; background: #0a0a0a; color: #e5e5e5; border-radius: 8px; overflow: hidden;">
           <div style="background: linear-gradient(135deg, #0c4a6e 0%, #164e63 100%); padding: 24px; text-align: center;">
             <h1 style="margin: 0; color: #67e8f9; font-size: 20px;">${settings.companyName}</h1>
@@ -311,7 +382,24 @@ export async function sendTicketConfirmationToCustomer(ticket: TicketData): Prom
             <p style="margin-top: 16px; color: #a3a3a3; font-size: 13px;">${followUpText}</p>
           </div>
         </div>
-      `,
+      `;
+    const result = await emailService.sendEmail({
+      to: ticket.customerEmail,
+      subject: confirmSubject,
+      ...(settings.fromEmail ? { from: settings.fromEmail } : {}),
+      html: confirmHtml,
+    });
+    await logEmail({
+      ticketId: ticket.ticketId,
+      direction: "outbound",
+      fromAddress: settings.fromEmail || "system",
+      toAddress: ticket.customerEmail,
+      subject: confirmSubject,
+      htmlBody: confirmHtml,
+      emailType: "customer_confirmation",
+      status: result.success ? "success" : "failed",
+      error: result.error,
+      messageId: result.messageId,
     });
     if (result.success) {
       console.log(`[SUPPORT EMAIL] Customer confirmation sent to: ${ticket.customerEmail}`);

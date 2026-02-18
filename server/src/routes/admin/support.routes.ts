@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { db } from "../../../db";
-import { supportTickets, customers, orders, orderItems, adminUsers } from "@shared/schema";
+import { supportTickets, customers, orders, orderItems, adminUsers, emailLogs } from "@shared/schema";
 import { eq, desc, and, sql, or, ilike } from "drizzle-orm";
 import { requireAdmin } from "../../middleware";
 import { notificationService } from "../../services/notification.service";
@@ -389,6 +389,21 @@ adminSupportRouter.post("/", requireAdmin, async (req, res, next) => {
     }).catch((err) => console.error("Failed to create admin-created ticket notification:", err));
 
     res.status(201).json({ ticket });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminSupportRouter.get("/email-logs/:ticketId", requireAdmin, async (req, res, next) => {
+  try {
+    const { ticketId } = req.params;
+
+    const logs = await db.select()
+      .from(emailLogs)
+      .where(eq(emailLogs.ticketId, ticketId))
+      .orderBy(emailLogs.createdAt);
+
+    res.json({ logs });
   } catch (error) {
     next(error);
   }

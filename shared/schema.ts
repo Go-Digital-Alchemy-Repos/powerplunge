@@ -1557,6 +1557,27 @@ export const insertSupportTicketSchema = createInsertSchema(supportTickets).omit
 export type InsertSupportTicket = z.infer<typeof insertSupportTicketSchema>;
 export type SupportTicket = typeof supportTickets.$inferSelect;
 
+// Email Logs for support ticket email tracking (7-day retention)
+export const emailLogs = pgTable("email_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  ticketId: varchar("ticket_id").references(() => supportTickets.id),
+  direction: text("direction").notNull(), // "outbound" or "inbound"
+  fromAddress: text("from_address").notNull(),
+  toAddress: text("to_address").notNull(),
+  subject: text("subject").notNull(),
+  htmlBody: text("html_body"),
+  textBody: text("text_body"),
+  emailType: text("email_type").notNull(), // "admin_notification", "customer_confirmation", "admin_reply", "status_change", "inbound_reply", "inbound_new_ticket"
+  status: text("status").notNull().default("success"), // "success" or "failed"
+  error: text("error"),
+  messageId: text("message_id"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertEmailLogSchema = createInsertSchema(emailLogs).omit({ id: true, createdAt: true });
+export type InsertEmailLog = z.infer<typeof insertEmailLogSchema>;
+export type EmailLog = typeof emailLogs.$inferSelect;
+
 // Customer Magic Link Tokens (for passwordless order tracking login)
 export const customerMagicLinkTokens = pgTable("customer_magic_link_tokens", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

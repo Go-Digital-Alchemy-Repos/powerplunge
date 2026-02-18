@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAdmin } from "@/hooks/use-admin";
 import AdminNav from "@/components/admin/AdminNav";
 import RichTextEditor from "@/components/admin/RichTextEditor";
-import { Headset, MessageSquare, CheckCircle, Clock, AlertCircle, Eye, Search, Filter, RefreshCw, Plus, User, Settings, Package, ChevronDown, ChevronRight, ShoppingBag, DollarSign, ExternalLink } from "lucide-react";
+import { Headset, MessageSquare, CheckCircle, Clock, AlertCircle, Eye, Search, Filter, RefreshCw, Plus, User, Settings, Package, ChevronDown, ChevronRight, ShoppingBag, DollarSign, ExternalLink, Mail, ArrowUpRight, ArrowDownLeft, X, AlertTriangle } from "lucide-react";
 import { Link } from "wouter";
 
 interface AdminNote {
@@ -125,6 +125,31 @@ interface CustomerSearchResult {
   phone: string | null;
 }
 
+interface EmailLogEntry {
+  id: string;
+  ticketId: string | null;
+  direction: string;
+  fromAddress: string;
+  toAddress: string;
+  subject: string;
+  htmlBody: string | null;
+  textBody: string | null;
+  emailType: string;
+  status: string;
+  error: string | null;
+  messageId: string | null;
+  createdAt: string;
+}
+
+const emailTypeLabels: Record<string, string> = {
+  admin_notification: "Admin Notification",
+  customer_confirmation: "Auto-Reply Confirmation",
+  admin_reply: "Admin Reply to Customer",
+  status_change: "Status Change Notification",
+  inbound_reply: "Customer Email Reply",
+  inbound_new_ticket: "New Ticket via Email",
+};
+
 const statusColors: Record<string, string> = {
   open: "bg-yellow-500/20 text-yellow-500",
   in_progress: "bg-blue-500/20 text-blue-500",
@@ -161,6 +186,10 @@ export default function AdminSupport() {
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [showOrderHistory, setShowOrderHistory] = useState(true);
 
+  const [emailLogTicketId, setEmailLogTicketId] = useState<string | null>(null);
+  const [emailLogTicketSubject, setEmailLogTicketSubject] = useState("");
+  const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
+
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [customerSearch, setCustomerSearch] = useState("");
   const [customerResults, setCustomerResults] = useState<CustomerSearchResult[]>([]);
@@ -171,6 +200,16 @@ export default function AdminSupport() {
     message: "",
     type: "general",
     priority: "normal",
+  });
+
+  const { data: emailLogsData, isLoading: emailLogsLoading } = useQuery<{ logs: EmailLogEntry[] }>({
+    queryKey: ["/api/admin/support/email-logs", emailLogTicketId],
+    queryFn: async () => {
+      const res = await fetch(`/api/admin/support/email-logs/${emailLogTicketId}`, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch email logs");
+      return res.json();
+    },
+    enabled: !!emailLogTicketId,
   });
 
   const { data: orderHistoryData, isLoading: orderHistoryLoading } = useQuery<CustomerOrderHistory>({
@@ -534,15 +573,31 @@ export default function AdminSupport() {
                             </p>
                           </TableCell>
                           <TableCell>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => openTicketModal(ticket)}
-                              data-testid={`button-view-${ticket.id}`}
-                            >
-                              <Eye className="w-4 h-4 mr-1" />
-                              View
-                            </Button>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openTicketModal(ticket)}
+                                data-testid={`button-view-${ticket.id}`}
+                              >
+                                <Eye className="w-4 h-4 mr-1" />
+                                View
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEmailLogTicketId(ticket.id);
+                                  setEmailLogTicketSubject(ticket.subject);
+                                  setExpandedLogId(null);
+                                }}
+                                title="Email Logs"
+                                data-testid={`button-email-log-${ticket.id}`}
+                              >
+                                <Mail className="w-4 h-4" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -578,12 +633,29 @@ export default function AdminSupport() {
                           </Badge>
                         </div>
                       </div>
-                      <div className="mt-2 text-xs text-muted-foreground">
-                        {new Date(ticket.createdAt).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        })}
+                      <div className="mt-2 flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(ticket.createdAt).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          })}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEmailLogTicketId(ticket.id);
+                            setEmailLogTicketSubject(ticket.subject);
+                            setExpandedLogId(null);
+                          }}
+                          title="Email Logs"
+                          data-testid={`button-email-log-mobile-${ticket.id}`}
+                        >
+                          <Mail className="w-3.5 h-3.5" />
+                        </Button>
                       </div>
                     </div>
                   ))}
@@ -1014,6 +1086,157 @@ export default function AdminSupport() {
                 {createTicketMutation.isPending ? "Creating..." : "Create Ticket"}
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Email Log Dialog */}
+      <Dialog open={!!emailLogTicketId} onOpenChange={(open) => { if (!open) { setEmailLogTicketId(null); setExpandedLogId(null); } }}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto" data-testid="email-log-dialog">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Mail className="w-5 h-5 text-primary" />
+              Email Log
+            </DialogTitle>
+            <p className="text-sm text-muted-foreground mt-1 line-clamp-1">
+              Ticket: {emailLogTicketSubject} (#{emailLogTicketId?.slice(0, 8)})
+            </p>
+          </DialogHeader>
+
+          <div className="mt-4">
+            {emailLogsLoading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full mx-auto" />
+                <p className="text-sm text-muted-foreground mt-2">Loading email logs...</p>
+              </div>
+            ) : !emailLogsData?.logs?.length ? (
+              <div className="text-center py-8">
+                <Mail className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
+                <p className="text-muted-foreground">No email activity recorded for this ticket</p>
+                <p className="text-xs text-muted-foreground mt-1">Emails will appear here once sent or received</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-xs text-muted-foreground">{emailLogsData.logs.length} email{emailLogsData.logs.length !== 1 ? "s" : ""} logged (kept for 7 days)</p>
+                {emailLogsData.logs.map((log) => {
+                  const isOutbound = log.direction === "outbound";
+                  const isFailed = log.status === "failed";
+                  const isExpanded = expandedLogId === log.id;
+
+                  return (
+                    <div
+                      key={log.id}
+                      className={`rounded-lg border transition-colors ${isFailed ? "border-red-500/30 bg-red-500/5" : isOutbound ? "border-blue-500/20 bg-blue-500/5" : "border-green-500/20 bg-green-500/5"}`}
+                      data-testid={`email-log-entry-${log.id}`}
+                    >
+                      <button
+                        type="button"
+                        className="w-full text-left p-3"
+                        onClick={() => setExpandedLogId(isExpanded ? null : log.id)}
+                        data-testid={`button-expand-log-${log.id}`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center mt-0.5 ${isOutbound ? "bg-blue-500/20" : "bg-green-500/20"}`}>
+                            {isOutbound ? (
+                              <ArrowUpRight className={`w-4 h-4 ${isFailed ? "text-red-400" : "text-blue-400"}`} />
+                            ) : (
+                              <ArrowDownLeft className="w-4 h-4 text-green-400" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-sm font-medium">
+                                {emailTypeLabels[log.emailType] || log.emailType}
+                              </span>
+                              {isFailed && (
+                                <Badge className="bg-red-500/20 text-red-400 text-[10px] px-1.5 py-0">
+                                  <AlertTriangle className="w-3 h-3 mr-0.5" />
+                                  Failed
+                                </Badge>
+                              )}
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                                {isOutbound ? "Sent" : "Received"}
+                              </Badge>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{log.subject}</p>
+                            <div className="flex items-center gap-3 mt-1 text-[11px] text-muted-foreground">
+                              <span>{isOutbound ? `To: ${log.toAddress}` : `From: ${log.fromAddress}`}</span>
+                              <span>
+                                {new Date(log.createdAt).toLocaleString("en-US", {
+                                  month: "short",
+                                  day: "numeric",
+                                  hour: "numeric",
+                                  minute: "2-digit",
+                                  hour12: true,
+                                })}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex-shrink-0">
+                            {isExpanded ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+                          </div>
+                        </div>
+                      </button>
+
+                      {isExpanded && (
+                        <div className="border-t px-3 pb-3 pt-2 space-y-2" data-testid={`email-log-detail-${log.id}`}>
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div>
+                              <span className="text-muted-foreground">From: </span>
+                              <span>{log.fromAddress}</span>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">To: </span>
+                              <span>{log.toAddress}</span>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Status: </span>
+                              <span className={isFailed ? "text-red-400" : "text-green-400"}>
+                                {log.status}
+                              </span>
+                            </div>
+                            {log.messageId && (
+                              <div>
+                                <span className="text-muted-foreground">Message ID: </span>
+                                <span className="font-mono text-[10px]">{log.messageId}</span>
+                              </div>
+                            )}
+                          </div>
+                          {isFailed && log.error && (
+                            <div className="p-2 rounded bg-red-500/10 border border-red-500/20">
+                              <p className="text-xs text-red-400"><strong>Error:</strong> {log.error}</p>
+                            </div>
+                          )}
+                          {log.htmlBody && (
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1 font-medium">Email Body Preview:</p>
+                              <div className="rounded border bg-white overflow-hidden">
+                                <iframe
+                                  srcDoc={log.htmlBody}
+                                  sandbox=""
+                                  title="Email body preview"
+                                  className="w-full border-0"
+                                  style={{ minHeight: "150px", maxHeight: "300px" }}
+                                  data-testid={`email-log-body-${log.id}`}
+                                />
+                              </div>
+                            </div>
+                          )}
+                          {!log.htmlBody && log.textBody && (
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1 font-medium">Email Body:</p>
+                              <div className="rounded border bg-muted/30 p-3 max-h-[200px] overflow-y-auto">
+                                <p className="text-xs whitespace-pre-wrap" data-testid={`email-log-body-${log.id}`}>{log.textBody}</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>

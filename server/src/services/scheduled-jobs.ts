@@ -2,8 +2,8 @@ import { jobRunner, type JobDefinition, type JobResult } from "./job-runner";
 import { affiliatePayoutService } from "./affiliate-payout.service";
 import { affiliateCommissionService } from "./affiliate-commission.service";
 import { db } from "../db";
-import { orders, customers, dailyMetrics } from "@shared/schema";
-import { eq, gte, lte, and, sql } from "drizzle-orm";
+import { orders, customers, dailyMetrics, emailLogs } from "@shared/schema";
+import { eq, gte, lte, lt, and, sql } from "drizzle-orm";
 
 function getDateKey(date: Date = new Date()): string {
   return date.toISOString().split("T")[0];
@@ -199,6 +199,32 @@ const recoveryEmailJob: JobDefinition = {
   },
 };
 
+const emailLogCleanupJob: JobDefinition = {
+  name: "email_log_cleanup",
+  description: "Purge email logs older than 7 days to save storage",
+  schedule: "daily",
+  getRunKey: () => `email_log_cleanup:${getDateKey()}`,
+  handler: async (): Promise<JobResult> => {
+    try {
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - 7);
+
+      const deleted = await db
+        .delete(emailLogs)
+        .where(lt(emailLogs.createdAt, cutoffDate))
+        .returning({ id: emailLogs.id });
+
+      return {
+        success: true,
+        message: `Deleted ${deleted.length} email logs older than 7 days`,
+        data: { deletedCount: deleted.length },
+      };
+    } catch (error: any) {
+      return { success: false, message: error.message };
+    }
+  },
+};
+
 export function registerScheduledJobs(): void {
   console.log("[SCHEDULED-JOBS] Registering background jobs...");
   
@@ -206,6 +232,7 @@ export function registerScheduledJobs(): void {
   jobRunner.register(commissionApprovalJob);
   jobRunner.register(metricsAggregationJob);
   jobRunner.register(recoveryEmailJob);
+  jobRunner.register(emailLogCleanupJob);
   
   console.log("[SCHEDULED-JOBS] All jobs registered");
 }

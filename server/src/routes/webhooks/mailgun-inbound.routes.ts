@@ -4,7 +4,7 @@ import { db } from "../../../db";
 import { supportTickets, customers, siteSettings, emailSettings } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { notificationService } from "../../services/notification.service";
-import { sendNewTicketAdminNotification, sendTicketConfirmationToCustomer } from "../../services/support-email.service";
+import { sendNewTicketAdminNotification, sendTicketConfirmationToCustomer, logEmail } from "../../services/support-email.service";
 
 const router = Router();
 
@@ -229,6 +229,17 @@ router.post("/inbound", async (req: Request, res: Response) => {
         })
         .catch((err) => console.error("Failed to create inbound reply notification:", err));
 
+      await logEmail({
+        ticketId,
+        direction: "inbound",
+        fromAddress: emailFromAddress,
+        toAddress: recipientRaw,
+        subject: subject || "(reply)",
+        textBody: messageText,
+        emailType: "inbound_reply",
+        status: "success",
+      }).catch(() => {});
+
       console.log(
         `[MAILGUN INBOUND] Reply added to ticket ${ticketId} from ${emailFromAddress} (${messageText.length} chars)`
       );
@@ -266,6 +277,17 @@ router.post("/inbound", async (req: Request, res: Response) => {
       };
       sendNewTicketAdminNotification(ticketData).catch(() => {});
       sendTicketConfirmationToCustomer(ticketData).catch(() => {});
+
+      await logEmail({
+        ticketId: ticket.id,
+        direction: "inbound",
+        fromAddress: emailFromAddress,
+        toAddress: recipientRaw,
+        subject: ticketSubject,
+        textBody: messageText,
+        emailType: "inbound_new_ticket",
+        status: "success",
+      }).catch(() => {});
 
       console.log(
         `[MAILGUN INBOUND] New ticket ${ticket.id} created from ${emailFromAddress}: "${ticketSubject}" (${messageText.length} chars)`
