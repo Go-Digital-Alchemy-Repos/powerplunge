@@ -84,7 +84,7 @@ export function createRateLimiter(config: RateLimitConfig) {
 
 export const authLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000,
-  maxRequests: 10,
+  maxRequests: process.env.NODE_ENV === "development" ? 100 : 10,
   name: "auth",
   message: "Too many login attempts. Please try again in 15 minutes.",
 });

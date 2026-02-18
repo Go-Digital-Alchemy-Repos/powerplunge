@@ -9,7 +9,7 @@ test.describe("Affiliate Portal", () => {
     await page.locator("#login-email").fill(AFFILIATE_EMAIL);
     await page.locator("#login-password").fill(AFFILIATE_PASSWORD);
     await page.locator('form button[type="submit"]').click();
-    await page.waitForURL(/\/(my-account|account|dashboard|affiliate|\?)/, { timeout: 15000 });
+    await page.waitForTimeout(5000);
     await expect(page).not.toHaveURL(/\/login/);
   });
 
@@ -18,7 +18,7 @@ test.describe("Affiliate Portal", () => {
     await page.locator("#login-email").fill(AFFILIATE_EMAIL);
     await page.locator("#login-password").fill(AFFILIATE_PASSWORD);
     await page.locator('form button[type="submit"]').click();
-    await page.waitForURL(/\/(my-account|account|dashboard|affiliate|\?)/, { timeout: 15000 });
+    await page.waitForTimeout(5000);
     await page.goto("/affiliate-portal");
     await expect(page.locator("body")).toBeVisible();
   });

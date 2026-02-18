@@ -8,6 +8,7 @@ export default defineConfig({
   },
   fullyParallel: false,
   retries: 1,
+  workers: 1,
   reporter: [["html", { open: "never" }], ["list"]],
   use: {
     baseURL: "http://localhost:5000",

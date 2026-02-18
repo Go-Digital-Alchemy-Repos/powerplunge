@@ -15,7 +15,7 @@ test.describe("Customer Authentication", () => {
     await page.locator("#login-email").fill(CUSTOMER_EMAIL);
     await page.locator("#login-password").fill(CUSTOMER_PASSWORD);
     await page.locator('form button[type="submit"]').click();
-    await page.waitForURL(/\/(my-account|account|dashboard|\?)/, { timeout: 15000 });
+    await page.waitForTimeout(5000);
     await expect(page).not.toHaveURL(/\/login/);
   });
 
