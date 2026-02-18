@@ -3,9 +3,25 @@ dist
 .DS_Store
 server/public
 vite.config.ts.*
-*.tar.gznode_modules/
+*.tar.gz
 .cache/
 .upm/
 .local/
 attached_assets/
 *.zip
+
+# Environment files
+.env
+.env.*
+.env.local
+.env.production
+.env.development
+
+# Playwright test artifacts
+playwright-report/
+test-results/
+e2e/.auth/
+blob-report/
+
+# Coverage
+coverage/
