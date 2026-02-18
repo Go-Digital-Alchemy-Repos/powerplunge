@@ -12,6 +12,7 @@ import { supportTickets, orders, customers } from "@shared/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { notificationService } from "../../services/notification.service";
 import { normalizeEmail } from "../../services/customer-identity.service";
+import { sendNewTicketAdminNotification, sendTicketConfirmationToCustomer, sendNewReplyAdminNotification } from "../../services/support-email.service";
 
 const router = Router();
 
@@ -212,6 +213,20 @@ router.post("/support", requireCustomerAuth, async (req: AuthenticatedRequest, r
       customerName: customer?.name || undefined,
     }).catch((err) => console.error("Failed to create new ticket notification:", err));
 
+    if (customer?.email) {
+      const ticketData = {
+        ticketId: ticket.id,
+        customerId: customer.id,
+        customerName: customer.name || "Customer",
+        customerEmail: customer.email,
+        subject: data.subject,
+        message: data.message,
+        type: data.type || "general",
+      };
+      sendNewTicketAdminNotification(ticketData).catch(() => {});
+      sendTicketConfirmationToCustomer(ticketData).catch(() => {});
+    }
+
     res.status(201).json({ success: true, ticket });
   } catch (error: any) {
     if (error instanceof z.ZodError) {
@@ -272,6 +287,16 @@ router.post("/support/:id/reply", requireCustomerAuth, async (req: Authenticated
       subject: existing.subject,
       customerName: customer?.name || undefined,
     }).catch((err) => console.error("Failed to create customer reply notification:", err));
+
+    if (customer?.email) {
+      sendNewReplyAdminNotification({
+        ticketId: existing.id,
+        customerName: customer.name || "Customer",
+        customerEmail: customer.email,
+        subject: existing.subject,
+        replyMessage: data.message,
+      }).catch(() => {});
+    }
 
     res.json({ success: true, ticket: updated });
   } catch (error: any) {

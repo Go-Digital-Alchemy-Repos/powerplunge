@@ -342,6 +342,77 @@ export async function sendStatusChangeToCustomer(data: StatusChangeData): Promis
   }
 }
 
+interface CustomerReplyNotificationData {
+  ticketId: string;
+  customerName: string;
+  customerEmail: string;
+  subject: string;
+  replyMessage: string;
+}
+
+export async function sendNewReplyAdminNotification(data: CustomerReplyNotificationData): Promise<void> {
+  try {
+    const settings = await getSupportSettings();
+    if (!settings.notifyOnReply || !settings.notifyEmails) return;
+
+    const emails = settings.notifyEmails
+      .split(",")
+      .map((e) => e.trim())
+      .filter(Boolean);
+    if (emails.length === 0) return;
+
+    const baseUrl = getBaseUrl();
+
+    const emailSubject = `Customer Reply: ${data.subject}`;
+    const emailHtml = `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; background: #0a0a0a; color: #e5e5e5; border-radius: 8px; overflow: hidden;">
+          <div style="background: linear-gradient(135deg, #0c4a6e 0%, #164e63 100%); padding: 24px; text-align: center;">
+            <h1 style="margin: 0; color: #67e8f9; font-size: 20px;">Customer Reply</h1>
+          </div>
+          <div style="padding: 24px;">
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr><td style="padding: 8px 0; color: #a3a3a3;">Ticket ID</td><td style="padding: 8px 0; color: #e5e5e5;">#${data.ticketId.slice(0, 8)}</td></tr>
+              <tr><td style="padding: 8px 0; color: #a3a3a3;">Customer</td><td style="padding: 8px 0; color: #e5e5e5;">${data.customerName}</td></tr>
+              <tr><td style="padding: 8px 0; color: #a3a3a3;">Email</td><td style="padding: 8px 0; color: #e5e5e5;">${data.customerEmail}</td></tr>
+              <tr><td style="padding: 8px 0; color: #a3a3a3;">Subject</td><td style="padding: 8px 0; color: #e5e5e5; font-weight: 600;">${data.subject}</td></tr>
+            </table>
+            <div style="margin-top: 16px; padding: 16px; background: #1a1a1a; border-radius: 6px; border-left: 3px solid #67e8f9;">
+              <p style="margin: 0; color: #d4d4d4; white-space: pre-wrap;">${data.replyMessage}</p>
+            </div>
+            <div style="margin-top: 24px; text-align: center;">
+              <a href="${baseUrl}/admin/support" style="display: inline-block; padding: 10px 24px; background: #0891b2; color: white; text-decoration: none; border-radius: 6px; font-weight: 500;">View in Dashboard</a>
+            </div>
+          </div>
+        </div>
+      `;
+    const result = await emailService.sendEmail({
+      to: emails,
+      subject: emailSubject,
+      ...(settings.fromEmail ? { from: settings.fromEmail } : {}),
+      html: emailHtml,
+    });
+    await logEmail({
+      ticketId: data.ticketId,
+      direction: "outbound",
+      fromAddress: settings.fromEmail || "system",
+      toAddress: emails.join(", "),
+      subject: emailSubject,
+      htmlBody: emailHtml,
+      emailType: "admin_reply_notification",
+      status: result.success ? "success" : "failed",
+      error: result.error,
+      messageId: result.messageId,
+    });
+    if (result.success) {
+      console.log(`[SUPPORT EMAIL] Customer reply notification sent to: ${emails.join(", ")}`);
+    } else {
+      console.error(`[SUPPORT EMAIL] Customer reply notification failed: ${result.error}`);
+    }
+  } catch (error) {
+    console.error("[SUPPORT EMAIL] Failed to send customer reply admin notification:", error);
+  }
+}
+
 export async function sendTicketConfirmationToCustomer(ticket: TicketData): Promise<void> {
   try {
     const settings = await getSupportSettings();
