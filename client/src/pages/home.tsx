@@ -406,7 +406,11 @@ export default function Home() {
 
       {/* Render CMS content if available */}
       {hasCmsContent && (
-        <div className={isAdminAuthenticated ? "pt-32" : "pt-20"}>
+        <div className={
+          homePage?.contentJson?.blocks?.[0]?.type === "hero"
+            ? ""
+            : isAdminAuthenticated ? "pt-32" : "pt-20"
+        }>
           <PageRenderer
             contentJson={homePage?.contentJson}
             legacyContent={homePage?.content}
