@@ -50,7 +50,12 @@ app.use(serverTimingMiddleware);
 app.use(requestLoggerMiddleware);
 
 (async () => {
-  enforceEnv();
+  try {
+    enforceEnv();
+  } catch (err) {
+    console.error("[STARTUP] Environment validation failed:", err);
+    process.exit(1);
+  }
 
   const { initializeSocketServer } = await import("./src/realtime/socketServer");
   initializeSocketServer(httpServer);
@@ -182,4 +187,7 @@ app.use(requestLoggerMiddleware);
       }
     },
   );
-})();
+})().catch((err) => {
+  console.error("[STARTUP] Fatal error during server initialization:", err);
+  process.exit(1);
+});
