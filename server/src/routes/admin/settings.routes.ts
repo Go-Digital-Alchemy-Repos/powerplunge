@@ -42,6 +42,7 @@ integrationsStatusRoutes.get("/", async (req: any, res) => {
     youtubeShopping: intSettings?.youtubeShoppingConfigured || false,
     snapchatShopping: intSettings?.snapchatShoppingConfigured || false,
     xShopping: intSettings?.xShoppingConfigured || false,
+    metaMarketing: intSettings?.metaMarketingConfigured || false,
     mailchimp: intSettings?.mailchimpConfigured || false,
     googlePlaces: intSettings?.googlePlacesConfigured || false,
     twilio: intSettings?.twilioEnabled || false,

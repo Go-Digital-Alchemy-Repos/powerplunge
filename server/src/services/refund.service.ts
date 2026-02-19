@@ -215,6 +215,15 @@ export async function createStripeRefund(params: CreateRefundParams): Promise<Re
     },
   });
 
+  if (refund.status === "processed") {
+    try {
+      const { metaConversionsService } = await import("../integrations/meta/MetaConversionsService");
+      await metaConversionsService.enqueueRefundProcessed(refund.id);
+    } catch (metaErr: any) {
+      console.error("[META] Failed to enqueue processed refund (createStripeRefund):", metaErr.message || metaErr);
+    }
+  }
+
   await updateOrderPaymentStatus(orderId);
 
   return refund;

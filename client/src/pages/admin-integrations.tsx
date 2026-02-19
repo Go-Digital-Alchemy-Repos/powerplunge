@@ -24,6 +24,7 @@ interface IntegrationStatus {
   youtubeShopping?: boolean;
   snapchatShopping?: boolean;
   xShopping?: boolean;
+  metaMarketing?: boolean;
   mailchimp?: boolean;
   googlePlaces?: boolean;
   twilio?: boolean;
@@ -110,6 +111,23 @@ interface XShoppingSettings {
   updatedAt?: string;
 }
 
+interface MetaMarketingSettings {
+  configured: boolean;
+  pixelId?: string | null;
+  catalogId?: string | null;
+  productFeedId?: string | null;
+  hasAccessToken?: boolean;
+  hasAppSecret?: boolean;
+  hasTestEventCode?: boolean;
+  hasCatalogFeedKey?: boolean;
+  capiEnabled?: boolean;
+  catalogFeedUrl?: string | null;
+  lastSyncAt?: string | null;
+  lastSyncStatus?: string | null;
+  capiLastDispatchAt?: string | null;
+  capiLastDispatchStatus?: string | null;
+}
+
 interface EmailSettings {
   provider: string;
   mailgunDomain?: string;
@@ -142,6 +160,7 @@ export default function AdminIntegrations() {
   const [showYouTubeDialog, setShowYouTubeDialog] = useState(false);
   const [showSnapchatDialog, setShowSnapchatDialog] = useState(false);
   const [showXDialog, setShowXDialog] = useState(false);
+  const [showMetaDialog, setShowMetaDialog] = useState(false);
   const [showMailchimpDialog, setShowMailchimpDialog] = useState(false);
   const [showGooglePlacesDialog, setShowGooglePlacesDialog] = useState(false);
   const [showTwilioDialog, setShowTwilioDialog] = useState(false);
@@ -270,6 +289,35 @@ export default function AdminIntegrations() {
               <div className="mt-4 text-xs text-muted-foreground">
                 <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1">
                   Get your API key from OpenAI Platform <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Link2 className="w-5 h-5 text-primary" />
+                Meta Catalog + CAPI
+              </CardTitle>
+              <CardDescription>
+                Sync Meta catalog feed and send server-side conversions (CAPI)
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <StatusBadge configured={integrations?.metaMarketing} />
+                <Button
+                  variant="outline"
+                  onClick={() => setShowMetaDialog(true)}
+                  data-testid="button-configure-meta-marketing"
+                >
+                  Configure
+                </Button>
+              </div>
+              <div className="mt-4 text-xs text-muted-foreground">
+                <a href="https://business.facebook.com/events_manager2/list/pixel/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1">
+                  Open Meta Events Manager <ExternalLink className="w-3 h-3" />
                 </a>
               </div>
             </CardContent>
@@ -412,6 +460,11 @@ export default function AdminIntegrations() {
       <XShoppingConfigDialog
         open={showXDialog}
         onOpenChange={setShowXDialog}
+        onSuccess={() => refetchIntegrations()}
+      />
+      <MetaMarketingConfigDialog
+        open={showMetaDialog}
+        onOpenChange={setShowMetaDialog}
         onSuccess={() => refetchIntegrations()}
       />
       <MailchimpConfigDialog
@@ -2641,6 +2694,398 @@ function XShoppingConfigDialog({ open, onOpenChange, onSuccess }: {
             </Button>
           )}
           <Button className="bg-primary hover:bg-primary/90 text-primary-foreground" onClick={handleSave} disabled={saving} data-testid="button-save-x">
+            {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+            Save Configuration
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function MetaMarketingConfigDialog({ open, onOpenChange, onSuccess }: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSuccess: () => void;
+}) {
+  const { toast } = useToast();
+  const [formData, setFormData] = useState({
+    pixelId: "",
+    catalogId: "",
+    productFeedId: "",
+    accessToken: "",
+    appSecret: "",
+    testEventCode: "",
+    capiEnabled: false,
+  });
+  const [saving, setSaving] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [testingEvent, setTestingEvent] = useState(false);
+  const [removing, setRemoving] = useState(false);
+
+  const { data: metaSettings, isLoading, refetch: refetchSettings } = useQuery<MetaMarketingSettings>({
+    queryKey: ["/api/admin/settings/meta-marketing"],
+    enabled: open,
+    queryFn: async () => {
+      const res = await fetch("/api/admin/settings/meta-marketing", { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch Meta Marketing settings");
+      return res.json();
+    },
+  });
+
+  const { data: metaStats, refetch: refetchStats } = useQuery<{
+    queue: {
+      queued: number;
+      retry: number;
+      processing: number;
+      failed: number;
+      sent: number;
+      oldestQueuedAt: string | null;
+      oldestQueuedAgeSeconds: number | null;
+      lastSentAt: string | null;
+    };
+    lastDispatchAt: string | null;
+    lastDispatchStatus: string | null;
+  }>({
+    queryKey: ["/api/admin/integrations/meta-marketing/stats"],
+    enabled: open && !!metaSettings?.configured,
+    queryFn: async () => {
+      const res = await fetch("/api/admin/integrations/meta-marketing/stats", { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch Meta Marketing stats");
+      return res.json();
+    },
+  });
+
+  useEffect(() => {
+    if (metaSettings) {
+      setFormData({
+        pixelId: metaSettings.pixelId || "",
+        catalogId: metaSettings.catalogId || "",
+        productFeedId: metaSettings.productFeedId || "",
+        accessToken: "",
+        appSecret: "",
+        testEventCode: "",
+        capiEnabled: metaSettings.capiEnabled === true,
+      });
+    }
+  }, [metaSettings]);
+
+  const handleSave = async () => {
+    if (!metaSettings?.configured && (!formData.pixelId || !formData.catalogId || !formData.productFeedId || !formData.accessToken)) {
+      toast({ title: "Pixel ID, Catalog ID, Product Feed ID, and Access Token are required", variant: "destructive" });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/settings/meta-marketing", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+        credentials: "include",
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to save settings");
+      }
+
+      toast({ title: "Meta Marketing configuration saved" });
+      onSuccess();
+      onOpenChange(false);
+    } catch (error: any) {
+      toast({ title: error.message || "Failed to save settings", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleVerify = async () => {
+    setVerifying(true);
+    try {
+      const res = await fetch("/api/admin/settings/meta-marketing/verify", {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast({ title: "Meta assets verified" });
+      } else {
+        toast({ title: data.error || "Verification failed", variant: "destructive" });
+      }
+    } catch (error: any) {
+      toast({ title: error.message || "Verification failed", variant: "destructive" });
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      const res = await fetch("/api/admin/integrations/meta-marketing/sync", {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast({ title: "Meta catalog sync triggered" });
+      } else {
+        toast({ title: data.error || "Sync failed", variant: "destructive" });
+      }
+      await refetchSettings();
+    } catch (error: any) {
+      toast({ title: error.message || "Sync failed", variant: "destructive" });
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const handleTestEvent = async () => {
+    setTestingEvent(true);
+    try {
+      const res = await fetch("/api/admin/integrations/meta-marketing/test-event", {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast({ title: "Meta test event sent" });
+      } else {
+        toast({ title: data.error || "Test event failed", variant: "destructive" });
+      }
+      await refetchSettings();
+      await refetchStats();
+    } catch (error: any) {
+      toast({ title: error.message || "Test event failed", variant: "destructive" });
+    } finally {
+      setTestingEvent(false);
+    }
+  };
+
+  const handleCopyFeedUrl = async () => {
+    const value = metaSettings?.catalogFeedUrl || "";
+    if (!value) {
+      toast({ title: "Catalog feed URL is not available yet", variant: "destructive" });
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(value);
+      toast({ title: "Catalog feed URL copied" });
+    } catch {
+      toast({ title: "Failed to copy URL", variant: "destructive" });
+    }
+  };
+
+  const handleRemove = async () => {
+    setRemoving(true);
+    try {
+      const res = await fetch("/api/admin/settings/meta-marketing", {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to remove configuration");
+      }
+      toast({ title: "Meta Marketing configuration removed" });
+      onSuccess();
+      onOpenChange(false);
+    } catch (error: any) {
+      toast({ title: error.message || "Failed to remove configuration", variant: "destructive" });
+    } finally {
+      setRemoving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Link2 className="w-5 h-5" />
+            Meta Catalog + CAPI Configuration
+          </DialogTitle>
+          <DialogDescription>
+            Configure feed-based catalog sync and server-side Conversions API events.
+          </DialogDescription>
+        </DialogHeader>
+
+        {isLoading ? (
+          <div className="py-8 text-center">
+            <Loader2 className="w-6 h-6 animate-spin mx-auto" />
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {metaSettings?.configured && (
+              <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                <div className="flex items-center gap-2 text-green-500 text-sm font-medium">
+                  <CheckCircle2 className="w-4 h-4" />
+                  Meta Marketing is configured
+                </div>
+                <div className="text-xs text-muted-foreground mt-1 space-y-1">
+                  <p>
+                    Catalog sync: {metaSettings.lastSyncStatus || "never"}
+                    {metaSettings.lastSyncAt ? ` at ${new Date(metaSettings.lastSyncAt).toLocaleString()}` : ""}
+                  </p>
+                  <p>
+                    CAPI dispatch: {metaSettings.capiLastDispatchStatus || "never"}
+                    {metaSettings.capiLastDispatchAt ? ` at ${new Date(metaSettings.capiLastDispatchAt).toLocaleString()}` : ""}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="metaPixelId">Pixel ID</Label>
+                <Input
+                  id="metaPixelId"
+                  value={formData.pixelId}
+                  onChange={(e) => setFormData({ ...formData, pixelId: e.target.value })}
+                  placeholder="Meta Pixel ID"
+                  data-testid="input-meta-pixel-id"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="metaCatalogId">Catalog ID</Label>
+                <Input
+                  id="metaCatalogId"
+                  value={formData.catalogId}
+                  onChange={(e) => setFormData({ ...formData, catalogId: e.target.value })}
+                  placeholder="Meta Catalog ID"
+                  data-testid="input-meta-catalog-id"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="metaProductFeedId">Product Feed ID</Label>
+              <Input
+                id="metaProductFeedId"
+                value={formData.productFeedId}
+                onChange={(e) => setFormData({ ...formData, productFeedId: e.target.value })}
+                placeholder="Meta Product Feed ID"
+                data-testid="input-meta-product-feed-id"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="metaAccessToken">Access Token</Label>
+              <SecretInput
+                id="metaAccessToken"
+                value={formData.accessToken}
+                onChange={(e) => setFormData({ ...formData, accessToken: e.target.value })}
+                hasSavedValue={metaSettings?.hasAccessToken}
+                placeholder="Enter Meta access token"
+                data-testid="input-meta-access-token"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="metaAppSecret">App Secret (recommended for appsecret_proof)</Label>
+              <SecretInput
+                id="metaAppSecret"
+                value={formData.appSecret}
+                onChange={(e) => setFormData({ ...formData, appSecret: e.target.value })}
+                hasSavedValue={metaSettings?.hasAppSecret}
+                placeholder="Enter Meta app secret"
+                data-testid="input-meta-app-secret"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="metaTestEventCode">Test Event Code (optional)</Label>
+              <SecretInput
+                id="metaTestEventCode"
+                value={formData.testEventCode}
+                onChange={(e) => setFormData({ ...formData, testEventCode: e.target.value })}
+                hasSavedValue={metaSettings?.hasTestEventCode}
+                placeholder="Enter Meta test event code"
+                data-testid="input-meta-test-event-code"
+              />
+            </div>
+
+            <div className="flex items-center justify-between rounded-md border p-3">
+              <div>
+                <p className="text-sm font-medium">Enable CAPI dispatcher</p>
+                <p className="text-xs text-muted-foreground">When enabled, queued server-side events are dispatched to Meta.</p>
+              </div>
+              <Switch
+                checked={formData.capiEnabled}
+                onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, capiEnabled: checked }))}
+                data-testid="switch-meta-capi-enabled"
+              />
+            </div>
+
+            {metaSettings?.configured && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="metaCatalogFeedUrl">Catalog Feed URL</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="metaCatalogFeedUrl"
+                      value={metaSettings.catalogFeedUrl || ""}
+                      readOnly
+                      data-testid="input-meta-catalog-feed-url"
+                    />
+                    <Button type="button" variant="outline" onClick={handleCopyFeedUrl} data-testid="button-copy-meta-feed-url">
+                      <Copy className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t flex flex-wrap gap-2">
+                  <Button type="button" variant="outline" onClick={handleVerify} disabled={verifying} data-testid="button-verify-meta">
+                    {verifying ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <TestTube className="w-4 h-4 mr-2" />}
+                    Verify
+                  </Button>
+                  <Button type="button" variant="outline" onClick={handleSync} disabled={syncing} data-testid="button-sync-meta">
+                    {syncing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <RefreshCw className="w-4 h-4 mr-2" />}
+                    Sync Now
+                  </Button>
+                  <Button type="button" variant="outline" onClick={handleTestEvent} disabled={testingEvent} data-testid="button-test-event-meta">
+                    {testingEvent ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Zap className="w-4 h-4 mr-2" />}
+                    Send Test Event
+                  </Button>
+                </div>
+
+                {metaStats && (
+                  <div className="rounded-md border p-3 text-xs space-y-1">
+                    <p className="font-medium text-sm">Queue Stats</p>
+                    <p>Queued: {metaStats.queue.queued}</p>
+                    <p>Retry: {metaStats.queue.retry}</p>
+                    <p>Processing: {metaStats.queue.processing}</p>
+                    <p>Failed: {metaStats.queue.failed}</p>
+                    <p>Sent: {metaStats.queue.sent}</p>
+                    <p>
+                      Oldest queued: {metaStats.queue.oldestQueuedAt ? new Date(metaStats.queue.oldestQueuedAt).toLocaleString() : "n/a"}
+                    </p>
+                    <p>Oldest queued age (sec): {metaStats.queue.oldestQueuedAgeSeconds ?? "n/a"}</p>
+                    <p>
+                      Last sent: {metaStats.queue.lastSentAt ? new Date(metaStats.queue.lastSentAt).toLocaleString() : "n/a"}
+                    </p>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
+        <DialogFooter className="flex gap-2">
+          {metaSettings?.configured && (
+            <Button variant="destructive" onClick={handleRemove} disabled={removing} data-testid="button-remove-meta">
+              {removing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              Remove
+            </Button>
+          )}
+          <Button
+            className="bg-primary hover:bg-primary/90 text-primary-foreground"
+            onClick={handleSave}
+            disabled={saving}
+            data-testid="button-save-meta"
+          >
             {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
             Save Configuration
           </Button>

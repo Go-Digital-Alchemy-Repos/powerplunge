@@ -15,6 +15,32 @@ const DEFAULT_STRIPE_TAX_CODE = "txcd_99999999";
 
 const TAXABLE_STATES_WARN_ON_ZERO = ["NC"];
 
+interface MetaTrackingPayload {
+  marketingConsentGranted?: boolean;
+  fbp?: string;
+  fbc?: string;
+  eventSourceUrl?: string;
+  userAgent?: string;
+}
+
+function normalizeMetaTracking(input: unknown): MetaTrackingPayload {
+  const data = (input && typeof input === "object" ? input : {}) as Record<string, unknown>;
+  const asString = (value: unknown, max = 1000): string | undefined => {
+    if (typeof value !== "string") return undefined;
+    const trimmed = value.trim();
+    if (!trimmed) return undefined;
+    return trimmed.slice(0, max);
+  };
+
+  return {
+    marketingConsentGranted: data.marketingConsentGranted === true,
+    fbp: asString(data.fbp, 200),
+    fbc: asString(data.fbc, 200),
+    eventSourceUrl: asString(data.eventSourceUrl, 1000),
+    userAgent: asString(data.userAgent, 1000),
+  };
+}
+
 function computeAffiliateDiscount(
   product: Product,
   lineTotal: number,
@@ -134,7 +160,16 @@ router.get("/validate-referral-code/:code", async (req, res) => {
 
 router.post("/create-payment-intent", paymentLimiter, async (req: any, res) => {
   try {
-    const { items, customer, affiliateCode, billingAddress: billingInput, billingSameAsShipping: billingSame, couponCode } = req.body;
+    const {
+      items,
+      customer,
+      affiliateCode,
+      billingAddress: billingInput,
+      billingSameAsShipping: billingSame,
+      couponCode,
+      metaTracking,
+    } = req.body;
+    const normalizedMetaTracking = normalizeMetaTracking(metaTracking);
     const isBillingSame = billingSame !== false;
 
     const stripeClient = await stripeService.getClient();
@@ -388,6 +423,10 @@ router.post("/create-payment-intent", paymentLimiter, async (req: any, res) => {
     }
 
     const totalAmount = discountedSubtotal + taxAmount;
+    const forwardedFor = req.headers?.["x-forwarded-for"];
+    const customerIp = typeof forwardedFor === "string"
+      ? forwardedFor.split(",")[0]?.trim() || null
+      : req.ip || null;
 
     const order = await storage.createOrder({
       customerId: existingCustomer.id,
@@ -418,6 +457,12 @@ router.post("/create-payment-intent", paymentLimiter, async (req: any, res) => {
       billingState: validatedBilling?.state || null,
       billingZip: validatedBilling?.zipCode || null,
       billingCountry: validatedBilling ? "US" : null,
+      customerIp,
+      marketingConsentGranted: normalizedMetaTracking.marketingConsentGranted === true,
+      metaFbp: normalizedMetaTracking.fbp || null,
+      metaFbc: normalizedMetaTracking.fbc || null,
+      metaEventSourceUrl: normalizedMetaTracking.eventSourceUrl || null,
+      customerUserAgent: normalizedMetaTracking.userAgent || req.get("user-agent") || null,
     });
 
     for (const item of orderItems) {
@@ -469,7 +514,17 @@ router.post("/create-payment-intent", paymentLimiter, async (req: any, res) => {
 
 router.post("/reprice-payment-intent", paymentLimiter, async (req: any, res) => {
   try {
-    const { orderId, items, customer, billingAddress: billingInput, billingSameAsShipping: billingSame, affiliateCode, couponCode } = req.body;
+    const {
+      orderId,
+      items,
+      customer,
+      billingAddress: billingInput,
+      billingSameAsShipping: billingSame,
+      affiliateCode,
+      couponCode,
+      metaTracking,
+    } = req.body;
+    const normalizedMetaTracking = normalizeMetaTracking(metaTracking);
     const isBillingSame = billingSame !== false;
 
     if (!orderId) {
@@ -713,6 +768,10 @@ router.post("/reprice-payment-intent", paymentLimiter, async (req: any, res) => 
     }
 
     const totalAmount = discountedSubtotal + taxAmount;
+    const forwardedFor = req.headers?.["x-forwarded-for"];
+    const customerIp = typeof forwardedFor === "string"
+      ? forwardedFor.split(",")[0]?.trim() || null
+      : req.ip || null;
 
     await storage.updateOrder(orderId, {
       subtotalAmount,
@@ -741,6 +800,12 @@ router.post("/reprice-payment-intent", paymentLimiter, async (req: any, res) => 
       billingState: validatedBilling?.state || null,
       billingZip: validatedBilling?.zipCode || null,
       billingCountry: validatedBilling ? "US" : null,
+      customerIp,
+      marketingConsentGranted: normalizedMetaTracking.marketingConsentGranted === true,
+      metaFbp: normalizedMetaTracking.fbp || null,
+      metaFbc: normalizedMetaTracking.fbc || null,
+      metaEventSourceUrl: normalizedMetaTracking.eventSourceUrl || null,
+      customerUserAgent: normalizedMetaTracking.userAgent || req.get("user-agent") || null,
     });
 
     let clientSecret: string;
@@ -865,6 +930,13 @@ router.post("/confirm-payment", paymentLimiter, async (req: any, res) => {
         if (commissionResult.success && commissionResult.commissionAmount) {
           console.log(`[PAYMENT] Recorded commission for order ${orderId}`);
         }
+      }
+
+      try {
+        const { metaConversionsService } = await import("../../integrations/meta/MetaConversionsService");
+        await metaConversionsService.enqueuePurchase(orderId);
+      } catch (metaErr: any) {
+        console.error("[META] Failed to enqueue purchase event:", metaErr.message || metaErr);
       }
 
       await sendOrderNotification(orderId);

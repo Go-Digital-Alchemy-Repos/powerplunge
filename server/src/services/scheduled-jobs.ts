@@ -4,6 +4,8 @@ import { affiliateCommissionService } from "./affiliate-commission.service";
 import { db } from "../db";
 import { orders, customers, dailyMetrics, emailLogs } from "@shared/schema";
 import { eq, gte, lte, lt, and, sql } from "drizzle-orm";
+import { metaCatalogService } from "../integrations/meta/MetaCatalogService";
+import { metaConversionsService } from "../integrations/meta/MetaConversionsService";
 
 function getDateKey(date: Date = new Date()): string {
   return date.toISOString().split("T")[0];
@@ -15,6 +17,15 @@ function getWeekKey(date: Date = new Date()): string {
   const days = Math.floor((date.getTime() - startOfYear.getTime()) / (24 * 60 * 60 * 1000));
   const week = Math.ceil((days + startOfYear.getUTCDay() + 1) / 7);
   return `${year}-W${week.toString().padStart(2, "0")}`;
+}
+
+function getMinuteKey(date: Date = new Date()): string {
+  const yyyy = date.getUTCFullYear();
+  const mm = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(date.getUTCDate()).padStart(2, "0");
+  const hh = String(date.getUTCHours()).padStart(2, "0");
+  const min = String(date.getUTCMinutes()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
 }
 
 const affiliatePayoutJob: JobDefinition = {
@@ -225,6 +236,57 @@ const emailLogCleanupJob: JobDefinition = {
   },
 };
 
+const metaCatalogSyncJob: JobDefinition = {
+  name: "meta_catalog_sync",
+  description: "Trigger Meta catalog product feed upload refresh (runs hourly)",
+  schedule: "hourly",
+  getRunKey: () => {
+    const now = new Date();
+    const hour = now.getUTCHours().toString().padStart(2, "0");
+    return `meta_catalog_sync:${getDateKey()}-${hour}`;
+  },
+  handler: async (): Promise<JobResult> => {
+    const settings = await db.execute(sql`
+      SELECT meta_marketing_configured, meta_product_feed_id
+      FROM integration_settings
+      WHERE id = 'main'
+      LIMIT 1
+    `);
+    const row = settings.rows?.[0] as any;
+    if (!row?.meta_marketing_configured || !row?.meta_product_feed_id) {
+      return {
+        success: true,
+        message: "Meta catalog sync skipped: integration not configured",
+      };
+    }
+
+    const result = await metaCatalogService.syncCatalog();
+    if (!result.success) {
+      return { success: false, message: result.error || "Meta catalog sync failed" };
+    }
+    return {
+      success: true,
+      message: "Meta catalog sync completed",
+      data: { uploadId: result.uploadId || null },
+    };
+  },
+};
+
+const metaCapiDispatchJob: JobDefinition = {
+  name: "meta_capi_dispatch",
+  description: "Dispatch queued Meta Conversions API events (runs every minute)",
+  schedule: { intervalMs: 60 * 1000 },
+  getRunKey: () => `meta_capi_dispatch:${getMinuteKey()}`,
+  handler: async (): Promise<JobResult> => {
+    const result = await metaConversionsService.dispatchDueEvents();
+    return {
+      success: result.success,
+      message: `Meta CAPI dispatch: ${result.dispatched} sent, ${result.failed} failed`,
+      data: result,
+    };
+  },
+};
+
 export function registerScheduledJobs(): void {
   console.log("[SCHEDULED-JOBS] Registering background jobs...");
   
@@ -233,6 +295,8 @@ export function registerScheduledJobs(): void {
   jobRunner.register(metricsAggregationJob);
   jobRunner.register(recoveryEmailJob);
   jobRunner.register(emailLogCleanupJob);
+  jobRunner.register(metaCatalogSyncJob);
+  jobRunner.register(metaCapiDispatchJob);
   
   console.log("[SCHEDULED-JOBS] All jobs registered");
 }

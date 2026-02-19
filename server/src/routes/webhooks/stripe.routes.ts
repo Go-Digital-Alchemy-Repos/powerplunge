@@ -90,6 +90,13 @@ router.post("/stripe", async (req, res) => {
         }
       }
 
+      try {
+        const { metaConversionsService } = await import("../../integrations/meta/MetaConversionsService");
+        await metaConversionsService.enqueuePurchase(order.id);
+      } catch (metaErr: any) {
+        console.error("[META] Failed to enqueue purchase from checkout.session.completed:", metaErr.message || metaErr);
+      }
+
       await sendOrderNotification(order.id);
     }
   }
@@ -120,6 +127,13 @@ router.post("/stripe", async (req, res) => {
             if (commissionResult.success && commissionResult.commissionAmount) {
               console.log(`[WEBHOOK] Recorded commission for order ${orderId}`);
             }
+          }
+
+          try {
+            const { metaConversionsService } = await import("../../integrations/meta/MetaConversionsService");
+            await metaConversionsService.enqueuePurchase(orderId);
+          } catch (metaErr: any) {
+            console.error("[META] Failed to enqueue purchase from payment_intent.succeeded:", metaErr.message || metaErr);
           }
 
           const couponId = paymentIntent.metadata?.couponId;
@@ -179,9 +193,17 @@ router.post("/stripe", async (req, res) => {
                     processedAt: normalizedStatus === "processed" ? new Date() : existingRefund.processedAt,
                   });
                   console.log(`[WEBHOOK] Updated refund ${existingRefund.id} status to ${normalizedStatus} (charge.refunded)`);
+                  if (normalizedStatus === "processed") {
+                    try {
+                      const { metaConversionsService } = await import("../../integrations/meta/MetaConversionsService");
+                      await metaConversionsService.enqueueRefundProcessed(existingRefund.id);
+                    } catch (metaErr: any) {
+                      console.error("[META] Failed to enqueue processed refund (charge.refunded/update):", metaErr.message || metaErr);
+                    }
+                  }
                 }
               } else {
-                await storage.createRefund({
+                const createdRefund = await storage.createRefund({
                   orderId: order.id,
                   amount: stripeRefund.amount,
                   reason: stripeRefund.reason || "Refund via Stripe",
@@ -193,6 +215,14 @@ router.post("/stripe", async (req, res) => {
                   processedAt: normalizedStatus === "processed" ? new Date() : undefined,
                 });
                 console.log(`[WEBHOOK] Created refund record for Stripe refund ${stripeRefund.id} on order ${order.id}`);
+                if (normalizedStatus === "processed") {
+                  try {
+                    const { metaConversionsService } = await import("../../integrations/meta/MetaConversionsService");
+                    await metaConversionsService.enqueueRefundProcessed(createdRefund.id);
+                  } catch (metaErr: any) {
+                    console.error("[META] Failed to enqueue processed refund (charge.refunded/create):", metaErr.message || metaErr);
+                  }
+                }
               }
             }
 
@@ -222,6 +252,15 @@ router.post("/stripe", async (req, res) => {
             status: normalizedStatus,
             processedAt: normalizedStatus === "processed" ? new Date() : existingRefund.processedAt,
           });
+
+          if (normalizedStatus === "processed") {
+            try {
+              const { metaConversionsService } = await import("../../integrations/meta/MetaConversionsService");
+              await metaConversionsService.enqueueRefundProcessed(existingRefund.id);
+            } catch (metaErr: any) {
+              console.error("[META] Failed to enqueue processed refund (refund.updated):", metaErr.message || metaErr);
+            }
+          }
 
           await updateOrderPaymentStatus(existingRefund.orderId);
 

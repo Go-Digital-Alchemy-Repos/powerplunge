@@ -125,6 +125,15 @@ router.patch("/refunds/:id", async (req: any, res) => {
     const { updateOrderPaymentStatus } = await import("../../services/refund.service");
     await updateOrderPaymentStatus(refund.orderId);
 
+    if (refund.status === "processed") {
+      try {
+        const { metaConversionsService } = await import("../../integrations/meta/MetaConversionsService");
+        await metaConversionsService.enqueueRefundProcessed(refund.id);
+      } catch (metaErr: any) {
+        console.error("[META] Failed to enqueue processed refund (admin patch):", metaErr.message || metaErr);
+      }
+    }
+
     res.json(refund);
   } catch (error) {
     res.status(500).json({ message: "Failed to update refund" });

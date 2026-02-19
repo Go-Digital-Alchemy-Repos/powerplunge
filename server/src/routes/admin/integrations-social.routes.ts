@@ -618,6 +618,181 @@ router.delete("/settings/x-shopping", async (req: Request, res: Response) => {
   }
 });
 
+// ==================== META MARKETING SETTINGS ====================
+
+async function createMetaAdminAudit(req: Request, action: string, details?: Record<string, unknown>): Promise<void> {
+  const adminId = (req as any).adminUser?.id;
+  if (!adminId) return;
+
+  try {
+    await storage.createAdminAuditLog({
+      adminId,
+      action,
+      targetType: "integration",
+      targetId: "meta_marketing",
+      details: details || null,
+      ipAddress: req.ip || null,
+    });
+  } catch (error) {
+    console.warn("[META] Failed to write admin audit log:", error);
+  }
+}
+
+router.get("/settings/meta-marketing", async (_req: Request, res: Response) => {
+  try {
+    const { metaCatalogService } = await import("../../integrations/meta/MetaCatalogService");
+    const summary = await metaCatalogService.getConfigSummary();
+    const catalogFeedUrl = summary.catalogFeedKey ? await metaCatalogService.getCatalogFeedUrl(summary.catalogFeedKey) : null;
+    res.json({
+      configured: summary.configured,
+      pixelId: summary.pixelId,
+      catalogId: summary.catalogId,
+      productFeedId: summary.productFeedId,
+      hasAccessToken: summary.hasAccessToken,
+      hasAppSecret: summary.hasAppSecret,
+      hasTestEventCode: summary.hasTestEventCode,
+      hasCatalogFeedKey: summary.hasCatalogFeedKey,
+      capiEnabled: summary.capiEnabled,
+      catalogFeedUrl,
+      lastSyncAt: summary.lastSyncAt,
+      lastSyncStatus: summary.lastSyncStatus,
+      capiLastDispatchAt: summary.capiLastDispatchAt,
+      capiLastDispatchStatus: summary.capiLastDispatchStatus,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch Meta Marketing settings" });
+  }
+});
+
+router.patch("/settings/meta-marketing", async (req: Request, res: Response) => {
+  try {
+    const { encrypt } = await import("../../utils/encryption");
+    const { metaCatalogService } = await import("../../integrations/meta/MetaCatalogService");
+    const {
+      pixelId,
+      catalogId,
+      productFeedId,
+      accessToken,
+      appSecret,
+      testEventCode,
+      capiEnabled,
+    } = req.body;
+
+    const existing = await storage.getIntegrationSettings();
+    const isUpdate = !!existing?.metaMarketingConfigured;
+
+    if (!isUpdate && (!pixelId || !catalogId || !productFeedId || !accessToken)) {
+      return res.status(400).json({ message: "Pixel ID, Catalog ID, Product Feed ID, and Access Token are required" });
+    }
+
+    const updateData: any = {
+      metaMarketingConfigured: true,
+    };
+
+    if (pixelId) updateData.metaPixelId = pixelId;
+    if (catalogId) updateData.metaCatalogId = catalogId;
+    if (productFeedId) updateData.metaProductFeedId = productFeedId;
+    if (accessToken) updateData.metaAccessTokenEncrypted = encrypt(accessToken);
+    if (appSecret) updateData.metaAppSecretEncrypted = encrypt(appSecret);
+    if (testEventCode) updateData.metaTestEventCodeEncrypted = encrypt(testEventCode);
+    if (typeof capiEnabled === "boolean") updateData.metaCapiEnabled = capiEnabled;
+
+    await storage.updateIntegrationSettings(updateData);
+    await metaCatalogService.ensureCatalogFeedKey();
+    await createMetaAdminAudit(req, "meta_marketing.updated", {
+      configured: true,
+      hasPixelId: !!(pixelId || existing?.metaPixelId),
+      hasCatalogId: !!(catalogId || existing?.metaCatalogId),
+      hasProductFeedId: !!(productFeedId || existing?.metaProductFeedId),
+      hasAccessToken: !!(accessToken || existing?.metaAccessTokenEncrypted),
+      hasAppSecret: !!(appSecret || existing?.metaAppSecretEncrypted),
+      hasTestEventCode: !!(testEventCode || existing?.metaTestEventCodeEncrypted),
+      capiEnabled: typeof capiEnabled === "boolean" ? capiEnabled : (existing?.metaCapiEnabled || false),
+    });
+
+    res.json({ success: true, message: "Meta Marketing configuration saved" });
+  } catch (error: any) {
+    console.error("Error saving Meta Marketing settings:", error);
+    res.status(500).json({ message: error.message || "Failed to save Meta Marketing settings" });
+  }
+});
+
+router.post("/settings/meta-marketing/verify", async (req: Request, res: Response) => {
+  try {
+    const { metaCatalogService } = await import("../../integrations/meta/MetaCatalogService");
+    const result = await metaCatalogService.verify();
+    await createMetaAdminAudit(req, "meta_marketing.verified", {
+      success: result.success,
+      hasError: !result.success,
+    });
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message || "Verification failed" });
+  }
+});
+
+router.post("/integrations/meta-marketing/sync", async (req: Request, res: Response) => {
+  try {
+    const { metaCatalogService } = await import("../../integrations/meta/MetaCatalogService");
+    const result = await metaCatalogService.syncCatalog();
+    await createMetaAdminAudit(req, "meta_marketing.sync_manual", {
+      success: result.success,
+      hasError: !result.success,
+    });
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message || "Sync failed" });
+  }
+});
+
+router.post("/integrations/meta-marketing/test-event", async (req: Request, res: Response) => {
+  try {
+    const { metaConversionsService } = await import("../../integrations/meta/MetaConversionsService");
+    const result = await metaConversionsService.sendTestEvent();
+    await createMetaAdminAudit(req, "meta_marketing.test_event", {
+      success: result.success,
+      hasError: !result.success,
+    });
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message || "Test event failed" });
+  }
+});
+
+router.get("/integrations/meta-marketing/stats", async (_req: Request, res: Response) => {
+  try {
+    const { metaConversionsService } = await import("../../integrations/meta/MetaConversionsService");
+    const stats = await metaConversionsService.getStats();
+    res.json(stats);
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message || "Failed to fetch Meta stats" });
+  }
+});
+
+router.delete("/settings/meta-marketing", async (req: Request, res: Response) => {
+  try {
+    await storage.updateIntegrationSettings({
+      metaMarketingConfigured: false,
+      metaPixelId: null,
+      metaCatalogId: null,
+      metaProductFeedId: null,
+      metaAccessTokenEncrypted: null,
+      metaAppSecretEncrypted: null,
+      metaTestEventCodeEncrypted: null,
+      metaCatalogFeedKeyEncrypted: null,
+      metaCatalogLastSyncAt: null,
+      metaCatalogLastSyncStatus: "never",
+      metaCapiEnabled: false,
+      metaCapiLastDispatchAt: null,
+      metaCapiLastDispatchStatus: "never",
+    });
+    await createMetaAdminAudit(req, "meta_marketing.deleted");
+    res.json({ success: true, message: "Meta Marketing configuration removed" });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message || "Failed to remove Meta Marketing settings" });
+  }
+});
+
 // ==================== MAILCHIMP INTEGRATION ====================
 
 router.get("/settings/mailchimp", async (req: Request, res: Response) => {

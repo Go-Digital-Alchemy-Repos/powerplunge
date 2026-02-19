@@ -173,6 +173,13 @@ app.use(requestLoggerMiddleware);
     console.error("[MIGRATION] Failed to run mailgun webhook signing key migration:", error);
   }
 
+  try {
+    const { addMetaMarketingColumns } = await import("./src/migrations/addMetaMarketingColumns");
+    await addMetaMarketingColumns();
+  } catch (error) {
+    console.error("[MIGRATION] Failed to run Meta marketing migration:", error);
+  }
+
   // Ensure default CMS pages exist
   try {
     const { ensureCmsDefaults } = await import("./seed");

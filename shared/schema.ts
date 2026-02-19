@@ -150,6 +150,12 @@ export const orders = pgTable("orders", {
   billingState: text("billing_state"),
   billingZip: text("billing_zip"),
   billingCountry: text("billing_country").default("US"),
+  // Marketing / Meta tracking context
+  marketingConsentGranted: boolean("marketing_consent_granted").default(false),
+  metaFbp: text("meta_fbp"),
+  metaFbc: text("meta_fbc"),
+  metaEventSourceUrl: text("meta_event_source_url"),
+  customerUserAgent: text("customer_user_agent"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -354,6 +360,20 @@ export const integrationSettings = pgTable("integration_settings", {
   twilioAccountSid: text("twilio_account_sid"),
   twilioAuthTokenEncrypted: text("twilio_auth_token_encrypted"),
   twilioPhoneNumber: text("twilio_phone_number"),
+  // Meta marketing integration (Catalog + Conversions API)
+  metaMarketingConfigured: boolean("meta_marketing_configured").default(false),
+  metaPixelId: text("meta_pixel_id"),
+  metaCatalogId: text("meta_catalog_id"),
+  metaProductFeedId: text("meta_product_feed_id"),
+  metaAccessTokenEncrypted: text("meta_access_token_encrypted"),
+  metaAppSecretEncrypted: text("meta_app_secret_encrypted"),
+  metaTestEventCodeEncrypted: text("meta_test_event_code_encrypted"),
+  metaCatalogFeedKeyEncrypted: text("meta_catalog_feed_key_encrypted"),
+  metaCatalogLastSyncAt: timestamp("meta_catalog_last_sync_at"),
+  metaCatalogLastSyncStatus: text("meta_catalog_last_sync_status").default("never"),
+  metaCapiEnabled: boolean("meta_capi_enabled").default(false),
+  metaCapiLastDispatchAt: timestamp("meta_capi_last_dispatch_at"),
+  metaCapiLastDispatchStatus: text("meta_capi_last_dispatch_status").default("never"),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   updatedByUserId: varchar("updated_by_user_id"),
 });
@@ -361,6 +381,25 @@ export const integrationSettings = pgTable("integration_settings", {
 export const insertIntegrationSettingsSchema = createInsertSchema(integrationSettings).omit({ updatedAt: true });
 export type InsertIntegrationSettings = z.infer<typeof insertIntegrationSettingsSchema>;
 export type IntegrationSettings = typeof integrationSettings.$inferSelect;
+
+export type MetaCatalogSyncStatus = "never" | "success" | "failed";
+export type MetaDispatchStatus = "never" | "success" | "failed";
+
+export interface MetaMarketingSettings {
+  configured: boolean;
+  pixelId: string | null;
+  catalogId: string | null;
+  productFeedId: string | null;
+  hasAccessToken: boolean;
+  hasAppSecret: boolean;
+  hasTestEventCode: boolean;
+  hasCatalogFeedKey: boolean;
+  capiEnabled: boolean;
+  catalogLastSyncAt: Date | null;
+  catalogLastSyncStatus: MetaCatalogSyncStatus;
+  capiLastDispatchAt: Date | null;
+  capiLastDispatchStatus: MetaDispatchStatus;
+}
 
 // Affiliate Program Settings
 export const affiliateSettings = pgTable("affiliate_settings", {
@@ -1019,6 +1058,34 @@ export const processedWebhookEvents = pgTable("processed_webhook_events", {
 export const insertProcessedWebhookEventSchema = createInsertSchema(processedWebhookEvents).omit({ id: true, processedAt: true });
 export type InsertProcessedWebhookEvent = z.infer<typeof insertProcessedWebhookEventSchema>;
 export type ProcessedWebhookEvent = typeof processedWebhookEvents.$inferSelect;
+
+// Meta Conversions API event outbox (durable, retryable dispatch queue)
+export const metaCapiEvents = pgTable("meta_capi_events", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  eventKey: text("event_key").notNull().unique(), // purchase:{orderId}, refund:{refundId}:processed
+  eventName: text("event_name").notNull(), // Purchase, Refund, etc.
+  orderId: varchar("order_id").references(() => orders.id),
+  refundId: varchar("refund_id").references(() => refunds.id),
+  payloadJson: jsonb("payload_json").notNull(),
+  status: text("status").notNull().default("queued"), // queued, processing, retry, sent, failed
+  attemptCount: integer("attempt_count").notNull().default(0),
+  nextAttemptAt: timestamp("next_attempt_at").notNull().defaultNow(),
+  lockedAt: timestamp("locked_at"),
+  lockToken: text("lock_token"),
+  lastError: text("last_error"),
+  metaTraceId: text("meta_trace_id"),
+  sentAt: timestamp("sent_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertMetaCapiEventSchema = createInsertSchema(metaCapiEvents).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertMetaCapiEvent = z.infer<typeof insertMetaCapiEventSchema>;
+export type MetaCapiEvent = typeof metaCapiEvents.$inferSelect;
 
 // Customer Notes
 export const customerNotes = pgTable("customer_notes", {

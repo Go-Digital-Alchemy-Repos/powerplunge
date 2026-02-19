@@ -21,6 +21,7 @@ import { AddressForm, emptyAddress, type AddressFormData } from "@/components/ch
 import { validateEmail, validatePhone, validateRequired } from "@shared/validation";
 import { trackCheckoutEvent } from "@/lib/checkout-analytics";
 import { trackBeginCheckout, trackPurchase, trackAddShippingInfo, trackAddPaymentInfo, trackRemoveFromCart } from "@/lib/analytics";
+import { getMetaTrackingPayload } from "@/lib/meta-tracking";
 import { useBranding } from "@/hooks/use-branding";
 import { useCustomerAuth } from "@/hooks/use-customer-auth";
 import SiteLayout from "@/components/SiteLayout";
@@ -760,6 +761,7 @@ export default function Checkout() {
         billingSameAsShipping,
         affiliateCode,
         couponCode: resolvedCouponCode,
+        metaTracking: getMetaTrackingPayload(),
       };
 
       if (isReprice) {

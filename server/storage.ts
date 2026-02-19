@@ -40,6 +40,7 @@ import {
   docVersions, type DocVersion, type InsertDocVersion,
   emailSettings, type EmailSettings, type InsertEmailSettings,
   integrationSettings, type IntegrationSettings, type InsertIntegrationSettings,
+  metaCapiEvents, type MetaCapiEvent, type InsertMetaCapiEvent,
   customerTags, type CustomerTag, type InsertCustomerTag,
   adminAuditLogs, type AdminAuditLog, type InsertAdminAuditLog,
   productRelationships, type ProductRelationship, type InsertProductRelationship,
@@ -213,6 +214,7 @@ export interface IStorage {
 
   // Refunds
   getRefunds(): Promise<Refund[]>;
+  getRefund(id: string): Promise<Refund | undefined>;
   getRefundsByOrderId(orderId: string): Promise<Refund[]>;
   getRefundByStripeRefundId(stripeRefundId: string): Promise<Refund | undefined>;
   createRefund(refund: InsertRefund): Promise<Refund>;
@@ -293,6 +295,21 @@ export interface IStorage {
   // Processed Webhook Events (for idempotency)
   getProcessedWebhookEvent(eventId: string): Promise<ProcessedWebhookEvent | undefined>;
   createProcessedWebhookEvent(event: InsertProcessedWebhookEvent): Promise<ProcessedWebhookEvent>;
+
+  // Meta CAPI outbox
+  createMetaCapiEvent(event: InsertMetaCapiEvent): Promise<MetaCapiEvent>;
+  getMetaCapiEventByEventKey(eventKey: string): Promise<MetaCapiEvent | undefined>;
+  claimDueMetaCapiEvents(limit: number, lockToken: string): Promise<MetaCapiEvent[]>;
+  updateMetaCapiEvent(id: string, data: Partial<InsertMetaCapiEvent>): Promise<MetaCapiEvent | undefined>;
+  getMetaCapiQueueStats(): Promise<{
+    queued: number;
+    retry: number;
+    processing: number;
+    failed: number;
+    sent: number;
+    oldestQueuedAt: Date | null;
+    lastSentAt: Date | null;
+  }>;
 
   // Customer Notes
   getCustomerNotes(customerId: string): Promise<CustomerNote[]>;
@@ -1098,6 +1115,11 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(refunds).orderBy(desc(refunds.createdAt));
   }
 
+  async getRefund(id: string): Promise<Refund | undefined> {
+    const [refund] = await db.select().from(refunds).where(eq(refunds.id, id));
+    return refund || undefined;
+  }
+
   async getRefundsByOrderId(orderId: string): Promise<Refund[]> {
     return db.select().from(refunds).where(eq(refunds.orderId, orderId));
   }
@@ -1466,6 +1488,94 @@ export class DatabaseStorage implements IStorage {
   async createProcessedWebhookEvent(event: InsertProcessedWebhookEvent): Promise<ProcessedWebhookEvent> {
     const [newEvent] = await db.insert(processedWebhookEvents).values(event).returning();
     return newEvent;
+  }
+
+  // Meta CAPI outbox
+  async createMetaCapiEvent(event: InsertMetaCapiEvent): Promise<MetaCapiEvent> {
+    const [created] = await db.insert(metaCapiEvents).values(event).returning();
+    return created;
+  }
+
+  async getMetaCapiEventByEventKey(eventKey: string): Promise<MetaCapiEvent | undefined> {
+    const [event] = await db.select().from(metaCapiEvents).where(eq(metaCapiEvents.eventKey, eventKey));
+    return event || undefined;
+  }
+
+  async claimDueMetaCapiEvents(limit: number, lockToken: string): Promise<MetaCapiEvent[]> {
+    const candidates = await db
+      .select()
+      .from(metaCapiEvents)
+      .where(
+        and(
+          inArray(metaCapiEvents.status, ["queued", "retry"]),
+          lte(metaCapiEvents.nextAttemptAt, new Date()),
+        ),
+      )
+      .orderBy(metaCapiEvents.createdAt)
+      .limit(limit);
+
+    const claimed: MetaCapiEvent[] = [];
+    for (const candidate of candidates) {
+      const [updated] = await db
+        .update(metaCapiEvents)
+        .set({
+          status: "processing",
+          lockedAt: new Date(),
+          lockToken,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(metaCapiEvents.id, candidate.id),
+            inArray(metaCapiEvents.status, ["queued", "retry"]),
+          ),
+        )
+        .returning();
+      if (updated) claimed.push(updated);
+    }
+    return claimed;
+  }
+
+  async updateMetaCapiEvent(id: string, data: Partial<InsertMetaCapiEvent>): Promise<MetaCapiEvent | undefined> {
+    const [updated] = await db
+      .update(metaCapiEvents)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(metaCapiEvents.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async getMetaCapiQueueStats(): Promise<{
+    queued: number;
+    retry: number;
+    processing: number;
+    failed: number;
+    sent: number;
+    oldestQueuedAt: Date | null;
+    lastSentAt: Date | null;
+  }> {
+    const result = await db.execute(sql`
+      SELECT
+        COUNT(*) FILTER (WHERE status = 'queued')::int AS queued,
+        COUNT(*) FILTER (WHERE status = 'retry')::int AS retry,
+        COUNT(*) FILTER (WHERE status = 'processing')::int AS processing,
+        COUNT(*) FILTER (WHERE status = 'failed')::int AS failed,
+        COUNT(*) FILTER (WHERE status = 'sent')::int AS sent,
+        MIN(created_at) FILTER (WHERE status IN ('queued','retry')) AS oldest_queued_at,
+        MAX(sent_at) AS last_sent_at
+      FROM meta_capi_events
+    `);
+
+    const row = (result.rows?.[0] || {}) as any;
+    return {
+      queued: Number(row.queued || 0),
+      retry: Number(row.retry || 0),
+      processing: Number(row.processing || 0),
+      failed: Number(row.failed || 0),
+      sent: Number(row.sent || 0),
+      oldestQueuedAt: row.oldest_queued_at ? new Date(row.oldest_queued_at) : null,
+      lastSentAt: row.last_sent_at ? new Date(row.last_sent_at) : null,
+    };
   }
 
   // Customer Notes

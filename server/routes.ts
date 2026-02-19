@@ -51,6 +51,7 @@ import publicBlogRoutes from "./src/routes/public/blog-v2.routes";
 import publicGoogleReviewsRoutes from "./src/routes/public/google-reviews.routes";
 import publicNewsletterRoutes from "./src/routes/public/newsletter.routes";
 import publicContactRoutes from "./src/routes/public/contact.routes";
+import metaCatalogRoutes from "./src/routes/public/meta-catalog.routes";
 
 // Newly-extracted route modules
 import paymentsRoutes from "./src/routes/public/payments.routes";
@@ -206,6 +207,7 @@ export async function registerRoutes(
 
   // Public routes (no auth)
   app.use("/api", paymentsRoutes);
+  app.use("/api", metaCatalogRoutes);
   app.use("/api/webhook", stripeWebhookRoutes);
   app.use("/api/webhooks/twilio", twilioWebhookRoutes);
   app.use("/api/webhooks/mailgun", mailgunInboundRoutes);
