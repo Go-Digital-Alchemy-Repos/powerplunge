@@ -476,4 +476,25 @@ adminSupportRouter.get("/customers/:customerId/orders", requireAdmin, async (req
   }
 });
 
+adminSupportRouter.delete("/:id", requireAdmin, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const existing = await db.query.supportTickets.findFirst({
+      where: eq(supportTickets.id, id),
+    });
+
+    if (!existing) {
+      return res.status(404).json({ message: "Ticket not found" });
+    }
+
+    await db.delete(emailLogs).where(eq(emailLogs.ticketId, id));
+    await db.delete(supportTickets).where(eq(supportTickets.id, id));
+
+    res.json({ message: "Ticket deleted" });
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router;

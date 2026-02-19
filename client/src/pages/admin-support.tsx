@@ -8,13 +8,24 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { useAdmin } from "@/hooks/use-admin";
 import AdminNav from "@/components/admin/AdminNav";
 import RichTextEditor from "@/components/admin/RichTextEditor";
-import { Headset, MessageSquare, CheckCircle, Clock, AlertCircle, Eye, Search, Filter, RefreshCw, Plus, User, Settings, Package, ChevronDown, ChevronRight, ShoppingBag, DollarSign, ExternalLink, Mail, ArrowUpRight, ArrowDownLeft, X, AlertTriangle } from "lucide-react";
+import { Headset, MessageSquare, CheckCircle, Clock, AlertCircle, Eye, Search, Filter, RefreshCw, Plus, User, Settings, Package, ChevronDown, ChevronRight, ShoppingBag, DollarSign, ExternalLink, Mail, ArrowUpRight, ArrowDownLeft, X, AlertTriangle, Trash2 } from "lucide-react";
 import { Link } from "wouter";
 
 interface AdminNote {
@@ -278,6 +289,27 @@ export default function AdminSupport() {
       setShowCreateDialog(false);
       resetCreateForm();
       toast({ title: "Support ticket created successfully" });
+    },
+    onError: (error: any) => {
+      toast({ title: error.message, variant: "destructive" });
+    },
+  });
+
+  const deleteTicketMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/admin/support/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Failed to delete ticket");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/support"] });
+      toast({ title: "Ticket deleted successfully" });
     },
     onError: (error: any) => {
       toast({ title: error.message, variant: "destructive" });
@@ -597,6 +629,37 @@ export default function AdminSupport() {
                               >
                                 <Mail className="w-4 h-4" />
                               </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-muted-foreground hover:text-destructive"
+                                    title="Delete Ticket"
+                                    data-testid={`button-delete-${ticket.id}`}
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete this ticket?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      This will permanently delete "{ticket.subject}" and all associated data. This action cannot be undone.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => deleteTicketMutation.mutate(ticket.id)}
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                      data-testid={`button-confirm-delete-${ticket.id}`}
+                                    >
+                                      Delete
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -641,21 +704,54 @@ export default function AdminSupport() {
                             year: "numeric",
                           })}
                         </span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 px-2"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setEmailLogTicketId(ticket.id);
-                            setEmailLogTicketSubject(ticket.subject);
-                            setExpandedLogId(null);
-                          }}
-                          title="Email Logs"
-                          data-testid={`button-email-log-mobile-${ticket.id}`}
-                        >
-                          <Mail className="w-3.5 h-3.5" />
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEmailLogTicketId(ticket.id);
+                              setEmailLogTicketSubject(ticket.subject);
+                              setExpandedLogId(null);
+                            }}
+                            title="Email Logs"
+                            data-testid={`button-email-log-mobile-${ticket.id}`}
+                          >
+                            <Mail className="w-3.5 h-3.5" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 px-2 text-muted-foreground hover:text-destructive"
+                                onClick={(e) => e.stopPropagation()}
+                                title="Delete Ticket"
+                                data-testid={`button-delete-mobile-${ticket.id}`}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete this ticket?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This will permanently delete "{ticket.subject}" and all associated data. This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => deleteTicketMutation.mutate(ticket.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
                       </div>
                     </div>
                   ))}
