@@ -39,6 +39,7 @@ interface OrderItem {
 interface Order {
   id: string;
   status: string;
+  paymentStatus?: string;
   totalAmount: number;
   createdAt: string;
   items: OrderItem[];
@@ -128,33 +129,6 @@ export default function AdminCustomers() {
       setShowNewCustomer(false);
       setNewCustomer({ name: "", email: "", phone: "", address: "", city: "", state: "", zipCode: "" });
       toast({ title: "Customer created successfully" });
-    },
-    onError: (error: any) => {
-      toast({ title: error.message, variant: "destructive" });
-    },
-  });
-
-  const createOrderMutation = useMutation({
-    mutationFn: async (data: { customerId: string; items: typeof orderItems }) => {
-      const res = await fetch("/api/admin/orders", {
-        credentials: "include",
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || "Failed to create order");
-      }
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/customers"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
-      setShowNewOrder(false);
-      setOrderCustomerId("");
-      setOrderItems([]);
-      toast({ title: "Order created successfully" });
     },
     onError: (error: any) => {
       toast({ title: error.message, variant: "destructive" });

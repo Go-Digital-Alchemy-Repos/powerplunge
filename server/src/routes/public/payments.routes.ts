@@ -80,7 +80,10 @@ async function countFfUsesForAffiliate(affiliateCode: string): Promise<number> {
   return result[0]?.count || 0;
 }
 
-async function checkFfLimitExceeded(affiliateCode: string, settings: AffiliateSettings | null): Promise<boolean> {
+async function checkFfLimitExceeded(
+  affiliateCode: string,
+  settings: AffiliateSettings | null | undefined
+): Promise<boolean> {
   if (!settings || !settings.ffMaxUses || settings.ffMaxUses <= 0) return false;
   const usageCount = await countFfUsesForAffiliate(affiliateCode);
   return usageCount >= settings.ffMaxUses;

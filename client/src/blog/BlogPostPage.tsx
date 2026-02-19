@@ -30,6 +30,7 @@ interface BlogPost {
   coverImageId: string | null;
   coverImageUrl: string | null;
   ogImageId: string | null;
+  ogImageUrl: string | null;
   readingTimeMinutes: number | null;
   featured: boolean;
   metaTitle: string | null;

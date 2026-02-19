@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, cloneElement, type ReactElement, type ReactNode } from "react";
 import { useAdmin } from "@/hooks/use-admin";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -6,7 +6,7 @@ import { useRoute, useLocation } from "wouter";
 import CmsLayout from "@/components/admin/CmsLayout";
 import {
   ArrowLeft, Save, Globe, GlobeLock, Clock, Blocks, Calendar, History,
-  Plus, X, Search as SearchIcon, Archive, ImageIcon, Trash2, PanelRight, ChevronDown,
+  Plus, X, Search as SearchIcon, Archive, ImageIcon, Trash2, PanelRight, ChevronDown, GripVertical,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -98,10 +98,10 @@ function CollapsibleCard({
 }: {
   sectionKey: string;
   title: string;
-  icon?: React.ReactNode;
+  icon?: ReactNode;
   isCollapsed: boolean;
   onToggle: (key: string) => void;
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
   "data-testid"?: string;
   dragHandleProps?: any;
@@ -137,7 +137,14 @@ function CollapsibleCard({
   );
 }
 
-function SortableSection({ id, children, ...props }: { id: string; children: React.ReactElement; [key: string]: any }) {
+function SortableSection({
+  id,
+  children,
+}: {
+  id: string;
+  children: ReactElement<{ dragHandleProps?: Record<string, any> }>;
+  [key: string]: any;
+}) {
   const {
     attributes,
     listeners,
@@ -156,7 +163,7 @@ function SortableSection({ id, children, ...props }: { id: string; children: Rea
 
   return (
     <div ref={setNodeRef} style={style}>
-      {React.cloneElement(children, { dragHandleProps: { ...attributes, ...listeners } })}
+      {cloneElement(children, { dragHandleProps: { ...attributes, ...listeners } })}
     </div>
   );
 }
@@ -932,7 +939,7 @@ export default function AdminCmsPostEditor() {
                 <div className="space-y-6">
                   {sidebarOrder.map((id) => (
                     <SortableSection key={id} id={id}>
-                      {renderSidebarSection(id) as React.ReactElement}
+                      {renderSidebarSection(id) as ReactElement<{ dragHandleProps?: Record<string, any> }>}
                     </SortableSection>
                   ))}
                 </div>

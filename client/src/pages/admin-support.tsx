@@ -994,7 +994,7 @@ export default function AdminSupport() {
                 <div className="space-y-2">
                   <Label>Add Reply</Label>
                   <RichTextEditor
-                    content={newNoteText}
+                    value={newNoteText}
                     onChange={setNewNoteText}
                     placeholder="Type your reply to the customer..."
                     data-testid="input-admin-notes"
