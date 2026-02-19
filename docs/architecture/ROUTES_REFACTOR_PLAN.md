@@ -80,7 +80,6 @@ server/src/routes/
 │   └── stripe.routes.ts          2 endpoints   (Stripe + Connect webhooks) [NEW]
 ├── affiliate.routes.ts           18 endpoints  (admin affiliate management v2)
 ├── alerts.routes.ts               9 endpoints  (revenue guardrails)
-├── cms.sitePresets.routes.ts   14 endpoints  (site presets CRUD)
 ├── cms.siteSettings.routes.ts   2 endpoints  (canonical site settings)
 ├── coupon.routes.ts               6 endpoints  (coupon analytics)
 ├── recovery.routes.ts            10 endpoints  (checkout recovery)
@@ -102,8 +101,6 @@ server/src/services/
 ├── affiliate-tracking.service.ts
 ├── checkout-recovery.service.ts
 ├── cms.service.ts
-├── cms.sitePresets.apply.service.ts
-├── cms.sitePresets.service.ts
 ├── cms.siteSettings.service.ts
 ├── coupon-analytics.service.ts
 ├── customer-email.service.ts
@@ -125,7 +122,6 @@ server/src/services/
 ```
 server/src/repositories/
 ├── cms.repository.ts
-├── cms.sitePresets.repo.ts
 └── sections.repository.ts
 ```
 
@@ -667,7 +663,7 @@ The following files were modified or created during the refactoring (2026-02-07)
 | Current Location | Target Location | Mount Path | Audience |
 |-----------------|-----------------|------------|----------|
 | `cms.posts.routes.ts` | `admin/cms-posts-admin.routes.ts` | `/api/admin/cms` | admin |
-| `cms.sitePresets.routes.ts` | `admin/cms-site-presets.routes.ts` | `/api/admin/cms/site-presets` | admin |
+| ~~`cms.sitePresets.routes.ts`~~ | ~~Removed — Site Presets feature deleted~~ | — | — |
 | `cms.siteSettings.routes.ts` | `admin/cms-site-settings.routes.ts` | `/api/admin/cms/site-settings` | admin |
 | `affiliate.routes.ts` | `admin/affiliates-v2.routes.ts` | `/api/admin/affiliates-v2` | admin |
 | `alerts.routes.ts` | `admin/alerts.routes.ts` | `/api/alerts` | admin |

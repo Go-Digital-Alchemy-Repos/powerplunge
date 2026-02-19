@@ -19,16 +19,14 @@ Common issues encountered during development and deployment, with diagnostic ste
 
 **Symptom:** All `/api/admin/cms/*` endpoints return 404.
 
-**Cause:** CMS is feature-flagged and disabled by default.
+**Cause:** CMS routes may not be mounted properly, or admin authentication is blocking the request.
 
 **Fix:**
-1. Set `CMS_ENABLED=true` in environment variables
+1. Check that CMS router imports are present in `server/routes.ts`
 2. Restart the server
 3. Verify with `GET /api/admin/cms/health` — should return `{ "status": "ok", "version": "2.0" }`
 
-**Note:** CMS routes are always mounted on the Express app. The feature flag controls visibility at the application layer, not route registration. If you still get 404s after enabling, check that admin authentication middleware is not blocking the request.
-
-**File:** `server/src/config/env.ts` (function `isCmsEnabled()`)
+**Note:** CMS is always active and does not require a feature flag. If you get 404s, check that admin authentication middleware is not blocking the request.
 
 ## 3. Page Blocks Not Rendering — Empty Page
 

@@ -10,7 +10,7 @@ Run these after any stabilization change to confirm nothing is broken.
 ### A1. Load CMS Dashboard
 1. Log in at `/admin` with admin credentials.
 2. Navigate to `/admin/cms`.
-3. **Verify:** Dashboard cards render (Pages, Sections, Templates, Themes, SEO, Settings, Generator, Presets).
+3. **Verify:** Dashboard cards render (Pages, Sections, Templates, Themes, SEO, Settings, Generator).
 4. **Verify:** No console errors.
 
 ### A2. Open Pages Library

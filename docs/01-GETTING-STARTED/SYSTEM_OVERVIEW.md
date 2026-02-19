@@ -8,12 +8,12 @@ Power Plunge is a full-stack e-commerce platform for selling cold plunge tanks. 
 |-------|-----------|-------|
 | Frontend | React 18 + Vite | Dark theme, Inter font, Tailwind CSS |
 | Backend | Express 4 | Layered architecture under `server/src/` |
-| Database | PostgreSQL (Neon) | 65 tables managed by Drizzle ORM |
+| Database | PostgreSQL (Neon) | 80 tables managed by Drizzle ORM |
 | Payments | Stripe | Checkout, webhooks, Stripe Connect for affiliates |
 | Email | Mailgun | Transactional emails, recovery flows |
 | Auth | Custom + Replit Auth | Email/password, magic link, Google/Apple via Replit |
 | Storage | Replit Object Storage / Cloudflare R2 | File uploads, media |
-| CMS | CMS (block-based) | Feature-flagged via `CMS_ENABLED` |
+| CMS | CMS (block-based) | Always active |
 
 ## Subsystem Status
 
@@ -34,7 +34,7 @@ Power Plunge is a full-stack e-commerce platform for selling cold plunge tanks. 
 
 ### CMS
 
-Feature-flagged (`CMS_ENABLED=true`). Block-based page builder with:
+Block-based page builder with:
 
 - 24 registered block types across 6 categories (12 core + 12 Power Plunge domain-specific)
 - Saved sections with section kits
@@ -42,7 +42,6 @@ Feature-flagged (`CMS_ENABLED=true`). Block-based page builder with:
 - Theme packs (5 curated design identities)
 - Landing page generator (4-step wizard)
 - Campaign packs (coordinated multi-page generation)
-- Site presets (full-site composition with preview/activate/rollback)
 - Content validation (server-side shape checking on save)
 - HTML sanitization (scripts, event handlers, javascript: URIs stripped on save and render)
 - Error boundary wrapping all CMS admin routes
@@ -103,13 +102,13 @@ Performance analytics, affiliate overlap detection, stacking rules, auto-expirat
 
 ## Database
 
-65 tables in PostgreSQL, managed by Drizzle ORM. Schema defined in `shared/schema.ts`.
+80 tables in PostgreSQL, managed by Drizzle ORM. Schema defined in `shared/schema.ts`.
 
 Key table groups:
 - **Products & Orders:** `products`, `orders`, `order_items`, `categories`
 - **Customers:** `customers`, `customer_tags`, `customer_notes`, `customer_magic_link_tokens`
 - **Affiliates:** `affiliates`, `affiliate_clicks`, `affiliate_referrals`, `affiliate_payouts`, `affiliate_agreements`, `affiliate_invites`, `affiliate_payout_accounts`, `affiliate_settings`
-- **CMS:** `pages`, `saved_sections`, `site_presets`, `site_settings`, `preset_apply_history`
+- **CMS:** `pages`, `saved_sections`, `site_settings`, `cms_v2_posts`, `cms_v2_menus`
 - **Coupons:** `coupons`, `coupon_redemptions`, `coupon_stacking_rules`
 - **Email:** `email_templates`, `email_settings`, `email_events`
 - **Admin:** `admin_users`, `admin_audit_logs`, `admin_notification_prefs`
@@ -117,7 +116,7 @@ Key table groups:
 - **Upsells:** `product_relationships`, `upsell_rules`
 - **VIP:** `vip_settings`
 
-Seed logic is idempotent: `ensureCmsDefaults()`, `seedDatabase()`, section kits, and site presets all check for existing data before inserting.
+Seed logic is idempotent: `ensureCmsDefaults()`, `seedDatabase()`, and section kits all check for existing data before inserting.
 
 ## Environment Variables
 
@@ -126,17 +125,19 @@ Seed logic is idempotent: `ensureCmsDefaults()`, `seedDatabase()`, section kits,
 | Variable | Purpose |
 |----------|---------|
 | `DATABASE_URL` | PostgreSQL connection string |
-| `STRIPE_SECRET_KEY` | Stripe API key |
+| `SESSION_SECRET` | Secret used to sign session cookies |
+| `STRIPE_SECRET_KEY` | Stripe API secret key (also accepts `STRIPE_SECRET_KEY_LIVE` / `STRIPE_SECRET_KEY_TEST` as fallbacks) |
+| `STRIPE_PUBLISHABLE_KEY` | Stripe publishable key (also accepts `STRIPE_PUBLISHABLE_KEY_LIVE` / `STRIPE_PUBLISHABLE_KEY_TEST` as fallbacks) |
 | `STRIPE_WEBHOOK_SECRET` | Stripe webhook signature verification |
 
-### Optional / Feature Flags
+### Optional
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `CMS_ENABLED` | `false` | Enable CMS block builder |
 | `USE_BETTER_AUTH` | `false` | Enable Better Auth integration |
 | `BETTER_AUTH_SECRET` | — | Session encryption for Better Auth |
-| `SENDGRID_API_KEY` | — | Mailgun API key (legacy variable name) |
+| `MAILGUN_API_KEY` | — | Mailgun API key for transactional emails |
+| `MAILGUN_DOMAIN` | — | Mailgun sending domain |
 | `CLOUDFLARE_R2_*` | — | R2 object storage credentials |
 
 ## Server Startup
@@ -145,7 +146,7 @@ On startup, the server:
 
 1. Connects to PostgreSQL
 2. Runs `ensureCmsDefaults()` to seed home/shop pages if missing
-3. Mounts all route handlers (including CMS if enabled)
+3. Mounts all route handlers (including CMS)
 4. Registers and starts background job runner (4 jobs)
 5. Serves the Vite-built frontend on port 5000
 

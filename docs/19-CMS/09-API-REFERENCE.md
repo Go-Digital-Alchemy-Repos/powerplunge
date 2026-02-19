@@ -279,100 +279,6 @@ Activate a theme pack by ID. Applies the pack's color theme, component variants,
 
 **Response:** The activated theme pack object.
 
-## Site Presets
-
-Site preset endpoints are mounted under `/api/admin/cms/site-presets/`. See [Site Presets Overview](18-SITE-PRESETS-OVERVIEW.md) for full documentation.
-
-### GET /site-presets
-
-List all site presets.
-
-### GET /site-presets/:id
-
-Get a single preset by ID.
-
-### POST /site-presets
-
-Create a new site preset.
-
-### PUT /site-presets/:id
-
-Update an existing preset.
-
-### DELETE /site-presets/:id
-
-Delete a preset.
-
-### POST /site-presets/seed
-
-Seed the 6 built-in starter presets. Idempotent.
-
-### POST /site-presets/:id/preview
-
-Preview what would change if this preset were activated. Returns a diff of current vs proposed settings.
-
-**Response:**
-```json
-{
-  "preset": { "..." },
-  "currentSettings": { "..." },
-  "diff": {
-    "themeWillChange": true,
-    "navWillChange": false,
-    "footerWillChange": true,
-    "seoWillChange": false,
-    "ctaWillChange": true,
-    "homePageAction": "doNothing"
-  }
-}
-```
-
-### POST /site-presets/:id/activate
-
-Activate a preset. Takes a snapshot of current settings before applying. Writes theme, nav, footer, SEO, and CTA settings to `site_settings`.
-
-**Response:**
-```json
-{
-  "snapshotId": "uuid",
-  "presetName": "Performance Tech Starter",
-  "changes": ["theme", "footer", "cta"]
-}
-```
-
-### POST /site-presets/rollback
-
-Rollback to the most recent pre-activation snapshot.
-
-**Response:**
-```json
-{
-  "success": true,
-  "restoredFrom": "Performance Tech Starter",
-  "snapshotId": "uuid"
-}
-```
-
-### POST /site-presets/:id/duplicate
-
-Duplicate an existing preset.
-
-### GET /site-presets/:id/export
-
-Export a preset as a portable JSON bundle.
-
-### POST /site-presets/import
-
-Import a preset from an exported JSON bundle.
-
-### GET /site-presets/apply-history
-
-Get activation history (list of snapshots).
-
-### GET /site-presets/apply-history/:id
-
-Get a specific activation history entry.
-
 ## Site Settings
 
 Canonical site-wide settings stored in `site_settings` table (row `id="main"`).
@@ -682,20 +588,6 @@ All CMS admin endpoints (prefix `/api/admin/cms`):
 | GET | `/theme-packs` | List theme packs |
 | GET | `/theme-packs/active` | Get active theme pack |
 | POST | `/theme-packs/activate` | Activate theme pack |
-| GET | `/site-presets` | List site presets |
-| GET | `/site-presets/:id` | Get preset by ID |
-| POST | `/site-presets` | Create preset |
-| PUT | `/site-presets/:id` | Update preset |
-| DELETE | `/site-presets/:id` | Delete preset |
-| POST | `/site-presets/seed` | Seed built-in presets |
-| POST | `/site-presets/:id/preview` | Preview preset activation |
-| POST | `/site-presets/:id/activate` | Activate preset |
-| POST | `/site-presets/rollback` | Rollback to previous settings |
-| POST | `/site-presets/:id/duplicate` | Duplicate preset |
-| GET | `/site-presets/:id/export` | Export preset |
-| POST | `/site-presets/import` | Import preset |
-| GET | `/site-presets/apply-history` | Activation history |
-| GET | `/site-presets/apply-history/:id` | Single history entry |
 | GET | `/site-settings` | Get site settings |
 | PUT | `/site-settings` | Update site settings |
 | GET | `/posts` | List all posts (admin) |

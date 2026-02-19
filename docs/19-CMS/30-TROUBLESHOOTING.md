@@ -1,12 +1,12 @@
 # CMS Troubleshooting & Verification
 
-Comprehensive troubleshooting guide covering all CMS subsystems: feature flag, pages, blocks, builder, sections, templates, themes, theme packs, site presets, rendering, posts/blog, and navigation menus.
+Comprehensive troubleshooting guide covering all CMS subsystems: pages, blocks, builder, sections, templates, themes, theme packs, rendering, posts/blog, and navigation menus.
 
 ---
 
 ## Quick Health Checks
 
-### 1. Is CMS Enabled?
+### 1. Is CMS Healthy?
 
 ```bash
 curl http://localhost:5000/api/admin/cms/health
@@ -14,7 +14,6 @@ curl http://localhost:5000/api/admin/cms/health
 
 **Expected:** `200` with `{ "status": "ok", "version": "2.0" }`
 **If 401:** You need an admin auth token.
-**If feature is disabled:** Set `CMS_ENABLED=true` in environment variables and restart.
 
 ### 2. Are All Tables Present?
 
@@ -22,7 +21,7 @@ curl http://localhost:5000/api/admin/cms/health
 npx tsx scripts/db/verifySchema.ts
 ```
 
-**Expected:** 67/67 tables pass (including `cms_v2_posts`, `cms_v2_menus`).
+**Expected:** 80/80 tables pass (including `cms_v2_posts`, `cms_v2_menus`).
 
 ### 3. Are All Endpoints Responding?
 
@@ -50,21 +49,15 @@ npx tsx scripts/smoke/cmsContentSafety.ts
 
 ---
 
-## Feature Flag Issues
+## General Issues
 
 ### CMS Sidebar Not Showing in Admin
 
 **Symptom:** Admin nav does not show CMS links (Pages, Posts, Menus, etc.).
 
-**Cause:** `CMS_ENABLED` is not set or is `false`.
+**Cause:** CMS routes may not be mounted. Check that CMS router imports are present in `server/routes.ts`.
 
-**Fix:** Set `CMS_ENABLED=true` in environment and restart.
-
-**Verification:**
-```bash
-echo $CMS_ENABLED
-# Should output: true
-```
+**Fix:** Ensure the CMS router is correctly imported and mounted.
 
 ### CMS API Routes Return 404
 
@@ -305,33 +298,6 @@ SELECT active_theme_id FROM site_settings WHERE id = 'main';
 
 ---
 
-## Site Preset Issues
-
-### Preset Activation Changes Unexpected Settings
-
-**Symptom:** Activating a preset changes nav, footer, or other settings you didn't expect.
-
-**Fix:** Use the preview endpoint first:
-```bash
-curl -X POST -H "Authorization: Bearer $TOKEN" \
-  http://localhost:5000/api/admin/cms/site-presets/<id>/preview
-```
-This returns a diff showing exactly what will change.
-
-### Rollback Not Available
-
-**Symptom:** "Rollback" button disabled or returns error.
-
-**Cause:** No activation snapshot exists (no preset has been activated yet).
-
-**Verification:**
-```bash
-curl -H "Authorization: Bearer $TOKEN" \
-  http://localhost:5000/api/admin/cms/site-presets/apply-history
-```
-
----
-
 ## Rendering Issues
 
 ### Blocks Render but Legacy HTML Also Appears
@@ -367,8 +333,6 @@ curl -H "Authorization: Bearer $TOKEN" \
 **Causes:**
 1. **Posts are still in draft.** Only `status = 'published'` posts appear publicly.
 2. **`publishedAt` is in the future.** The query filters `publishedAt <= now()`.
-3. **`CMS_ENABLED` is `false`.** Public endpoints return empty arrays when disabled.
-
 **Fix:** In the admin, verify the post status is "Published" and `publishedAt` is in the past.
 
 ### Post Slug Returns 404
@@ -378,8 +342,6 @@ curl -H "Authorization: Bearer $TOKEN" \
 **Causes:**
 1. **Slug typo.** Verify the slug matches exactly (case-sensitive).
 2. **Post is not published.** Draft and archived posts return 404 on public endpoints.
-3. **CMS disabled.** Returns 404 for all slugs when disabled.
-
 **Verification:**
 ```bash
 curl -H "Authorization: Bearer $TOKEN" \
@@ -479,7 +441,7 @@ Validates contentJson schema enforcement and HTML sanitization. (21 checks)
 npx tsx scripts/db/verifySchema.ts
 ```
 
-Verifies all 67 tables including `cms_v2_posts` and `cms_v2_menus`.
+Verifies all 80 tables including `cms_v2_posts` and `cms_v2_menus`.
 
 ### Manual Table Check
 
@@ -515,7 +477,7 @@ FROM cms_v2_menus;
 ### Check Theme Settings
 
 ```sql
-SELECT active_theme_id, active_theme_pack_id, active_preset_id
+SELECT active_theme_id, active_theme_pack_id
 FROM site_settings WHERE id = 'main';
 ```
 
@@ -525,7 +487,6 @@ FROM site_settings WHERE id = 'main';
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `CMS_ENABLED` | Yes | `false` | Feature flag for all CMS features |
 | `DATABASE_URL` | Yes | — | PostgreSQL connection string |
 
 ---
@@ -571,24 +532,6 @@ FROM site_settings WHERE id = 'main';
 | `GET` | `/theme-packs` | List packs |
 | `GET` | `/theme-packs/active` | Active pack |
 | `POST` | `/theme-packs/activate` | Activate pack |
-
-### Site Presets (Admin — `/api/admin/cms`)
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/site-presets` | List presets |
-| `GET` | `/site-presets/:id` | Get preset |
-| `POST` | `/site-presets` | Create preset |
-| `PUT` | `/site-presets/:id` | Update preset |
-| `DELETE` | `/site-presets/:id` | Delete preset |
-| `POST` | `/site-presets/seed` | Seed built-in |
-| `POST` | `/site-presets/:id/preview` | Preview activation |
-| `POST` | `/site-presets/:id/activate` | Activate |
-| `POST` | `/site-presets/rollback` | Rollback |
-| `POST` | `/site-presets/:id/duplicate` | Duplicate |
-| `GET` | `/site-presets/:id/export` | Export |
-| `POST` | `/site-presets/import` | Import |
-| `GET` | `/site-presets/apply-history` | History |
 
 ### Site Settings (Admin — `/api/admin/cms`)
 

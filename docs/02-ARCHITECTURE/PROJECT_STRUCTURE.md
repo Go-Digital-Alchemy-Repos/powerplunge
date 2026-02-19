@@ -126,7 +126,6 @@ This document describes the reorganized project structure for Power Plunge, desi
 │       │   │
 │       │   ├── affiliate.routes.ts          # Shared domain routers (10 files)
 │       │   ├── alerts.routes.ts
-│       │   ├── cms.sitePresets.routes.ts
 │       │   ├── cms.siteSettings.routes.ts
 │       │   ├── coupon.routes.ts
 │       │   ├── recovery.routes.ts

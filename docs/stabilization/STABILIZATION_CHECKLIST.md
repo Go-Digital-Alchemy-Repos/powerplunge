@@ -34,7 +34,7 @@ This document defines the stabilization checklist and definition of done for the
 | 3.8 | Stripe config | `GET /api/stripe/config` | 200 with `publishableKey` |
 | 3.9 | Admin CRUD | All admin `/api/admin/*` endpoints | Correct auth enforcement (401 without token) |
 | 3.10 | CMS API | `GET/POST/PUT/DELETE /api/admin/cms/*` | CRUD operations succeed with auth |
-| 3.11 | Site Presets API | `GET/POST /api/admin/cms/site-presets/*` | CRUD, preview, activate, rollback |
+| 3.11 | ~~Site Presets API~~ | ~~Removed~~ | Site Presets feature was removed |
 | 3.12 | Site Settings API | `GET/PUT /api/admin/cms/site-settings` | Read/write with Zod validation |
 
 ## 4. E2E Smoke Tests (Admin + Public)
@@ -82,7 +82,7 @@ This document defines the stabilization checklist and definition of done for the
 | 6.3 | CMS defaults | `ensureCmsDefaults()` runs on boot | Home and shop pages exist |
 | 6.4 | Site settings row | Check `site_settings` where `id='main'` | Row exists with `activeThemeId` |
 | 6.5 | Starter kits available | Check saved sections | Section kits loadable from admin |
-| 6.6 | Site preset seeds | `POST /api/admin/cms/site-presets/seed` | 6 starter presets available |
+| 6.6 | ~~Site preset seeds~~ | ~~Removed~~ | Site Presets feature was removed |
 
 ## 7. Auth Checks (Admin Only)
 
@@ -99,16 +99,16 @@ This document defines the stabilization checklist and definition of done for the
 
 | # | Check | Method | Pass Criteria |
 |---|-------|--------|---------------|
-| 8.1 | Feature flag off | Set `CMS_ENABLED=false` | CMS sidebar hidden, API still mounted |
-| 8.2 | Feature flag on | Set `CMS_ENABLED=true` | Full CMS admin accessible |
+| 8.1 | ~~Feature flag off~~ | ~~Removed~~ | CMS is always active, feature flag removed |
+| 8.2 | CMS accessible | Navigate to `/admin/cms` | Full CMS admin accessible |
 | 8.3 | Block registry | Load page builder | All 12 block types available |
 | 8.4 | Theme system | Activate a theme | CSS variables apply to storefront |
 | 8.5 | Theme packs | Activate a theme pack | Tokens + component variants + block defaults apply |
-| 8.6 | Site presets | Activate → rollback | Settings apply and restore correctly |
+| 8.6 | ~~Site presets~~ | ~~Removed~~ | Site Presets feature was removed |
 | 8.7 | Site settings | `GET /api/admin/cms/site-settings` | Returns valid JSON with settings |
 | 8.8 | Landing page generator | Generate a page | Draft page created with correct blocks |
 | 8.9 | Campaign packs | Generate a campaign | Multiple draft pages created |
-| 8.10 | Preset-aware campaigns | Generate with preset selected | Pages inherit preset theme, SEO, CTA |
+| 8.10 | Campaign generation | Generate a campaign | Pages created with pack defaults |
 | 8.11 | Blog posts CRUD | Admin create/edit/publish/delete post | CRUD succeeds, status transitions work |
 | 8.12 | Blog post visibility | Public list only shows published | Draft/archived posts hidden from public |
 | 8.13 | Blog post by slug | `GET /api/blog/posts/:slug` | Returns published post, 404 for draft |
@@ -236,7 +236,7 @@ Stabilization is complete when ALL of the following criteria are met:
 - [ ] Cart and checkout flow — no JS console errors
 - [ ] Admin login and dashboard — no JS console errors
 - [ ] CMS page builder — no JS console errors
-- [ ] CMS presets manager — no JS console errors
+- [ ] CMS themes manager — no JS console errors
 
 ### No 500s on Key Endpoints
 - [ ] `GET /api/products` — no 500
@@ -245,7 +245,7 @@ Stabilization is complete when ALL of the following criteria are met:
 - [ ] `POST /api/create-payment-intent` — no 500 (expected 400 on bad input)
 - [ ] `GET /api/site-settings` — no 500
 - [ ] `GET /api/admin/cms/site-settings` — no 500 (with auth)
-- [ ] `GET /api/admin/cms/site-presets` — no 500 (with auth)
+- [ ] `GET /api/admin/cms/themes/active` — no 500 (with auth)
 - [ ] All admin CRUD endpoints — no 500 on valid requests
 
 ### Parity Script (Legacy vs CMS)

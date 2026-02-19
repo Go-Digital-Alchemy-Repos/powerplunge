@@ -8,7 +8,6 @@ The Landing Page Generator is a 4-step wizard that assembles a complete landing 
 - **Dashboard:** "Landing Page Generator" card on the CMS dashboard
 - **Sidebar:** Generators → Landing Pages
 - **Requires:** Admin authentication with full access (admin or store_manager role)
-- **Feature flag:** Requires `CMS_ENABLED=true`
 
 > **Tip:** To generate multiple coordinated pages at once, use [Campaign Packs](14-CAMPAIGN-PACKS.md) instead. Campaign packs use the same assembly engine to produce entire campaigns in a single action.
 
@@ -163,7 +162,7 @@ The wizard includes a togglable preview panel that shows the assembled page in r
 
 ### "Access Denied" on the generator page
 
-The generator requires admin authentication with full access (admin or store_manager role). Fulfillment users do not have access. Ensure you are logged in via `/admin` and that `CMS_ENABLED=true` is set.
+The generator requires admin authentication with full access (admin or store_manager role). Fulfillment users do not have access. Ensure you are logged in via `/admin`.
 
 ### Slug shows "taken" for a slug that should be available
 

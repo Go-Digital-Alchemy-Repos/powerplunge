@@ -20,7 +20,6 @@ Each page in a campaign pack is assembled independently using the same pure-func
 - **Admin URL:** `/admin/cms/generator/campaigns`
 - **Sidebar:** Generators → Campaign Packs
 - **Requires:** Admin authentication with full access (admin or store_manager role)
-- **Feature flag:** Requires `CMS_ENABLED=true`
 
 ## How It Works
 

@@ -25,15 +25,15 @@ npx tsx scripts/doctor.ts
 
 **Checks performed:**
 1. Required environment variables (`DATABASE_URL`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`)
-2. Optional environment variables with warnings (`SENDGRID_API_KEY`, `CMS_ENABLED`, etc.)
+2. Optional environment variables with warnings (`MAILGUN_API_KEY`, etc.)
 3. Database connection (attempts a simple query)
 4. Integration configuration status (Stripe, Mailgun, Replit Auth)
 
 **Output format:**
 ```
 [checkmark] Environment: DATABASE_URL is set
-[warning] Environment: SENDGRID_API_KEY is not set
-  -> Set SENDGRID_API_KEY to enable email notifications
+[warning] Environment: MAILGUN_API_KEY is not set
+  -> Set MAILGUN_API_KEY to enable email notifications
 [checkmark] Database: Connection successful
 ```
 
@@ -41,7 +41,7 @@ Exit code: `0` if all required checks pass, `1` if any required check fails.
 
 ## scripts/db/verifySchema.ts
 
-Verifies that all 67 expected database tables exist in PostgreSQL and checks key data invariants.
+Verifies that all 80 expected database tables exist in PostgreSQL and checks key data invariants.
 
 **Run:**
 ```bash
@@ -50,7 +50,7 @@ npx tsx scripts/db/verifySchema.ts
 
 **Checks performed:**
 1. Queries `information_schema.tables` for all public tables
-2. Compares against a hardcoded list of 67 expected table names (including `cms_v2_posts` and `cms_v2_menus`)
+2. Compares against a hardcoded list of 80 expected table names (including `cms_v2_posts` and `cms_v2_menus`)
 3. Reports missing tables and unexpected extra tables
 4. Checks data invariants:
    - `site_settings` "main" row exists
@@ -100,7 +100,6 @@ npx tsx scripts/smoke/apiSmoke.ts
 | Admin posts | `GET /api/admin/cms/posts` | 401 (no auth) |
 | Admin menus | `GET /api/admin/cms/menus` | 401 (no auth) |
 | Admin site-settings | `GET /api/admin/cms/site-settings` | 401 (no auth) |
-| Admin site-presets | `GET /api/admin/cms/site-presets` | 401 (no auth) |
 
 ### Public Endpoints (10 checks)
 | Check | Endpoint | Expected |

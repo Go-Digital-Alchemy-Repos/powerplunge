@@ -100,8 +100,6 @@ This means the post becomes visible only when the scheduled time arrives, with n
 
 ---
 
-## Feature Flag
+## Availability
 
-Posts are gated by `CMS_ENABLED`. When disabled:
-- Admin routes return `403 — CMS is not enabled`
-- Public routes return empty arrays / `404`
+Posts are always active as part of the CMS subsystem. No feature flag is required.

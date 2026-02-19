@@ -6,17 +6,20 @@ Power Plunge uses Stripe for all payment processing, supporting credit/debit car
 
 ## Stripe Configuration
 
-The system supports both test and live Stripe keys:
+The system supports Stripe keys with fallback resolution:
 
 | Environment Variable | Purpose |
 |---------------------|---------|
-| `STRIPE_SECRET_KEY_TEST` | Test mode API key |
-| `STRIPE_SECRET_KEY_LIVE` | Live mode API key |
-| `STRIPE_WEBHOOK_SECRET_TEST` | Test webhook signing secret |
-| `STRIPE_WEBHOOK_SECRET_LIVE` | Live webhook signing secret |
+| `STRIPE_SECRET_KEY` | Primary API secret key (preferred) |
+| `STRIPE_PUBLISHABLE_KEY` | Primary publishable key (preferred) |
+| `STRIPE_SECRET_KEY_LIVE` | Live mode API key (fallback) |
+| `STRIPE_SECRET_KEY_TEST` | Test mode API key (fallback) |
+| `STRIPE_PUBLISHABLE_KEY_LIVE` | Live publishable key (fallback) |
+| `STRIPE_PUBLISHABLE_KEY_TEST` | Test publishable key (fallback) |
+| `STRIPE_WEBHOOK_SECRET` | Webhook signing secret |
 | `STRIPE_CONNECT_WEBHOOK_SECRET` | Connect webhook signing secret (affiliate payouts) |
 
-The system checks for test keys first, falling back to live keys. If no Stripe keys are configured, manual payment mode is used.
+Key resolution order: `STRIPE_SECRET_KEY` → `STRIPE_SECRET_KEY_LIVE` → `STRIPE_SECRET_KEY_TEST` (same pattern for publishable keys). If no Stripe keys are configured, manual payment mode is used.
 
 ## Payment Flow
 

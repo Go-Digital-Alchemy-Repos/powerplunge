@@ -167,7 +167,7 @@ app.use("/api/admin/shipments", requireAdmin, shipmentManagementRoutes);
 4. **Error handling** — Every handler wraps in try/catch. Return `{ message: string }` on errors.
 5. **No controller layer** — Routes call storage/services directly. Controllers add indirection with minimal benefit at this scale.
 6. **Typed imports** — Use `Request, Response` from express. Cast `req` to `any` only when accessing session/auth properties.
-7. **Feature flags** — For new experimental features, check `isCmsEnabled()` or similar flags at the mount level.
+7. **Feature flags** — For new experimental features, use environment variable flags checked at the mount level.
 
 ## Service Layer (When Needed)
 

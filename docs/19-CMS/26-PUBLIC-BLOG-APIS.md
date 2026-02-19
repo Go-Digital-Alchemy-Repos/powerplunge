@@ -48,7 +48,6 @@ The response may be a paginated object or a plain array depending on configurati
 }
 ```
 
-**When CMS disabled:** Returns `[]` or `{ "data": [] }`.
 
 ---
 
@@ -67,7 +66,6 @@ Returns a single published post by its slug. Draft and archived posts return `40
 { "error": "Post not found" }
 ```
 
-**When CMS disabled:** Returns `404`.
 
 ---
 
@@ -84,8 +82,6 @@ Returns all unique tag strings used across published posts.
 ["health", "wellness", "recovery", "cold-therapy"]
 ```
 
-**When CMS disabled:** Returns `[]`.
-
 ---
 
 ### List Categories
@@ -100,16 +96,6 @@ Returns all unique category strings used across published posts.
 ```json
 ["guides", "news", "tutorials"]
 ```
-
-**When CMS disabled:** Returns `[]`.
-
----
-
-## Feature Flag Behavior
-
-All public blog endpoints check `isCmsEnabled()`:
-- **Enabled:** Normal behavior
-- **Disabled:** List endpoints return `[]`, single-item endpoints return `404`
 
 ---
 

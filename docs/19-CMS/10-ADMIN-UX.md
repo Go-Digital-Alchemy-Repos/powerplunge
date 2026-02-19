@@ -6,7 +6,7 @@ The CMS admin interface provides a comprehensive content management experience f
 
 ### Route Map
 
-All CMS admin routes are gated by admin authentication (`useAdmin()` hook) and the `CMS_ENABLED` feature flag. Server-side routes require `requireFullAccess` middleware (blocks fulfillment role).
+All CMS admin routes are gated by admin authentication (`useAdmin()` hook). Server-side routes require `requireFullAccess` middleware (blocks fulfillment role).
 
 | Route | Page Component | Purpose |
 |-------|---------------|---------|
@@ -21,7 +21,7 @@ All CMS admin routes are gated by admin authentication (`useAdmin()` hook) and t
 
 ### Navigation
 
-CMS appears as "CMS (Preview)" in the admin sidebar's CMS dropdown menu, separated from legacy CMS items. The nav item only renders when `CMS_ENABLED=true` (checked via `GET /api/health/config`).
+CMS appears in the admin sidebar's CMS dropdown menu. The nav item is always visible to admins.
 
 Within CMS, the `CmsLayout` wrapper component (`client/src/components/admin/CmsLayout.tsx`) provides:
 - Consistent page header with breadcrumb-style title

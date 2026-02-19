@@ -64,7 +64,7 @@ Only one active menu per location is rendered.
 
 ## Admin API
 
-All admin endpoints require authentication and `CMS_ENABLED = true`.
+All admin endpoints require authentication.
 
 ### CRUD Endpoints
 

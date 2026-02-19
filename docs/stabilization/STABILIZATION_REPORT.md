@@ -48,7 +48,7 @@ Relocated all 12 files to their proper subdirectories:
 | `alerts.routes.ts` | `admin/alerts.routes.ts` |
 | `support.routes.ts` | `admin/support.routes.ts` |
 | `cms.posts.routes.ts` | `admin/cms-posts-v2.routes.ts` |
-| `cms.sitePresets.routes.ts` | `admin/cms-site-presets.routes.ts` |
+| ~~`cms.sitePresets.routes.ts`~~ | ~~Removed — Site Presets feature deleted~~ |
 | `cms.siteSettings.routes.ts` | `admin/cms-site-settings.routes.ts` |
 | `public.blog.routes.ts` | `public/blog-v2.routes.ts` |
 

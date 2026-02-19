@@ -2,33 +2,11 @@
 
 CMS is a block-based page builder system for Power Plunge. It provides a visual editor for creating and managing pages using reusable content blocks, saved sections, themeable design, comprehensive SEO controls, a blog/posts subsystem, and configurable navigation menus.
 
-## Feature Flag
+## Status
 
-CMS is controlled by the `CMS_ENABLED` environment variable:
+CMS is always active. The `CMS_ENABLED` feature flag was previously used during initial development but has been removed. CMS functionality is now permanently enabled.
 
-- **Default:** `false` (disabled)
-- **Enable:** Set `CMS_ENABLED=true` in the environment
-
-The feature flag is checked via `isCmsEnabled()` in `server/src/config/env.ts`. The CMS admin routes are always mounted (the flag controls feature visibility at the application level). CMS is fully non-destructive — it shares the same `pages` database table but stores block content in the `contentJson` JSONB column alongside the legacy `content` HTML field. Posts and menus use their own dedicated tables (`cms_v2_posts`, `cms_v2_menus`).
-
-### Rollout
-
-1. Set `CMS_ENABLED=true`
-2. Restart the application
-3. CMS sidebar appears in admin navigation
-4. Existing pages continue to work (legacy HTML rendering is preserved)
-5. New pages can be created with the block-based builder
-6. Posts and menus subsystems become active
-
-### Rollback
-
-1. Set `CMS_ENABLED=false`
-2. Restart the application
-3. CMS sidebar is hidden; admin API routes remain mounted but feature-gated
-4. Public blog endpoints return empty arrays
-5. Public menu endpoints return `null`
-6. Existing pages continue to render (blocks are preserved in database)
-7. No data is deleted — re-enabling the flag restores everything
+CMS is fully non-destructive — it shares the same `pages` database table but stores block content in the `contentJson` JSONB column alongside the legacy `content` HTML field. Posts and menus use their own dedicated tables (`cms_v2_posts`, `cms_v2_menus`).
 
 ## Architecture
 
@@ -36,8 +14,7 @@ The feature flag is checked via `isCmsEnabled()` in `server/src/config/env.ts`. 
 shared/schema.ts                              → Page, SavedSection, CmsPost, CmsMenu schemas + Zod validation
 
 server/src/
-  config/env.ts                               → isCmsEnabled() feature flag
-  routes/admin/cms.router.ts               → Pages, sections, themes, packs, presets, settings API
+  routes/admin/cms.router.ts               → Pages, sections, themes, packs, settings API
   routes/admin/cms-posts.routes.ts         → Admin posts API (CRUD, publish, unpublish)
   routes/admin/cms-menus.routes.ts         → Admin menus API (CRUD, by-location upsert)
   routes/public.blog.routes.ts                 → Public blog API (list, by-slug, tags, categories)
@@ -62,7 +39,6 @@ client/src/
   pages/admin-cms-sections.tsx             → Saved sections manager
   pages/admin-cms-templates.tsx            → Template browser
   pages/admin-cms-themes.tsx               → Themes + theme packs
-  pages/admin-cms-presets.tsx              → Site presets manager
   pages/admin-cms-seo.tsx                  → SEO management
   pages/admin-cms-settings.tsx             → Site settings
   pages/admin-cms-generator-landing.tsx    → Landing page generator wizard
@@ -88,7 +64,7 @@ client/src/
 |-------|---------|
 | `pages` | CMS pages (shared with legacy CMS) — contentJson stores block data |
 | `saved_sections` | Reusable block groups |
-| `site_settings` | Active theme, preset, nav, footer, SEO, CTA defaults |
+| `site_settings` | Active theme, nav, footer, SEO, CTA defaults |
 | `cms_v2_posts` | Blog posts with status workflow and SEO fields |
 | `cms_v2_menus` | Navigation menus with nested items and location binding |
 
@@ -122,10 +98,6 @@ Pre-defined collections of coordinated landing pages for seasonal promotions and
 
 Theme packs bundle color themes, component variant selections, and block style defaults into a single activatable design identity. 5 built-in packs provide curated visual styles. See [Theme Packs](15-THEME-PACKS.md), [Component Variants](16-COMPONENT-VARIANTS.md), and [Block Style Defaults](17-BLOCK-STYLE-DEFAULTS.md).
 
-### Site Presets
-
-Site Presets are full-site composition bundles that package a theme pack, navigation, footer, SEO defaults, CTA defaults, homepage template, and section kits into a single activatable configuration. They provide one-click site identity management with preview, activate, and rollback capabilities. 6 built-in starter presets are available. See [Site Presets Overview](18-SITE-PRESETS-OVERVIEW.md), [Apply Engine + History](19-APPLY-ENGINE-HISTORY.md), [Presets Manager UI](20-PRESETS-MANAGER-UI.md), [Export/Import](21-EXPORT-IMPORT.md), and [Preset-Aware Campaigns](22-PRESET-AWARE-CAMPAIGNS.md).
-
 ### Blog Posts
 
 Posts provide a blog/content marketing subsystem with a full status workflow (draft → published → archived), scheduled publishing via `publishedAt`, tags, categories, SEO fields, and a rich text/block editor. See [Posts Overview](24-POSTS-OVERVIEW.md), [Posts Admin UI](25-POSTS-ADMIN-UI.md), [Public Blog APIs](26-PUBLIC-BLOG-APIS.md), and [Blog Page Template](27-BLOG-PAGE-TEMPLATE.md).
@@ -157,8 +129,7 @@ Every page has full SEO controls: meta title/description, Open Graph, Twitter Ca
 | `/admin/cms/templates` | Page templates |
 | `/admin/cms/themes` | Theme management with instant activation |
 | `/admin/cms/generator/landing` | Landing Page Generator wizard |
-| `/admin/cms/generator/campaigns` | Campaign Packs generator (preset-aware) |
-| `/admin/cms/presets` | Site Presets manager (create, activate, rollback, export/import) |
+| `/admin/cms/generator/campaigns` | Campaign Packs generator |
 | `/admin/cms/seo` | SEO management |
 | `/admin/cms/settings` | Site-wide settings |
 
@@ -184,7 +155,6 @@ Every page has full SEO controls: meta title/description, Open Graph, Twitter Ca
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `CMS_ENABLED` | `false` | Feature flag for all CMS features |
 | `DATABASE_URL` | — | PostgreSQL connection string (required) |
 
 ## Verification
@@ -192,7 +162,7 @@ Every page has full SEO controls: meta title/description, Open Graph, Twitter Ca
 Run all CMS health checks:
 
 ```bash
-npx tsx scripts/db/verifySchema.ts    # 67 tables including cms_v2_posts, cms_v2_menus
+npx tsx scripts/db/verifySchema.ts    # 80 tables including cms_v2_posts, cms_v2_menus
 npx tsx scripts/smoke/apiSmoke.ts     # 22 endpoint checks
 npx tsx scripts/smoke/blogSmoke.ts    # 19 post lifecycle tests
 npx tsx scripts/smoke/cmsContentSafety.ts  # 21 content validation tests
@@ -218,11 +188,6 @@ npx tsx scripts/smoke/cmsContentSafety.ts  # 21 content validation tests
 | [Theme Packs](15-THEME-PACKS.md) | Tokens + variants + defaults bundles |
 | [Component Variants](16-COMPONENT-VARIANTS.md) | Shape/spacing controls |
 | [Block Style Defaults](17-BLOCK-STYLE-DEFAULTS.md) | Per-block defaults |
-| [Site Presets](18-SITE-PRESETS-OVERVIEW.md) | Full-site composition |
-| [Apply Engine](19-APPLY-ENGINE-HISTORY.md) | Preset activation + rollback |
-| [Presets UI](20-PRESETS-MANAGER-UI.md) | Preset admin interface |
-| [Export/Import](21-EXPORT-IMPORT.md) | Preset portability |
-| [Preset Campaigns](22-PRESET-AWARE-CAMPAIGNS.md) | Preset-aware campaign generation |
 | [Rendering Rules](23-RENDERING-RULES.md) | Blocks vs HTML, sanitization, error boundary |
 | [Posts Overview](24-POSTS-OVERVIEW.md) | Blog data model, status workflow |
 | [Posts Admin UI](25-POSTS-ADMIN-UI.md) | Post editor and library |
