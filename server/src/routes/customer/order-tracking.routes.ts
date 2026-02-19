@@ -8,7 +8,7 @@ import {
   AuthenticatedRequest 
 } from "../../middleware/customer-auth.middleware";
 import { db } from "../../../db";
-import { supportTickets, orders, customers } from "@shared/schema";
+import { supportTickets, orders, customers, emailLogs } from "@shared/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { notificationService } from "../../services/notification.service";
 import { normalizeEmail } from "../../services/customer-identity.service";
@@ -305,6 +305,32 @@ router.post("/support/:id/reply", requireCustomerAuth, async (req: Authenticated
     }
     console.error("Customer reply error:", error);
     res.status(500).json({ message: "Failed to add reply" });
+  }
+});
+
+router.delete("/support/:id", requireCustomerAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const customerId = req.customerSession!.customerId;
+    const { id } = req.params;
+
+    const ticket = await db.query.supportTickets.findFirst({
+      where: and(
+        eq(supportTickets.id, id),
+        eq(supportTickets.customerId, customerId)
+      ),
+    });
+
+    if (!ticket) {
+      return res.status(404).json({ message: "Ticket not found" });
+    }
+
+    await db.delete(emailLogs).where(eq(emailLogs.ticketId, ticket.id));
+    await db.delete(supportTickets).where(eq(supportTickets.id, ticket.id));
+
+    res.json({ message: "Ticket deleted" });
+  } catch (error: any) {
+    console.error("Delete support ticket error:", error);
+    res.status(500).json({ message: "Failed to delete ticket" });
   }
 });
 

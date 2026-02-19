@@ -14,7 +14,18 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { Send, MessageSquare, Loader2, ChevronRight, User, Shield, Clock } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Send, MessageSquare, Loader2, ChevronRight, User, Shield, Clock, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAccountSupport } from "../hooks/useAccountSupport";
 import { useAccountOrders } from "../hooks/useAccountOrders";
@@ -229,6 +240,7 @@ export default function SupportTab({ prefillOrderId, onPrefillConsumed }: { pref
     ticketsLoading,
     createTicketMutation,
     replyMutation,
+    deleteTicketMutation,
   } = useAccountSupport();
   const { orders } = useAccountOrders();
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
@@ -384,49 +396,87 @@ export default function SupportTab({ prefillOrderId, onPrefillConsumed }: { pref
                   const customerCount = Array.isArray(ticket.customerReplies) ? ticket.customerReplies.length : 0;
                   const replyCount = adminCount + customerCount;
                   return (
-                    <button
+                    <div
                       key={ticket.id}
-                      type="button"
-                      onClick={() => setSelectedTicketId(ticket.id)}
-                      className="w-full text-left p-4 rounded-lg border bg-muted/30 hover:bg-muted/60 hover:border-primary/30 transition-colors cursor-pointer group"
+                      className="relative w-full text-left p-4 rounded-lg border bg-muted/30 hover:bg-muted/60 hover:border-primary/30 transition-colors group"
                       data-testid={`ticket-card-${ticket.id}`}
                     >
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <h4 className="font-medium text-sm line-clamp-1">{ticket.subject}</h4>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          <Badge
-                            variant="outline"
-                            className={statusBadgeClass(ticket.status)}
-                            data-testid={`ticket-status-${ticket.id}`}
-                          >
-                            {statusLabel(ticket.status)}
-                          </Badge>
-                          <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                      <button
+                        type="button"
+                        onClick={() => setSelectedTicketId(ticket.id)}
+                        className="w-full text-left cursor-pointer"
+                        data-testid={`ticket-open-${ticket.id}`}
+                      >
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <h4 className="font-medium text-sm line-clamp-1">{ticket.subject}</h4>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <Badge
+                              variant="outline"
+                              className={statusBadgeClass(ticket.status)}
+                              data-testid={`ticket-status-${ticket.id}`}
+                            >
+                              {statusLabel(ticket.status)}
+                            </Badge>
+                            <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                          </div>
                         </div>
-                      </div>
-                      <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{ticket.message.replace(/<[^>]*>/g, '')}</p>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <Badge variant="secondary" className="text-xs">
-                          {typeLabel(ticket.type)}
-                        </Badge>
-                        <span>•</span>
-                        <span>{formatDate(ticket.createdAt)}</span>
-                        {replyCount > 0 && (
-                          <>
-                            <span>•</span>
-                            <span className="text-blue-400 font-medium" data-testid={`ticket-reply-count-${ticket.id}`}>
-                              {replyCount} {replyCount === 1 ? "reply" : "replies"}
-                            </span>
-                          </>
-                        )}
-                        {ticket.resolvedAt && (
-                          <>
-                            <span>•</span>
-                            <span className="text-green-500">Resolved</span>
-                          </>
-                        )}
-                      </div>
-                    </button>
+                        <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{ticket.message.replace(/<[^>]*>/g, '')}</p>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <Badge variant="secondary" className="text-xs">
+                            {typeLabel(ticket.type)}
+                          </Badge>
+                          <span>•</span>
+                          <span>{formatDate(ticket.createdAt)}</span>
+                          {replyCount > 0 && (
+                            <>
+                              <span>•</span>
+                              <span className="text-blue-400 font-medium" data-testid={`ticket-reply-count-${ticket.id}`}>
+                                {replyCount} {replyCount === 1 ? "reply" : "replies"}
+                              </span>
+                            </>
+                          )}
+                          {ticket.resolvedAt && (
+                            <>
+                              <span>•</span>
+                              <span className="text-green-500">Resolved</span>
+                            </>
+                          )}
+                        </div>
+                      </button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <button
+                            type="button"
+                            className="absolute top-3 right-3 p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all z-10"
+                            onClick={(e) => e.stopPropagation()}
+                            data-testid={`button-delete-ticket-${ticket.id}`}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete this ticket?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This will permanently delete "{ticket.subject}". This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel data-testid="button-cancel-delete">Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => {
+                                if (selectedTicketId === ticket.id) setSelectedTicketId(null);
+                                deleteTicketMutation.mutate(ticket.id);
+                              }}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              data-testid="button-confirm-delete"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   );
                 })}
               </div>

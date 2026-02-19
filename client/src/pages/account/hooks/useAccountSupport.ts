@@ -76,6 +76,27 @@ export function useAccountSupport() {
     },
   });
 
+  const deleteTicketMutation = useMutation({
+    mutationFn: async (ticketId: string) => {
+      const res = await fetch(`/api/customer/orders/support/${ticketId}`, {
+        method: "DELETE",
+        headers: { ...getAuthHeader() },
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Failed to delete ticket");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/customer/orders/support"] });
+      toast({ title: "Ticket deleted successfully" });
+    },
+    onError: (error: any) => {
+      toast({ title: error.message, variant: "destructive" });
+    },
+  });
+
   return {
     supportForm,
     setSupportForm,
@@ -83,5 +104,6 @@ export function useAccountSupport() {
     ticketsLoading,
     createTicketMutation,
     replyMutation,
+    deleteTicketMutation,
   };
 }
