@@ -5,35 +5,63 @@
 | Property | Value |
 |----------|-------|
 | Domain | support |
-| Source Files | server/src/routes/support.routes.ts |
-| Endpoint Count | 5 |
+| Source Files | `server/src/routes/admin/support.routes.ts`, `server/src/routes/customer/order-tracking.routes.ts`, `server/src/routes/public/contact.routes.ts`, `server/src/routes/webhooks/mailgun-inbound.routes.ts` |
+| Endpoint Count | 14 |
 
 ## Auth & Authorization
 
-| Property | Value |
-|----------|-------|
-| Auth Required | TBD |
-| Roles Allowed | TBD |
+| Scope | Auth Required | Roles Allowed |
+|-------|---------------|---------------|
+| Customer endpoints | Customer session token (Bearer) | Authenticated customers |
+| Admin endpoints | Admin session cookie | `admin`, `store_manager`, `fulfillment` (via `requireAdmin`) |
+| Public endpoints | None (rate-limited) | Anyone |
+| Webhook endpoints | Mailgun HMAC signature | Mailgun service |
 
 ## Notes
 
-_Add manual documentation notes here. This section is preserved during sync._
+The support system spans four route files. Customer-facing ticket operations are in `order-tracking.routes.ts` under the `/support` prefix. Admin management is in `support.routes.ts`. The public contact form is a standalone route. Inbound email handling is a webhook route.
 
-
-<!-- === AUTO-GENERATED SECTION (do not edit below this line) === -->
+For the full functional specification including notification flows, email templates, and configuration, see [Support Ticket System](../18-FUNCTIONAL-DOCS/SUPPORT_TICKET_SYSTEM.md).
 
 ## Endpoints
 
-| Method | Path | Source File | Line |
-|--------|------|-------------|------|
-| `GET` | `/api/admin/` | server/src/routes/admin/support.routes.ts | 63 |
-| `GET` | `/api/admin/` | server/src/routes/admin/support.routes.ts | 102 |
-| `POST` | `/api/admin/` | server/src/routes/admin/support.routes.ts | 17 |
-| `POST` | `/api/admin/` | server/src/routes/admin/support.routes.ts | 290 |
-| `GET` | `/api/admin/:id` | server/src/routes/admin/support.routes.ts | 146 |
-| `PATCH` | `/api/admin/:id` | server/src/routes/admin/support.routes.ts | 188 |
-| `GET` | `/api/admin/customers/search` | server/src/routes/admin/support.routes.ts | 251 |
+### Customer Endpoints — Order Tracking (Auth: Customer Bearer Token via `requireCustomerAuth`)
 
-_7 endpoint(s) detected._
+| Method | Path | Description | Source File |
+|--------|------|-------------|-------------|
+| `GET` | `/api/customer/orders/support` | List customer's support tickets | `server/src/routes/customer/order-tracking.routes.ts` |
+| `POST` | `/api/customer/orders/support` | Create a new support ticket | `server/src/routes/customer/order-tracking.routes.ts` |
+| `POST` | `/api/customer/orders/support/:id/reply` | Reply to an existing ticket | `server/src/routes/customer/order-tracking.routes.ts` |
 
-<!-- === END AUTO-GENERATED SECTION === -->
+### Customer Endpoints — Legacy (Auth: Replit Auth via `isAuthenticated`)
+
+| Method | Path | Description | Source File |
+|--------|------|-------------|-------------|
+| `POST` | `/api/customer/support` | Create ticket (legacy, no notifications) | `server/src/routes/admin/support.routes.ts` (default `router`) |
+| `GET` | `/api/customer/support` | List customer's tickets (legacy) | `server/src/routes/admin/support.routes.ts` (default `router`) |
+
+### Admin Endpoints (Auth: Admin Session)
+
+| Method | Path | Description | Source File |
+|--------|------|-------------|-------------|
+| `GET` | `/api/admin/support` | List all tickets with stats, optional `?status=` filter | `server/src/routes/admin/support.routes.ts` |
+| `GET` | `/api/admin/support/:id` | Get single ticket detail with customer info | `server/src/routes/admin/support.routes.ts` |
+| `PATCH` | `/api/admin/support/:id` | Update ticket (status, priority, add admin note) | `server/src/routes/admin/support.routes.ts` |
+| `POST` | `/api/admin/support` | Create ticket on behalf of a customer | `server/src/routes/admin/support.routes.ts` |
+| `GET` | `/api/admin/support/customers/search` | Search customers by name/email/phone (`?q=`) | `server/src/routes/admin/support.routes.ts` |
+| `GET` | `/api/admin/support/customers/:customerId/orders` | Get customer order history for ticket context | `server/src/routes/admin/support.routes.ts` |
+| `GET` | `/api/admin/support/email-logs/:ticketId` | Get email audit log for a ticket | `server/src/routes/admin/support.routes.ts` |
+
+### Public Endpoints (No Auth, Rate-Limited)
+
+| Method | Path | Description | Source File |
+|--------|------|-------------|-------------|
+| `POST` | `/api/contact` | Submit contact form (creates ticket) | `server/src/routes/public/contact.routes.ts` |
+
+### Webhook Endpoints (Mailgun Signature)
+
+| Method | Path | Description | Source File |
+|--------|------|-------------|-------------|
+| `POST` | `/api/webhooks/mailgun/inbound` | Process inbound email (new ticket or reply) | `server/src/routes/webhooks/mailgun-inbound.routes.ts` |
+
+_14 endpoint(s) documented._

@@ -61,6 +61,33 @@ The error alerting service (`server/src/services/error-alerting.service.ts`) sen
 - Revenue threshold warnings
 - System error notifications
 
+### Support Ticket Emails
+
+The support email service (`server/src/services/support-email.service.ts`) handles all ticket-related email flows:
+
+| Email Type | Direction | Trigger | Recipient |
+|------------|-----------|---------|-----------|
+| Admin Notification | Outbound | New ticket created | Configured admin emails |
+| Customer Confirmation | Outbound | New ticket created (auto-reply) | Customer |
+| Admin Reply | Outbound | Admin adds note to ticket | Customer |
+| Status Change | Outbound | Admin changes ticket status | Customer |
+| Customer Reply Notification | Outbound | Customer replies to ticket | Configured admin emails |
+| Inbound Reply | Inbound | Customer replies via email | System (Mailgun webhook) |
+| Inbound New Ticket | Inbound | Customer emails support address | System (Mailgun webhook) |
+
+Support emails are configured via `/admin/support/settings` with these controls:
+- **Notify emails**: Comma-separated admin addresses for notifications
+- **Notify on new**: Toggle admin email for new tickets
+- **Notify on reply**: Toggle customer reply and status change emails
+- **Auto-reply**: Toggle and customize the confirmation message sent to customers
+- **From email**: Sender address for support emails
+- **SLA hours**: Response time commitment (used in auto-reply template with `{{sla_hours}}`)
+- **Inbound replies**: Enable Mailgun inbound email routing for direct email replies
+
+All support emails are logged to the `email_logs` table for audit purposes, viewable per-ticket in the admin panel.
+
+For full details, see [Support Ticket System](./SUPPORT_TICKET_SYSTEM.md).
+
 ## Admin Email Management
 
 ### Template Configuration
@@ -100,4 +127,10 @@ For affiliate invite flows, SMS notifications use the Twilio Verify API:
 - `server/src/services/customer-email.service.ts` - Customer email functions
 - `server/src/services/checkout-recovery.service.ts` - Recovery email logic
 - `server/src/services/error-alerting.service.ts` - Alert notifications
+- `server/src/services/support-email.service.ts` - Support ticket email functions
 - `server/src/routes/admin/settings.routes.ts` - Email configuration
+- `server/src/routes/webhooks/mailgun-inbound.routes.ts` - Inbound email webhook
+
+## Related Documentation
+
+- [Support Ticket System](./SUPPORT_TICKET_SYSTEM.md) - Full support ticket and notification flow documentation
