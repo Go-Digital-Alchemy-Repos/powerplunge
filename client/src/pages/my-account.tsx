@@ -38,8 +38,8 @@ function CustomerNotificationBell({ getAuthHeader, onTabChange }: { getAuthHeade
       if (!res.ok) return { count: 0 };
       return res.json();
     },
-    refetchInterval: 30000,
-    staleTime: 10000,
+    refetchInterval: 60000,
+    staleTime: 15000,
   });
 
   const { data: notificationsData } = useQuery<{ notifications: any[]; total: number }>({

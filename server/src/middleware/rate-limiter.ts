@@ -12,7 +12,10 @@ interface RateLimitConfig {
   name?: string;
 }
 
+const MAX_STORE_SIZE = 10000;
+
 const limiters = new Map<string, Map<string, RateLimitEntry>>();
+const cleanupTimers: NodeJS.Timeout[] = [];
 
 function getClientKey(req: Request): string {
   const forwarded = req.headers["x-forwarded-for"];
@@ -30,6 +33,18 @@ function cleanupExpiredEntries(store: Map<string, RateLimitEntry>, now: number) 
     }
   });
   keysToDelete.forEach(key => store.delete(key));
+
+  if (store.size > MAX_STORE_SIZE) {
+    const entries = Array.from(store.entries())
+      .sort((a, b) => a[1].resetTime - b[1].resetTime);
+    const toRemove = entries.slice(0, store.size - MAX_STORE_SIZE);
+    toRemove.forEach(([key]) => store.delete(key));
+  }
+}
+
+export function clearAllRateLimitTimers() {
+  cleanupTimers.forEach(t => clearInterval(t));
+  cleanupTimers.length = 0;
 }
 
 export function createRateLimiter(config: RateLimitConfig) {
@@ -38,10 +53,10 @@ export function createRateLimiter(config: RateLimitConfig) {
   
   if (!limiters.has(storeKey)) {
     limiters.set(storeKey, new Map());
+    const timer = setInterval(() => cleanupExpiredEntries(limiters.get(storeKey)!, Date.now()), 60000);
+    cleanupTimers.push(timer);
   }
   const store = limiters.get(storeKey)!;
-
-  setInterval(() => cleanupExpiredEntries(store, Date.now()), 60000);
 
   return (req: Request, res: Response, next: NextFunction) => {
     const clientKey = getClientKey(req);

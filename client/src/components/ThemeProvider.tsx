@@ -251,7 +251,7 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
     staleTime: 5000,
     refetchOnMount: "always",
     refetchOnWindowFocus: true,
-    refetchInterval: 30000,
+    refetchInterval: 60000,
   });
 
   const { data: allThemes } = useQuery<ThemePreset[]>({
