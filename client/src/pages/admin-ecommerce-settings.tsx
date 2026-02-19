@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAdmin } from "@/hooks/use-admin";
-import { CreditCard, ShoppingBag, Instagram, Send, Star, ExternalLink, CheckCircle2, XCircle, Link2, Youtube, Ghost, Tag, ArrowRight, Loader2, TestTube, AlertCircle, Save, Copy, Key, Users, Zap, Shield, Eye, EyeOff } from "lucide-react";
+import { CreditCard, ShoppingBag, Instagram, Send, Star, ExternalLink, CheckCircle2, XCircle, Link2, Youtube, Ghost, Tag, ArrowRight, Loader2, TestTube, AlertCircle, Save, Copy, Key, Users, Zap, Shield, Eye, EyeOff, CircleDot } from "lucide-react";
 import AdminNav from "@/components/admin/AdminNav";
 
 interface StripeEnvStatus {
@@ -419,6 +419,12 @@ function StripeEnvPanel({ env, stripeSettings, onSaved }: {
     }
   };
 
+  const hasPublishableKey = envStatus?.configured;
+  const hasSecretKey = envStatus?.configured;
+  const hasWebhook = envStatus?.hasWebhookSecret;
+  const allConfigured = hasPublishableKey && hasSecretKey && hasWebhook;
+  const partiallyConfigured = hasPublishableKey || hasSecretKey || hasWebhook;
+
   return (
     <div className="space-y-4">
       {isLive && (
@@ -430,23 +436,46 @@ function StripeEnvPanel({ env, stripeSettings, onSaved }: {
         </div>
       )}
 
-      {envStatus?.configured && (
-        <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
-          <div className="flex items-center gap-2 text-green-500 text-sm font-medium">
-            <CheckCircle2 className="w-4 h-4" />
-            {env === "live" ? "Live" : "Test"} keys configured
+      {partiallyConfigured && (
+        <div className={`p-4 rounded-lg border ${allConfigured ? "bg-green-500/10 border-green-500/20" : "bg-amber-500/5 border-amber-500/20"}`}>
+          <div className={`flex items-center gap-2 text-sm font-semibold mb-3 ${allConfigured ? "text-green-500" : "text-amber-500"}`}>
+            {allConfigured ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+            {allConfigured
+              ? `${env === "live" ? "Live" : "Test"} — Fully Configured`
+              : `${env === "live" ? "Live" : "Test"} — Partially Configured`}
           </div>
-          {envStatus.publishableKeyMasked && (
-            <p className="text-xs text-muted-foreground mt-1">{envStatus.publishableKeyMasked}</p>
+          <div className="grid grid-cols-3 gap-2">
+            <div className={`flex items-center gap-1.5 text-xs px-2 py-1.5 rounded-md border ${hasPublishableKey ? "bg-green-500/10 border-green-500/20 text-green-400" : "bg-muted/50 border-border text-muted-foreground"}`} data-testid={`status-pk-${env}`}>
+              {hasPublishableKey ? <CheckCircle2 className="w-3 h-3 shrink-0" /> : <CircleDot className="w-3 h-3 shrink-0 opacity-40" />}
+              <span className="truncate">Publishable Key</span>
+            </div>
+            <div className={`flex items-center gap-1.5 text-xs px-2 py-1.5 rounded-md border ${hasSecretKey ? "bg-green-500/10 border-green-500/20 text-green-400" : "bg-muted/50 border-border text-muted-foreground"}`} data-testid={`status-sk-${env}`}>
+              {hasSecretKey ? <CheckCircle2 className="w-3 h-3 shrink-0" /> : <CircleDot className="w-3 h-3 shrink-0 opacity-40" />}
+              <span className="truncate">Secret Key</span>
+            </div>
+            <div className={`flex items-center gap-1.5 text-xs px-2 py-1.5 rounded-md border ${hasWebhook ? "bg-green-500/10 border-green-500/20 text-green-400" : "bg-muted/50 border-border text-muted-foreground"}`} data-testid={`status-webhook-${env}`}>
+              {hasWebhook ? <CheckCircle2 className="w-3 h-3 shrink-0" /> : <CircleDot className="w-3 h-3 shrink-0 opacity-40" />}
+              <span className="truncate">Webhook</span>
+            </div>
+          </div>
+          {envStatus?.publishableKeyMasked && (
+            <p className="text-xs text-muted-foreground mt-2 font-mono">{envStatus.publishableKeyMasked}</p>
           )}
-          <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-            <span>Webhook: {envStatus.hasWebhookSecret ? "configured" : "not set"}</span>
-          </div>
         </div>
       )}
 
-      <div className="space-y-2">
-        <Label>Publishable Key</Label>
+      <div className={`space-y-2 p-3 rounded-lg border transition-colors ${hasPublishableKey ? "border-green-500/20 bg-green-500/[0.03]" : "border-transparent"}`}>
+        <div className="flex items-center justify-between">
+          <Label className="flex items-center gap-2">
+            Publishable Key
+          </Label>
+          {hasPublishableKey && (
+            <span className="flex items-center gap-1 text-[11px] font-medium text-green-500 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20" data-testid={`badge-pk-saved-${env}`}>
+              <CheckCircle2 className="w-3 h-3" />
+              Saved
+            </span>
+          )}
+        </div>
         <SecretInput
           value={publishableKey}
           onChange={(e) => { setPublishableKey(e.target.value); setValidation(null); }}
@@ -457,8 +486,18 @@ function StripeEnvPanel({ env, stripeSettings, onSaved }: {
         {pkError && <p className="text-xs text-red-500">{pkError}</p>}
       </div>
 
-      <div className="space-y-2">
-        <Label>Secret Key</Label>
+      <div className={`space-y-2 p-3 rounded-lg border transition-colors ${hasSecretKey ? "border-green-500/20 bg-green-500/[0.03]" : "border-transparent"}`}>
+        <div className="flex items-center justify-between">
+          <Label className="flex items-center gap-2">
+            Secret Key
+          </Label>
+          {hasSecretKey && (
+            <span className="flex items-center gap-1 text-[11px] font-medium text-green-500 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20" data-testid={`badge-sk-saved-${env}`}>
+              <CheckCircle2 className="w-3 h-3" />
+              Saved
+            </span>
+          )}
+        </div>
         <SecretInput
           value={secretKey}
           onChange={(e) => { setSecretKey(e.target.value); setValidation(null); }}
@@ -469,8 +508,18 @@ function StripeEnvPanel({ env, stripeSettings, onSaved }: {
         {skError && <p className="text-xs text-red-500">{skError}</p>}
       </div>
 
-      <div className="space-y-2">
-        <Label>{env === "live" ? "Live" : "Test"} Payment Webhook Secret</Label>
+      <div className={`space-y-2 p-3 rounded-lg border transition-colors ${hasWebhook ? "border-green-500/20 bg-green-500/[0.03]" : "border-transparent"}`}>
+        <div className="flex items-center justify-between">
+          <Label className="flex items-center gap-2">
+            {env === "live" ? "Live" : "Test"} Payment Webhook Secret
+          </Label>
+          {hasWebhook && (
+            <span className="flex items-center gap-1 text-[11px] font-medium text-green-500 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20" data-testid={`badge-webhook-saved-${env}`}>
+              <CheckCircle2 className="w-3 h-3" />
+              Saved
+            </span>
+          )}
+        </div>
         <SecretInput
           value={webhookSecret}
           onChange={(e) => setWebhookSecret(e.target.value)}
