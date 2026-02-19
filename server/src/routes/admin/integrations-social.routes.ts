@@ -681,8 +681,8 @@ router.patch("/settings/meta-marketing", async (req: Request, res: Response) => 
     const existing = await storage.getIntegrationSettings();
     const isUpdate = !!existing?.metaMarketingConfigured;
 
-    if (!isUpdate && (!pixelId || !catalogId || !productFeedId || !accessToken)) {
-      return res.status(400).json({ message: "Pixel ID, Catalog ID, Product Feed ID, and Access Token are required" });
+    if (!isUpdate && !accessToken) {
+      return res.status(400).json({ message: "Access Token is required" });
     }
 
     const updateData: any = {

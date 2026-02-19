@@ -2772,8 +2772,8 @@ function MetaMarketingConfigDialog({ open, onOpenChange, onSuccess }: {
   }, [metaSettings]);
 
   const handleSave = async () => {
-    if (!metaSettings?.configured && (!formData.pixelId || !formData.catalogId || !formData.productFeedId || !formData.accessToken)) {
-      toast({ title: "Pixel ID, Catalog ID, Product Feed ID, and Access Token are required", variant: "destructive" });
+    if (!metaSettings?.configured && !formData.accessToken) {
+      toast({ title: "Access Token is required", variant: "destructive" });
       return;
     }
 
