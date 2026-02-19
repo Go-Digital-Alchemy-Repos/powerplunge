@@ -16,6 +16,8 @@ cd power-plunge
 npm install
 ```
 
+The `postinstall` hook automatically creates placeholder image assets needed by the frontend.
+
 ## 2. Create your .env file
 
 ```bash
@@ -30,49 +32,42 @@ Edit `.env` with your values. At minimum you need:
 - `STRIPE_PUBLISHABLE_KEY` — Stripe test publishable key
 - `STRIPE_WEBHOOK_SECRET` — Stripe webhook secret
 
-## 3. Set up placeholder assets
-
-The app references image assets in `attached_assets/` that live on Replit. For local dev, generate tiny placeholders:
-
-```bash
-npx tsx scripts/ensure-assets.ts
-```
-
-## 4. Push database schema
+## 3. Push database schema
 
 ```bash
 npm run db:push
 ```
 
-## 5. Run the app
+## 4. Run the app
 
-### Option A: Backend + Frontend together (recommended)
-
-```bash
-make dev
-```
-
-This runs the backend on port 5001 and frontend on port 5002.
-
-### Option B: Separately
+### Option A: npm scripts (most portable)
 
 ```bash
-# Terminal 1 — backend
-make dev-server
+# Backend + frontend together
+npm run dev:all
 
-# Terminal 2 — frontend
-make dev-client
+# Or separately:
+npm run dev:local      # backend on port 5001
+npm run dev:client:local  # frontend on port 5002
 ```
 
-### Option C: Without Make
+### Option B: Makefile
 
 ```bash
-npx concurrently --names server,client \
-  "PORT=5001 NODE_ENV=development npx tsx server/index.ts" \
-  "npx vite dev --port 5002"
+make dev            # backend + frontend together
+make dev-server     # backend only
+make dev-client     # frontend only
 ```
 
-## 6. Open the app
+### Option C: One-time setup shortcut
+
+```bash
+make setup    # npm install + copy .env.example
+# or
+npm run setup:local   # ensure assets exist
+```
+
+## 5. Open the app
 
 Visit `http://localhost:5002` for the frontend (proxied to backend on 5001).
 
@@ -95,9 +90,20 @@ With this set, `/api/login` auto-logs you in as a dev user. This is useful for t
 npm run seed:dev-users
 ```
 
+## Available local scripts
+
+| Script | Description |
+|---|---|
+| `npm run dev:local` | Backend on port 5001 |
+| `npm run dev:client:local` | Frontend on port 5002 |
+| `npm run dev:all` | Both together via concurrently |
+| `npm run setup:local` | Ensure placeholder assets exist |
+| `npm run db:push` | Push database schema |
+| `npm run seed:dev-users` | Seed test users |
+
 ## Troubleshooting
 
-- **Vite crashes on missing assets**: Run `npx tsx scripts/ensure-assets.ts`
+- **Vite crashes on missing assets**: Run `npm run setup:local`
 - **Database connection fails**: Check your `DATABASE_URL` in `.env`
-- **Port already in use**: Change `PORT` in `.env` or use different ports in Make commands
+- **Port already in use**: Change `PORT` in `.env` or use different ports
 - **Auth errors**: Make sure `SESSION_SECRET` is set. For local auth, set `ENABLE_DEV_AUTH=true`

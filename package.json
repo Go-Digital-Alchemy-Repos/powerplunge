@@ -16,7 +16,12 @@
     "seed:dev-users": "NODE_ENV=development tsx scripts/seed-dev-users.ts",
     "ci:check": "npm run typecheck && npx tsx scripts/doctor.ts && npx tsx scripts/db/verifySchema.ts && npm run test",
     "test:e2e": "npx playwright test",
-    "test:unit": "vitest run"
+    "test:unit": "vitest run",
+    "postinstall": "tsx scripts/ensure-assets.ts",
+    "dev:local": "PORT=5001 NODE_ENV=development tsx server/index.ts",
+    "dev:client:local": "vite dev --port 5002",
+    "setup:local": "tsx scripts/ensure-assets.ts",
+    "dev:all": "concurrently --names server,client \"PORT=5001 NODE_ENV=development tsx server/index.ts\" \"vite dev --port 5002\""
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.987.0",
