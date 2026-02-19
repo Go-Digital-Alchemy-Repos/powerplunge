@@ -6,7 +6,7 @@
 |----------|-------|
 | Domain | main |
 | Source Files | server/routes.ts |
-| Endpoint Count | 184 |
+| Endpoint Count | _(see auto-generated section below)_ |
 
 ## Auth & Authorization
 

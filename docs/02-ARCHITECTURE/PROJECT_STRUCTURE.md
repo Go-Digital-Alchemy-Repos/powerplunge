@@ -10,7 +10,7 @@ This document describes the reorganized project structure for Power Plunge, desi
 /
 ├── docs/                           # Project documentation
 │   ├── PROJECT_STRUCTURE.md        # This file
-│   └── ARCHITECTURE_OVERVIEW.md    # High-level architecture
+│   └── README.md                   # Getting started guide
 │
 ├── client/                         # Frontend (React + Vite)
 │   ├── public/                     # Static assets
@@ -58,7 +58,7 @@ This document describes the reorganized project structure for Power Plunge, desi
 │
 ├── server/                         # Backend (Express)
 │   ├── index.ts                    # Server entrypoint
-│   ├── routes.ts                   # Route orchestrator (159 lines — mounts all routers)
+│   ├── routes.ts                   # Route orchestrator (mounts all routers)
 │   │
 │   └── src/
 │       ├── config/                 # Configuration
@@ -224,8 +224,9 @@ Routes are grouped by access level into subdirectories under `server/src/routes/
 
 | Middleware | Purpose | Example |
 |------------|---------|---------|
-| `requireFullAccess` | All admin roles except fulfillment | Settings, products, reports |
-| `requireAdmin` | All admin roles including fulfillment | Orders, shipments, dashboard |
+| `requireFullAccess` | super_admin, admin, store_manager (excludes fulfillment) | Settings, products, reports |
+| `requireAdmin` | All admin roles (super_admin, admin, store_manager, fulfillment) | Orders, shipments, dashboard |
+| `requireOrderAccess` | super_admin, admin, store_manager, fulfillment | Order-specific operations |
 | `isAuthenticated` | Logged-in customer | Profile, support, order tracking |
 | _(none)_ | Public access | Products, CMS pages, webhooks |
 
@@ -368,7 +369,6 @@ throw new AppError("Product not found", 404);
 ## Migration Notes
 
 Route extraction from the monolithic `routes.ts` is **complete**. Key changes:
-- `routes.ts` reduced from 2,700+ lines → **159 lines** (97% reduction)
 - `routes.ts` is now a slim orchestrator: imports routers, applies middleware, and mounts them — zero inline handlers remain
 - All 46 router files live under `server/src/routes/` grouped by access level
 - `storage.ts` → Split into repository files (PLANNED)
@@ -383,12 +383,12 @@ Route extraction from the monolithic `routes.ts` is **complete**. Key changes:
 | Config layer | ✅ Complete | `env.ts`, centralized configuration |
 | Utils | ✅ Complete | `encryption.ts` moved to `server/src/utils/` |
 | Integrations | ✅ Complete | Stripe, Mailgun, Replit in `server/src/integrations/` |
-| Middleware | ✅ Complete | `requireAdmin`, `requireFullAccess`, `isAuthenticated` extracted |
+| Middleware | ✅ Complete | `requireAdmin`, `requireFullAccess`, `requireOrderAccess`, `isAuthenticated` extracted |
 | Database index | ✅ Complete | Re-exports from `server/src/db/index.ts` |
 | Route infrastructure | ✅ Complete | Base route modules created |
 | Route migration | ✅ Complete | 46 router files, `routes.ts` reduced to 159-line orchestrator |
 | Services | 🔄 Partial | 21 service files exist; routes call storage directly for simple CRUD |
-| Repositories | ⏳ Planned | `storage.ts` (1,666 lines) could be split into domain repos |
+| Repositories | ⏳ Planned | `storage.ts` could be split into domain repos |
 | Path aliases | ⏳ Planned | `@server/*`, `@client/*`, `@shared/*` |
 
 ### How to Add a New Route Module

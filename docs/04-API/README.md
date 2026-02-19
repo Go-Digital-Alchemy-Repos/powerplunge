@@ -13,7 +13,19 @@ All API endpoints are prefixed with `/api/` and organized by access level:
 ## Authentication
 
 - **Customer Auth:** Bearer token in Authorization header
-- **Admin Auth:** Session-based with role checks (admin, store_manager, fulfillment)
+- **Admin Auth:** Session-based with role checks (super_admin, admin, store_manager, fulfillment)
+
+## Admin Role Middleware
+
+The following middleware functions control admin access levels. All are applied at mount level in `server/routes.ts`, not inside individual router files.
+
+| Middleware | Roles Granted Access | Purpose |
+|------------|---------------------|---------|
+| `requireAdmin` | super_admin, admin, store_manager, fulfillment | Basic admin authentication — verifies the session belongs to a valid admin user. All admin roles pass. |
+| `requireFullAccess` | super_admin, admin, store_manager | Full management access — excludes fulfillment. Used for settings, products, reports, etc. |
+| `requireOrderAccess` | super_admin, admin, store_manager, fulfillment | Order-related access — same as `requireFullAccess` but also includes fulfillment role. |
+
+**Note:** `super_admin` and `admin` roles implicitly pass all role checks regardless of the allowed-roles list.
 
 ## Auto-Generated Docs
 

@@ -1,4 +1,6 @@
-# Cms Posts
+# CMS Posts (v1 — DEPRECATED)
+
+> **⚠ DEPRECATED:** This documents the legacy v1 CMS posts routes (`cms-posts.routes.ts`). The active CMS posts API is served by `cms-posts-v2.routes.ts` and documented in [cms-posts-v2.md](./cms-posts-v2.md).
 
 ## Module Info
 

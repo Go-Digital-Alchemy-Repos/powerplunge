@@ -11,7 +11,7 @@ Welcome to the Power Plunge documentation. This guide will help you get the deve
 ## Quick Start
 
 1. Install dependencies: `npm install`
-2. Set up environment variables (see ENVIRONMENT_VARIABLES.md)
+2. Set up environment variables (see [docs/ENV.md](../ENV.md) and [docs/RUNTIME.md](../RUNTIME.md))
 3. Run the dev server: `npm run dev`
 4. Access the app at `http://localhost:5000`
 

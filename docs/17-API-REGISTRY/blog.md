@@ -1,4 +1,6 @@
-# Blog
+# Blog (v1 — DEPRECATED)
+
+> **⚠ DEPRECATED:** This documents the legacy v1 blog routes (`blog.routes.ts`). Only the `publicMenuRoutes` named export is still mounted. The active blog API is documented in [blog-v2.md](./blog-v2.md).
 
 ## Module Info
 

@@ -1,4 +1,4 @@
-# Cms Posts V2
+# CMS Posts (Active)
 
 ## Module Info
 
