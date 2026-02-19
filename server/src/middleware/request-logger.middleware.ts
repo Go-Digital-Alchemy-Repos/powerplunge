@@ -57,28 +57,27 @@ export function requestLoggerMiddleware(
   
   res.setHeader("X-Request-Id", requestId);
   
+  const verboseLogging = process.env.LOG_API_REQUESTS === "true" || process.env.NODE_ENV !== "production";
+
   res.on("finish", () => {
     const duration = Date.now() - start;
     const { statusCode } = res;
     
     if (path.startsWith("/api")) {
-      const logData = {
-        requestId,
-        method,
-        path,
-        statusCode,
-        duration: `${duration}ms`,
-        timestamp: new Date().toISOString(),
-      };
+      const logMessage = `[${statusCode >= 500 ? "ERROR" : statusCode >= 400 ? "WARN" : "INFO"}] ${method} ${path} ${statusCode} ${duration}ms [${requestId}]`;
       
-      const logLevel = statusCode >= 500 ? "error" : statusCode >= 400 ? "warn" : "info";
-      const logMessage = `[${logLevel.toUpperCase()}] ${method} ${path} ${statusCode} ${duration}ms [${requestId}]`;
-      
-      if (logLevel === "error") {
-        console.error(logMessage, logData);
-      } else if (logLevel === "warn") {
+      if (statusCode >= 500) {
+        console.error(logMessage, {
+          requestId,
+          method,
+          path,
+          statusCode,
+          duration: `${duration}ms`,
+          timestamp: new Date().toISOString(),
+        });
+      } else if (statusCode >= 400) {
         console.warn(logMessage);
-      } else {
+      } else if (verboseLogging) {
         console.log(logMessage);
       }
     }

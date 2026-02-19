@@ -1,4 +1,4 @@
-import { Switch, Route, useLocation } from "wouter";
+import { Switch, Route, useLocation, Redirect } from "wouter";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider, useQuery } from "@tanstack/react-query";
@@ -8,7 +8,7 @@ import ThemeProvider from "@/components/ThemeProvider";
 import { AdminThemeProvider } from "@/hooks/use-admin-theme";
 import CmsErrorBoundary from "@/components/CmsErrorBoundary";
 import AdminGuard from "@/components/admin/AdminGuard";
-import { initGAFromSettings } from "@/lib/analytics";
+import { initGA } from "@/lib/analytics";
 import { useAnalytics } from "@/hooks/use-analytics";
 import { getStoredConsent } from "@/lib/consent";
 import ConsentBanner from "@/components/ConsentBanner";
@@ -229,11 +229,11 @@ function Router() {
         <Route path="/admin/cms/pages/:id/builder">{() => <AdminGuard><CmsErrorBoundary><AdminCmsBuilder /></CmsErrorBoundary></AdminGuard>}</Route>
         <Route path="/admin/cms/pages/:id/edit">{() => <AdminGuard><CmsErrorBoundary><AdminCmsPageEdit /></CmsErrorBoundary></AdminGuard>}</Route>
         <Route path="/admin/cms/pages">{() => <AdminGuard><CmsErrorBoundary><AdminCmsPages /></CmsErrorBoundary></AdminGuard>}</Route>
-        <Route path="/admin/cms/sections">{() => { window.location.replace("/admin/cms/templates?tab=sections"); return null; }}</Route>
+        <Route path="/admin/cms/sections">{() => <Redirect to="/admin/cms/templates?tab=sections" replace />}</Route>
         <Route path="/admin/cms/templates">{() => <AdminGuard><CmsErrorBoundary><AdminCmsTemplates /></CmsErrorBoundary></AdminGuard>}</Route>
         <Route path="/admin/settings/themes">{() => <AdminGuard><CmsErrorBoundary><AdminCmsThemes /></CmsErrorBoundary></AdminGuard>}</Route>
-        <Route path="/admin/cms/themes">{() => { window.location.replace("/admin/settings/themes"); return null; }}</Route>
-        <Route path="/admin/cms/media">{() => { window.location.replace("/admin/media"); return null; }}</Route>
+        <Route path="/admin/cms/themes">{() => <Redirect to="/admin/settings/themes" replace />}</Route>
+        <Route path="/admin/cms/media">{() => <Redirect to="/admin/media" replace />}</Route>
         <Route path="/admin/cms/seo">{() => <AdminGuard><CmsErrorBoundary><AdminCmsSeo /></CmsErrorBoundary></AdminGuard>}</Route>
         <Route path="/admin/cms/settings">{() => <AdminGuard><CmsErrorBoundary><AdminCmsSettings /></CmsErrorBoundary></AdminGuard>}</Route>
         <Route path="/admin/cms">{() => <AdminGuard><CmsErrorBoundary><AdminCms /></CmsErrorBoundary></AdminGuard>}</Route>
@@ -243,36 +243,54 @@ function Router() {
   );
 }
 
+function tryInitGA(settings: any) {
+  const measurementId = settings?.gaMeasurementId || import.meta.env.VITE_GA_MEASUREMENT_ID;
+  if (measurementId) initGA(measurementId);
+}
+
 function useConsentAwareGA() {
   useEffect(() => {
     const loadGA = async () => {
       try {
-        const res = await fetch("/api/site-settings/consent");
-        const consent = await res.json();
-        if (consent.enabled) {
+        const settings: any = await queryClient.fetchQuery({
+          queryKey: ["/api/site-settings"],
+          staleTime: 5 * 60 * 1000,
+        });
+        const consent = settings?.consentSettings;
+        if (consent?.enabled) {
           const stored = getStoredConsent();
-          if (consent.mode === "opt_out") {
+          const mode = consent.mode || "opt_in";
+          if (mode === "opt_out") {
             if (!stored || stored.categories.analytics !== false) {
-              initGAFromSettings();
+              tryInitGA(settings);
             }
           } else {
             if (stored?.categories?.analytics === true) {
-              initGAFromSettings();
+              tryInitGA(settings);
             }
           }
         } else {
-          initGAFromSettings();
+          tryInitGA(settings);
         }
       } catch {
-        initGAFromSettings();
+        if (import.meta.env.VITE_GA_MEASUREMENT_ID) {
+          initGA(import.meta.env.VITE_GA_MEASUREMENT_ID);
+        }
       }
     };
     loadGA();
 
-    const handleConsentUpdate = () => {
+    const handleConsentUpdate = async () => {
       const stored = getStoredConsent();
       if (stored?.categories?.analytics) {
-        initGAFromSettings();
+        try {
+          const settings: any = queryClient.getQueryData(["/api/site-settings"]);
+          tryInitGA(settings || {});
+        } catch {
+          if (import.meta.env.VITE_GA_MEASUREMENT_ID) {
+            initGA(import.meta.env.VITE_GA_MEASUREMENT_ID);
+          }
+        }
       }
     };
     window.addEventListener("consent-updated", handleConsentUpdate);

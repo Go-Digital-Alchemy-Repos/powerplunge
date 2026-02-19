@@ -254,11 +254,6 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
     refetchInterval: 60000,
   });
 
-  const { data: allThemes } = useQuery<ThemePreset[]>({
-    queryKey: ["/api/admin/cms/themes"],
-    retry: false,
-  });
-
   useEffect(() => {
     if (theme?.variables) {
       applyThemeVariables(theme.variables);
