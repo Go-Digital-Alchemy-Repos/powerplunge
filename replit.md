@@ -64,6 +64,14 @@ The Power Plunge e-commerce platform utilizes a modern full-stack architecture.
 - **Real-Time Notifications (Socket.IO):** Instant push updates for admin and customer notification bells and ticket changes. Server: `server/src/realtime/socketServer.ts` initializes Socket.IO attached to the HTTP server. Auth: admin sessions verified via cookie/pg-session lookup; customer tokens verified via HMAC signature. Per-user rooms (`admin:{id}`, `customer:{id}`) ensure secure delivery. Events: `notif:new` (new notification payload), `notif:unread_count` (updated count), `ticket:updated` (ticket change hint). Emits triggered from `notification.service.ts` after DB writes. Client: `client/src/lib/realtime/socketClient.ts` singleton manages connection lifecycle; `client/src/hooks/use-realtime-notifications.ts` hook integrates with React Query cache. Deduplication via seen-ID set prevents duplicates on reconnect. Existing REST polling (30s) kept as fallback. Single-instance mode; Redis adapter can be added by checking for `REDIS_URL`.
 - **Inbound Email Replies (Mailgun):** Customers can reply directly to support emails without needing a portal login. When admin replies to a ticket, the outbound email includes a ticket-specific Reply-To address (`support+ticket-{id}@{mailgunDomain}`). Mailgun forwards inbound replies to `/api/webhooks/mailgun/inbound`, which verifies the signature using `MAILGUN_WEBHOOK_SIGNING_KEY`, extracts the ticket ID, strips quoted text, validates sender email against the ticket's customer, and appends the reply to `customerReplies`. Admin notifications are triggered. Feature is toggled via `supportInboundRepliesEnabled` in site_settings. Admin UI at `/admin/support/settings` includes setup instructions for Mailgun inbound route configuration.
 
+## Runtime Environment Layer
+- Centralized environment detection in `server/src/config/runtime.ts` identifies Replit Deployment, Replit Workspace, Local/Codex, and CI environments.
+- `server/src/config/load-env.ts` loads `.env` files only when not on Replit (imported first in `server/index.ts`).
+- Auth is guarded at call sites: `setupAuth()` only runs when `REPL_ID` is present. Locally, auth routes return 503 (fail closed) unless `ENABLE_DEV_AUTH=true` enables a dev stub.
+- `server/src/config/local-auth-stub.ts` provides the local dev auth stub and disabled-auth routes.
+- Local dev uses `make dev` (backend port 5001, frontend port 5002). Replit scripts are unchanged.
+- See `docs/RUNTIME.md`, `docs/QUICKSTART.md`, `docs/ENV.md` for full details.
+
 ## External Dependencies
 - **Google Analytics 4:** For product performance and customer behavior analytics.
 - **Stripe:** For payment processing.

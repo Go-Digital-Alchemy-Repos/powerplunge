@@ -1,3 +1,7 @@
+import "./src/config/load-env";
+import { logRuntimeOnce } from "./src/config/runtime";
+logRuntimeOnce();
+
 import { enforceEnv } from "./src/config/env-validation";
 import express, { type Request, Response, NextFunction } from "express";
 import compression from "compression";

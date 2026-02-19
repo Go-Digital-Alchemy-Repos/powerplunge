@@ -69,6 +69,24 @@ Run `npm run seed:dev-users -- --confirm` to create deterministic test users. Th
 
 See `.agents/skills/playwright-testing/SKILL.md` for the full list of seeded accounts and Playwright usage instructions.
 
+## Local Development Variables
+
+These variables are only relevant when running outside Replit (local machine or Codex Cloud). See [RUNTIME.md](./RUNTIME.md) for environment detection details.
+
+| Variable | Feature | Description | Example |
+|---|---|---|---|
+| `ENABLE_DEV_AUTH` | Local Auth | Set to `true` to enable a dev auth stub that auto-logs in. Default: disabled (fail closed). | `true` |
+
+### Dotenv Loading
+
+When running outside Replit, the server loads `.env` files automatically on startup. Files are loaded in this order (first match wins):
+
+1. `.env.local` (git-ignored, your personal overrides)
+2. `.env.development`
+3. `.env` (shared defaults)
+
+Copy `.env.example` to `.env` to get started: `cp .env.example .env`
+
 ## Informational Variables (set automatically)
 
 | Variable | Feature | Description |
@@ -76,4 +94,4 @@ See `.agents/skills/playwright-testing/SKILL.md` for the full list of seeded acc
 | `COMMIT_SHA` | Version endpoint | Git commit hash, returned by `GET /version` |
 | `BUILD_TIME` | Version endpoint | Build timestamp, returned by `GET /version` |
 | `NODE_ENV` | Core | `development` or `production` |
-| `PORT` | Core | Server listen port (default `5000`) |
+| `PORT` | Core | Server listen port (default `5000` on Replit, `5001` locally) |
