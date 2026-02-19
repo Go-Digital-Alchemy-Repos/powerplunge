@@ -11,6 +11,8 @@ integrationsStatusRoutes.get("/", async (req: any, res) => {
   const { openaiService } = await import("../../integrations/openai/OpenAIService");
   const stripeConfig = await stripeService.getConfig();
   const intSettings = await storage.getIntegrationSettings();
+  const hasMetaEnvToken = !!(process.env.META_SYSTEM_USER_TOKEN || process.env.META_ACCESS_TOKEN);
+  const hasMetaEnvIdentity = !!(process.env.META_PIXEL_ID || process.env.META_DATASET_ID || process.env.META_CATALOG_ID || process.env.META_PRODUCT_FEED_ID);
   
   const emailSettings = await storage.getEmailSettings();
   
@@ -42,7 +44,7 @@ integrationsStatusRoutes.get("/", async (req: any, res) => {
     youtubeShopping: intSettings?.youtubeShoppingConfigured || false,
     snapchatShopping: intSettings?.snapchatShoppingConfigured || false,
     xShopping: intSettings?.xShoppingConfigured || false,
-    metaMarketing: intSettings?.metaMarketingConfigured || false,
+    metaMarketing: intSettings?.metaMarketingConfigured || (hasMetaEnvToken && hasMetaEnvIdentity),
     mailchimp: intSettings?.mailchimpConfigured || false,
     googlePlaces: intSettings?.googlePlacesConfigured || false,
     twilio: intSettings?.twilioEnabled || false,

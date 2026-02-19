@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { storage } from "../../../storage";
 import { decrypt } from "../../utils/encryption";
+import { getMetaEnvConfig } from "./meta-env";
 
 const GRAPH_BASE_URL = "https://graph.facebook.com";
 const GRAPH_VERSION = "v24.0";
@@ -38,18 +39,24 @@ export class MetaGraphError extends Error {
 class MetaGraphClient {
   private async getCredentials(): Promise<MetaCredentials> {
     const settings = await storage.getIntegrationSettings();
-    if (!settings?.metaAccessTokenEncrypted) {
+    const env = getMetaEnvConfig();
+
+    const accessToken = settings?.metaAccessTokenEncrypted
+      ? decrypt(settings.metaAccessTokenEncrypted)
+      : env.accessToken;
+    if (!accessToken) {
       throw new Error("Meta access token is not configured");
     }
 
-    const accessToken = decrypt(settings.metaAccessTokenEncrypted);
-    const appSecret = settings.metaAppSecretEncrypted ? decrypt(settings.metaAppSecretEncrypted) : undefined;
+    const appSecret = settings?.metaAppSecretEncrypted
+      ? decrypt(settings.metaAppSecretEncrypted)
+      : env.appSecret;
     return {
       accessToken,
       appSecret,
-      pixelId: settings.metaPixelId || undefined,
-      catalogId: settings.metaCatalogId || undefined,
-      productFeedId: settings.metaProductFeedId || undefined,
+      pixelId: settings?.metaPixelId || env.pixelId,
+      catalogId: settings?.metaCatalogId || env.catalogId,
+      productFeedId: settings?.metaProductFeedId || env.productFeedId,
     };
   }
 
@@ -142,4 +149,3 @@ class MetaGraphClient {
 }
 
 export const metaGraphClient = new MetaGraphClient();
-

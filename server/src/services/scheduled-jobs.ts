@@ -246,14 +246,8 @@ const metaCatalogSyncJob: JobDefinition = {
     return `meta_catalog_sync:${getDateKey()}-${hour}`;
   },
   handler: async (): Promise<JobResult> => {
-    const settings = await db.execute(sql`
-      SELECT meta_marketing_configured, meta_product_feed_id
-      FROM integration_settings
-      WHERE id = 'main'
-      LIMIT 1
-    `);
-    const row = settings.rows?.[0] as any;
-    if (!row?.meta_marketing_configured || !row?.meta_product_feed_id) {
+    const summary = await metaCatalogService.getConfigSummary();
+    if (!summary.configured || !summary.productFeedId) {
       return {
         success: true,
         message: "Meta catalog sync skipped: integration not configured",

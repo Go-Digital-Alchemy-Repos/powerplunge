@@ -5,6 +5,7 @@ import { getStaticBaseUrl } from "../../utils/base-url";
 import { metaGraphClient, MetaGraphError } from "./MetaGraphClient";
 import { metaCatalogService } from "./MetaCatalogService";
 import { errorAlertingService } from "../../services/error-alerting.service";
+import { getMetaEnvConfig, isMetaEnvCapiConfigured } from "./meta-env";
 import {
   createNextRetryAt,
   getFailureStatus,
@@ -48,10 +49,20 @@ class NonRetryableMetaDispatchError extends Error {
 }
 
 class MetaConversionsService {
+  private async getRuntimeCapiConfig(): Promise<{ configured: boolean; enabled: boolean; pixelId?: string }> {
+    const settings = await storage.getIntegrationSettings();
+    const env = getMetaEnvConfig();
+    const pixelId = settings?.metaPixelId || env.pixelId;
+    const dbConfigured = !!settings?.metaMarketingConfigured;
+    const configured = dbConfigured ? !!pixelId : isMetaEnvCapiConfigured(env);
+    const enabled = dbConfigured ? !!settings?.metaCapiEnabled : env.capiEnabled;
+    return { configured, enabled, pixelId: pixelId || undefined };
+  }
+
   private async shouldEnqueueForOrder(order: Order): Promise<boolean> {
     if (!order.marketingConsentGranted) return false;
-    const settings = await storage.getIntegrationSettings();
-    return !!settings?.metaMarketingConfigured;
+    const runtime = await this.getRuntimeCapiConfig();
+    return runtime.configured;
   }
 
   private async buildCommonUserData(order: Order): Promise<Record<string, any>> {
@@ -214,8 +225,8 @@ class MetaConversionsService {
   }
 
   private async dispatchEvent(event: MetaCapiEvent): Promise<void> {
-    const settings = await storage.getIntegrationSettings();
-    if (!settings?.metaPixelId) {
+    const runtime = await this.getRuntimeCapiConfig();
+    if (!runtime.pixelId) {
       throw new NonRetryableMetaDispatchError("Meta pixel ID is not configured");
     }
 
@@ -235,7 +246,7 @@ class MetaConversionsService {
     const testEventCode = await metaCatalogService.getTestEventCode();
     if (testEventCode) body.test_event_code = testEventCode;
 
-    const response = await metaGraphClient.call<any>("POST", `/${settings.metaPixelId}/events`, {
+    const response = await metaGraphClient.call<any>("POST", `/${runtime.pixelId}/events`, {
       body,
     });
 
@@ -251,8 +262,8 @@ class MetaConversionsService {
   }
 
   async dispatchDueEvents(limit = DISPATCH_BATCH_SIZE): Promise<{ success: boolean; dispatched: number; failed: number }> {
-    const settings = await storage.getIntegrationSettings();
-    if (!settings?.metaMarketingConfigured || !settings.metaCapiEnabled) {
+    const runtime = await this.getRuntimeCapiConfig();
+    if (!runtime.configured || !runtime.enabled) {
       return { success: true, dispatched: 0, failed: 0 };
     }
 
@@ -299,8 +310,8 @@ class MetaConversionsService {
 
   async sendTestEvent(): Promise<{ success: boolean; error?: string; fbtraceId?: string }> {
     try {
-      const settings = await storage.getIntegrationSettings();
-      if (!settings?.metaPixelId) return { success: false, error: "Meta pixel ID is required" };
+      const runtime = await this.getRuntimeCapiConfig();
+      if (!runtime.pixelId) return { success: false, error: "Meta pixel ID is required" };
       const testEventCode = await metaCatalogService.getTestEventCode();
       const event: MetaEventPayload = {
         event_name: "Purchase",
@@ -321,7 +332,7 @@ class MetaConversionsService {
 
       const body: Record<string, any> = { data: [event] };
       if (testEventCode) body.test_event_code = testEventCode;
-      const response = await metaGraphClient.call<any>("POST", `/${settings.metaPixelId}/events`, { body });
+      const response = await metaGraphClient.call<any>("POST", `/${runtime.pixelId}/events`, { body });
       return { success: true, fbtraceId: response?.fbtrace_id };
     } catch (error: any) {
       await errorAlertingService.alertSystemError({

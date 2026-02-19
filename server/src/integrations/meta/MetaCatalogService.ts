@@ -4,6 +4,7 @@ import { decrypt, encrypt } from "../../utils/encryption";
 import { getStaticBaseUrl } from "../../utils/base-url";
 import { metaGraphClient } from "./MetaGraphClient";
 import { errorAlertingService } from "../../services/error-alerting.service";
+import { getMetaEnvConfig, isMetaEnvConfigured } from "./meta-env";
 
 export interface MetaCatalogConfigSummary {
   configured: boolean;
@@ -25,18 +26,28 @@ export interface MetaCatalogConfigSummary {
 class MetaCatalogService {
   async getConfigSummary(): Promise<MetaCatalogConfigSummary> {
     const settings = await storage.getIntegrationSettings();
+    const env = getMetaEnvConfig();
     const catalogFeedKey =
-      settings?.metaCatalogFeedKeyEncrypted ? decrypt(settings.metaCatalogFeedKeyEncrypted) : null;
+      settings?.metaCatalogFeedKeyEncrypted
+        ? decrypt(settings.metaCatalogFeedKeyEncrypted)
+        : env.catalogFeedKey || null;
+    const pixelId = settings?.metaPixelId || env.pixelId || null;
+    const catalogId = settings?.metaCatalogId || env.catalogId || null;
+    const productFeedId = settings?.metaProductFeedId || env.productFeedId || null;
+    const hasAccessToken = !!settings?.metaAccessTokenEncrypted || !!env.accessToken;
+    const hasAppSecret = !!settings?.metaAppSecretEncrypted || !!env.appSecret;
+    const hasTestEventCode = !!settings?.metaTestEventCodeEncrypted || !!env.testEventCode;
+    const hasCatalogFeedKey = !!settings?.metaCatalogFeedKeyEncrypted || !!env.catalogFeedKey;
     return {
-      configured: settings?.metaMarketingConfigured || false,
-      pixelId: settings?.metaPixelId || null,
-      catalogId: settings?.metaCatalogId || null,
-      productFeedId: settings?.metaProductFeedId || null,
-      hasAccessToken: !!settings?.metaAccessTokenEncrypted,
-      hasAppSecret: !!settings?.metaAppSecretEncrypted,
-      hasTestEventCode: !!settings?.metaTestEventCodeEncrypted,
-      hasCatalogFeedKey: !!settings?.metaCatalogFeedKeyEncrypted,
-      capiEnabled: settings?.metaCapiEnabled || false,
+      configured: !!settings?.metaMarketingConfigured || isMetaEnvConfigured(env),
+      pixelId,
+      catalogId,
+      productFeedId,
+      hasAccessToken,
+      hasAppSecret,
+      hasTestEventCode,
+      hasCatalogFeedKey,
+      capiEnabled: settings?.metaMarketingConfigured ? !!settings.metaCapiEnabled : env.capiEnabled,
       catalogFeedKey,
       lastSyncAt: settings?.metaCatalogLastSyncAt || null,
       lastSyncStatus: settings?.metaCatalogLastSyncStatus || "never",
@@ -46,6 +57,9 @@ class MetaCatalogService {
   }
 
   async ensureCatalogFeedKey(): Promise<string> {
+    const env = getMetaEnvConfig();
+    if (env.catalogFeedKey) return env.catalogFeedKey;
+
     const settings = await storage.getIntegrationSettings();
     if (settings?.metaCatalogFeedKeyEncrypted) {
       return decrypt(settings.metaCatalogFeedKeyEncrypted);
@@ -79,17 +93,17 @@ class MetaCatalogService {
 
   async syncCatalog(): Promise<{ success: boolean; error?: string; uploadId?: string }> {
     try {
-      const settings = await storage.getIntegrationSettings();
-      if (!settings?.metaMarketingConfigured) {
+      const summary = await this.getConfigSummary();
+      if (!summary.configured) {
         return { success: false, error: "Meta Marketing is not configured" };
       }
-      if (!settings.metaProductFeedId) {
+      if (!summary.productFeedId) {
         return { success: false, error: "Meta product feed ID is required" };
       }
 
       const feedKey = await this.ensureCatalogFeedKey();
       const feedUrl = await this.getCatalogFeedUrl(feedKey);
-      const upload = await metaGraphClient.call<any>("POST", `/${settings.metaProductFeedId}/uploads`, {
+      const upload = await metaGraphClient.call<any>("POST", `/${summary.productFeedId}/uploads`, {
         body: {
           url: feedUrl,
           update_only: false,
@@ -120,8 +134,9 @@ class MetaCatalogService {
   }
 
   async getTestEventCode(): Promise<string | null> {
+    const env = getMetaEnvConfig();
     const settings = await storage.getIntegrationSettings();
-    if (!settings?.metaTestEventCodeEncrypted) return null;
+    if (!settings?.metaTestEventCodeEncrypted) return env.testEventCode || null;
     return decrypt(settings.metaTestEventCodeEncrypted);
   }
 }
