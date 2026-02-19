@@ -101,21 +101,9 @@ export default function TrackOrder() {
       const data = await response.json();
 
       if (response.ok) {
-        const session = {
-          customerId: data.customerId,
-          customerName: data.customerName,
-          customerEmail: data.customerEmail,
-          sessionToken: data.sessionToken,
-        };
-        setCustomerSession(session);
-        sessionStorage.setItem("customerSession", JSON.stringify(session));
-        
-        window.history.replaceState({}, document.title, "/track-order");
-        
-        toast({
-          title: "Welcome back!",
-          description: "You can now view your orders.",
-        });
+        localStorage.setItem("customerSessionToken", data.sessionToken);
+        setLocation("/my-account");
+        return;
       } else {
         toast({
           title: "Link expired",

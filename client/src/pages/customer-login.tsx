@@ -58,7 +58,7 @@ export default function CustomerLogin() {
     try {
       await verifyMagicLink(token);
       const params = new URLSearchParams(window.location.search);
-      const redirect = params.get("redirect") || "/";
+      const redirect = params.get("redirect") || "/my-account";
       setLocation(redirect);
     } catch (error: any) {
       // Logic for error handled by toast in component
