@@ -113,6 +113,7 @@ function CheckoutForm({ clientSecret, orderId, cartTotal, totalWithTax, cart, bi
             body: JSON.stringify({
               orderId,
               paymentIntentId: paymentIntent.id,
+              metaTracking: getMetaTrackingPayload(),
             }),
           });
 
@@ -221,6 +222,7 @@ function CheckoutForm({ clientSecret, orderId, cartTotal, totalWithTax, cart, bi
             body: JSON.stringify({
               orderId,
               paymentIntentId: paymentIntent.id,
+              metaTracking: getMetaTrackingPayload(),
             }),
           });
 

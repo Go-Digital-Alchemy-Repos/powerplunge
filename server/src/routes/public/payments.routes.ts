@@ -858,7 +858,9 @@ router.post("/reprice-payment-intent", paymentLimiter, async (req: any, res) => 
 
 router.post("/confirm-payment", paymentLimiter, async (req: any, res) => {
   try {
-    const { orderId, paymentIntentId } = req.body;
+    const { orderId, paymentIntentId, metaTracking } = req.body;
+    const normalizedMetaTracking = normalizeMetaTracking(metaTracking);
+    const hasMetaTracking = !!metaTracking && typeof metaTracking === "object";
 
     if (!orderId || !paymentIntentId) {
       return res.status(400).json({ message: "Missing orderId or paymentIntentId" });
@@ -883,7 +885,7 @@ router.post("/confirm-payment", paymentLimiter, async (req: any, res) => {
       return res.status(400).json({ message: "Invalid payment verification" });
     }
 
-    const order = await storage.getOrder(orderId);
+    let order = await storage.getOrder(orderId);
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
     }
@@ -900,11 +902,25 @@ router.post("/confirm-payment", paymentLimiter, async (req: any, res) => {
       return res.status(400).json({ message: "Invalid currency" });
     }
 
-    if (order.status === "pending") {
-      await storage.updateOrder(orderId, { 
+    const startedPending = order.status === "pending";
+
+    if (startedPending) {
+      const confirmUpdate: Record<string, any> = {
         status: "paid",
         stripePaymentIntentId: paymentIntentId,
-      });
+      };
+      if (hasMetaTracking) {
+        confirmUpdate.marketingConsentGranted = normalizedMetaTracking.marketingConsentGranted === true;
+        if (normalizedMetaTracking.fbp) confirmUpdate.metaFbp = normalizedMetaTracking.fbp;
+        if (normalizedMetaTracking.fbc) confirmUpdate.metaFbc = normalizedMetaTracking.fbc;
+        if (normalizedMetaTracking.eventSourceUrl) confirmUpdate.metaEventSourceUrl = normalizedMetaTracking.eventSourceUrl;
+        confirmUpdate.customerUserAgent = normalizedMetaTracking.userAgent || req.get("user-agent") || null;
+      }
+
+      const updatedOrder = await storage.updateOrder(orderId, confirmUpdate);
+      if (updatedOrder) {
+        order = updatedOrder;
+      }
 
       if (order.stripeTaxCalculationId) {
         try {
@@ -932,14 +948,31 @@ router.post("/confirm-payment", paymentLimiter, async (req: any, res) => {
         }
       }
 
+      await sendOrderNotification(orderId);
+    }
+
+    if (!startedPending && order.status === "paid" && hasMetaTracking) {
+      const trackingOnlyUpdate: Record<string, any> = {
+        marketingConsentGranted: normalizedMetaTracking.marketingConsentGranted === true,
+      };
+      if (normalizedMetaTracking.fbp) trackingOnlyUpdate.metaFbp = normalizedMetaTracking.fbp;
+      if (normalizedMetaTracking.fbc) trackingOnlyUpdate.metaFbc = normalizedMetaTracking.fbc;
+      if (normalizedMetaTracking.eventSourceUrl) trackingOnlyUpdate.metaEventSourceUrl = normalizedMetaTracking.eventSourceUrl;
+      trackingOnlyUpdate.customerUserAgent = normalizedMetaTracking.userAgent || req.get("user-agent") || null;
+      const updatedOrder = await storage.updateOrder(orderId, trackingOnlyUpdate);
+      if (updatedOrder) {
+        order = updatedOrder;
+      }
+    }
+
+    // Idempotent enqueue: allows late consent capture on already-paid orders.
+    if (order.status === "paid") {
       try {
         const { metaConversionsService } = await import("../../integrations/meta/MetaConversionsService");
         await metaConversionsService.enqueuePurchase(orderId);
       } catch (metaErr: any) {
         console.error("[META] Failed to enqueue purchase event:", metaErr.message || metaErr);
       }
-
-      await sendOrderNotification(orderId);
     }
 
     res.json({ success: true, orderId });
