@@ -8,10 +8,20 @@ description: Run Playwright end-to-end tests against the Power Plunge app, inclu
 ## Quick Start
 
 ```bash
-npm run seed:dev-users -- --confirm   # seed test users (idempotent)
+npm run seed:dev-users -- --confirm   # seed test users (see Prerequisites)
 npm run dev                            # start server on :5000
 npm run test:e2e                       # run all Playwright tests
 ```
+
+## Available npm Scripts
+
+| Script | Command | Purpose |
+|--------|---------|---------|
+| `test:e2e` | `npx playwright test` | Run all Playwright tests |
+| `test:unit` | `vitest run` | Run all Vitest unit tests |
+| `test` | `vitest run` | Alias for unit tests |
+| `ci:check` | typecheck + doctor + schema verify + unit tests | Full CI validation |
+| `seed:dev-users` | seed test users | Requires `-- --confirm` flag |
 
 ## Infrastructure
 
@@ -34,8 +44,6 @@ npm run test:e2e                       # run all Playwright tests
 
 ## Prerequisites
 
-Before running any Playwright test that exercises authenticated flows, the development database **must** contain deterministic test users.
-
 ### 1. Seed test users
 
 ```bash
@@ -56,7 +64,7 @@ Password for all accounts: value of `SEED_TEST_PASSWORD` env var, or `testpass12
 
 The seed script **refuses to run** when `NODE_ENV=production`.
 
-The `globalSetup` in `e2e/global-setup.ts` also auto-seeds before every `npx playwright test` run, so manual seeding is only needed if you run tests outside Playwright.
+> **Auto-seed:** `e2e/global-setup.ts` runs the seed automatically before every `npx playwright test` invocation. Manual seeding is only needed when running tests outside Playwright, or if auto-seed fails (e.g. database connectivity issues).
 
 ### 2. Ensure the dev server is running
 
@@ -68,7 +76,26 @@ The server binds to `0.0.0.0:5000`. The Playwright config has `webServer.reuseEx
 
 ## Auth Architecture
 
-### StorageState (recommended)
+Three login flows exist, each producing a different session mechanism. For the specific selectors used in each flow, see **Key data-testid Selectors** below.
+
+### Admin login (cookie-based)
+
+- Page: `/admin/login`
+- POST `/api/admin/login` with `{ email, password }`
+- Session cookie is set automatically
+- Redirects to `/admin/dashboard`
+
+### Customer login (token-based)
+
+- Page: `/login`
+- POST `/api/customer/auth/login` with `{ email, password }`
+- Returns a Bearer token stored in localStorage
+
+### Affiliate login
+
+- Same as customer login, using `affiliate@test.com`
+
+### StorageState (recommended for tests)
 
 The `setup` project in `playwright.config.ts` runs `e2e/auth.setup.ts` before any test. It logs in as admin, customer, and affiliate via the UI, then saves the browser state (cookies, localStorage) to `e2e/.auth/*.json`.
 
@@ -78,25 +105,6 @@ Files saved:
 - `e2e/.auth/admin.json` — admin session cookie
 - `e2e/.auth/customer.json` — customer Bearer token in localStorage
 - `e2e/.auth/affiliate.json` — affiliate Bearer token in localStorage
-
-### Admin login (cookie-based)
-
-- Page: `/admin/login`
-- Selectors: `[data-testid="input-email"]`, `[data-testid="input-password"]`, `[data-testid="button-submit"]`
-- POST `/api/admin/login` with `{ email, password }`
-- Session cookie is set automatically
-- Redirects to `/admin/dashboard`
-
-### Customer login (token-based)
-
-- Page: `/login`
-- Selectors: `#login-email`, `#login-password`, `form button[type="submit"]`
-- POST `/api/customer/auth/login` with `{ email, password }`
-- Returns a Bearer token stored in localStorage
-
-### Affiliate login
-
-- Same as customer login using `affiliate@test.com`
 
 ## Using Fixtures
 
@@ -184,23 +192,24 @@ npx playwright test --grep @affiliate    # affiliate tests only
 npx playwright test --grep "@admin|@customer"  # multiple tags
 ```
 
-## Writing Test Plans
-
-When writing a Playwright test plan for `run_test`:
-
-1. Always start with `[New Context] Create a new browser context`
-2. For admin flows, log in via the admin login page before testing
-3. For customer flows, log in via the customer login page before testing
-4. Use `data-testid` attributes for element selection where available
-5. Generate unique values for any created resources to avoid collisions
-6. Clean up created resources in `afterAll` or `afterEach`
-
 ## Key data-testid Selectors
 
-### Admin Login
-- `[data-testid="input-email"]`, `[data-testid="input-password"]`, `[data-testid="button-submit"]`
+### Admin Login (`/admin/login`)
 
-### Admin Products
+- `[data-testid="input-email"]` — admin email field
+- `[data-testid="input-password"]` — admin password field
+- `[data-testid="button-submit"]` — login submit button
+
+### Customer / Affiliate Login (`/login`)
+
+> **Note:** The customer login page uses `id` selectors, not `data-testid` attributes.
+
+- `#login-email` — email field
+- `#login-password` — password field
+- `form button[type="submit"]` — login submit button
+
+### Admin Products (`/admin/products`)
+
 - `[data-testid="button-add-product"]` — open new product panel
 - `[data-testid="product-card-{id}"]` — product card in list
 - `[data-testid="input-product-name"]`, `[data-testid="input-product-price"]`, `[data-testid="input-product-tagline"]`, `[data-testid="input-product-description"]`
@@ -208,11 +217,13 @@ When writing a Playwright test plan for `run_test`:
 - `[data-testid="button-edit-{id}"]`, `[data-testid="button-delete-{id}"]`
 - `[data-testid="select-status"]`, `[data-testid="switch-product-active"]`
 
-### Shop Page
+### Shop Page (`/shop`)
+
 - `[data-testid="product-card-{id}"]` — product card
 - `[data-testid="add-to-cart-{id}"]` — add to cart from shop
 
-### Product Detail
+### Product Detail (`/products/{slug}`)
+
 - `[data-testid="text-product-name"]`, `[data-testid="text-product-price"]`, `[data-testid="text-product-tagline"]`
 - `[data-testid="text-product-description"]`
 - `[data-testid="text-feature-{idx}"]`, `[data-testid="text-included-{idx}"]`
@@ -220,31 +231,28 @@ When writing a Playwright test plan for `run_test`:
 - `[data-testid="button-quantity-increase"]`, `[data-testid="button-quantity-decrease"]`
 - `[data-testid="button-cart"]`
 
-### Checkout
-- `[data-testid="input-email"]`, `[data-testid="input-phone"]`
+### Checkout (`/checkout`)
+
+> **Note:** The checkout `input-email` and `input-phone` testids are scoped to the checkout page and are distinct from the admin login `input-email` — they will not conflict because they live on different routes.
+
+- `[data-testid="input-email"]` — customer email for order
+- `[data-testid="input-phone"]` — customer phone for order
 - `[data-testid="button-continue-to-payment"]`, `[data-testid="button-edit-shipping"]`
 - `[data-testid="cart-item-{id}"]` — cart line item
 - `[data-testid="text-qty-{id}"]`, `[data-testid="button-increase-{id}"]`, `[data-testid="button-decrease-{id}"]`
 - `[data-testid="button-remove-{id}"]`
 - `[data-testid="error-email"]`, `[data-testid="error-phone"]`, `[data-testid="error-shipping-address"]`
 
-## Failure Behavior
+## Writing Test Plans
 
-If seed users are missing, auth-dependent tests will fail at the login step with a 401 response. When this happens:
+When writing a Playwright test plan for `run_test`:
 
-1. Run `npm run seed:dev-users -- --confirm`
-2. Verify the server is running (`npm run dev`)
-3. Re-run the test
-
-## Available npm Scripts
-
-| Script | Command | Purpose |
-|--------|---------|---------|
-| `test:e2e` | `npx playwright test` | Run all Playwright tests |
-| `test:unit` | `vitest run` | Run all Vitest unit tests |
-| `test` | `vitest run` | Alias for unit tests |
-| `ci:check` | typecheck + doctor + schema verify + unit tests | Full CI validation |
-| `seed:dev-users` | seed test users | Requires `-- --confirm` flag |
+1. Always start with `[New Context] Create a new browser context`
+2. For admin flows, log in via `/admin/login` before testing
+3. For customer flows, log in via `/login` before testing
+4. Use `data-testid` attributes for element selection where available (customer login uses `id` selectors — see above)
+5. Generate unique values for any created resources to avoid collisions
+6. Clean up created resources in `afterAll` or `afterEach`
 
 ## Common Test Patterns
 
@@ -316,3 +324,12 @@ If seed users are missing, auth-dependent tests will fail at the login step with
 7. [Browser] Navigate to order history
 8. [Verify] Assert at least one order is displayed
 ```
+
+## Troubleshooting
+
+If auth-dependent tests fail at the login step with a 401 response:
+
+1. Verify the dev server is running on port 5000 (`npm run dev`)
+2. Re-seed test users: `npm run seed:dev-users -- --confirm`
+3. Check that auto-seed in `e2e/global-setup.ts` completed without errors (look for seed output in Playwright logs)
+4. Re-run the failing test
