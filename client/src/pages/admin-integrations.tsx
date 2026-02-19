@@ -3019,23 +3019,29 @@ function MetaMarketingConfigDialog({ open, onOpenChange, onSuccess }: {
               />
             </div>
 
+            <div className="space-y-2">
+              <Label htmlFor="metaCatalogFeedUrl">Catalog Feed URL</Label>
+              {metaSettings?.configured && metaSettings.catalogFeedUrl ? (
+                <div className="flex gap-2">
+                  <Input
+                    id="metaCatalogFeedUrl"
+                    value={metaSettings.catalogFeedUrl || ""}
+                    readOnly
+                    data-testid="input-meta-catalog-feed-url"
+                  />
+                  <Button type="button" variant="outline" onClick={handleCopyFeedUrl} data-testid="button-copy-meta-feed-url">
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground" data-testid="text-meta-feed-url-hint">
+                  Save your configuration to generate a catalog feed URL you can use in Meta Commerce Manager.
+                </p>
+              )}
+            </div>
+
             {metaSettings?.configured && (
               <>
-                <div className="space-y-2">
-                  <Label htmlFor="metaCatalogFeedUrl">Catalog Feed URL</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="metaCatalogFeedUrl"
-                      value={metaSettings.catalogFeedUrl || ""}
-                      readOnly
-                      data-testid="input-meta-catalog-feed-url"
-                    />
-                    <Button type="button" variant="outline" onClick={handleCopyFeedUrl} data-testid="button-copy-meta-feed-url">
-                      <Copy className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-
                 <div className="pt-2 border-t flex flex-wrap gap-2">
                   <Button type="button" variant="outline" onClick={handleVerify} disabled={verifying} data-testid="button-verify-meta">
                     {verifying ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <TestTube className="w-4 h-4 mr-2" />}
