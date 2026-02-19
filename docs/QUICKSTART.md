@@ -1,6 +1,6 @@
 # Quick Start — Local Development
 
-This guide covers running Power Plunge outside Replit (macOS, Linux, Codex Cloud).
+This guide covers running Power Plunge outside Replit (Local, Codex Web, or Codex Local). See [RUNTIME.md](./RUNTIME.md) for environment detection details.
 
 ## Prerequisites
 

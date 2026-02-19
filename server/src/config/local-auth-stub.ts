@@ -69,6 +69,6 @@ export function setupAuthDisabledRoutes(app: Express): void {
   });
 
   console.warn(
-    "[AUTH] Replit OIDC auth disabled (no REPL_ID). Auth routes return 503. Set ENABLE_DEV_AUTH=true for a local dev stub."
+    "[AUTH] Replit OIDC auth disabled (no REPL_ID). Auth routes return 503. Set ENABLE_DEV_AUTH=true for a dev auth stub."
   );
 }

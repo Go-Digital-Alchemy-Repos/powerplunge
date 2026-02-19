@@ -69,9 +69,9 @@ Run `npm run seed:dev-users -- --confirm` to create deterministic test users. Th
 
 See `.agents/skills/playwright-testing/SKILL.md` for the full list of seeded accounts and Playwright usage instructions.
 
-## Local Development Variables
+## Local / Codex Development Variables
 
-These variables are only relevant when running outside Replit (local machine or Codex Cloud). See [RUNTIME.md](./RUNTIME.md) for environment detection details.
+These variables are only relevant when running outside Replit (Local, Codex Web, or Codex Local). See [RUNTIME.md](./RUNTIME.md) for environment detection details.
 
 | Variable | Feature | Description | Example |
 |---|---|---|---|
