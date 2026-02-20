@@ -41,13 +41,54 @@ interface MailchimpSettings {
   updatedAt?: string;
 }
 
+interface TikTokImportRun {
+  id: string;
+  startedAt?: string;
+  finishedAt?: string;
+  scope?: "page" | "bulk" | string;
+  mode?: "dry_run" | "import" | string;
+  status?: "success" | "failed" | string;
+  created?: number;
+  updated?: number;
+  skipped?: number;
+  failureCount?: number;
+  failures?: Array<{ productId: string; reason: string }>;
+  productsRequested?: number | null;
+  productsFetched?: number | null;
+  pagesFetched?: number | null;
+  pageSize?: number | null;
+  maxPages?: number | null;
+  maxProducts?: number | null;
+  nextPageToken?: string | null;
+  truncated?: boolean | null;
+  error?: string | null;
+}
+
+type TikTokImportRunFilterMode = "all" | "dry_run" | "import";
+type TikTokImportRunFilterStatus = "all" | "success" | "failed";
+type TikTokImportRunFilterScope = "all" | "page" | "bulk";
+
+interface TikTokImportRunFilters {
+  mode: TikTokImportRunFilterMode;
+  status: TikTokImportRunFilterStatus;
+  scope: TikTokImportRunFilterScope;
+}
+
 interface TikTokShopSettings {
   configured: boolean;
   shopId?: string;
+  shopCipher?: string;
+  sellerName?: string;
+  sellerBaseRegion?: string;
   appKey?: string;
   hasAppSecret?: boolean;
   hasAccessToken?: boolean;
   hasRefreshToken?: boolean;
+  accessTokenExpiresAt?: string;
+  refreshTokenExpiresAt?: string;
+  grantedScopes?: string[];
+  importRuns?: TikTokImportRun[];
+  mockMode?: boolean;
   updatedAt?: string;
 }
 
@@ -178,6 +219,30 @@ export default function AdminIntegrations() {
     },
   });
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const oauthStatus = params.get("tiktok_oauth");
+    if (!oauthStatus) return;
+
+    const reason = params.get("reason");
+    if (oauthStatus === "success") {
+      toast({ title: "TikTok authorization completed" });
+      setShowTikTokDialog(true);
+      refetchIntegrations();
+    } else {
+      toast({
+        title: reason ? `TikTok authorization failed: ${reason}` : "TikTok authorization failed",
+        variant: "destructive",
+      });
+      setShowTikTokDialog(true);
+    }
+
+    params.delete("tiktok_oauth");
+    params.delete("reason");
+    const query = params.toString();
+    window.history.replaceState({}, "", `${window.location.pathname}${query ? `?${query}` : ""}`);
+  }, [toast, refetchIntegrations]);
+
   if (!adminLoading && !hasFullAccess) {
     return (
       <div className="min-h-screen bg-background">
@@ -289,6 +354,40 @@ export default function AdminIntegrations() {
               <div className="mt-4 text-xs text-muted-foreground">
                 <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1">
                   Get your API key from OpenAI Platform <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ShoppingBag className="w-5 h-5 text-primary" />
+                TikTok Shop
+              </CardTitle>
+              <CardDescription>
+                Connect TikTok Shop API credentials, authorize shops, and verify token health.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <StatusBadge configured={integrations?.tiktokShop} />
+                <Button
+                  variant="outline"
+                  onClick={() => setShowTikTokDialog(true)}
+                  data-testid="button-configure-tiktok"
+                >
+                  Configure
+                </Button>
+              </div>
+              <div className="mt-4 text-xs text-muted-foreground">
+                <a
+                  href="https://partner.tiktokshop.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline inline-flex items-center gap-1"
+                >
+                  Open TikTok Shop Partner Center <ExternalLink className="w-3 h-3" />
                 </a>
               </div>
             </CardContent>
@@ -850,6 +949,13 @@ interface R2SettingsResponse {
   updatedAt?: string | null;
 }
 
+const TIKTOK_IMPORT_RUN_FILTERS_STORAGE_KEY = "admin_integrations_tiktok_import_run_filters_v1";
+const DEFAULT_TIKTOK_IMPORT_RUN_FILTERS: TikTokImportRunFilters = {
+  mode: "all",
+  status: "all",
+  scope: "all",
+};
+
 function R2ConfigDialog({ open, onOpenChange, onSuccess }: { 
   open: boolean; 
   onOpenChange: (open: boolean) => void;
@@ -1190,12 +1296,35 @@ function OpenAIConfigDialog({ open, onOpenChange, onSuccess }: {
   );
 }
 
+interface TikTokAuthorizedShopOption {
+  id: string;
+  name?: string;
+  shop_name?: string;
+  code?: string;
+  cipher?: string;
+}
+
+interface TikTokProductPreview {
+  id: string;
+  title: string;
+  status: string;
+  region?: string | null;
+  currency?: string | null;
+  price?: string | null;
+  sellerSku?: string | null;
+}
+
+function getShopDisplayName(shop: TikTokAuthorizedShopOption): string {
+  return shop.name || shop.shop_name || shop.code || shop.id;
+}
+
 function TikTokShopConfigDialog({ open, onOpenChange, onSuccess }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
 }) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     shopId: "",
     appKey: "",
@@ -1203,9 +1332,34 @@ function TikTokShopConfigDialog({ open, onOpenChange, onSuccess }: {
     accessToken: "",
     refreshToken: "",
   });
+  const [authCode, setAuthCode] = useState("");
+  const [callbackUrl, setCallbackUrl] = useState("");
+  const [webhookUrl, setWebhookUrl] = useState("");
+  const [authorizeUrl, setAuthorizeUrl] = useState("");
+  const [authorizedShops, setAuthorizedShops] = useState<TikTokAuthorizedShopOption[]>([]);
+  const [productPreview, setProductPreview] = useState<TikTokProductPreview[]>([]);
+  const [nextProductsPageToken, setNextProductsPageToken] = useState<string | null>(null);
+  const [selectedShopCipher, setSelectedShopCipher] = useState("");
+  const [loadingCallbackUrl, setLoadingCallbackUrl] = useState(false);
+  const [loadingAuthorizeUrl, setLoadingAuthorizeUrl] = useState(false);
   const [saving, setSaving] = useState(false);
   const [verifying, setVerifying] = useState(false);
+  const [refreshingToken, setRefreshingToken] = useState(false);
+  const [syncingShops, setSyncingShops] = useState(false);
+  const [syncingProducts, setSyncingProducts] = useState(false);
+  const [importingProducts, setImportingProducts] = useState(false);
+  const [importingAllProducts, setImportingAllProducts] = useState(false);
+  const [dryRunImport, setDryRunImport] = useState(true);
+  const [importAllLimits, setImportAllLimits] = useState({
+    pageSize: "50",
+    maxPages: "50",
+    maxProducts: "2000",
+  });
+  const [selectingShop, setSelectingShop] = useState(false);
+  const [exchangingCode, setExchangingCode] = useState(false);
   const [removing, setRemoving] = useState(false);
+  const [selectedImportRun, setSelectedImportRun] = useState<TikTokImportRun | null>(null);
+  const [importRunFilters, setImportRunFilters] = useState<TikTokImportRunFilters>(DEFAULT_TIKTOK_IMPORT_RUN_FILTERS);
 
   const { data: tiktokSettings, isLoading } = useQuery<TikTokShopSettings>({
     queryKey: ["/api/admin/settings/tiktok-shop"],
@@ -1218,6 +1372,40 @@ function TikTokShopConfigDialog({ open, onOpenChange, onSuccess }: {
   });
 
   useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+
+    const loadCallbackUrl = async () => {
+      setLoadingCallbackUrl(true);
+      try {
+        const [callbackRes, webhookRes] = await Promise.all([
+          fetch("/api/admin/settings/tiktok-shop/oauth/callback-url", { credentials: "include" }),
+          fetch("/api/admin/settings/tiktok-shop/webhook-url", { credentials: "include" }),
+        ]);
+        if (!callbackRes.ok) throw new Error("Failed to fetch callback URL");
+        const callbackData = await callbackRes.json();
+        const webhookData = webhookRes.ok ? await webhookRes.json() : {};
+        if (!cancelled) {
+          setCallbackUrl(callbackData.callbackUrl || "");
+          setWebhookUrl(webhookData.webhookUrl || "");
+        }
+      } catch {
+        if (!cancelled) {
+          setCallbackUrl("");
+          setWebhookUrl("");
+        }
+      } finally {
+        if (!cancelled) setLoadingCallbackUrl(false);
+      }
+    };
+
+    loadCallbackUrl();
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
+
+  useEffect(() => {
     if (tiktokSettings) {
       setFormData({
         shopId: tiktokSettings.shopId || "",
@@ -1226,32 +1414,120 @@ function TikTokShopConfigDialog({ open, onOpenChange, onSuccess }: {
         accessToken: "",
         refreshToken: "",
       });
+      setSelectedShopCipher(tiktokSettings.shopCipher || "");
+      setAuthorizeUrl("");
+      setNextProductsPageToken(null);
     }
   }, [tiktokSettings]);
 
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(TIKTOK_IMPORT_RUN_FILTERS_STORAGE_KEY);
+      if (!raw) return;
+
+      const parsed = JSON.parse(raw) as Partial<TikTokImportRunFilters> | null;
+      const mode = parsed?.mode;
+      const status = parsed?.status;
+      const scope = parsed?.scope;
+
+      if (!mode || !status || !scope) return;
+      if (!["all", "dry_run", "import"].includes(mode)) return;
+      if (!["all", "success", "failed"].includes(status)) return;
+      if (!["all", "page", "bulk"].includes(scope)) return;
+
+      setImportRunFilters({
+        mode,
+        status,
+        scope,
+      });
+    } catch {
+      // Ignore invalid localStorage payloads
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        TIKTOK_IMPORT_RUN_FILTERS_STORAGE_KEY,
+        JSON.stringify(importRunFilters),
+      );
+    } catch {
+      // Ignore storage write failures
+    }
+  }, [importRunFilters]);
+
+  const shopOptions = authorizedShops.length > 0
+    ? authorizedShops
+    : (tiktokSettings?.shopCipher
+      ? [{
+        id: tiktokSettings.shopId || "selected-shop",
+        name: tiktokSettings.sellerName || "Selected shop",
+        cipher: tiktokSettings.shopCipher,
+      }]
+      : []);
+  const importRuns = Array.isArray(tiktokSettings?.importRuns) ? tiktokSettings.importRuns : [];
+  const filteredImportRuns = importRuns.filter((run) => {
+    if (importRunFilters.mode !== "all" && run.mode !== importRunFilters.mode) {
+      return false;
+    }
+    if (importRunFilters.status !== "all" && run.status !== importRunFilters.status) {
+      return false;
+    }
+    if (importRunFilters.scope !== "all" && run.scope !== importRunFilters.scope) {
+      return false;
+    }
+    return true;
+  });
+  const visibleImportRuns = filteredImportRuns.slice(0, 5);
+  const hasActiveImportRunFilters =
+    importRunFilters.mode !== "all" ||
+    importRunFilters.status !== "all" ||
+    importRunFilters.scope !== "all";
+  const selectedRunPayload = selectedImportRun ? JSON.stringify(selectedImportRun, null, 2) : "";
+
+  const handleCopyImportRunJson = async () => {
+    if (!selectedRunPayload) return;
+    try {
+      await navigator.clipboard.writeText(selectedRunPayload);
+      toast({ title: "Run JSON copied" });
+    } catch {
+      toast({ title: "Failed to copy run JSON", variant: "destructive" });
+    }
+  };
+
   const handleSave = async () => {
-    if (!tiktokSettings?.configured && (!formData.shopId || !formData.appKey)) {
-      toast({ title: "Shop ID and App Key are required", variant: "destructive" });
+    const appKey = formData.appKey.trim();
+    const appSecret = formData.appSecret.trim();
+    if (!tiktokSettings?.configured && !tiktokSettings?.mockMode && (!appKey || !appSecret)) {
+      toast({ title: "App Key and App Secret are required", variant: "destructive" });
       return;
     }
 
     setSaving(true);
     try {
+      const payload = {
+        shopId: formData.shopId.trim(),
+        appKey,
+        appSecret,
+        accessToken: formData.accessToken.trim(),
+        refreshToken: formData.refreshToken.trim(),
+      };
+
       const res = await fetch("/api/admin/settings/tiktok-shop", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
         credentials: "include",
       });
 
       if (!res.ok) {
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
         throw new Error(data.message || "Failed to save settings");
       }
 
       toast({ title: "TikTok Shop configuration saved" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/settings/tiktok-shop"] });
       onSuccess();
-      onOpenChange(false);
     } catch (error: any) {
       toast({ title: error.message, variant: "destructive" });
     } finally {
@@ -1259,20 +1535,310 @@ function TikTokShopConfigDialog({ open, onOpenChange, onSuccess }: {
     }
   };
 
+  const handleCopyCallbackUrl = async () => {
+    if (!callbackUrl) return;
+    try {
+      await navigator.clipboard.writeText(callbackUrl);
+      toast({ title: "Callback URL copied" });
+    } catch {
+      toast({ title: "Failed to copy callback URL", variant: "destructive" });
+    }
+  };
+
+  const handleGenerateAuthorizeUrl = async () => {
+    setLoadingAuthorizeUrl(true);
+    try {
+      const res = await fetch("/api/admin/settings/tiktok-shop/oauth/authorize-url", { credentials: "include" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.authorizeUrl) {
+        throw new Error(data.message || "Failed to generate authorize URL");
+      }
+
+      setAuthorizeUrl(data.authorizeUrl);
+      window.open(data.authorizeUrl, "_blank", "noopener,noreferrer");
+      toast({ title: "TikTok authorization page opened in a new tab" });
+    } catch (error: any) {
+      toast({ title: error.message, variant: "destructive" });
+    } finally {
+      setLoadingAuthorizeUrl(false);
+    }
+  };
+
+  const handleCopyAuthorizeUrl = async () => {
+    if (!authorizeUrl) {
+      toast({ title: "Generate the authorize URL first", variant: "destructive" });
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(authorizeUrl);
+      toast({ title: "Authorize URL copied" });
+    } catch {
+      toast({ title: "Failed to copy authorize URL", variant: "destructive" });
+    }
+  };
+
+  const handleExchangeCode = async () => {
+    if (!authCode.trim()) {
+      toast({ title: "Authorization code is required", variant: "destructive" });
+      return;
+    }
+
+    setExchangingCode(true);
+    try {
+      const res = await fetch("/api/admin/settings/tiktok-shop/exchange-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ authCode: authCode.trim() }),
+        credentials: "include",
+      });
+      const result = await res.json().catch(() => ({}));
+      if (!res.ok || !result.success) {
+        throw new Error(result.error || result.message || "Failed to exchange authorization code");
+      }
+
+      setAuthCode("");
+      setAuthorizedShops(Array.isArray(result.shops) ? result.shops : []);
+      if (result.selectedShop?.cipher) {
+        setSelectedShopCipher(result.selectedShop.cipher);
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/settings/tiktok-shop"] });
+      onSuccess();
+      toast({
+        title: result.selectedShop
+          ? `Authorization complete: ${getShopDisplayName(result.selectedShop)}`
+          : "Authorization code exchanged",
+      });
+    } catch (error: any) {
+      toast({ title: error.message, variant: "destructive" });
+    } finally {
+      setExchangingCode(false);
+    }
+  };
+
   const handleVerify = async () => {
     setVerifying(true);
     try {
       const res = await fetch("/api/admin/settings/tiktok-shop/verify", { method: "POST", credentials: "include" });
-      const result = await res.json();
-      if (result.success) {
-        toast({ title: `Connection verified! Shop: ${result.shopName || "Connected"}` });
-      } else {
-        toast({ title: result.error || "Verification failed", variant: "destructive" });
+      const result = await res.json().catch(() => ({}));
+      if (!res.ok || !result.success) {
+        throw new Error(result.error || "Verification failed");
       }
+
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/settings/tiktok-shop"] });
+      onSuccess();
+      toast({
+        title: `Connection verified: ${result.shopName || "Connected"}`,
+        description: result.shopCount ? `${result.shopCount} authorized shop(s) found` : undefined,
+      });
     } catch (error: any) {
       toast({ title: error.message, variant: "destructive" });
     } finally {
       setVerifying(false);
+    }
+  };
+
+  const handleRefreshToken = async () => {
+    setRefreshingToken(true);
+    try {
+      const res = await fetch("/api/admin/settings/tiktok-shop/refresh-token", { method: "POST", credentials: "include" });
+      const result = await res.json().catch(() => ({}));
+      if (!res.ok || !result.success) {
+        throw new Error(result.error || "Failed to refresh token");
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/settings/tiktok-shop"] });
+      onSuccess();
+      toast({ title: "TikTok access token refreshed" });
+    } catch (error: any) {
+      toast({ title: error.message, variant: "destructive" });
+    } finally {
+      setRefreshingToken(false);
+    }
+  };
+
+  const handleSyncShops = async () => {
+    setSyncingShops(true);
+    try {
+      const res = await fetch("/api/admin/settings/tiktok-shop/shops", { credentials: "include" });
+      const result = await res.json().catch(() => ({}));
+      if (!res.ok || !result.success) {
+        throw new Error(result.error || "Failed to sync authorized shops");
+      }
+
+      const shops = Array.isArray(result.shops) ? result.shops : [];
+      setAuthorizedShops(shops);
+      if (result.selectedShop?.cipher) {
+        setSelectedShopCipher(result.selectedShop.cipher);
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/settings/tiktok-shop"] });
+      onSuccess();
+      toast({ title: `Fetched ${shops.length} authorized TikTok shop(s)` });
+    } catch (error: any) {
+      toast({ title: error.message, variant: "destructive" });
+    } finally {
+      setSyncingShops(false);
+    }
+  };
+
+  const handleSyncProducts = async () => {
+    setSyncingProducts(true);
+    try {
+      const res = await fetch("/api/admin/settings/tiktok-shop/sync-products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          pageSize: 20,
+          pageToken: nextProductsPageToken || undefined,
+        }),
+        credentials: "include",
+      });
+      const result = await res.json().catch(() => ({}));
+      if (!res.ok || !result.success) {
+        throw new Error(result.error || "Failed to sync TikTok products");
+      }
+
+      const products = Array.isArray(result.products) ? result.products : [];
+      setProductPreview(products);
+      setNextProductsPageToken(result.nextPageToken || null);
+      toast({
+        title: `Synced ${result.count || products.length} TikTok product(s)`,
+        description: result.totalCount ? `Total available: ${result.totalCount}` : undefined,
+      });
+    } catch (error: any) {
+      toast({ title: error.message, variant: "destructive" });
+    } finally {
+      setSyncingProducts(false);
+    }
+  };
+
+  const handleImportProducts = async () => {
+    if (productPreview.length === 0) {
+      toast({ title: "Sync TikTok products first", variant: "destructive" });
+      return;
+    }
+
+    setImportingProducts(true);
+    try {
+      const res = await fetch("/api/admin/settings/tiktok-shop/import-products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          products: productPreview,
+          dryRun: dryRunImport,
+        }),
+        credentials: "include",
+      });
+      const result = await res.json().catch(() => ({}));
+      if (!res.ok || !result.success) {
+        throw new Error(result.error || "Failed to import TikTok products");
+      }
+
+      const created = Number(result.created || 0);
+      const updated = Number(result.updated || 0);
+      const skipped = Number(result.skipped || 0);
+      const failureCount = Array.isArray(result.failures) ? result.failures.length : 0;
+
+      toast({
+        title: dryRunImport
+          ? `Dry run complete (would create ${created}, would update ${updated})`
+          : `Imported TikTok products (created ${created}, updated ${updated})`,
+        description: skipped > 0 || failureCount > 0
+          ? `${dryRunImport ? "Would skip" : "Skipped"} ${skipped}${failureCount > 0 ? `, ${failureCount} failures` : ""}`
+          : undefined,
+      });
+    } catch (error: any) {
+      toast({ title: error.message, variant: "destructive" });
+    } finally {
+      setImportingProducts(false);
+    }
+  };
+
+  const handleImportAllProducts = async () => {
+    if (!selectedShopCipher) {
+      toast({ title: "Select a shop first", variant: "destructive" });
+      return;
+    }
+
+    const toBoundedInt = (raw: string, fallback: number, min: number, max: number): number => {
+      const parsed = Number.parseInt(raw, 10);
+      if (!Number.isFinite(parsed)) return fallback;
+      return Math.min(Math.max(parsed, min), max);
+    };
+
+    const pageSize = toBoundedInt(importAllLimits.pageSize, 50, 1, 100);
+    const maxPages = toBoundedInt(importAllLimits.maxPages, 50, 1, 200);
+    const maxProducts = toBoundedInt(importAllLimits.maxProducts, 2000, 1, 10000);
+
+    setImportingAllProducts(true);
+    try {
+      const res = await fetch("/api/admin/settings/tiktok-shop/import-products-all", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          pageSize,
+          maxPages,
+          maxProducts,
+          dryRun: dryRunImport,
+        }),
+        credentials: "include",
+      });
+      const result = await res.json().catch(() => ({}));
+      if (!res.ok || !result.success) {
+        throw new Error(result.error || "Failed to import all TikTok products");
+      }
+
+      const created = Number(result.created || 0);
+      const updated = Number(result.updated || 0);
+      const skipped = Number(result.skipped || 0);
+      const pagesFetched = Number(result.pagesFetched || 0);
+      const productsFetched = Number(result.productsFetched || 0);
+      const truncated = Boolean(result.truncated);
+
+      toast({
+        title: dryRunImport
+          ? `Dry run complete (${created} would create, ${updated} would update)`
+          : `Imported TikTok catalog (${created} created, ${updated} updated)`,
+        description: `${productsFetched} products across ${pagesFetched} page(s)${skipped ? `, ${dryRunImport ? "would skip" : "skipped"} ${skipped}` : ""}${truncated ? ", truncated by safety limits" : ""}`,
+      });
+    } catch (error: any) {
+      toast({ title: error.message, variant: "destructive" });
+    } finally {
+      setImportingAllProducts(false);
+    }
+  };
+
+  const handleSelectShop = async () => {
+    if (!selectedShopCipher) {
+      toast({ title: "Select a shop first", variant: "destructive" });
+      return;
+    }
+
+    setSelectingShop(true);
+    try {
+      const res = await fetch("/api/admin/settings/tiktok-shop/select-shop", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ shopCipher: selectedShopCipher }),
+        credentials: "include",
+      });
+      const result = await res.json().catch(() => ({}));
+      if (!res.ok || !result.success) {
+        throw new Error(result.error || "Failed to select shop");
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/settings/tiktok-shop"] });
+      onSuccess();
+      toast({
+        title: result.selectedShop
+          ? `Selected shop: ${getShopDisplayName(result.selectedShop)}`
+          : "Shop selected",
+      });
+    } catch (error: any) {
+      toast({ title: error.message, variant: "destructive" });
+    } finally {
+      setSelectingShop(false);
     }
   };
 
@@ -1281,11 +1847,27 @@ function TikTokShopConfigDialog({ open, onOpenChange, onSuccess }: {
     try {
       const res = await fetch("/api/admin/settings/tiktok-shop", { method: "DELETE", credentials: "include" });
       if (!res.ok) {
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
         throw new Error(data.message || "Failed to remove configuration");
       }
-      toast({ title: "TikTok Shop configuration removed" });
+
+      setFormData({
+        shopId: "",
+        appKey: "",
+        appSecret: "",
+        accessToken: "",
+        refreshToken: "",
+      });
+      setAuthCode("");
+      setAuthorizedShops([]);
+      setSelectedShopCipher("");
+      setAuthorizeUrl("");
+      setProductPreview([]);
+      setNextProductsPageToken(null);
+
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/settings/tiktok-shop"] });
       onSuccess();
+      toast({ title: "TikTok Shop configuration removed" });
       onOpenChange(false);
     } catch (error: any) {
       toast({ title: error.message, variant: "destructive" });
@@ -1295,15 +1877,16 @@ function TikTokShopConfigDialog({ open, onOpenChange, onSuccess }: {
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ShoppingBag className="w-5 h-5" />
             TikTok Shop Configuration
           </DialogTitle>
           <DialogDescription>
-            Connect your TikTok Shop to sync products and manage orders.
+            Save app credentials, set your OAuth callback URL, exchange the authorization code, and select an authorized shop.
           </DialogDescription>
         </DialogHeader>
 
@@ -1319,29 +1902,46 @@ function TikTokShopConfigDialog({ open, onOpenChange, onSuccess }: {
                   <CheckCircle2 className="w-4 h-4" />
                   TikTok Shop is configured
                 </div>
+                {(tiktokSettings.sellerName || tiktokSettings.shopId) && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {tiktokSettings.sellerName || "Shop"} {tiktokSettings.shopId ? `(${tiktokSettings.shopId})` : ""}
+                  </p>
+                )}
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="tiktokShopId">Shop ID</Label>
-                <Input
-                  id="tiktokShopId"
-                  value={formData.shopId}
-                  onChange={(e) => setFormData({ ...formData, shopId: e.target.value })}
-                  placeholder="Your TikTok Shop ID"
-                  data-testid="input-tiktok-shop-id"
-                />
+            {tiktokSettings?.mockMode && (
+              <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                <div className="flex items-center gap-2 text-amber-600 text-sm font-medium">
+                  <AlertCircle className="w-4 h-4" />
+                  Mock mode enabled
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  OAuth, shop sync, and product sync use mock data from environment variables.
+                </p>
               </div>
+            )}
 
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="tiktokAppKey">App Key</Label>
                 <Input
                   id="tiktokAppKey"
                   value={formData.appKey}
                   onChange={(e) => setFormData({ ...formData, appKey: e.target.value })}
-                  placeholder="Your App Key"
+                  placeholder="Your TikTok app key"
                   data-testid="input-tiktok-app-key"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="tiktokShopId">Shop ID (optional)</Label>
+                <Input
+                  id="tiktokShopId"
+                  value={formData.shopId}
+                  onChange={(e) => setFormData({ ...formData, shopId: e.target.value })}
+                  placeholder="Current shop ID"
+                  data-testid="input-tiktok-shop-id"
                 />
               </div>
             </div>
@@ -1353,37 +1953,464 @@ function TikTokShopConfigDialog({ open, onOpenChange, onSuccess }: {
                 value={formData.appSecret}
                 onChange={(e) => setFormData({ ...formData, appSecret: e.target.value })}
                 hasSavedValue={tiktokSettings?.hasAppSecret}
-                placeholder="Enter your App Secret"
+                placeholder="Enter your TikTok app secret"
                 data-testid="input-tiktok-app-secret"
               />
             </div>
 
+            <div className="rounded-lg border p-3 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-medium">OAuth Callback URL</p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCopyCallbackUrl}
+                  disabled={!callbackUrl || loadingCallbackUrl}
+                  data-testid="button-copy-tiktok-callback-url"
+                >
+                  {loadingCallbackUrl ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
+                  Copy
+                </Button>
+              </div>
+              <Input
+                readOnly
+                value={callbackUrl || (loadingCallbackUrl ? "Loading callback URL..." : "Unable to load callback URL")}
+                data-testid="input-tiktok-callback-url"
+              />
+              <p className="text-xs text-muted-foreground">
+                Add this callback URL in your TikTok Shop app settings before running OAuth authorization.
+              </p>
+              <div className="flex flex-wrap gap-2 pt-1">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleGenerateAuthorizeUrl}
+                  disabled={loadingAuthorizeUrl}
+                  data-testid="button-generate-tiktok-authorize-url"
+                >
+                  {loadingAuthorizeUrl ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <ExternalLink className="w-4 h-4 mr-2" />}
+                  Authorize with TikTok
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCopyAuthorizeUrl}
+                  disabled={!authorizeUrl}
+                  data-testid="button-copy-tiktok-authorize-url"
+                >
+                  <Copy className="w-4 h-4 mr-2" />
+                  Copy Auth URL
+                </Button>
+              </div>
+              {authorizeUrl && (
+                <Input
+                  readOnly
+                  value={authorizeUrl}
+                  data-testid="input-tiktok-authorize-url"
+                />
+              )}
+              {webhookUrl && (
+                <>
+                  <p className="text-xs text-muted-foreground">Webhook URL</p>
+                  <Input
+                    readOnly
+                    value={webhookUrl}
+                    data-testid="input-tiktok-webhook-url"
+                  />
+                </>
+              )}
+            </div>
+
+            <div className="rounded-lg border p-3 space-y-2">
+              <Label htmlFor="tiktokAuthCode">Authorization Code</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="tiktokAuthCode"
+                  value={authCode}
+                  onChange={(e) => setAuthCode(e.target.value)}
+                  placeholder="Paste code returned by TikTok Shop OAuth"
+                  data-testid="input-tiktok-auth-code"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleExchangeCode}
+                  disabled={exchangingCode || !authCode.trim()}
+                  data-testid="button-exchange-tiktok-auth-code"
+                >
+                  {exchangingCode ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Key className="w-4 h-4 mr-2" />}
+                  Exchange
+                </Button>
+              </div>
+            </div>
+
+            <div className="rounded-lg border p-3 space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-medium">Authorized Shops</p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleSyncShops}
+                  disabled={syncingShops || !tiktokSettings?.hasAccessToken}
+                  data-testid="button-sync-tiktok-shops"
+                >
+                  {syncingShops ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <RefreshCw className="w-4 h-4 mr-2" />}
+                  Sync Shops
+                </Button>
+              </div>
+
+              {shopOptions.length > 0 ? (
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Select value={selectedShopCipher} onValueChange={setSelectedShopCipher}>
+                    <SelectTrigger data-testid="select-tiktok-shop-cipher">
+                      <SelectValue placeholder="Select authorized shop" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {shopOptions
+                        .filter((shop) => !!shop.cipher)
+                        .map((shop) => (
+                          <SelectItem key={shop.cipher} value={shop.cipher!}>
+                            {getShopDisplayName(shop)}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleSelectShop}
+                    disabled={selectingShop || !selectedShopCipher}
+                    data-testid="button-select-tiktok-shop"
+                  >
+                    {selectingShop ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <ShoppingBag className="w-4 h-4 mr-2" />}
+                    Use Shop
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  No authorized shops loaded yet. Save credentials and exchange an authorization code, then sync shops.
+                </p>
+              )}
+            </div>
+
             <div className="space-y-2">
-              <Label htmlFor="tiktokAccessToken">Access Token</Label>
+              <Label htmlFor="tiktokAccessToken">Access Token (optional manual entry)</Label>
               <SecretInput
                 id="tiktokAccessToken"
                 value={formData.accessToken}
                 onChange={(e) => setFormData({ ...formData, accessToken: e.target.value })}
                 hasSavedValue={tiktokSettings?.hasAccessToken}
-                placeholder="Enter your Access Token"
+                placeholder="Optional manual access token"
                 data-testid="input-tiktok-access-token"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="tiktokRefreshToken">Refresh Token (optional)</Label>
+              <Label htmlFor="tiktokRefreshToken">Refresh Token (optional manual entry)</Label>
               <SecretInput
                 id="tiktokRefreshToken"
                 value={formData.refreshToken}
                 onChange={(e) => setFormData({ ...formData, refreshToken: e.target.value })}
                 hasSavedValue={tiktokSettings?.hasRefreshToken}
-                placeholder="Enter your Refresh Token"
+                placeholder="Optional manual refresh token"
                 data-testid="input-tiktok-refresh-token"
               />
             </div>
 
+            <div className="p-3 bg-muted/50 rounded-lg text-xs space-y-1">
+              <p className="font-medium text-sm">Token Status</p>
+              <p>Access token: {tiktokSettings?.hasAccessToken ? "Saved" : "Missing"}</p>
+              <p>Refresh token: {tiktokSettings?.hasRefreshToken ? "Saved" : "Missing"}</p>
+              <p>Access token expiry: {tiktokSettings?.accessTokenExpiresAt ? new Date(tiktokSettings.accessTokenExpiresAt).toLocaleString() : "n/a"}</p>
+              <p>Refresh token expiry: {tiktokSettings?.refreshTokenExpiresAt ? new Date(tiktokSettings.refreshTokenExpiresAt).toLocaleString() : "n/a"}</p>
+              <p>Scopes: {tiktokSettings?.grantedScopes?.length ? tiktokSettings.grantedScopes.join(", ") : "n/a"}</p>
+            </div>
+
+            <div className="rounded-lg border p-3 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-medium">Product Sync Preview</p>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleImportAllProducts}
+                    disabled={importingAllProducts || !selectedShopCipher}
+                    data-testid="button-import-all-tiktok-products"
+                  >
+                    {importingAllProducts ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <HardDrive className="w-4 h-4 mr-2" />}
+                    {dryRunImport ? "Dry Run All Pages" : "Import All Pages"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleImportProducts}
+                    disabled={importingProducts || productPreview.length === 0}
+                    data-testid="button-import-tiktok-products"
+                  >
+                    {importingProducts ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <HardDrive className="w-4 h-4 mr-2" />}
+                    {dryRunImport ? "Dry Run Page Import" : "Import to Catalog"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleSyncProducts}
+                    disabled={syncingProducts || !selectedShopCipher}
+                    data-testid="button-sync-tiktok-products"
+                  >
+                    {syncingProducts ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <RefreshCw className="w-4 h-4 mr-2" />}
+                    {nextProductsPageToken ? "Load Next Page" : "Sync Products"}
+                  </Button>
+                </div>
+              </div>
+              <div className="flex items-center justify-between rounded-md border p-2">
+                <div>
+                  <p className="text-xs font-medium">Dry Run Mode</p>
+                  <p className="text-xs text-muted-foreground">
+                    Preview create/update counts without writing products.
+                  </p>
+                </div>
+                <Switch
+                  checked={dryRunImport}
+                  onCheckedChange={setDryRunImport}
+                  data-testid="switch-tiktok-import-dry-run"
+                />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div className="space-y-1">
+                  <Label htmlFor="tiktokImportPageSize" className="text-xs">Page size</Label>
+                  <Input
+                    id="tiktokImportPageSize"
+                    type="number"
+                    min={1}
+                    max={100}
+                    value={importAllLimits.pageSize}
+                    onChange={(e) => setImportAllLimits((prev) => ({ ...prev, pageSize: e.target.value }))}
+                    data-testid="input-tiktok-import-page-size"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="tiktokImportMaxPages" className="text-xs">Max pages</Label>
+                  <Input
+                    id="tiktokImportMaxPages"
+                    type="number"
+                    min={1}
+                    max={200}
+                    value={importAllLimits.maxPages}
+                    onChange={(e) => setImportAllLimits((prev) => ({ ...prev, maxPages: e.target.value }))}
+                    data-testid="input-tiktok-import-max-pages"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="tiktokImportMaxProducts" className="text-xs">Max products</Label>
+                  <Input
+                    id="tiktokImportMaxProducts"
+                    type="number"
+                    min={1}
+                    max={10000}
+                    value={importAllLimits.maxProducts}
+                    onChange={(e) => setImportAllLimits((prev) => ({ ...prev, maxProducts: e.target.value }))}
+                    data-testid="input-tiktok-import-max-products"
+                  />
+                </div>
+              </div>
+              {!selectedShopCipher && (
+                <p className="text-xs text-muted-foreground">
+                  Select a shop before syncing products.
+                </p>
+              )}
+              {productPreview.length > 0 && (
+                <div className="rounded-md border divide-y">
+                  {productPreview.slice(0, 10).map((product) => (
+                    <div key={product.id} className="px-3 py-2 text-xs">
+                      <p className="font-medium">{product.title}</p>
+                      <p className="text-muted-foreground">
+                        ID: {product.id} | Status: {product.status}
+                        {product.price ? ` | Price: ${product.price}${product.currency ? ` ${product.currency}` : ""}` : ""}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {importRuns.length > 0 && (
+                <div className="rounded-md border divide-y">
+                  <div className="px-3 py-2 space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs font-medium">Recent Import Runs</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-[11px] text-muted-foreground">
+                          Showing {visibleImportRuns.length} of {filteredImportRuns.length} filtered ({importRuns.length} total)
+                        </p>
+                        {hasActiveImportRunFilters && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="h-7 px-2 text-[11px]"
+                            onClick={() => setImportRunFilters({ mode: "all", status: "all", scope: "all" })}
+                            data-testid="button-tiktok-runs-filter-reset"
+                          >
+                            Reset Filters
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap items-center gap-1">
+                        <span className="text-[11px] text-muted-foreground">Mode</span>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant={importRunFilters.mode === "all" ? "default" : "outline"}
+                          className="h-7 px-2 text-[11px]"
+                          onClick={() => setImportRunFilters((prev) => ({ ...prev, mode: "all" }))}
+                          data-testid="button-tiktok-runs-filter-mode-all"
+                        >
+                          All
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant={importRunFilters.mode === "dry_run" ? "default" : "outline"}
+                          className="h-7 px-2 text-[11px]"
+                          onClick={() => setImportRunFilters((prev) => ({ ...prev, mode: "dry_run" }))}
+                          data-testid="button-tiktok-runs-filter-mode-dry-run"
+                        >
+                          Dry Run
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant={importRunFilters.mode === "import" ? "default" : "outline"}
+                          className="h-7 px-2 text-[11px]"
+                          onClick={() => setImportRunFilters((prev) => ({ ...prev, mode: "import" }))}
+                          data-testid="button-tiktok-runs-filter-mode-import"
+                        >
+                          Import
+                        </Button>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-1">
+                        <span className="text-[11px] text-muted-foreground">Status</span>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant={importRunFilters.status === "all" ? "default" : "outline"}
+                          className="h-7 px-2 text-[11px]"
+                          onClick={() => setImportRunFilters((prev) => ({ ...prev, status: "all" }))}
+                          data-testid="button-tiktok-runs-filter-status-all"
+                        >
+                          All
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant={importRunFilters.status === "success" ? "default" : "outline"}
+                          className="h-7 px-2 text-[11px]"
+                          onClick={() => setImportRunFilters((prev) => ({ ...prev, status: "success" }))}
+                          data-testid="button-tiktok-runs-filter-status-success"
+                        >
+                          Success
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant={importRunFilters.status === "failed" ? "default" : "outline"}
+                          className="h-7 px-2 text-[11px]"
+                          onClick={() => setImportRunFilters((prev) => ({ ...prev, status: "failed" }))}
+                          data-testid="button-tiktok-runs-filter-status-failed"
+                        >
+                          Failed
+                        </Button>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-1">
+                        <span className="text-[11px] text-muted-foreground">Scope</span>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant={importRunFilters.scope === "all" ? "default" : "outline"}
+                          className="h-7 px-2 text-[11px]"
+                          onClick={() => setImportRunFilters((prev) => ({ ...prev, scope: "all" }))}
+                          data-testid="button-tiktok-runs-filter-scope-all"
+                        >
+                          All
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant={importRunFilters.scope === "page" ? "default" : "outline"}
+                          className="h-7 px-2 text-[11px]"
+                          onClick={() => setImportRunFilters((prev) => ({ ...prev, scope: "page" }))}
+                          data-testid="button-tiktok-runs-filter-scope-page"
+                        >
+                          Page
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant={importRunFilters.scope === "bulk" ? "default" : "outline"}
+                          className="h-7 px-2 text-[11px]"
+                          onClick={() => setImportRunFilters((prev) => ({ ...prev, scope: "bulk" }))}
+                          data-testid="button-tiktok-runs-filter-scope-bulk"
+                        >
+                          Bulk
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                  {visibleImportRuns.map((run, index) => {
+                    const completedAt = run.finishedAt || run.startedAt;
+                    const timestamp = completedAt ? new Date(completedAt).toLocaleString() : "Unknown time";
+                    const created = Number(run.created || 0);
+                    const updated = Number(run.updated || 0);
+                    const skipped = Number(run.skipped || 0);
+                    const failures = Number(run.failureCount || 0);
+                    const pagesFetched = run.pagesFetched !== null && run.pagesFetched !== undefined
+                      ? `, pages ${Number(run.pagesFetched)}`
+                      : "";
+                    const productsFetched = run.productsFetched !== null && run.productsFetched !== undefined
+                      ? `, products ${Number(run.productsFetched)}`
+                      : "";
+                    return (
+                      <div key={run.id || `${run.startedAt || "run"}-${index}`} className="px-3 py-2 text-xs">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="font-medium">
+                            {run.mode === "dry_run" ? "Dry Run" : "Import"} {run.scope === "bulk" ? "Bulk" : "Page"}{" "}
+                            {run.status === "failed" ? "(failed)" : "(success)"}
+                          </p>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedImportRun(run)}
+                            data-testid="button-tiktok-import-run-details"
+                          >
+                            Details
+                          </Button>
+                        </div>
+                        <p className="text-muted-foreground">
+                          {timestamp} | created {created}, updated {updated}, skipped {skipped}, failures {failures}
+                          {productsFetched}
+                          {pagesFetched}
+                          {run.truncated ? ", truncated" : ""}
+                        </p>
+                        {run.error && (
+                          <p className="text-destructive mt-1">
+                            {run.error}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {visibleImportRuns.length === 0 && (
+                    <div className="px-3 py-3 text-xs text-muted-foreground">
+                      No runs match the selected filters.
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             {tiktokSettings?.configured && (
-              <div className="pt-4 border-t">
+              <div className="pt-2 border-t flex flex-wrap gap-2">
                 <Button
                   type="button"
                   variant="outline"
@@ -1393,6 +2420,16 @@ function TikTokShopConfigDialog({ open, onOpenChange, onSuccess }: {
                 >
                   {verifying ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <TestTube className="w-4 h-4 mr-2" />}
                   Test Connection
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleRefreshToken}
+                  disabled={refreshingToken || !tiktokSettings.hasRefreshToken}
+                  data-testid="button-refresh-tiktok-token"
+                >
+                  {refreshingToken ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <RefreshCw className="w-4 h-4 mr-2" />}
+                  Refresh Token
                 </Button>
               </div>
             )}
@@ -1413,6 +2450,86 @@ function TikTokShopConfigDialog({ open, onOpenChange, onSuccess }: {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    <Dialog open={!!selectedImportRun} onOpenChange={(next) => !next && setSelectedImportRun(null)}>
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>TikTok Import Run Details</DialogTitle>
+          <DialogDescription>
+            Full run metadata and failure details for troubleshooting.
+          </DialogDescription>
+        </DialogHeader>
+        {selectedImportRun && (
+          <div className="space-y-4 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 rounded-md border p-3">
+              <p><span className="font-medium">Completed:</span> {selectedImportRun.finishedAt ? new Date(selectedImportRun.finishedAt).toLocaleString() : "n/a"}</p>
+              <p><span className="font-medium">Started:</span> {selectedImportRun.startedAt ? new Date(selectedImportRun.startedAt).toLocaleString() : "n/a"}</p>
+              <p><span className="font-medium">Mode:</span> {selectedImportRun.mode || "n/a"}</p>
+              <p><span className="font-medium">Scope:</span> {selectedImportRun.scope || "n/a"}</p>
+              <p><span className="font-medium">Status:</span> {selectedImportRun.status || "n/a"}</p>
+              <p><span className="font-medium">Created:</span> {Number(selectedImportRun.created || 0)}</p>
+              <p><span className="font-medium">Updated:</span> {Number(selectedImportRun.updated || 0)}</p>
+              <p><span className="font-medium">Skipped:</span> {Number(selectedImportRun.skipped || 0)}</p>
+              <p><span className="font-medium">Failures:</span> {Number(selectedImportRun.failureCount || 0)}</p>
+              <p><span className="font-medium">Products requested:</span> {selectedImportRun.productsRequested ?? "n/a"}</p>
+              <p><span className="font-medium">Products fetched:</span> {selectedImportRun.productsFetched ?? "n/a"}</p>
+              <p><span className="font-medium">Pages fetched:</span> {selectedImportRun.pagesFetched ?? "n/a"}</p>
+              <p><span className="font-medium">Page size:</span> {selectedImportRun.pageSize ?? "n/a"}</p>
+              <p><span className="font-medium">Max pages:</span> {selectedImportRun.maxPages ?? "n/a"}</p>
+              <p><span className="font-medium">Max products:</span> {selectedImportRun.maxProducts ?? "n/a"}</p>
+              <p><span className="font-medium">Truncated:</span> {selectedImportRun.truncated === null || selectedImportRun.truncated === undefined ? "n/a" : String(selectedImportRun.truncated)}</p>
+              <p><span className="font-medium">Next page token:</span> {selectedImportRun.nextPageToken || "n/a"}</p>
+            </div>
+            {selectedImportRun.error && (
+              <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3">
+                <p className="font-medium text-destructive">Error</p>
+                <p className="text-destructive/90 mt-1">{selectedImportRun.error}</p>
+              </div>
+            )}
+            <div className="rounded-md border divide-y">
+              <div className="px-3 py-2 font-medium">
+                Failures
+              </div>
+              {Array.isArray(selectedImportRun.failures) && selectedImportRun.failures.length > 0 ? (
+                selectedImportRun.failures.map((failure, index) => (
+                  <div key={`${failure.productId}-${index}`} className="px-3 py-2">
+                    <p className="font-medium">{failure.productId || "unknown"}</p>
+                    <p className="text-muted-foreground mt-1">{failure.reason || "Unknown failure"}</p>
+                  </div>
+                ))
+              ) : (
+                <div className="px-3 py-2 text-muted-foreground">
+                  No failures recorded.
+                </div>
+              )}
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <p className="font-medium">Raw JSON</p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCopyImportRunJson}
+                  data-testid="button-copy-tiktok-import-run-json"
+                >
+                  <Copy className="w-4 h-4 mr-2" />
+                  Copy JSON
+                </Button>
+              </div>
+              <pre className="rounded-md border bg-muted/40 p-3 overflow-x-auto whitespace-pre-wrap break-all">
+                {selectedRunPayload}
+              </pre>
+            </div>
+          </div>
+        )}
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => setSelectedImportRun(null)}>
+            Close
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
 

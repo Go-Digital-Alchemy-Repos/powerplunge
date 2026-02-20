@@ -261,6 +261,33 @@ export const insertEmailSettingsSchema = createInsertSchema(emailSettings).omit(
 export type InsertEmailSettings = z.infer<typeof insertEmailSettingsSchema>;
 export type EmailSettings = typeof emailSettings.$inferSelect;
 
+export type TikTokImportRunMode = "dry_run" | "import";
+export type TikTokImportRunScope = "page" | "bulk";
+export type TikTokImportRunStatus = "success" | "failed";
+
+export interface TikTokImportRunEntry {
+  id: string;
+  startedAt: string;
+  finishedAt: string;
+  scope: TikTokImportRunScope;
+  mode: TikTokImportRunMode;
+  status: TikTokImportRunStatus;
+  created: number;
+  updated: number;
+  skipped: number;
+  failureCount: number;
+  failures: Array<{ productId: string; reason: string }>;
+  productsRequested?: number | null;
+  productsFetched?: number | null;
+  pagesFetched?: number | null;
+  pageSize?: number | null;
+  maxPages?: number | null;
+  maxProducts?: number | null;
+  truncated?: boolean | null;
+  nextPageToken?: string | null;
+  error?: string | null;
+}
+
 // Integration Settings (Stripe, OpenAI, Cloudflare R2, etc.)
 export const integrationSettings = pgTable("integration_settings", {
   id: varchar("id").primaryKey().default("main"),
@@ -290,10 +317,18 @@ export const integrationSettings = pgTable("integration_settings", {
   // TikTok Shop integration
   tiktokShopConfigured: boolean("tiktok_shop_configured").default(false),
   tiktokShopId: text("tiktok_shop_id"),
+  tiktokShopCipher: text("tiktok_shop_cipher"),
   tiktokAppKey: text("tiktok_app_key"),
   tiktokAppSecretEncrypted: text("tiktok_app_secret_encrypted"),
   tiktokAccessTokenEncrypted: text("tiktok_access_token_encrypted"),
   tiktokRefreshTokenEncrypted: text("tiktok_refresh_token_encrypted"),
+  tiktokAccessTokenExpiresAt: timestamp("tiktok_access_token_expires_at"),
+  tiktokRefreshTokenExpiresAt: timestamp("tiktok_refresh_token_expires_at"),
+  tiktokOpenId: text("tiktok_open_id"),
+  tiktokSellerName: text("tiktok_seller_name"),
+  tiktokSellerBaseRegion: text("tiktok_seller_base_region"),
+  tiktokGrantedScopes: jsonb("tiktok_granted_scopes"),
+  tiktokImportRuns: jsonb("tiktok_import_runs").$type<TikTokImportRunEntry[]>().default(sql`'[]'::jsonb`),
   // Instagram Shop integration
   instagramShopConfigured: boolean("instagram_shop_configured").default(false),
   instagramBusinessAccountId: text("instagram_business_account_id"),

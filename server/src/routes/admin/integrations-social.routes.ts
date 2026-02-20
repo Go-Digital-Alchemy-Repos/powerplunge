@@ -1,4 +1,5 @@
 import { Router, Request, Response } from "express";
+import { randomUUID } from "crypto";
 import { storage } from "../../../storage";
 
 const router = Router();
@@ -73,13 +74,22 @@ router.delete("/settings/openai", async (req: Request, res: Response) => {
 router.get("/settings/tiktok-shop", async (req: Request, res: Response) => {
   try {
     const integrationSettings = await storage.getIntegrationSettings();
+    const mockMode = process.env.TIKTOK_SHOP_MOCK_MODE === "true";
     res.json({
       configured: integrationSettings?.tiktokShopConfigured || false,
       shopId: integrationSettings?.tiktokShopId || null,
+      shopCipher: integrationSettings?.tiktokShopCipher || null,
+      sellerName: integrationSettings?.tiktokSellerName || null,
+      sellerBaseRegion: integrationSettings?.tiktokSellerBaseRegion || null,
       appKey: integrationSettings?.tiktokAppKey || null,
       hasAppSecret: !!integrationSettings?.tiktokAppSecretEncrypted,
       hasAccessToken: !!integrationSettings?.tiktokAccessTokenEncrypted,
       hasRefreshToken: !!integrationSettings?.tiktokRefreshTokenEncrypted,
+      accessTokenExpiresAt: integrationSettings?.tiktokAccessTokenExpiresAt || null,
+      refreshTokenExpiresAt: integrationSettings?.tiktokRefreshTokenExpiresAt || null,
+      grantedScopes: integrationSettings?.tiktokGrantedScopes || [],
+      importRuns: Array.isArray(integrationSettings?.tiktokImportRuns) ? integrationSettings.tiktokImportRuns : [],
+      mockMode,
       updatedAt: integrationSettings?.updatedAt || null,
     });
   } catch (error) {
@@ -91,13 +101,14 @@ router.patch("/settings/tiktok-shop", async (req: Request, res: Response) => {
   try {
     const { encrypt } = await import("../../utils/encryption");
     const { tiktokShopService } = await import("../../integrations/tiktok-shop/TikTokShopService");
-    const { shopId, appKey, appSecret, accessToken, refreshToken } = req.body;
+    const { shopId, appKey, appSecret, accessToken, refreshToken, shopCipher } = req.body;
+    const mockMode = process.env.TIKTOK_SHOP_MOCK_MODE === "true";
 
     const existingSettings = await storage.getIntegrationSettings();
     const isUpdate = existingSettings?.tiktokShopConfigured;
 
-    if (!isUpdate && (!shopId || !appKey)) {
-      return res.status(400).json({ message: "Shop ID and App Key are required" });
+    if (!isUpdate && !mockMode && (!appKey || !appSecret)) {
+      return res.status(400).json({ message: "App Key and App Secret are required" });
     }
 
     const updateData: any = {
@@ -105,6 +116,7 @@ router.patch("/settings/tiktok-shop", async (req: Request, res: Response) => {
     };
 
     if (shopId) updateData.tiktokShopId = shopId;
+    if (shopCipher) updateData.tiktokShopCipher = shopCipher;
     if (appKey) updateData.tiktokAppKey = appKey;
     if (appSecret) updateData.tiktokAppSecretEncrypted = encrypt(appSecret);
     if (accessToken) updateData.tiktokAccessTokenEncrypted = encrypt(accessToken);
@@ -130,16 +142,206 @@ router.post("/settings/tiktok-shop/verify", async (req: Request, res: Response) 
   }
 });
 
+router.get("/settings/tiktok-shop/oauth/callback-url", async (req: Request, res: Response) => {
+  try {
+    const { getBaseUrl } = await import("../../utils/base-url");
+    const callbackUrl = `${getBaseUrl(req)}/api/admin/settings/tiktok-shop/oauth/callback`;
+    res.json({ callbackUrl });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message || "Failed to generate callback URL" });
+  }
+});
+
+router.get("/settings/tiktok-shop/webhook-url", async (req: Request, res: Response) => {
+  try {
+    const { getBaseUrl } = await import("../../utils/base-url");
+    const webhookUrl = `${getBaseUrl(req)}/api/webhooks/tiktok-shop`;
+    res.json({ webhookUrl });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message || "Failed to generate webhook URL" });
+  }
+});
+
+router.get("/settings/tiktok-shop/oauth/authorize-url", async (req: Request, res: Response) => {
+  try {
+    const { tiktokShopService } = await import("../../integrations/tiktok-shop/TikTokShopService");
+    const { getBaseUrl } = await import("../../utils/base-url");
+    const callbackUrl = `${getBaseUrl(req)}/api/admin/settings/tiktok-shop/oauth/callback`;
+    const state = randomUUID();
+    const authorizeUrl = await tiktokShopService.buildOAuthAuthorizeUrl({
+      redirectUri: callbackUrl,
+      state,
+    });
+    res.json({ authorizeUrl, callbackUrl, state });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message || "Failed to generate authorize URL" });
+  }
+});
+
+router.post("/settings/tiktok-shop/exchange-code", async (req: Request, res: Response) => {
+  try {
+    const { tiktokShopService } = await import("../../integrations/tiktok-shop/TikTokShopService");
+    const authCode = String(req.body?.authCode || "").trim();
+    const result = await tiktokShopService.exchangeAuthCode(authCode);
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message || "Failed to exchange authorization code" });
+  }
+});
+
+router.post("/settings/tiktok-shop/refresh-token", async (req: Request, res: Response) => {
+  try {
+    const { tiktokShopService } = await import("../../integrations/tiktok-shop/TikTokShopService");
+    const token = await tiktokShopService.refreshAccessToken();
+    res.json({
+      success: true,
+      accessTokenExpiresAt: token.access_token_expire_in,
+      refreshTokenExpiresAt: token.refresh_token_expire_in,
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message || "Failed to refresh access token" });
+  }
+});
+
+router.get("/settings/tiktok-shop/shops", async (req: Request, res: Response) => {
+  try {
+    const { tiktokShopService } = await import("../../integrations/tiktok-shop/TikTokShopService");
+    const result = await tiktokShopService.syncAuthorizedShops();
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message || "Failed to fetch authorized shops" });
+  }
+});
+
+router.post("/settings/tiktok-shop/sync-products", async (req: Request, res: Response) => {
+  try {
+    const { tiktokShopService } = await import("../../integrations/tiktok-shop/TikTokShopService");
+    const pageSize = Number(req.body?.pageSize);
+    const pageToken = req.body?.pageToken ? String(req.body.pageToken) : undefined;
+    const result = await tiktokShopService.syncProductsPreview({ pageSize, pageToken });
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message || "Failed to sync TikTok products" });
+  }
+});
+
+router.post("/settings/tiktok-shop/import-products", async (req: Request, res: Response) => {
+  try {
+    const { tiktokShopService } = await import("../../integrations/tiktok-shop/TikTokShopService");
+    const payload = Array.isArray(req.body?.products) ? req.body.products : [];
+    const dryRun = req.body?.dryRun === true || req.body?.dryRun === "true";
+    const products = payload.map((item: any) => ({
+      id: String(item?.id || "").trim(),
+      title: String(item?.title || "").trim(),
+      status: String(item?.status || "").trim(),
+      region: item?.region !== undefined && item?.region !== null ? String(item.region) : null,
+      currency: item?.currency !== undefined && item?.currency !== null ? String(item.currency) : null,
+      price: item?.price !== undefined && item?.price !== null ? String(item.price) : null,
+      sellerSku: item?.sellerSku !== undefined && item?.sellerSku !== null ? String(item.sellerSku) : null,
+    }));
+
+    const result = await tiktokShopService.importProductsToCatalog(products, { dryRun });
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message || "Failed to import TikTok products" });
+  }
+});
+
+router.post("/settings/tiktok-shop/import-products-all", async (req: Request, res: Response) => {
+  try {
+    const { tiktokShopService } = await import("../../integrations/tiktok-shop/TikTokShopService");
+    const pageSize = Number(req.body?.pageSize);
+    const maxPages = Number(req.body?.maxPages);
+    const maxProducts = Number(req.body?.maxProducts);
+    const dryRun = req.body?.dryRun === true || req.body?.dryRun === "true";
+
+    const result = await tiktokShopService.importAllProductsToCatalog({
+      pageSize,
+      maxPages,
+      maxProducts,
+      dryRun,
+    });
+
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message || "Failed to import all TikTok products" });
+  }
+});
+
+router.patch("/settings/tiktok-shop/select-shop", async (req: Request, res: Response) => {
+  try {
+    const { tiktokShopService } = await import("../../integrations/tiktok-shop/TikTokShopService");
+    const shopCipher = String(req.body?.shopCipher || "").trim();
+    const result = await tiktokShopService.selectShop(shopCipher);
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message || "Failed to select shop" });
+  }
+});
+
+router.get("/settings/tiktok-shop/oauth/callback", async (req: Request, res: Response) => {
+  try {
+    const { tiktokShopService } = await import("../../integrations/tiktok-shop/TikTokShopService");
+    const { getBaseUrl } = await import("../../utils/base-url");
+    const code = String(req.query?.code || "").trim();
+    const error = String(req.query?.error || "").trim();
+    const redirectBase = `${getBaseUrl(req)}/admin/integrations`;
+
+    if (error) {
+      return res.redirect(`${redirectBase}?tiktok_oauth=error&reason=${encodeURIComponent(error)}`);
+    }
+
+    if (!code) {
+      return res.redirect(`${redirectBase}?tiktok_oauth=error&reason=${encodeURIComponent("Missing authorization code")}`);
+    }
+
+    const result = await tiktokShopService.exchangeAuthCode(code);
+    if (!result.success) {
+      return res.redirect(`${redirectBase}?tiktok_oauth=error&reason=${encodeURIComponent(result.error || "Code exchange failed")}`);
+    }
+
+    return res.redirect(`${redirectBase}?tiktok_oauth=success`);
+  } catch (error: any) {
+    return res.redirect(`/admin/integrations?tiktok_oauth=error&reason=${encodeURIComponent(error.message || "OAuth callback failed")}`);
+  }
+});
+
 router.delete("/settings/tiktok-shop", async (req: Request, res: Response) => {
   try {
     const { tiktokShopService } = await import("../../integrations/tiktok-shop/TikTokShopService");
     await storage.updateIntegrationSettings({
       tiktokShopConfigured: false,
       tiktokShopId: null,
+      tiktokShopCipher: null,
       tiktokAppKey: null,
       tiktokAppSecretEncrypted: null,
       tiktokAccessTokenEncrypted: null,
       tiktokRefreshTokenEncrypted: null,
+      tiktokAccessTokenExpiresAt: null,
+      tiktokRefreshTokenExpiresAt: null,
+      tiktokOpenId: null,
+      tiktokSellerName: null,
+      tiktokSellerBaseRegion: null,
+      tiktokGrantedScopes: null,
+      tiktokImportRuns: [],
     });
     tiktokShopService.clearCache();
     res.json({ success: true, message: "TikTok Shop configuration removed" });

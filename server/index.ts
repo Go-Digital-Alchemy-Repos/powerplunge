@@ -180,6 +180,13 @@ app.use(requestLoggerMiddleware);
     console.error("[MIGRATION] Failed to run Meta marketing migration:", error);
   }
 
+  try {
+    const { addTikTokOAuthColumns } = await import("./src/migrations/addTikTokOAuthColumns");
+    await addTikTokOAuthColumns();
+  } catch (error) {
+    console.error("[MIGRATION] Failed to run TikTok OAuth migration:", error);
+  }
+
   // Ensure default CMS pages exist
   try {
     const { ensureCmsDefaults } = await import("./seed");
