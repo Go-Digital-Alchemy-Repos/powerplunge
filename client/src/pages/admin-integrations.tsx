@@ -1778,7 +1778,7 @@ export function TikTokShopConfigDialog({ open, onOpenChange, onSuccess }: {
   return (
     <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ShoppingBag className="w-5 h-5" />
@@ -1794,7 +1794,7 @@ export function TikTokShopConfigDialog({ open, onOpenChange, onSuccess }: {
             <Loader2 className="w-6 h-6 animate-spin mx-auto" />
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3 overflow-y-auto pr-1 flex-1 min-h-0">
             {tiktokSettings?.configured && (
               <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
                 <div className="flex items-center gap-2 text-green-500 text-sm font-medium">
@@ -2335,7 +2335,7 @@ export function TikTokShopConfigDialog({ open, onOpenChange, onSuccess }: {
           </div>
         )}
 
-        <DialogFooter className="flex gap-2">
+        <DialogFooter className="flex gap-2 pt-3 border-t shrink-0">
           {tiktokSettings?.configured && (
             <Button variant="destructive" onClick={handleRemove} disabled={removing} data-testid="button-remove-tiktok">
               {removing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
