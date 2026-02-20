@@ -85,7 +85,13 @@ HTTP-based smoke test that hits 22 key endpoints and checks status codes, auth e
 npx tsx scripts/smoke/apiSmoke.ts
 ```
 
-**Requires:** A running server on `http://localhost:5000`.
+**Requires:** A running server.
+
+Set `SMOKE_BASE_URL` when your server is not on `http://localhost:5000`:
+
+```bash
+SMOKE_BASE_URL=http://localhost:5001 npx tsx scripts/smoke/apiSmoke.ts
+```
 
 **Endpoint categories tested (22 checks):**
 
@@ -304,11 +310,12 @@ After extracting routes from `routes.ts` into modular router files, use these ve
 ### Quick Smoke Test
 
 ```bash
-curl -s http://localhost:5000/api/products | head -c 100
-curl -s http://localhost:5000/api/pages/home | head -c 100
-curl -s http://localhost:5000/api/site-settings | head -c 100
-curl -s http://localhost:5000/api/stripe/config | head -c 100
-curl -s http://localhost:5000/api/health/config | head -c 100
+BASE_URL="${BASE_URL:-http://localhost:5001}" # use 5000 in Replit
+curl -s "$BASE_URL/api/products" | head -c 100
+curl -s "$BASE_URL/api/pages/home" | head -c 100
+curl -s "$BASE_URL/api/site-settings" | head -c 100
+curl -s "$BASE_URL/api/stripe/config" | head -c 100
+curl -s "$BASE_URL/api/health/config" | head -c 100
 ```
 
 All should return valid JSON (200 OK). These are public endpoints that don't require authentication.
@@ -317,15 +324,17 @@ All should return valid JSON (200 OK). These are public endpoints that don't req
 
 ```bash
 TOKEN="your-admin-jwt-here"
-curl -s -H "Authorization: Bearer $TOKEN" http://localhost:5000/api/admin/me
-curl -s -H "Authorization: Bearer $TOKEN" http://localhost:5000/api/admin/dashboard
-curl -s -H "Authorization: Bearer $TOKEN" http://localhost:5000/api/admin/orders
+BASE_URL="${BASE_URL:-http://localhost:5001}" # use 5000 in Replit
+curl -s -H "Authorization: Bearer $TOKEN" "$BASE_URL/api/admin/me"
+curl -s -H "Authorization: Bearer $TOKEN" "$BASE_URL/api/admin/dashboard"
+curl -s -H "Authorization: Bearer $TOKEN" "$BASE_URL/api/admin/orders"
 ```
 
 ### Auth Enforcement Check
 
 ```bash
-curl -s http://localhost:5000/api/admin/orders
+BASE_URL="${BASE_URL:-http://localhost:5001}" # use 5000 in Replit
+curl -s "$BASE_URL/api/admin/orders"
 ```
 
 Should return `401 Unauthorized` — confirms `requireAdmin` middleware is active.
@@ -357,7 +366,7 @@ npx tsx scripts/doctor.ts && \
 npx tsx scripts/db/verifySchema.ts && \
 npx tsx scripts/cmsParityCheck.ts && \
 npx tsx scripts/smoke/cmsContentSafety.ts && \
-npx tsx scripts/smoke/apiSmoke.ts
+SMOKE_BASE_URL="${SMOKE_BASE_URL:-http://localhost:5001}" npx tsx scripts/smoke/apiSmoke.ts
 ```
 
 All scripts exit with code `0` on success and `1` on failure, so they can be chained with `&&` for a full health check.

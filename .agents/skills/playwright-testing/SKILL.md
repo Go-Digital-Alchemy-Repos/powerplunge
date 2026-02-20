@@ -9,7 +9,7 @@ description: Run Playwright end-to-end tests against the Power Plunge app, inclu
 
 ```bash
 npm run seed:dev-users -- --confirm   # seed test users (see Prerequisites)
-npm run dev                            # start server on :5000
+npm run dev                            # start server on runtime default port
 npm run test:e2e                       # run all Playwright tests
 ```
 
@@ -27,7 +27,7 @@ npm run test:e2e                       # run all Playwright tests
 
 | File | Purpose |
 |------|---------|
-| `playwright.config.ts` | Base config: chromium, 1280x720, baseURL localhost:5000. Projects: `setup` (auth) → `chromium` (tests) |
+| `playwright.config.ts` | Base config: chromium, 1280x720. Base URL defaults to `:5000` on Replit and `:5001` locally (overridable with `E2E_PORT` / `E2E_BASE_URL`). Projects: `setup` (auth) → `chromium` (tests) |
 | `e2e/auth.setup.ts` | Auth setup project — logs in as admin, customer, and affiliate, saves `storageState` to `e2e/.auth/` |
 | `e2e/global-setup.ts` | Auto-seeds test users before every Playwright run |
 | `e2e/fixtures.ts` | Extended `test` with `adminPage`, `customerPage`, and `affiliatePage` fixtures (pre-authenticated via storageState) |
@@ -72,7 +72,20 @@ The seed script **refuses to run** when `NODE_ENV=production`.
 npm run dev
 ```
 
-The server binds to `0.0.0.0:5000`. The Playwright config has `webServer.reuseExistingServer: true`, so it will use an already-running server.
+The server binds to `0.0.0.0` and defaults to:
+
+- Replit: `:5000`
+- Local/Codex: `:5001`
+
+The Playwright config has `webServer.reuseExistingServer: true`, so it will use an already-running server.
+
+### 3. Local/Codex auth mode
+
+For local/Codex E2E runs, enable dev auth so admin session routes are available:
+
+```bash
+ENABLE_DEV_AUTH=true npx playwright test
+```
 
 ## Auth Architecture
 

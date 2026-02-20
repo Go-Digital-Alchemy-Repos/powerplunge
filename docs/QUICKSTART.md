@@ -90,6 +90,21 @@ With this set, `/api/login` auto-logs you in as a dev user. This is useful for t
 npm run seed:dev-users
 ```
 
+## Run Playwright E2E (optional)
+
+For local/Codex runs, enable the dev auth stub so admin session routes work:
+
+```bash
+ENABLE_DEV_AUTH=true npx playwright test
+```
+
+Playwright base URL defaults:
+
+- Replit (`REPL_ID` set): `http://localhost:5000`
+- Local/Codex: `http://localhost:5001`
+
+You can override with `E2E_PORT` or `E2E_BASE_URL`.
+
 ## Available local scripts
 
 | Script | Description |
