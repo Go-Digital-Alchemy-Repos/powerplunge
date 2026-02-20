@@ -4,9 +4,7 @@ test.describe("Cart & Checkout @customer", () => {
   test("can add product to cart from detail page and reach checkout", async ({
     page,
   }) => {
-    const productsResp = await page.request.get(
-      "http://localhost:5000/api/products",
-    );
+    const productsResp = await page.request.get("/api/products");
     const products = await productsResp.json();
     const product = products.find((p: { urlSlug: string }) => p.urlSlug);
     test.skip(!product, "No products with a URL slug available");
@@ -26,9 +24,7 @@ test.describe("Cart & Checkout @customer", () => {
   test("checkout shows cart items with quantity controls", async ({
     page,
   }) => {
-    const productsResp = await page.request.get(
-      "http://localhost:5000/api/products",
-    );
+    const productsResp = await page.request.get("/api/products");
     const products = await productsResp.json();
     const product = products.find((p: { urlSlug: string }) => p.urlSlug);
     test.skip(!product, "No products with a URL slug available");
@@ -67,9 +63,7 @@ test.describe("Cart & Checkout @customer", () => {
   test("checkout page renders with email and phone inputs", async ({
     page,
   }) => {
-    const productsResp = await page.request.get(
-      "http://localhost:5000/api/products",
-    );
+    const productsResp = await page.request.get("/api/products");
     const products = await productsResp.json();
     const product = products.find((p: { urlSlug: string }) => p.urlSlug);
     test.skip(!product, "No products with a URL slug available");

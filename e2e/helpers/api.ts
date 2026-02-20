@@ -1,6 +1,8 @@
 import type { APIRequestContext } from "@playwright/test";
 
-const BASE = "http://localhost:5000";
+const defaultPort = process.env.REPL_ID ? 5000 : 5001;
+const e2ePort = Number(process.env.E2E_PORT ?? defaultPort);
+const BASE = process.env.E2E_BASE_URL ?? `http://localhost:${e2ePort}`;
 const ADMIN_EMAIL = "admin@test.com";
 const PASSWORD = process.env.SEED_TEST_PASSWORD || "testpass123";
 
