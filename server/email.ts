@@ -8,6 +8,12 @@ interface ShippingEmailResult {
 }
 
 function getBaseUrl(): string {
+  if (process.env.PUBLIC_SITE_URL) {
+    return process.env.PUBLIC_SITE_URL.replace(/\/+$/, "");
+  }
+  if (process.env.E2E_BASE_URL) {
+    return process.env.E2E_BASE_URL.replace(/\/+$/, "");
+  }
   if (process.env.REPLIT_DOMAINS) {
     return `https://${process.env.REPLIT_DOMAINS.split(",")[0]}`;
   }

@@ -76,6 +76,8 @@ import adminReportsRoutes from "./src/routes/admin/reports.routes";
 import adminAnalyticsRoutes from "./src/routes/admin/analytics.routes";
 import adminNotificationsRoutes from "./src/routes/admin/notifications.routes";
 import customerNotificationsRoutes from "./src/routes/customer/notifications.routes";
+import emailOutboxTestRoutes from "./src/routes/test/email-outbox.routes";
+import stripeWebhookTestRoutes from "./src/routes/test/stripe-webhook.routes";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -191,6 +193,11 @@ export async function registerRoutes(
   app.get("/api/health/config", (req, res) => {
     res.json({ cmsEnabled: true });
   });
+
+  if (process.env.NODE_ENV !== "production" && process.env.E2E_TEST_MODE === "true") {
+    app.use("/api/test/email-outbox", emailOutboxTestRoutes);
+    app.use("/api/test/stripe-webhook", stripeWebhookTestRoutes);
+  }
 
   if (process.env.NODE_ENV !== "production") {
     const { getTimingReport, resetTimings } = await import("./src/middleware/server-timing.middleware");

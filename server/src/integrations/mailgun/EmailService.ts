@@ -2,6 +2,7 @@ import Mailgun from "mailgun.js";
 import formData from "form-data";
 import { storage } from "../../../storage";
 import { decrypt } from "../../utils/encryption";
+import { addEmailToOutbox, isEmailOutboxEnabled } from "../../testing/email-outbox";
 
 export interface EmailOptions {
   to: string | string[];
@@ -66,6 +67,10 @@ class EmailService {
   }
 
   async sendEmail(options: EmailOptions): Promise<EmailResult> {
+    if (isEmailOutboxEnabled()) {
+      return this.sendOutboxEmail(options);
+    }
+
     const config = await this.getConfig();
 
     if (config.provider === "none") {
@@ -77,6 +82,22 @@ class EmailService {
     }
 
     return { success: false, error: "Unknown email provider" };
+  }
+
+  private async sendOutboxEmail(options: EmailOptions): Promise<EmailResult> {
+    const message = addEmailToOutbox({
+      to: options.to,
+      subject: options.subject,
+      html: options.html,
+      text: options.text,
+      from: options.from,
+      replyTo: options.replyTo,
+    });
+
+    return {
+      success: true,
+      messageId: message.id,
+    };
   }
 
   private async sendMailgunEmail(config: EmailProviderConfig, options: EmailOptions): Promise<EmailResult> {

@@ -10,6 +10,7 @@ import { validateEmail, validatePhone, validateAddress, validateZip, normalizeAd
 import { stripeService } from "../../integrations/stripe/StripeService";
 import { db } from "../../../db";
 import { eq, and, sql } from "drizzle-orm";
+import { isEmailOutboxEnabled } from "../../testing/email-outbox";
 
 const DEFAULT_STRIPE_TAX_CODE = "txcd_99999999";
 
@@ -1247,36 +1248,35 @@ export async function sendOrderNotification(orderId: string) {
       return;
     }
 
-    if (process.env.MAILGUN_API_KEY && process.env.MAILGUN_DOMAIN) {
-      const formData = (await import("form-data")).default;
-      const Mailgun = (await import("mailgun.js")).default;
-      const mailgun = new Mailgun(formData);
-      const mg = mailgun.client({ username: "api", key: process.env.MAILGUN_API_KEY });
-
-      const companyName = settings?.companyName || "Power Plunge";
-      let baseUrl = "https://your-domain.replit.app";
+    const companyName = settings?.companyName || "Power Plunge";
+    let baseUrl = (process.env.PUBLIC_SITE_URL || process.env.E2E_BASE_URL || "").replace(/\/+$/, "");
+    if (!baseUrl) {
       if (process.env.REPLIT_DOMAINS) {
         baseUrl = `https://${process.env.REPLIT_DOMAINS.split(",")[0]}`;
       } else if (process.env.REPLIT_DEV_DOMAIN) {
         baseUrl = `https://${process.env.REPLIT_DEV_DOMAIN}`;
       } else if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
         baseUrl = `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`;
+      } else {
+        baseUrl = "https://your-domain.replit.app";
       }
-      const adminOrderUrl = `${baseUrl}/admin/orders`;
-      const orderDate = new Date(order.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
-      const orderTime = new Date(order.createdAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
-      const formatCents = (cents: number) => `$${(cents / 100).toFixed(2)}`;
-      const isFreeOrder = !!order.isManualOrder && !order.stripePaymentIntentId;
-      const formatOrderTotal = isFreeOrder ? "$0.00" : formatCents(order.totalAmount);
+    }
 
-      const itemsHtml = items.map(item => `
-            <tr>
-              <td style="padding: 12px 16px; border-bottom: 1px solid #e5e7eb; color: #374151; font-size: 14px;">${item.productName}</td>
-              <td style="padding: 12px 16px; border-bottom: 1px solid #e5e7eb; text-align: center; color: #374151; font-size: 14px;">${item.quantity}</td>
-              <td style="padding: 12px 16px; border-bottom: 1px solid #e5e7eb; text-align: right; color: #111827; font-weight: 500; font-size: 14px;">${isFreeOrder ? "$0.00" : formatCents(item.unitPrice * item.quantity)}</td>
-            </tr>`).join("");
+    const adminOrderUrl = `${baseUrl}/admin/orders`;
+    const orderDate = new Date(order.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+    const orderTime = new Date(order.createdAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+    const formatCents = (cents: number) => `$${(cents / 100).toFixed(2)}`;
+    const isFreeOrder = !!order.isManualOrder && !order.stripePaymentIntentId;
+    const formatOrderTotal = isFreeOrder ? "$0.00" : formatCents(order.totalAmount);
 
-      const html = `
+    const itemsHtml = items.map(item => `
+          <tr>
+            <td style="padding: 12px 16px; border-bottom: 1px solid #e5e7eb; color: #374151; font-size: 14px;">${item.productName}</td>
+            <td style="padding: 12px 16px; border-bottom: 1px solid #e5e7eb; text-align: center; color: #374151; font-size: 14px;">${item.quantity}</td>
+            <td style="padding: 12px 16px; border-bottom: 1px solid #e5e7eb; text-align: right; color: #111827; font-weight: 500; font-size: 14px;">${isFreeOrder ? "$0.00" : formatCents(item.unitPrice * item.quantity)}</td>
+          </tr>`).join("");
+
+    const html = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -1364,14 +1364,31 @@ export async function sendOrderNotification(orderId: string) {
 </body>
 </html>`;
 
+    const subject = `New Order #${order.id.slice(0, 8).toUpperCase()} — ${formatOrderTotal} — ${customer?.name || "Unknown"}`;
+
+    if (!isEmailOutboxEnabled() && process.env.MAILGUN_API_KEY && process.env.MAILGUN_DOMAIN) {
+      const formData = (await import("form-data")).default;
+      const Mailgun = (await import("mailgun.js")).default;
+      const mailgun = new Mailgun(formData);
+      const mg = mailgun.client({ username: "api", key: process.env.MAILGUN_API_KEY });
       await mg.messages.create(process.env.MAILGUN_DOMAIN, {
         from: `${companyName} Orders <orders@${process.env.MAILGUN_DOMAIN}>`,
         to: recipients,
-        subject: `New Order #${order.id.slice(0, 8).toUpperCase()} — ${formatOrderTotal} — ${customer?.name || "Unknown"}`,
+        subject,
         html,
       });
 
       console.log(`Order notification email sent via Mailgun to: ${recipients.join(", ")}`);
+    } else if (isEmailOutboxEnabled()) {
+      const { emailService } = await import("../../integrations/mailgun/EmailService");
+      const result = await emailService.sendEmail({
+        to: recipients,
+        subject,
+        html,
+      });
+      if (!result.success) {
+        console.log(`Failed to send fulfillment notification email: ${result.error}`);
+      }
     } else {
       console.log("Mailgun not configured, skipping admin email notification");
       console.log(`Order ${orderId} notification would be sent to: ${recipients.join(", ")}`);
