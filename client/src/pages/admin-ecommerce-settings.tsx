@@ -1,6 +1,5 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -12,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAdmin } from "@/hooks/use-admin";
 import { CreditCard, ShoppingBag, Instagram, Send, Star, ExternalLink, CheckCircle2, XCircle, Link2, Youtube, Ghost, Tag, ArrowRight, Loader2, TestTube, AlertCircle, Save, Copy, Key, Users, Zap, Shield, Eye, EyeOff, CircleDot } from "lucide-react";
 import AdminNav from "@/components/admin/AdminNav";
+import { TikTokShopConfigDialog, MetaMarketingConfigDialog } from "@/pages/admin-integrations";
 
 interface StripeEnvStatus {
   configured: boolean;
@@ -62,10 +62,11 @@ function StatusBadge({ configured }: { configured?: boolean }) {
 }
 
 export default function AdminEcommerceSettings() {
-  const { role, hasFullAccess } = useAdmin();
+  const { role } = useAdmin();
   const { toast } = useToast();
-  const [, navigate] = useLocation();
   const [showStripeDialog, setShowStripeDialog] = useState(false);
+  const [showTikTokDialog, setShowTikTokDialog] = useState(false);
+  const [showMetaDialog, setShowMetaDialog] = useState(false);
   
   const { data: integrations, refetch: refetchIntegrations } = useQuery<IntegrationStatus>({
     queryKey: ["/api/admin/integrations"],
@@ -79,6 +80,30 @@ export default function AdminEcommerceSettings() {
   const { data: couponStats } = useQuery<any>({
     queryKey: ["/api/coupons/admin/analytics"],
   });
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const oauthStatus = params.get("tiktok_oauth");
+    if (!oauthStatus) return;
+
+    const reason = params.get("reason");
+    if (oauthStatus === "success") {
+      toast({ title: "TikTok authorization completed" });
+      setShowTikTokDialog(true);
+      refetchIntegrations();
+    } else {
+      toast({
+        title: reason ? `TikTok authorization failed: ${reason}` : "TikTok authorization failed",
+        variant: "destructive",
+      });
+      setShowTikTokDialog(true);
+    }
+
+    params.delete("tiktok_oauth");
+    params.delete("reason");
+    const query = params.toString();
+    window.history.replaceState({}, "", `${window.location.pathname}${query ? `?${query}` : ""}`);
+  }, [toast, refetchIntegrations]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -161,6 +186,25 @@ export default function AdminEcommerceSettings() {
               <CardDescription>Connect and sync your products across social platforms</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+              {/* Meta Catalog + CAPI */}
+              <div className="flex items-center justify-between py-2 border-b">
+                <div className="flex items-center gap-3">
+                  <CircleDot className="w-5 h-5" />
+                  <div>
+                    <p className="font-medium text-sm">Meta Catalog + CAPI</p>
+                    <StatusBadge configured={integrations?.metaMarketing} />
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowMetaDialog(true)}
+                  data-testid="button-configure-meta-marketing-ecommerce"
+                >
+                  Configure
+                </Button>
+              </div>
+
               {/* TikTok Shop */}
               <div className="flex items-center justify-between py-2 border-b">
                 <div className="flex items-center gap-3">
@@ -170,7 +214,14 @@ export default function AdminEcommerceSettings() {
                     <StatusBadge configured={integrations?.tiktokShop} />
                   </div>
                 </div>
-                <Button variant="ghost" size="sm">Configure</Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowTikTokDialog(true)}
+                  data-testid="button-configure-tiktok-ecommerce"
+                >
+                  Configure
+                </Button>
               </div>
 
               {/* Instagram Shop */}
@@ -237,6 +288,16 @@ export default function AdminEcommerceSettings() {
         </div>
       </div>
 
+      <TikTokShopConfigDialog
+        open={showTikTokDialog}
+        onOpenChange={setShowTikTokDialog}
+        onSuccess={() => refetchIntegrations()}
+      />
+      <MetaMarketingConfigDialog
+        open={showMetaDialog}
+        onOpenChange={setShowMetaDialog}
+        onSuccess={() => refetchIntegrations()}
+      />
       <StripeConfigDialog 
         open={showStripeDialog} 
         onOpenChange={setShowStripeDialog}

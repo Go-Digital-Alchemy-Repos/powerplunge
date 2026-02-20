@@ -96,7 +96,7 @@ interface InstagramShopSettings {
   configured: boolean;
   businessAccountId?: string;
   catalogId?: string;
-  hasAccessToken?: boolean;
+  hasMetaAccessToken?: boolean;
   updatedAt?: string;
 }
 
@@ -190,18 +190,15 @@ interface R2Settings {
 
 export default function AdminIntegrations() {
   const [, setLocation] = useLocation();
-  const { toast } = useToast();
   const { role, hasFullAccess, isLoading: adminLoading } = useAdmin();
   const [showMailgunDialog, setShowMailgunDialog] = useState(false);
   const [showR2Dialog, setShowR2Dialog] = useState(false);
   const [showOpenAIDialog, setShowOpenAIDialog] = useState(false);
-  const [showTikTokDialog, setShowTikTokDialog] = useState(false);
   const [showInstagramDialog, setShowInstagramDialog] = useState(false);
   const [showPinterestDialog, setShowPinterestDialog] = useState(false);
   const [showYouTubeDialog, setShowYouTubeDialog] = useState(false);
   const [showSnapchatDialog, setShowSnapchatDialog] = useState(false);
   const [showXDialog, setShowXDialog] = useState(false);
-  const [showMetaDialog, setShowMetaDialog] = useState(false);
   const [showMailchimpDialog, setShowMailchimpDialog] = useState(false);
   const [showGooglePlacesDialog, setShowGooglePlacesDialog] = useState(false);
   const [showTwilioDialog, setShowTwilioDialog] = useState(false);
@@ -218,30 +215,6 @@ export default function AdminIntegrations() {
       return res.json();
     },
   });
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const oauthStatus = params.get("tiktok_oauth");
-    if (!oauthStatus) return;
-
-    const reason = params.get("reason");
-    if (oauthStatus === "success") {
-      toast({ title: "TikTok authorization completed" });
-      setShowTikTokDialog(true);
-      refetchIntegrations();
-    } else {
-      toast({
-        title: reason ? `TikTok authorization failed: ${reason}` : "TikTok authorization failed",
-        variant: "destructive",
-      });
-      setShowTikTokDialog(true);
-    }
-
-    params.delete("tiktok_oauth");
-    params.delete("reason");
-    const query = params.toString();
-    window.history.replaceState({}, "", `${window.location.pathname}${query ? `?${query}` : ""}`);
-  }, [toast, refetchIntegrations]);
 
   if (!adminLoading && !hasFullAccess) {
     return (
@@ -362,69 +335,6 @@ export default function AdminIntegrations() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <ShoppingBag className="w-5 h-5 text-primary" />
-                TikTok Shop
-              </CardTitle>
-              <CardDescription>
-                Connect TikTok Shop API credentials, authorize shops, and verify token health.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <StatusBadge configured={integrations?.tiktokShop} />
-                <Button
-                  variant="outline"
-                  onClick={() => setShowTikTokDialog(true)}
-                  data-testid="button-configure-tiktok"
-                >
-                  Configure
-                </Button>
-              </div>
-              <div className="mt-4 text-xs text-muted-foreground">
-                <a
-                  href="https://partner.tiktokshop.com/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline inline-flex items-center gap-1"
-                >
-                  Open TikTok Shop Partner Center <ExternalLink className="w-3 h-3" />
-                </a>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Link2 className="w-5 h-5 text-primary" />
-                Meta Catalog + CAPI
-              </CardTitle>
-              <CardDescription>
-                Sync Meta catalog feed and send server-side conversions (CAPI)
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <StatusBadge configured={integrations?.metaMarketing} />
-                <Button
-                  variant="outline"
-                  onClick={() => setShowMetaDialog(true)}
-                  data-testid="button-configure-meta-marketing"
-                >
-                  Configure
-                </Button>
-              </div>
-              <div className="mt-4 text-xs text-muted-foreground">
-                <a href="https://business.facebook.com/events_manager2/list/pixel/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1">
-                  Open Meta Events Manager <ExternalLink className="w-3 h-3" />
-                </a>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
                 <Mail className="w-5 h-5 text-primary" />
                 Mailchimp
               </CardTitle>
@@ -529,12 +439,6 @@ export default function AdminIntegrations() {
         onSuccess={() => refetchIntegrations()}
       />
 
-      <TikTokShopConfigDialog
-        open={showTikTokDialog}
-        onOpenChange={setShowTikTokDialog}
-        onSuccess={() => refetchIntegrations()}
-      />
-
       <InstagramShopConfigDialog
         open={showInstagramDialog}
         onOpenChange={setShowInstagramDialog}
@@ -559,11 +463,6 @@ export default function AdminIntegrations() {
       <XShoppingConfigDialog
         open={showXDialog}
         onOpenChange={setShowXDialog}
-        onSuccess={() => refetchIntegrations()}
-      />
-      <MetaMarketingConfigDialog
-        open={showMetaDialog}
-        onOpenChange={setShowMetaDialog}
         onSuccess={() => refetchIntegrations()}
       />
       <MailchimpConfigDialog
@@ -1318,7 +1217,7 @@ function getShopDisplayName(shop: TikTokAuthorizedShopOption): string {
   return shop.name || shop.shop_name || shop.code || shop.id;
 }
 
-function TikTokShopConfigDialog({ open, onOpenChange, onSuccess }: {
+export function TikTokShopConfigDialog({ open, onOpenChange, onSuccess }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
@@ -2542,7 +2441,6 @@ function InstagramShopConfigDialog({ open, onOpenChange, onSuccess }: {
   const [formData, setFormData] = useState({
     businessAccountId: "",
     catalogId: "",
-    accessToken: "",
   });
   const [saving, setSaving] = useState(false);
   const [verifying, setVerifying] = useState(false);
@@ -2563,7 +2461,6 @@ function InstagramShopConfigDialog({ open, onOpenChange, onSuccess }: {
       setFormData({
         businessAccountId: instagramSettings.businessAccountId || "",
         catalogId: instagramSettings.catalogId || "",
-        accessToken: "",
       });
     }
   }, [instagramSettings]);
@@ -2683,19 +2580,19 @@ function InstagramShopConfigDialog({ open, onOpenChange, onSuccess }: {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="instagramAccessToken">Access Token</Label>
-              <SecretInput
-                id="instagramAccessToken"
-                value={formData.accessToken}
-                onChange={(e) => setFormData({ ...formData, accessToken: e.target.value })}
-                hasSavedValue={instagramSettings?.hasAccessToken}
-                placeholder="Enter your Access Token"
-                data-testid="input-instagram-access-token"
-              />
-              <p className="text-xs text-muted-foreground">
-                Requires a long-lived token with Instagram Shopping permissions
+            <div className="p-3 bg-muted/50 rounded-lg text-xs space-y-1">
+              <p className="font-medium text-sm">Credential Source</p>
+              <p>
+                Instagram uses your Meta Marketing access token.
               </p>
+              <p>
+                Meta access token: {instagramSettings?.hasMetaAccessToken ? "Configured" : "Missing"}
+              </p>
+              {!instagramSettings?.hasMetaAccessToken && (
+                <p className="text-amber-600">
+                  Configure Meta Marketing first, then verify Instagram.
+                </p>
+              )}
             </div>
 
             {instagramSettings?.configured && (
@@ -3820,7 +3717,7 @@ function XShoppingConfigDialog({ open, onOpenChange, onSuccess }: {
   );
 }
 
-function MetaMarketingConfigDialog({ open, onOpenChange, onSuccess }: {
+export function MetaMarketingConfigDialog({ open, onOpenChange, onSuccess }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;

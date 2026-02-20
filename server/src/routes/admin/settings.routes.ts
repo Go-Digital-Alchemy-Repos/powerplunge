@@ -13,6 +13,12 @@ integrationsStatusRoutes.get("/", async (req: any, res) => {
   const intSettings = await storage.getIntegrationSettings();
   const hasMetaEnvToken = !!(process.env.META_SYSTEM_USER_TOKEN || process.env.META_ACCESS_TOKEN);
   const hasMetaEnvIdentity = !!(process.env.META_PIXEL_ID || process.env.META_DATASET_ID || process.env.META_CATALOG_ID || process.env.META_PRODUCT_FEED_ID);
+  const hasMetaTokenForInstagram = !!(intSettings?.metaAccessTokenEncrypted || hasMetaEnvToken);
+  const instagramConfigured = !!(
+    intSettings?.instagramShopConfigured &&
+    intSettings?.instagramBusinessAccountId &&
+    hasMetaTokenForInstagram
+  );
   
   const emailSettings = await storage.getEmailSettings();
   
@@ -39,7 +45,7 @@ integrationsStatusRoutes.get("/", async (req: any, res) => {
     cloudflareR2: cloudflareR2Configured,
     openai: intSettings?.openaiConfigured || false,
     tiktokShop: intSettings?.tiktokShopConfigured || false,
-    instagramShop: intSettings?.instagramShopConfigured || false,
+    instagramShop: instagramConfigured,
     pinterestShopping: intSettings?.pinterestShoppingConfigured || false,
     youtubeShopping: intSettings?.youtubeShoppingConfigured || false,
     snapchatShopping: intSettings?.snapchatShoppingConfigured || false,

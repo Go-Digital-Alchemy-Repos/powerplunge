@@ -303,7 +303,7 @@ router.get("/settings/tiktok-shop/oauth/callback", async (req: Request, res: Res
     const { getBaseUrl } = await import("../../utils/base-url");
     const code = String(req.query?.code || "").trim();
     const error = String(req.query?.error || "").trim();
-    const redirectBase = `${getBaseUrl(req)}/admin/integrations`;
+    const redirectBase = `${getBaseUrl(req)}/admin/ecommerce/settings`;
 
     if (error) {
       return res.redirect(`${redirectBase}?tiktok_oauth=error&reason=${encodeURIComponent(error)}`);
@@ -320,7 +320,7 @@ router.get("/settings/tiktok-shop/oauth/callback", async (req: Request, res: Res
 
     return res.redirect(`${redirectBase}?tiktok_oauth=success`);
   } catch (error: any) {
-    return res.redirect(`/admin/integrations?tiktok_oauth=error&reason=${encodeURIComponent(error.message || "OAuth callback failed")}`);
+    return res.redirect(`/admin/ecommerce/settings?tiktok_oauth=error&reason=${encodeURIComponent(error.message || "OAuth callback failed")}`);
   }
 });
 
@@ -355,11 +355,19 @@ router.delete("/settings/tiktok-shop", async (req: Request, res: Response) => {
 router.get("/settings/instagram-shop", async (req: Request, res: Response) => {
   try {
     const integrationSettings = await storage.getIntegrationSettings();
+    const { getMetaEnvConfig } = await import("../../integrations/meta/meta-env");
+    const metaEnv = getMetaEnvConfig();
+    const hasMetaAccessToken = !!(integrationSettings?.metaAccessTokenEncrypted || metaEnv.accessToken);
+    const configured = !!(
+      integrationSettings?.instagramShopConfigured &&
+      integrationSettings?.instagramBusinessAccountId &&
+      hasMetaAccessToken
+    );
     res.json({
-      configured: integrationSettings?.instagramShopConfigured || false,
+      configured,
       businessAccountId: integrationSettings?.instagramBusinessAccountId || null,
       catalogId: integrationSettings?.instagramCatalogId || null,
-      hasAccessToken: !!integrationSettings?.instagramAccessTokenEncrypted,
+      hasMetaAccessToken,
       updatedAt: integrationSettings?.updatedAt || null,
     });
   } catch (error) {
@@ -369,24 +377,30 @@ router.get("/settings/instagram-shop", async (req: Request, res: Response) => {
 
 router.patch("/settings/instagram-shop", async (req: Request, res: Response) => {
   try {
-    const { encrypt } = await import("../../utils/encryption");
+    const { getMetaEnvConfig } = await import("../../integrations/meta/meta-env");
     const { instagramShopService } = await import("../../integrations/instagram-shop/InstagramShopService");
-    const { businessAccountId, catalogId, accessToken } = req.body;
+    const { businessAccountId, catalogId } = req.body;
 
     const existingSettings = await storage.getIntegrationSettings();
     const isUpdate = existingSettings?.instagramShopConfigured;
+    const metaEnv = getMetaEnvConfig();
+    const hasMetaAccessToken = !!(existingSettings?.metaAccessTokenEncrypted || metaEnv.accessToken);
 
     if (!isUpdate && !businessAccountId) {
       return res.status(400).json({ message: "Business Account ID is required" });
     }
+    if (!hasMetaAccessToken) {
+      return res.status(400).json({ message: "Configure Meta Marketing access token first" });
+    }
 
     const updateData: any = {
       instagramShopConfigured: true,
+      // Instagram uses shared Meta credentials.
+      instagramAccessTokenEncrypted: null,
     };
 
     if (businessAccountId) updateData.instagramBusinessAccountId = businessAccountId;
     if (catalogId) updateData.instagramCatalogId = catalogId;
-    if (accessToken) updateData.instagramAccessTokenEncrypted = encrypt(accessToken);
 
     await storage.updateIntegrationSettings(updateData);
     instagramShopService.clearCache();

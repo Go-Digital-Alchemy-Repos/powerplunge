@@ -1,17 +1,26 @@
 import { storage } from "../../../storage";
 import { decrypt } from "../../utils/encryption";
+import { getMetaEnvConfig } from "../meta/meta-env";
 
 export interface InstagramShopConfig {
   configured: boolean;
   businessAccountId: string | null;
   catalogId: string | null;
-  hasAccessToken: boolean;
+  hasMetaAccessToken: boolean;
 }
 
 class InstagramShopService {
   private configCache: InstagramShopConfig | null = null;
   private lastConfigFetch: number = 0;
   private CACHE_TTL = 60000;
+
+  private resolveMetaAccessToken(settings: Awaited<ReturnType<typeof storage.getIntegrationSettings>>): string | null {
+    const metaEnv = getMetaEnvConfig();
+    const metaToken = settings?.metaAccessTokenEncrypted
+      ? decrypt(settings.metaAccessTokenEncrypted)
+      : (metaEnv.accessToken || null);
+    return metaToken || null;
+  }
 
   async getConfig(): Promise<InstagramShopConfig> {
     const now = Date.now();
@@ -20,11 +29,16 @@ class InstagramShopService {
     }
 
     const settings = await storage.getIntegrationSettings();
+    const accessToken = this.resolveMetaAccessToken(settings);
     this.configCache = {
-      configured: settings?.instagramShopConfigured || false,
+      configured: !!(
+        settings?.instagramShopConfigured &&
+        settings?.instagramBusinessAccountId &&
+        accessToken
+      ),
       businessAccountId: settings?.instagramBusinessAccountId || null,
       catalogId: settings?.instagramCatalogId || null,
-      hasAccessToken: !!settings?.instagramAccessTokenEncrypted,
+      hasMetaAccessToken: !!accessToken,
     };
     this.lastConfigFetch = now;
     return this.configCache;
@@ -41,13 +55,13 @@ class InstagramShopService {
   async verify(): Promise<{ success: boolean; error?: string; accountName?: string }> {
     try {
       const settings = await storage.getIntegrationSettings();
-      if (!settings?.instagramShopConfigured || !settings?.instagramAccessTokenEncrypted) {
+      if (!settings?.instagramShopConfigured) {
         return { success: false, error: "Instagram Shop is not configured. Please provide credentials first." };
       }
 
-      const accessToken = decrypt(settings.instagramAccessTokenEncrypted);
+      const accessToken = this.resolveMetaAccessToken(settings);
       if (!accessToken) {
-        return { success: false, error: "Failed to decrypt access token" };
+        return { success: false, error: "Meta Marketing access token is missing. Configure Meta Marketing first." };
       }
 
       const accountId = settings.instagramBusinessAccountId;
