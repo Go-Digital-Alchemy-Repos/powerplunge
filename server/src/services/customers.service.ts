@@ -2,7 +2,7 @@ import { customersRepository, type CustomerWithStats, type CustomerWithOrders } 
 import { NotFoundError, BadRequestError, ConflictError } from "../errors";
 import type { InsertCustomer } from "@shared/schema";
 import { db } from "../../db";
-import { customers, supportTickets, customerMagicLinkTokens, customerNotes, affiliates, couponRedemptions, upsellEvents, abandonedCarts, failedPayments, notifications, orders, orderItems, affiliateReferrals, refunds, shipments, emailEvents, inventoryLedger, postPurchaseOffers, vipActivityLog, recoveryEvents, customerTags, vipCustomers } from "@shared/schema";
+import { customers, supportTickets, customerMagicLinkTokens, customerNotes, affiliates, couponRedemptions, upsellEvents, abandonedCarts, failedPayments, notifications, orders, orderItems, affiliateReferrals, refunds, shipments, emailEvents, inventoryLedger, postPurchaseOffers, vipActivityLog, recoveryEvents, customerTags, vipCustomers, metaCapiEvents } from "@shared/schema";
 import { eq, and, inArray } from "drizzle-orm";
 
 class CustomersService {
@@ -65,6 +65,16 @@ class CustomersService {
     await db.transaction(async (tx) => {
       if (orderIds.length > 0) {
         await tx.delete(orderItems).where(inArray(orderItems.orderId, orderIds));
+        const relatedRefunds = await tx
+          .select({ id: refunds.id })
+          .from(refunds)
+          .where(inArray(refunds.orderId, orderIds));
+        const refundIds = relatedRefunds.map((r) => r.id);
+
+        await tx.delete(metaCapiEvents).where(inArray(metaCapiEvents.orderId, orderIds));
+        if (refundIds.length > 0) {
+          await tx.delete(metaCapiEvents).where(inArray(metaCapiEvents.refundId, refundIds));
+        }
         await tx.delete(refunds).where(inArray(refunds.orderId, orderIds));
         await tx.delete(affiliateReferrals).where(inArray(affiliateReferrals.orderId, orderIds));
         await tx.delete(shipments).where(inArray(shipments.orderId, orderIds));
@@ -72,6 +82,10 @@ class CustomersService {
         await tx.delete(inventoryLedger).where(inArray(inventoryLedger.orderId, orderIds));
         await tx.delete(postPurchaseOffers).where(inArray(postPurchaseOffers.orderId, orderIds));
         await tx.delete(recoveryEvents).where(inArray(recoveryEvents.orderId, orderIds));
+        await tx.delete(supportTickets).where(inArray(supportTickets.orderId, orderIds));
+        await tx.delete(vipActivityLog).where(inArray(vipActivityLog.orderId, orderIds));
+        await tx.delete(abandonedCarts).where(inArray(abandonedCarts.recoveredOrderId, orderIds));
+        await tx.delete(failedPayments).where(inArray(failedPayments.orderId, orderIds));
         await tx.delete(couponRedemptions).where(inArray(couponRedemptions.orderId, orderIds));
         await tx.delete(upsellEvents).where(inArray(upsellEvents.orderId, orderIds));
         await tx.delete(orders).where(eq(orders.customerId, customerId));
