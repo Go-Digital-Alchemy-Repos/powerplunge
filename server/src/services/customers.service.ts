@@ -2,7 +2,7 @@ import { customersRepository, type CustomerWithStats, type CustomerWithOrders } 
 import { NotFoundError, BadRequestError, ConflictError } from "../errors";
 import type { InsertCustomer } from "@shared/schema";
 import { db } from "../../db";
-import { customers, supportTickets, customerMagicLinkTokens, customerNotes, affiliates, couponRedemptions, upsellEvents, abandonedCarts, failedPayments, notifications, orders, orderItems, affiliateReferrals, refunds, shipments, emailEvents, inventoryLedger, postPurchaseOffers, vipActivityLog, recoveryEvents, customerTags, vipCustomers, metaCapiEvents } from "@shared/schema";
+import { customers, supportTickets, customerMagicLinkTokens, customerNotes, affiliates, affiliateAgreements, affiliateClicks, affiliateReferrals, affiliatePayouts, affiliatePayoutAccounts, affiliateInvites, affiliateInviteUsages, couponRedemptions, upsellEvents, abandonedCarts, failedPayments, notifications, orders, orderItems, refunds, shipments, emailEvents, inventoryLedger, postPurchaseOffers, vipActivityLog, recoveryEvents, customerTags, vipCustomers, metaCapiEvents } from "@shared/schema";
 import { eq, and, inArray } from "drizzle-orm";
 
 class CustomersService {
@@ -103,6 +103,16 @@ class CustomersService {
       await tx.delete(notifications).where(
         and(eq(notifications.recipientType, "customer"), eq(notifications.recipientId, customerId))
       );
+      const [affiliate] = await tx.select({ id: affiliates.id }).from(affiliates).where(eq(affiliates.customerId, customerId));
+      if (affiliate) {
+        await tx.delete(affiliateAgreements).where(eq(affiliateAgreements.affiliateId, affiliate.id));
+        await tx.delete(affiliateClicks).where(eq(affiliateClicks.affiliateId, affiliate.id));
+        await tx.delete(affiliateReferrals).where(eq(affiliateReferrals.affiliateId, affiliate.id));
+        await tx.delete(affiliatePayouts).where(eq(affiliatePayouts.affiliateId, affiliate.id));
+        await tx.delete(affiliatePayoutAccounts).where(eq(affiliatePayoutAccounts.affiliateId, affiliate.id));
+        await tx.delete(affiliateInviteUsages).where(eq(affiliateInviteUsages.affiliateId, affiliate.id));
+        await tx.update(affiliateInvites).set({ usedByAffiliateId: null }).where(eq(affiliateInvites.usedByAffiliateId, affiliate.id));
+      }
       await tx.delete(affiliates).where(eq(affiliates.customerId, customerId));
       await tx.delete(customers).where(eq(customers.id, customerId));
     });
