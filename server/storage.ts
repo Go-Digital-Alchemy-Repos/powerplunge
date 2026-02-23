@@ -471,7 +471,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getActiveProducts(): Promise<Product[]> {
-    return db.select().from(products).where(eq(products.active, true));
+    return db.select().from(products).where(and(eq(products.active, true), eq(products.status, "published")));
   }
 
   async getProduct(id: string): Promise<Product | undefined> {
