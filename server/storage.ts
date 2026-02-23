@@ -595,6 +595,7 @@ export class DatabaseStorage implements IStorage {
       await tx.execute(sql`UPDATE recovery_events SET order_id = NULL WHERE order_id = ANY(${idsArray})`);
       await tx.execute(sql`UPDATE support_tickets SET order_id = NULL WHERE order_id = ANY(${idsArray})`);
       await tx.execute(sql`UPDATE abandoned_carts SET recovered_order_id = NULL WHERE recovered_order_id = ANY(${idsArray})`);
+      await tx.execute(sql`DELETE FROM meta_capi_events WHERE order_id = ANY(${idsArray})`);
       const result = await tx.delete(orders).where(inArray(orders.id, ids)).returning();
       return result.length;
     });
