@@ -4,6 +4,7 @@ logRuntimeOnce();
 
 import { enforceEnv } from "./src/config/env-validation";
 import express, { type Request, Response, NextFunction } from "express";
+import session from "express-session";
 import compression from "compression";
 import cookieParser from "cookie-parser";
 import { registerRoutes } from "./routes";
@@ -92,6 +93,14 @@ app.use(
 
 app.use(express.urlencoded({ extended: false, limit: "1mb" }));
 app.use(cookieParser());
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "local-dev-secret",
+    resave: false,
+    saveUninitialized: false,
+    cookie: { secure: false, httpOnly: true, sameSite: "lax" },
+  })
+);
 
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
