@@ -36,6 +36,12 @@ interface Order {
   id: string;
   status: string;
   totalAmount: number;
+  subtotalAmount: number | null;
+  taxAmount: number | null;
+  affiliateDiscountAmount: number | null;
+  couponDiscountAmount: number | null;
+  couponCode: string | null;
+  affiliateCode: string | null;
   createdAt: string;
   isManualOrder?: boolean;
   stripePaymentIntentId?: string | null;
@@ -680,11 +686,45 @@ export default function AdminOrders() {
                       ))}
                     </div>
 
-                    <div className="flex justify-between pt-4 border-t border-border">
-                      <p className="font-semibold">Total</p>
-                      <p className="font-display font-bold text-xl text-primary" data-testid="text-order-total">
-                        {formatOrderPrice(currentOrder)}
-                      </p>
+                    <div className="space-y-2 pt-4 border-t border-border">
+                      {currentOrder.subtotalAmount != null && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Subtotal</span>
+                          <span data-testid="text-order-subtotal">
+                            {wasPaymentBypassed(currentOrder) ? "$0.00" : `$${(currentOrder.subtotalAmount / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                          </span>
+                        </div>
+                      )}
+                      {(currentOrder.affiliateDiscountAmount ?? 0) > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Affiliate Discount{currentOrder.affiliateCode ? ` (${currentOrder.affiliateCode})` : ""}</span>
+                          <span className="text-green-500" data-testid="text-order-affiliate-discount">
+                            -{wasPaymentBypassed(currentOrder) ? "$0.00" : `$${(currentOrder.affiliateDiscountAmount! / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                          </span>
+                        </div>
+                      )}
+                      {(currentOrder.couponDiscountAmount ?? 0) > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Coupon{currentOrder.couponCode ? ` (${currentOrder.couponCode})` : ""}</span>
+                          <span className="text-green-500" data-testid="text-order-coupon-discount">
+                            -{wasPaymentBypassed(currentOrder) ? "$0.00" : `$${(currentOrder.couponDiscountAmount! / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                          </span>
+                        </div>
+                      )}
+                      {(currentOrder.taxAmount ?? 0) > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Tax</span>
+                          <span data-testid="text-order-tax">
+                            {wasPaymentBypassed(currentOrder) ? "$0.00" : `$${(currentOrder.taxAmount! / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex justify-between pt-2 border-t border-border">
+                        <p className="font-semibold">Total</p>
+                        <p className="font-display font-bold text-xl text-primary" data-testid="text-order-total">
+                          {formatOrderPrice(currentOrder)}
+                        </p>
+                      </div>
                     </div>
 
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
