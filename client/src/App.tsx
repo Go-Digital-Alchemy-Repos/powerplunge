@@ -52,6 +52,7 @@ const OrderStatusPage = lazyRetry(() => import("@/pages/order-status"));
 const LegalPage = lazyRetry(() => import("@/pages/legal-page"));
 const ContactPage = lazyRetry(() => import("@/pages/contact"));
 const AffiliateAgreementPage = lazyRetry(() => import("@/pages/affiliate-agreement"));
+const AffiliateInfoPage = lazyRetry(() => import("@/pages/affiliate-info"));
 const SmsConsentPage = lazyRetry(() => import("@/pages/sms-consent"));
 
 const AdminSetup = lazyRetry(() => import("@/pages/admin-setup"));
@@ -178,6 +179,7 @@ function Router() {
         <Route path="/terms-and-conditions" component={LegalPage} />
         <Route path="/contact" component={ContactPage} />
         <Route path="/affiliate-agreement" component={AffiliateAgreementPage} />
+        <Route path="/affiliate-info" component={AffiliateInfoPage} />
         <Route path="/sms-consent" component={SmsConsentPage} />
         <Route path="/page/:slug" component={PageView} />
         <Route path="/admin" component={AdminRedirect} />
