@@ -31,12 +31,12 @@ const STEPS = [
   {
     icon: UserPlus,
     title: "Create Your Account",
-    description: "Enter your name and email to set up your affiliate account. Quick and easy — takes about a minute.",
+    description: "Enter your name and email to set up your affiliate account.",
   },
   {
     icon: FileText,
     title: "Review & Accept Agreement",
-    description: "Read through the affiliate terms and sign with your name. No surprises — just straightforward guidelines.",
+    description: "Read through the affiliate terms and sign with your name.",
   },
   {
     icon: CreditCard,
