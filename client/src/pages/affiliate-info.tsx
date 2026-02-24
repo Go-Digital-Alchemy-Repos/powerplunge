@@ -1,10 +1,9 @@
 import { useEffect } from "react";
-import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useBranding } from "@/hooks/use-branding";
 import {
   Mail, UserPlus, FileText, CreditCard, Share2,
-  ChevronDown, ArrowRight, DollarSign,
+  ChevronDown, DollarSign,
   Link2, Tag, Globe, Loader2, QrCode,
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
@@ -268,24 +267,6 @@ export default function AffiliateInfoPage() {
           ))}
         </div>
 
-        <div
-          className="rounded-xl border border-primary/30 bg-primary/5 p-5 text-center"
-          data-testid="section-cta"
-        >
-          <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
-            Ready to get started? If you've received an invite link, tap it to begin.
-            If you haven't been invited yet, reach out and ask about joining!
-          </p>
-          <Link href="/become-affiliate">
-            <span
-              className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors cursor-pointer"
-              data-testid="link-signup"
-            >
-              Go to Sign Up
-              <ArrowRight className="w-4 h-4" />
-            </span>
-          </Link>
-        </div>
 
         <p
           className="text-center text-xs text-muted-foreground/60 mt-8"
