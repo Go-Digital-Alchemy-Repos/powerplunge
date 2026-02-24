@@ -603,4 +603,31 @@ router.post("/verify-phone", smsVerificationLimiter, async (req: Request, res: R
   }
 });
 
+router.get("/program-info", async (_req: Request, res: Response) => {
+  try {
+    const settings = await storage.getAffiliateSettings();
+    if (!settings || !settings.programActive) {
+      return res.json({
+        programActive: false,
+        commissionType: "PERCENT",
+        commissionValue: 0,
+        discountType: "PERCENT",
+        discountValue: 0,
+        cookieDuration: 30,
+      });
+    }
+    res.json({
+      programActive: true,
+      commissionType: settings.defaultCommissionType,
+      commissionValue: settings.defaultCommissionValue,
+      discountType: settings.defaultDiscountType,
+      discountValue: settings.defaultDiscountValue,
+      cookieDuration: settings.cookieDuration,
+    });
+  } catch (error: any) {
+    console.error("Program info error:", error);
+    res.status(500).json({ message: "Unable to load program information." });
+  }
+});
+
 export default router;
