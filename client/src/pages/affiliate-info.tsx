@@ -4,8 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useBranding } from "@/hooks/use-branding";
 import {
   Mail, UserPlus, FileText, CreditCard, Share2,
-  ChevronDown, ArrowRight, CheckCircle2, DollarSign,
-  Link2, Tag, BarChart3, Globe, Loader2,
+  ChevronDown, ArrowRight, DollarSign,
+  Link2, Tag, Globe, Loader2,
 } from "lucide-react";
 
 interface ProgramInfo {
@@ -143,36 +143,14 @@ export default function AffiliateInfoPage() {
                   </div>
                 </div>
               )}
-              <div className="flex items-start gap-3" data-testid="text-benefit-tracking">
-                <BarChart3 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                <div>
-                  <span className="text-sm font-medium text-foreground">
-                    Track your earnings in real time
-                  </span>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Your own dashboard to see clicks, sales, and payouts
-                  </p>
-                </div>
-              </div>
               <div className="flex items-start gap-3" data-testid="text-benefit-payout">
                 <CreditCard className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
                 <div>
                   <span className="text-sm font-medium text-foreground">
-                    Get paid directly to your bank
+                    Payments come directly to your bank
                   </span>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     Secure payouts through Stripe
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3" data-testid="text-benefit-easy">
-                <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                <div>
-                  <span className="text-sm font-medium text-foreground">
-                    No inventory, no shipping
-                  </span>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Just share your link — we handle the rest
                   </p>
                 </div>
               </div>
