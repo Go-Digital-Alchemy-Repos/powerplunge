@@ -166,60 +166,51 @@ export default function AffiliateInfoPage() {
           <h2 className="font-semibold text-foreground text-base mb-4" data-testid="text-sharing-title">
             How You Share
           </h2>
-          <div className="space-y-5">
+          <div className="space-y-4">
             <div data-testid="text-sharing-link">
               <div className="flex items-center gap-2 mb-2">
-                <Globe className="w-5 h-5 text-primary flex-shrink-0" />
+                <Globe className="w-4 h-4 text-primary flex-shrink-0" />
                 <span className="text-sm font-medium text-foreground">
-                  Your Personal Referral Link
+                  Your Referral Link
                 </span>
               </div>
-              <p className="text-xs text-muted-foreground mb-2.5">
-                Share your unique URL anywhere — text, social media, email. Visitors are tracked as your referral for {cookieDays} days.
-              </p>
               <div
                 className="rounded-lg bg-background/80 border border-primary/20 px-3 py-2.5 font-mono text-xs text-primary select-all"
                 data-testid="example-link"
               >
-                {window.location.origin}/?ref=YOURNAME
+                {window.location.origin}/?ref=MIKE
               </div>
             </div>
 
             <div data-testid="text-sharing-code">
               <div className="flex items-center gap-2 mb-2">
-                <Link2 className="w-5 h-5 text-primary flex-shrink-0" />
+                <Link2 className="w-4 h-4 text-primary flex-shrink-0" />
                 <span className="text-sm font-medium text-foreground">
-                  Your Unique Referral Code
+                  Your Referral Code
                 </span>
               </div>
-              <p className="text-xs text-muted-foreground mb-2.5">
-                A short code customers can enter at checkout. Great for verbal referrals or anywhere a link isn't practical.
-              </p>
               <div
                 className="rounded-lg bg-background/80 border border-primary/20 px-3 py-2.5 font-mono text-sm text-primary tracking-wider text-center font-bold select-all"
                 data-testid="example-code"
               >
-                YOURNAME
+                MIKE
               </div>
             </div>
 
             <div data-testid="text-sharing-qr">
               <div className="flex items-center gap-2 mb-2">
-                <QrCode className="w-5 h-5 text-primary flex-shrink-0" />
+                <QrCode className="w-4 h-4 text-primary flex-shrink-0" />
                 <span className="text-sm font-medium text-foreground">
                   Your QR Code
                 </span>
               </div>
-              <p className="text-xs text-muted-foreground mb-2.5">
-                A scannable QR code linked to your referral URL. Perfect for flyers, business cards, or in-person events.
-              </p>
               <div className="flex justify-center">
                 <div
                   className="rounded-lg bg-white p-3 inline-block"
                   data-testid="example-qr"
                 >
                   <QRCodeSVG
-                    value={`${window.location.origin}/?ref=YOURNAME`}
+                    value={`${window.location.origin}/?ref=MIKE`}
                     size={120}
                     level="M"
                     bgColor="#ffffff"
