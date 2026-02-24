@@ -166,52 +166,55 @@ export default function AffiliateInfoPage() {
           <h2 className="font-semibold text-foreground text-base mb-4" data-testid="text-sharing-title">
             How You Share
           </h2>
-          <div className="space-y-4">
-            <div data-testid="text-sharing-link">
-              <div className="flex items-center gap-2 mb-2">
-                <Globe className="w-4 h-4 text-primary flex-shrink-0" />
-                <span className="text-sm font-medium text-foreground">
-                  Your Referral Link
+          <div className="grid grid-cols-3 gap-3">
+            <div data-testid="text-sharing-link" className="flex flex-col">
+              <div className="flex items-center gap-1.5 mb-2">
+                <Globe className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                <span className="text-xs font-medium text-foreground">
+                  Referral Link
                 </span>
               </div>
               <div
-                className="rounded-lg bg-background/80 border border-primary/20 px-3 py-2.5 font-mono text-xs text-primary select-all"
+                className="rounded-lg bg-background/80 border border-primary/20 px-2 py-2 font-mono text-[10px] text-primary leading-tight break-all"
                 data-testid="example-link"
               >
-                {window.location.origin}/?ref=MIKE
+                {(() => {
+                  const url = `${window.location.origin}/?ref=MIKE`;
+                  return url.length > 30 ? url.slice(0, 30) + "..." : url;
+                })()}
               </div>
             </div>
 
-            <div data-testid="text-sharing-code">
-              <div className="flex items-center gap-2 mb-2">
-                <Link2 className="w-4 h-4 text-primary flex-shrink-0" />
-                <span className="text-sm font-medium text-foreground">
-                  Your Referral Code
+            <div data-testid="text-sharing-code" className="flex flex-col">
+              <div className="flex items-center gap-1.5 mb-2">
+                <Link2 className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                <span className="text-xs font-medium text-foreground">
+                  Referral Code
                 </span>
               </div>
               <div
-                className="rounded-lg bg-background/80 border border-primary/20 px-3 py-2.5 font-mono text-sm text-primary tracking-wider text-center font-bold select-all"
+                className="rounded-lg bg-background/80 border border-primary/20 px-2 py-2 font-mono text-sm text-primary tracking-wider text-center font-bold"
                 data-testid="example-code"
               >
                 MIKE
               </div>
             </div>
 
-            <div data-testid="text-sharing-qr">
-              <div className="flex items-center gap-2 mb-2">
-                <QrCode className="w-4 h-4 text-primary flex-shrink-0" />
-                <span className="text-sm font-medium text-foreground">
-                  Your QR Code
+            <div data-testid="text-sharing-qr" className="flex flex-col">
+              <div className="flex items-center gap-1.5 mb-2">
+                <QrCode className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                <span className="text-xs font-medium text-foreground">
+                  QR Code
                 </span>
               </div>
               <div className="flex justify-center">
                 <div
-                  className="rounded-lg bg-white p-3 inline-block"
+                  className="rounded-lg bg-white p-1.5 inline-block"
                   data-testid="example-qr"
                 >
                   <QRCodeSVG
                     value={`${window.location.origin}/?ref=MIKE`}
-                    size={120}
+                    size={64}
                     level="M"
                     bgColor="#ffffff"
                     fgColor="#0e1117"
