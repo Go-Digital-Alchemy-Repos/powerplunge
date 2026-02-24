@@ -194,9 +194,7 @@ export default function AffiliateInfoPage() {
               <div
                 className="rounded-lg bg-background/80 border border-primary/20 px-2 py-2 font-mono text-sm text-primary tracking-wider text-center font-bold"
                 data-testid="example-code"
-              >
-                MIKE
-              </div>
+              >EXAMPLE</div>
             </div>
 
             <div data-testid="text-sharing-qr" className="flex flex-col">
