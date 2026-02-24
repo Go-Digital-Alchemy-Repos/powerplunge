@@ -718,7 +718,7 @@ export default function BecomeAffiliate() {
         </h1>
         <p className="text-lg text-muted-foreground max-w-xl mx-auto">
           Earn {signupInfo?.commissionType === "FIXED"
-            ? `$${(signupInfo?.commissionValue ?? 0).toFixed(2)}`
+            ? `$${Math.round(signupInfo?.commissionValue ?? 0)}`
             : `${signupInfo?.commissionValue ?? 10}%`} commission on every sale you refer. Share your unique link and get paid for promoting {companyName} products.
         </p>
         {signupInfo?.invite?.hasTargetName && (
