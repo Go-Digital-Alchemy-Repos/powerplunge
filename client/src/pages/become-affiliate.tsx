@@ -35,6 +35,8 @@ interface SignupInfo {
   programEnabled: boolean;
   inviteRequired: boolean;
   inviteError: string | null;
+  commissionType: "PERCENT" | "FIXED";
+  commissionValue: number;
   invite: {
     code: string;
     valid: boolean;
@@ -715,7 +717,9 @@ export default function BecomeAffiliate() {
           Join Our Affiliate Program
         </h1>
         <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-          Earn 10% commission on every sale you refer. Share your unique link and get paid for promoting Power Plunge products.
+          Earn {signupInfo?.commissionType === "FIXED"
+            ? `$${(signupInfo?.commissionValue ?? 0).toFixed(2)}`
+            : `${signupInfo?.commissionValue ?? 10}%`} commission on every sale you refer. Share your unique link and get paid for promoting {companyName} products.
         </p>
         {signupInfo?.invite?.hasTargetName && (
           <p className="text-primary font-medium" data-testid="text-welcome-name">

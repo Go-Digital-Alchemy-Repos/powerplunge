@@ -101,9 +101,16 @@ router.get("/", async (req: Request, res: Response) => {
       }
     }
 
+    const commissionType = settings?.defaultCommissionType ?? "PERCENT";
+    const commissionValue = commissionType === "FIXED"
+      ? (settings?.defaultCommissionValue ?? 0) / 100
+      : settings?.defaultCommissionValue ?? 10;
+
     res.json({
       agreementText,
       inviteRequired: true,
+      commissionType,
+      commissionValue,
       invite: invite ? {
         code: invite.inviteCode,
         valid: inviteValid,
