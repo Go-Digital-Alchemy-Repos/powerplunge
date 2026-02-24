@@ -5,8 +5,9 @@ import { useBranding } from "@/hooks/use-branding";
 import {
   Mail, UserPlus, FileText, CreditCard, Share2,
   ChevronDown, ArrowRight, DollarSign,
-  Link2, Tag, Globe, Loader2,
+  Link2, Tag, Globe, Loader2, QrCode,
 } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 
 interface ProgramInfo {
   programActive: boolean;
@@ -165,28 +166,66 @@ export default function AffiliateInfoPage() {
           <h2 className="font-semibold text-foreground text-base mb-4" data-testid="text-sharing-title">
             How You Share
           </h2>
-          <div className="space-y-3">
-            <div className="flex items-start gap-3" data-testid="text-sharing-link">
-              <Globe className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-              <div>
+          <div className="space-y-5">
+            <div data-testid="text-sharing-link">
+              <div className="flex items-center gap-2 mb-2">
+                <Globe className="w-5 h-5 text-primary flex-shrink-0" />
                 <span className="text-sm font-medium text-foreground">
                   Your Personal Referral Link
                 </span>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  You get a unique URL you can share anywhere — text messages, social media, email, you name it. When someone visits through your link, they're tracked as your referral for {cookieDays} days.
-                </p>
+              </div>
+              <p className="text-xs text-muted-foreground mb-2.5">
+                Share your unique URL anywhere — text, social media, email. Visitors are tracked as your referral for {cookieDays} days.
+              </p>
+              <div
+                className="rounded-lg bg-background/80 border border-primary/20 px-3 py-2.5 font-mono text-xs text-primary select-all"
+                data-testid="example-link"
+              >
+                {window.location.origin}/?ref=YOURNAME
               </div>
             </div>
-            <div className="flex items-start gap-3" data-testid="text-sharing-code">
-              <Link2 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-              <div>
+
+            <div data-testid="text-sharing-code">
+              <div className="flex items-center gap-2 mb-2">
+                <Link2 className="w-5 h-5 text-primary flex-shrink-0" />
                 <span className="text-sm font-medium text-foreground">
                   Your Unique Referral Code
                 </span>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  You also get a short code (like "YOURNAME") that customers can enter at checkout.
-                  Great for verbal referrals or anywhere a link isn't practical.
-                </p>
+              </div>
+              <p className="text-xs text-muted-foreground mb-2.5">
+                A short code customers can enter at checkout. Great for verbal referrals or anywhere a link isn't practical.
+              </p>
+              <div
+                className="rounded-lg bg-background/80 border border-primary/20 px-3 py-2.5 font-mono text-sm text-primary tracking-wider text-center font-bold select-all"
+                data-testid="example-code"
+              >
+                YOURNAME
+              </div>
+            </div>
+
+            <div data-testid="text-sharing-qr">
+              <div className="flex items-center gap-2 mb-2">
+                <QrCode className="w-5 h-5 text-primary flex-shrink-0" />
+                <span className="text-sm font-medium text-foreground">
+                  Your QR Code
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground mb-2.5">
+                A scannable QR code linked to your referral URL. Perfect for flyers, business cards, or in-person events.
+              </p>
+              <div className="flex justify-center">
+                <div
+                  className="rounded-lg bg-white p-3 inline-block"
+                  data-testid="example-qr"
+                >
+                  <QRCodeSVG
+                    value={`${window.location.origin}/?ref=YOURNAME`}
+                    size={120}
+                    level="M"
+                    bgColor="#ffffff"
+                    fgColor="#0e1117"
+                  />
+                </div>
               </div>
             </div>
           </div>
