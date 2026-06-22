@@ -13,7 +13,7 @@ export interface ResolvedIdentity {
 }
 
 export interface IdentityError {
-  code: "NO_IDENTITY" | "CUSTOMER_NOT_FOUND" | "IDENTITY_CONFLICT" | "DISABLED_ACCOUNT";
+  code: "NO_IDENTITY" | "CUSTOMER_NOT_FOUND" | "IDENTITY_CONFLICT" | "DISABLED_ACCOUNT" | "MERGED_ACCOUNT";
   message: string;
   httpStatus: number;
 }
@@ -90,6 +90,10 @@ export class CustomerIdentityService {
       };
     }
 
+    if (customer.mergedIntoCustomerId) {
+      return this.rejectMergedAccount();
+    }
+
     if (customer.isDisabled) {
       return {
         ok: false,
@@ -125,6 +129,10 @@ export class CustomerIdentityService {
       };
     }
 
+    if (customer.mergedIntoCustomerId) {
+      return this.rejectMergedAccount();
+    }
+
     if (customer.isDisabled) {
       return {
         ok: false,
@@ -154,6 +162,9 @@ export class CustomerIdentityService {
 
     if (!tokenCustomer) {
       if (platformCustomer) {
+        if (platformCustomer.mergedIntoCustomerId) {
+          return this.rejectMergedAccount();
+        }
         if (platformCustomer.isDisabled) {
           return {
             ok: false,
@@ -184,6 +195,10 @@ export class CustomerIdentityService {
       };
     }
 
+    if (tokenCustomer.mergedIntoCustomerId) {
+      return this.rejectMergedAccount();
+    }
+
     if (!platformCustomer) {
       if (tokenCustomer.isDisabled) {
         return {
@@ -203,6 +218,10 @@ export class CustomerIdentityService {
           source: "customer_token",
         },
       };
+    }
+
+    if (platformCustomer.mergedIntoCustomerId) {
+      return this.rejectMergedAccount();
     }
 
     if (platformCustomer.id === tokenCustomer.id) {
@@ -232,6 +251,17 @@ export class CustomerIdentityService {
       error: {
         code: "IDENTITY_CONFLICT",
         message: "Platform identity and session token refer to different customers. Please sign out and sign in again.",
+        httpStatus: 409,
+      },
+    };
+  }
+
+  private rejectMergedAccount(): IdentityResult {
+    return {
+      ok: false,
+      error: {
+        code: "MERGED_ACCOUNT",
+        message: "This account has been merged. Please use your primary account.",
         httpStatus: 409,
       },
     };

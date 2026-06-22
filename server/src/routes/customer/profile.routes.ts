@@ -162,12 +162,15 @@ router.post("/link", async (req: any, res) => {
 
 router.get("/profile", async (req: any, res) => {
   try {
-    const userId = req.user?.claims?.sub;
-    if (!userId) {
-      return res.status(401).json({ message: "Authentication required" });
+    const identityResult = await customerIdentityService.resolve(req);
+    if (!identityResult.ok) {
+      return res.status(identityResult.error.httpStatus).json({ message: identityResult.error.message });
     }
-    const user = await storage.getUser(userId);
-    const customer = await storage.getCustomerByUserId(userId);
+
+    const user = identityResult.identity.platformUserId
+      ? await storage.getUser(identityResult.identity.platformUserId)
+      : null;
+    const customer = identityResult.identity.customer;
     
     res.json({
       user: user || null,
@@ -181,21 +184,33 @@ router.get("/profile", async (req: any, res) => {
 
 router.patch("/profile", async (req: any, res) => {
   try {
-    const userId = req.user?.claims?.sub;
-    if (!userId) {
-      return res.status(401).json({ message: "Authentication required" });
+    const identityResult = await customerIdentityService.resolve(req);
+    if (!identityResult.ok) {
+      return res.status(identityResult.error.httpStatus).json({ message: identityResult.error.message });
     }
+    const userId = identityResult.identity.platformUserId;
+    const customerId = identityResult.identity.customerId;
     const { firstName, lastName, email, phone, address, city, state, zipCode, country } = req.body;
     
-    const normalizedProfileEmail = email ? normalizeEmail(email) : undefined;
+    const requestedEmail = email ? normalizeEmail(email) : undefined;
+    if (
+      requestedEmail &&
+      !userId &&
+      requestedEmail !== normalizeEmail(identityResult.identity.customer.email || "")
+    ) {
+      return res.status(400).json({ message: "Email changes require verified platform authentication" });
+    }
+    const normalizedProfileEmail = userId ? requestedEmail : undefined;
     
-    const updatedUser = await storage.updateUser(userId, {
-      firstName,
-      lastName,
-      email: normalizedProfileEmail,
-    });
+    const updatedUser = userId
+      ? await storage.updateUser(userId, {
+          firstName,
+          lastName,
+          email: normalizedProfileEmail,
+        })
+      : null;
     
-    let customer = await storage.getCustomerByUserId(userId);
+    let customer = await storage.getCustomer(customerId);
     if (customer) {
       customer = await storage.updateCustomer(customer.id, {
         name: `${firstName || ''} ${lastName || ''}`.trim(),
@@ -209,9 +224,9 @@ router.patch("/profile", async (req: any, res) => {
       });
     } else {
       customer = await storage.createCustomer({
-        userId,
+        userId: userId || null,
         name: `${firstName || ''} ${lastName || ''}`.trim(),
-        email: normalizedProfileEmail || updatedUser?.email || '',
+        email: normalizedProfileEmail || updatedUser?.email || identityResult.identity.customer.email || '',
         phone,
         address,
         city,

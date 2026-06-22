@@ -8,24 +8,25 @@
 | Source Files | server/src/routes/customer/affiliates.routes.ts |
 | Endpoint Count | 7 |
 | Mount Points | `/api/customer` (customer) + `/api` (public) |
-| Auth Middleware | `isAuthenticated` on customer mount; no auth on public mount |
+| Auth Middleware | Per-route/customer identity resolution on customer mount; no auth on public mount |
 
 ## Multi-Router Exports
 
 This file exports two routers:
-- `default` — Customer affiliate portal (dashboard, registration, payouts, Stripe Connect), mounted at `/api/customer` with `isAuthenticated`
+- `default` — Customer affiliate portal (dashboard, registration, payouts, Stripe Connect), mounted at `/api/customer` with per-route customer identity checks
 - `publicAffiliateRoutes` — Public affiliate agreement text, mounted at `/api` with no auth
 
 ## Notes
 
 Customer-facing affiliate portal for viewing commissions, requesting payouts, managing Stripe Connect onboarding, and updating affiliate details.
+`GET /api/customer/affiliate` returns public program settings plus empty affiliate data when no customer identity is present; write and payout/connect actions require customer identity.
 Helper function `getDefaultAffiliateAgreement()` was relocated here from legacy routes.ts during extraction.
 
 <!-- === AUTO-GENERATED SECTION (do not edit below this line) === -->
 
 ## Endpoints
 
-### Customer (isAuthenticated)
+### Customer (per-route identity)
 | Method | Path | Handler | Line |
 |--------|------|---------|------|
 | `GET` | `/api/customer/affiliate` | Get affiliate dashboard | 93 |

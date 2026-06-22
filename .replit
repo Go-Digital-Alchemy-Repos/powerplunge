@@ -50,7 +50,6 @@ integrations = ["javascript_database:1.0.0", "javascript_log_in_with_replit:2.0.
 [userenv]
 
 [userenv.shared]
-STRIPE_WEBHOOK_SECRET = "whsec_afa7b7e100f1adabec9121723c8a1534422b73620b85c898daa4f64e39c615ba"
 USE_BETTER_AUTH = "false"
 CMS_V2_ENABLED = "true"
 VITE_GA_MEASUREMENT_ID = "G-37EMYWK26W"

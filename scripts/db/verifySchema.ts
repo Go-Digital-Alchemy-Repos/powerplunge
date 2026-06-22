@@ -1,76 +1,12 @@
 #!/usr/bin/env npx tsx
 import { db } from "../../server/db";
-import { sql } from "drizzle-orm";
+import * as schema from "../../shared/schema";
+import { getTableName, is, sql, Table } from "drizzle-orm";
 
-const EXPECTED_TABLES = [
-  "abandoned_carts",
-  "admin_audit_logs",
-  "admin_notification_prefs",
-  "admin_users",
-  "affiliate_agreements",
-  "affiliate_clicks",
-  "affiliate_invites",
-  "affiliate_payout_accounts",
-  "affiliate_payouts",
-  "affiliate_referrals",
-  "affiliate_settings",
-  "affiliates",
-  "audit_logs",
-  "categories",
-  "cms_v2_menus",
-  "cms_v2_posts",
-  "coupon_redemptions",
-  "coupon_stacking_rules",
-  "coupons",
-  "customer_magic_link_tokens",
-  "customer_notes",
-  "customer_tags",
-  "customers",
-  "daily_metrics",
-  "doc_versions",
-  "docs",
-  "email_events",
-  "email_settings",
-  "email_templates",
-  "experiment_assignments",
-  "experiment_conversions",
-  "experiments",
-  "failed_payments",
-  "integration_settings",
-  "inventory",
-  "inventory_ledger",
-  "job_runs",
-  "media_library",
-  "order_items",
-  "orders",
-  "pages",
-  "password_reset_tokens",
-  "post_purchase_offers",
-  "preset_apply_history",
-  "processed_webhook_events",
-  "product_categories",
-  "product_relationships",
-  "products",
-  "recovery_events",
-  "refunds",
-  "revenue_alert_thresholds",
-  "revenue_alerts",
-  "saved_sections",
-  "shipments",
-  "shipping_rates",
-  "shipping_zones",
-  "site_presets",
-  "site_settings",
-  "support_tickets",
-  "theme_packs",
-  "theme_settings",
-  "upsell_events",
-  "upsell_rules",
-  "vip_activity_log",
-  "vip_customers",
-  "vip_settings",
-  "webhook_failures",
-];
+const EXPECTED_TABLES = Object.values(schema)
+  .filter((value) => is(value, Table))
+  .map((table) => getTableName(table as Table))
+  .sort();
 
 async function verifySchema() {
   console.log("=== DB Schema Verification ===\n");

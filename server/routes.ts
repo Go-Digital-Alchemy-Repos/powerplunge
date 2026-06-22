@@ -227,9 +227,9 @@ export async function registerRoutes(
   app.use("/api/affiliate", publicAffiliateRoutes);
   app.use("/api/coupons", publicCouponRoutes);
 
-  // Customer routes (isAuthenticated)
-  app.use("/api/customer", isAuthenticated, customerProfileRoutes);
-  app.use("/api/customer", isAuthenticated, customerAffiliateRoutes);
+  // Customer routes handle platform/session-token auth internally.
+  app.use("/api/customer", customerProfileRoutes);
+  app.use("/api/customer", customerAffiliateRoutes);
 
   // Admin auth routes (no middleware - handles own auth)
   app.use("/api/admin", adminAuthRoutes);
