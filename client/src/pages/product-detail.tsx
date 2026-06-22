@@ -6,8 +6,11 @@ import { ArrowLeft, ShoppingCart, Check, Minus, Plus, ChevronLeft, ChevronRight,
 import { Button } from "@/components/ui/button";
 import SiteLayout from "@/components/SiteLayout";
 import ImageLightbox from "@/components/ui/image-lightbox";
+import SeoHead from "@/components/SeoHead";
 import { trackViewItem, trackAddToCart } from "@/lib/analytics";
 import SocialShareBar from "@/blog/components/SocialShareBar";
+
+const SITE_URL = "https://powerplunge.com";
 
 interface Product {
   id: string;
@@ -25,6 +28,12 @@ interface Product {
   metaTitle?: string;
   metaDescription?: string;
   urlSlug?: string;
+  canonicalUrl?: string;
+  robotsIndex?: boolean;
+  robotsFollow?: boolean;
+  ogTitle?: string;
+  ogDescription?: string;
+  ogImage?: string;
 }
 
 interface CartItem {
@@ -118,6 +127,14 @@ export default function ProductDetail() {
     ? Math.round(((product.price - product.salePrice) / product.price) * 100)
     : 0;
 
+  const absoluteUrl = (url: string | null | undefined, fallback: string) => {
+    if (!url) return fallback;
+    try {
+      return new URL(url, SITE_URL).toString();
+    } catch {
+      return fallback;
+    }
+  };
   if (isLoading) {
     return (
       <SiteLayout>
@@ -147,8 +164,30 @@ export default function ProductDetail() {
     );
   }
 
+  const productCanonicalUrl = absoluteUrl(
+    product.canonicalUrl || `/products/${product.urlSlug || slug}`,
+    `${SITE_URL}/products/${product.urlSlug || slug}`,
+  );
+
   return (
     <SiteLayout>
+      <SeoHead
+        metaTitle={product.metaTitle || product.name}
+        metaDescription={product.metaDescription || product.description || undefined}
+        canonicalUrl={productCanonicalUrl}
+        robots={[
+          product.robotsIndex === false ? "noindex" : "index",
+          product.robotsFollow === false ? "nofollow" : "follow",
+        ].join(", ")}
+        ogUrl={productCanonicalUrl}
+        ogTitle={product.ogTitle || product.metaTitle || product.name}
+        ogDescription={product.ogDescription || product.metaDescription || product.description || undefined}
+        ogImage={absoluteUrl(product.ogImage || product.primaryImage, `${SITE_URL}/og-image.jpg`)}
+        twitterCard="summary_large_image"
+        twitterTitle={product.ogTitle || product.metaTitle || product.name}
+        twitterDescription={product.ogDescription || product.metaDescription || product.description || undefined}
+        twitterImage={absoluteUrl(product.ogImage || product.primaryImage, `${SITE_URL}/og-image.jpg`)}
+      />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         <div className="flex items-center justify-between mb-8">
           <Button
@@ -190,6 +229,9 @@ export default function ProductDetail() {
                     src={allImages[selectedImageIndex]}
                     alt={product.name}
                     className="w-full h-[400px] sm:h-[500px] object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                    loading="eager"
+                    decoding="async"
+                    fetchPriority="high"
                     data-testid="img-product-main"
                   />
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
@@ -203,6 +245,7 @@ export default function ProductDetail() {
                       <button
                         onClick={(e) => { e.stopPropagation(); setSelectedImageIndex(i => i === 0 ? allImages.length - 1 : i - 1); }}
                         className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors"
+                        aria-label="Previous product image"
                         data-testid="button-prev-image"
                       >
                         <ChevronLeft className="w-5 h-5" />
@@ -210,6 +253,7 @@ export default function ProductDetail() {
                       <button
                         onClick={(e) => { e.stopPropagation(); setSelectedImageIndex(i => i === allImages.length - 1 ? 0 : i + 1); }}
                         className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors"
+                        aria-label="Next product image"
                         data-testid="button-next-image"
                       >
                         <ChevronRight className="w-5 h-5" />
@@ -233,9 +277,10 @@ export default function ProductDetail() {
                             ? "border-primary"
                             : "border-border hover:border-border"
                         }`}
+                        aria-label={`Show product image ${idx + 1}`}
                         data-testid={`button-thumbnail-${idx}`}
                       >
-                        <img src={img} alt="" className="w-full h-full object-cover" />
+                        <img src={img} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                       </button>
                     ))}
                   </div>
@@ -332,6 +377,7 @@ export default function ProductDetail() {
                     onClick={() => setQuantity(q => Math.max(1, q - 1))}
                     className="p-2.5 sm:p-2 hover:bg-card transition-colors rounded-l-lg min-w-[44px] min-h-[44px] flex items-center justify-center"
                     disabled={quantity <= 1}
+                    aria-label="Decrease quantity"
                     data-testid="button-quantity-decrease"
                   >
                     <Minus className="w-4 h-4" />
@@ -342,6 +388,7 @@ export default function ProductDetail() {
                   <button
                     onClick={() => setQuantity(q => q + 1)}
                     className="p-2.5 sm:p-2 hover:bg-card transition-colors rounded-r-lg min-w-[44px] min-h-[44px] flex items-center justify-center"
+                    aria-label="Increase quantity"
                     data-testid="button-quantity-increase"
                   >
                     <Plus className="w-4 h-4" />

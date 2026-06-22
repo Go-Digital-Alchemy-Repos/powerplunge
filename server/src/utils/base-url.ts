@@ -12,9 +12,10 @@ function getAllowedHosts(): Set<string> {
   if (process.env.REPLIT_DEV_DOMAIN) {
     hosts.add(process.env.REPLIT_DEV_DOMAIN.trim());
   }
-  if (process.env.BASE_URL) {
+  const configuredBaseUrl = process.env.PUBLIC_SITE_URL || process.env.BASE_URL;
+  if (configuredBaseUrl) {
     try {
-      const parsed = new URL(process.env.BASE_URL);
+      const parsed = new URL(configuredBaseUrl);
       hosts.add(parsed.host);
     } catch {}
   }
@@ -22,32 +23,50 @@ function getAllowedHosts(): Set<string> {
   hosts.add("localhost:5000");
   hosts.add("localhost");
   hosts.add("0.0.0.0:5000");
+  hosts.add("powerplunge.com");
+  hosts.add("www.powerplunge.com");
 
   return hosts;
+}
+
+function configuredBaseUrl(): string | undefined {
+  const value = process.env.PUBLIC_SITE_URL || process.env.BASE_URL;
+  return value ? value.replace(/\/+$/, "") : undefined;
+}
+
+function isPowerPlungeHost(host: string): boolean {
+  const normalized = host.toLowerCase().split(":")[0];
+  return normalized === "powerplunge.com" || normalized === "www.powerplunge.com";
 }
 
 export function getBaseUrl(req: Request): string {
   const allowedHosts = getAllowedHosts();
   const requestHost = (req.headers["x-forwarded-host"] as string) || req.headers.host;
+  const configured = configuredBaseUrl();
+
+  if (requestHost && isPowerPlungeHost(requestHost)) {
+    return configured || "https://powerplunge.com";
+  }
+
+  if (configured && process.env.NODE_ENV === "production") {
+    return configured;
+  }
 
   if (requestHost && allowedHosts.has(requestHost)) {
     const protocol = (req.headers["x-forwarded-proto"] as string) || req.protocol || "https";
     return `${protocol}://${requestHost}`;
   }
 
-  if (process.env.BASE_URL) {
-    return process.env.BASE_URL;
-  }
+  if (configured) return configured;
   if (process.env.REPLIT_DOMAINS) {
     return `https://${process.env.REPLIT_DOMAINS.split(",")[0]}`;
   }
-  return "https://localhost:5000";
+  return process.env.NODE_ENV === "production" ? "https://powerplunge.com" : "https://localhost:5000";
 }
 
 export function getStaticBaseUrl(): string {
-  if (process.env.BASE_URL) {
-    return process.env.BASE_URL;
-  }
+  const configured = configuredBaseUrl();
+  if (configured) return configured;
   if (process.env.REPLIT_DOMAINS) {
     return `https://${process.env.REPLIT_DOMAINS.split(",")[0]}`;
   }
@@ -57,5 +76,5 @@ export function getStaticBaseUrl(): string {
   if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
     return `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`;
   }
-  return "https://localhost:5000";
+  return process.env.NODE_ENV === "production" ? "https://powerplunge.com" : "https://localhost:5000";
 }

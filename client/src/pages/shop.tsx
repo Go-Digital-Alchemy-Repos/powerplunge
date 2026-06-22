@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import PageRenderer from "@/components/PageRenderer";
 import SiteLayout from "@/components/SiteLayout";
+import PageSeoHead from "@/components/PageSeoHead";
 import { useCustomerAuth } from "@/hooks/use-customer-auth";
 import { trackAddToCart, trackViewItemList } from "@/lib/analytics";
 
@@ -35,6 +36,19 @@ interface ShopPage {
   title: string;
   contentJson: PageContentJson | null;
   content: string | null;
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+  canonicalUrl?: string | null;
+  robots?: string | null;
+  ogTitle?: string | null;
+  ogDescription?: string | null;
+  ogImage?: string | null;
+  twitterCard?: string | null;
+  twitterTitle?: string | null;
+  twitterDescription?: string | null;
+  twitterImage?: string | null;
+  featuredImage?: string | null;
+  jsonLd?: any;
 }
 
 interface CartItem {
@@ -123,6 +137,12 @@ export default function Shop() {
 
   return (
     <SiteLayout>
+      <PageSeoHead
+        page={shopPage}
+        path="/shop"
+        fallbackTitle="Shop Power Plunge Cold Plunge Tanks"
+        fallbackDescription="Shop Power Plunge cold plunge systems and accessories for consistent, ice-free recovery at home or in professional spaces."
+      />
       {hasPageContent ? (
         <PageRenderer
           contentJson={shopPage?.contentJson}
@@ -175,6 +195,8 @@ function FallbackShopContent({
                         src={product.primaryImage} 
                         alt={product.name}
                         className="w-full h-48 sm:h-64 object-cover group-hover:scale-105 transition-transform duration-300"
+                        loading="lazy"
+                        decoding="async"
                       />
                     )}
                     <div className="p-4 sm:p-6 pb-2 sm:pb-3">
@@ -191,6 +213,8 @@ function FallbackShopContent({
                         src={product.primaryImage} 
                         alt={product.name}
                         className="w-full h-48 sm:h-64 object-cover"
+                        loading="lazy"
+                        decoding="async"
                       />
                     )}
                     <div className="p-4 sm:p-6 pb-2 sm:pb-3">

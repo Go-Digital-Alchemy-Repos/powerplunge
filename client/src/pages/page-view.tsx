@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import PageRenderer from "@/components/PageRenderer";
 import SiteLayout from "@/components/SiteLayout";
 import { ContentWithLeftSidebar } from "@/components/SidebarRenderer";
+import PageSeoHead from "@/components/PageSeoHead";
 import { useAdmin } from "@/hooks/use-admin";
 import { sanitizeHtml } from "@/lib/sanitizeHtml";
 
@@ -29,13 +30,24 @@ interface Page {
   sidebarId: string | null;
   metaTitle: string | null;
   metaDescription: string | null;
+  canonicalUrl: string | null;
+  robots: string | null;
+  ogTitle: string | null;
+  ogDescription: string | null;
+  ogImage: string | null;
+  twitterCard: string | null;
+  twitterTitle: string | null;
+  twitterDescription: string | null;
+  twitterImage: string | null;
+  featuredImage: string | null;
+  jsonLd: any;
   status: string;
 }
 
 export default function PageView() {
   const [, navigate] = useLocation();
   const params = useParams<{ slug: string }>();
-  const { isAuthenticated: isAdmin } = useAdmin();
+  const { isAuthenticated: isAdmin } = useAdmin({ optional: true });
 
   const { data: page, isLoading, error } = useQuery<Page>({
     queryKey: [`/api/pages/${params.slug}`],
@@ -70,6 +82,7 @@ export default function PageView() {
 
   return (
     <SiteLayout>
+      <PageSeoHead page={page} path={`/page/${page.slug}`} fallbackTitle={`${page.title} | Power Plunge`} />
       {isAdmin && (
         <div className="fixed top-20 right-4 z-50" data-testid="admin-edit-page-wrapper">
           <Button

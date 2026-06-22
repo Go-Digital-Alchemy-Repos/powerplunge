@@ -134,6 +134,8 @@ export default function FeaturedProductBlock({ data, settings, onAddToCart }: Bl
                   src={featuredProduct.primaryImage}
                   alt={featuredProduct.name}
                   className="w-full h-full object-contain relative z-10"
+                  loading="lazy"
+                  decoding="async"
                 />
               )}
             </div>
@@ -238,6 +240,7 @@ export default function FeaturedProductBlock({ data, settings, onAddToCart }: Bl
                     className="w-10 h-10"
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
                     disabled={quantity <= 1}
+                    aria-label="Decrease quantity"
                   >
                     <ChevronDown className="w-4 h-4" />
                   </Button>
@@ -247,6 +250,7 @@ export default function FeaturedProductBlock({ data, settings, onAddToCart }: Bl
                     size="icon"
                     className="w-10 h-10"
                     onClick={() => setQuantity(quantity + 1)}
+                    aria-label="Increase quantity"
                   >
                     <ChevronUp className="w-4 h-4" />
                   </Button>

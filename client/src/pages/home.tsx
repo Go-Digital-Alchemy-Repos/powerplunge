@@ -8,7 +8,7 @@ import DynamicNav from "@/components/DynamicNav";
 import MobileNav from "@/components/MobileNav";
 import CartUpsells from "@/components/CartUpsells";
 import PageRenderer from "@/components/PageRenderer";
-import SeoHead from "@/components/SeoHead";
+import PageSeoHead from "@/components/PageSeoHead";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useCustomerAuth } from "@/hooks/use-customer-auth";
@@ -116,7 +116,7 @@ export default function Home() {
   const [product, setProduct] = useState<Product>(fallbackProduct);
   const [quantity, setQuantity] = useState(1);
   const { customer, isLoading: authLoading, isAuthenticated, logout, getAuthHeader, refreshSession } = useCustomerAuth();
-  const { isAuthenticated: isAdminAuthenticated, role: adminRole } = useAdmin();
+  const { isAuthenticated: isAdminAuthenticated, role: adminRole } = useAdmin({ optional: true });
 
   // Check if this customer email has a corresponding admin account (without granting admin access)
   const queryClient = useQueryClient();
@@ -268,6 +268,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
+      <PageSeoHead page={homePage} path="/" />
       {isAdminAuthenticated && (
         <AdminNav currentPage="storefront" role={adminRole} />
       )}
@@ -294,6 +295,7 @@ export default function Home() {
                 size="sm" 
                 className="gap-2 h-10 min-w-[40px] px-2.5 sm:px-3" 
                 onClick={() => setAuthModalOpen(true)}
+                aria-label="Open my account"
                 data-testid="button-my-account"
               >
                 <User className="w-4 h-4" />
@@ -302,7 +304,7 @@ export default function Home() {
             ) : (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="gap-2 h-10 min-w-[40px] px-2.5 sm:px-3" data-testid="button-my-account">
+                  <Button variant="outline" size="sm" className="gap-2 h-10 min-w-[40px] px-2.5 sm:px-3" aria-label="Open my account menu" data-testid="button-my-account">
                     <User className="w-4 h-4" />
                     <span className="hidden sm:inline">My Account</span>
                   </Button>
@@ -364,6 +366,7 @@ export default function Home() {
               size="sm"
               className="relative gap-2 h-10 min-w-[40px] px-2.5 sm:px-3"
               onClick={() => setIsCartOpen(true)}
+              aria-label={`Open cart${cartCount ? ` with ${cartCount} item${cartCount === 1 ? "" : "s"}` : ""}`}
               data-testid="button-cart"
             >
               <ShoppingCart className="w-4 h-4" />
@@ -374,7 +377,7 @@ export default function Home() {
                 </span>
               )}
             </Button>
-            <ThemeSelector />
+            {isAdminAuthenticated && <ThemeSelector />}
           </div>
         </div>
       </nav>
@@ -397,6 +400,7 @@ export default function Home() {
         onLoginSuccess={refreshSession}
       />
 
+      <main id="main-content">
       {/* Show loading state while fetching CMS content */}
       {isHomePageLoading && (
         <div className={`min-h-screen flex items-center justify-center ${isAdminAuthenticated ? "pt-32" : "pt-20"}`}>
@@ -444,7 +448,14 @@ export default function Home() {
         <>
         <section className={`relative min-h-[80vh] sm:min-h-screen flex items-center justify-center ${isAdminAuthenticated ? "pt-28 sm:pt-32" : "pt-16 sm:pt-20"}`}>
           <div className="absolute inset-0">
-            <img src={heroImage} alt="" className="w-full h-full object-cover" />
+            <img
+              src={heroImage}
+              alt=""
+              className="w-full h-full object-cover"
+              loading="eager"
+              decoding="async"
+              fetchPriority="high"
+            />
             <div className="absolute inset-0 bg-gradient-to-r from-background/90 sm:from-background/80 via-background/60 sm:via-background/50 to-transparent" />
             <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
           </div>
@@ -608,6 +619,8 @@ export default function Home() {
                   src={productImages[selectedImage]}
                   alt={product.name}
                   className="w-full h-full object-contain relative z-10"
+                  loading="lazy"
+                  decoding="async"
                   data-testid="img-product-main"
                 />
               </div>
@@ -616,6 +629,7 @@ export default function Home() {
                   <button
                     key={i}
                     onClick={() => setSelectedImage(i)}
+                    aria-label={`Show product image ${i + 1}`}
                     className={`w-16 h-16 sm:w-24 sm:h-24 rounded-xl overflow-hidden border-2 transition-all p-1.5 sm:p-2 bg-black/50 ${
                       selectedImage === i ? "border-primary glow-ice-sm" : "border-border hover:border-muted-foreground"
                     }`}
@@ -697,6 +711,7 @@ export default function Home() {
                       className="w-11 h-11 min-w-[44px] min-h-[44px]"
                       onClick={() => setQuantity(Math.max(1, quantity - 1))}
                       disabled={quantity <= 1}
+                      aria-label="Decrease quantity"
                       data-testid="button-quantity-decrease"
                     >
                       <Minus className="w-4 h-4" />
@@ -707,6 +722,7 @@ export default function Home() {
                       size="icon"
                       className="w-11 h-11 min-w-[44px] min-h-[44px]"
                       onClick={() => setQuantity(quantity + 1)}
+                      aria-label="Increase quantity"
                       data-testid="button-quantity-increase"
                     >
                       <Plus className="w-4 h-4" />
@@ -788,6 +804,7 @@ export default function Home() {
         </section>
         </>
       )}
+      </main>
 
       <footer className="py-8 sm:py-12 border-t border-border bg-card/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
@@ -837,7 +854,7 @@ export default function Home() {
             <div className="flex flex-col h-full">
               <div className="flex items-center justify-between p-6 border-b border-border">
                 <h3 className="font-display text-xl font-bold">Your Cart</h3>
-                <Button variant="ghost" size="icon" onClick={() => setIsCartOpen(false)} data-testid="button-close-cart">
+                <Button variant="ghost" size="icon" onClick={() => setIsCartOpen(false)} aria-label="Close cart" data-testid="button-close-cart">
                   <X className="w-5 h-5" />
                 </Button>
               </div>
@@ -864,6 +881,7 @@ export default function Home() {
                               size="icon"
                               className="w-8 h-8"
                               onClick={() => updateQuantity(item.id, -1)}
+                              aria-label={`Decrease quantity for ${item.name}`}
                               data-testid={`button-decrease-${item.id}`}
                             >
                               <Minus className="w-3 h-3" />
@@ -874,6 +892,7 @@ export default function Home() {
                               size="icon"
                               className="w-8 h-8"
                               onClick={() => updateQuantity(item.id, 1)}
+                              aria-label={`Increase quantity for ${item.name}`}
                               data-testid={`button-increase-${item.id}`}
                             >
                               <Plus className="w-3 h-3" />

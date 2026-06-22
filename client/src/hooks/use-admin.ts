@@ -24,10 +24,24 @@ async function fetchAdminUser(): Promise<AdminUser | null> {
   return response.json();
 }
 
-export function useAdmin() {
+async function fetchOptionalAdminUser(): Promise<AdminUser | null> {
+  const response = await fetch("/api/admin/optional-me", {
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    return null;
+  }
+
+  return response.json();
+}
+
+export function useAdmin(options: { enabled?: boolean; optional?: boolean } = {}) {
+  const enabled = options.enabled ?? true;
   const { data: admin, isLoading } = useQuery<AdminUser | null>({
-    queryKey: ["/api/admin/me"],
-    queryFn: fetchAdminUser,
+    queryKey: [options.optional ? "/api/admin/optional-me" : "/api/admin/me"],
+    queryFn: options.optional ? fetchOptionalAdminUser : fetchAdminUser,
+    enabled,
     retry: false,
     staleTime: 1000 * 60 * 5,
   });

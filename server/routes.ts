@@ -52,6 +52,7 @@ import publicGoogleReviewsRoutes from "./src/routes/public/google-reviews.routes
 import publicNewsletterRoutes from "./src/routes/public/newsletter.routes";
 import publicContactRoutes from "./src/routes/public/contact.routes";
 import metaCatalogRoutes from "./src/routes/public/meta-catalog.routes";
+import publicSeoRoutes from "./src/routes/public/seo.routes";
 
 // Newly-extracted route modules
 import paymentsRoutes from "./src/routes/public/payments.routes";
@@ -102,6 +103,9 @@ export async function registerRoutes(
   // Also register Object Storage routes as fallback
   registerObjectStorageRoutes(app);
   console.log("[STORAGE] R2 and Object Storage routes registered (R2 credentials checked per-request)");
+
+  // Public crawl files must resolve before the SPA static fallback.
+  app.use("/", publicSeoRoutes);
 
   // ==================== OPERATIONAL ENDPOINTS ====================
   let pkgVersion = "0.0.0";

@@ -112,7 +112,7 @@ const HeroBlock = ({ data, settings, onAddToCart }: { data: Record<string, any>;
     >
       {backgroundImage && (
         <div className="absolute inset-0">
-          <img src={backgroundImage} alt="" className="w-full h-full object-cover object-top" />
+          <img src={backgroundImage} alt="" className="w-full h-full object-cover object-top" loading="eager" decoding="async" fetchPriority="high" />
           <div className="absolute inset-0 bg-gradient-to-r from-background/90 sm:from-background/80 via-background/60 sm:via-background/50 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
         </div>
@@ -171,7 +171,7 @@ const HeroBlock = ({ data, settings, onAddToCart }: { data: Record<string, any>;
             </div>
             {image && splitLayout !== 'none' && (
               <div className={cn(splitLayout === 'right' ? 'order-1 md:order-2' : '')}>
-                <img src={image} alt={title} className="rounded-lg shadow-2xl" />
+                <img src={image} alt={title} className="rounded-lg shadow-2xl" loading="eager" decoding="async" />
               </div>
             )}
           </div>
@@ -220,6 +220,8 @@ const ImageBlock = ({ data, settings }: { data: Record<string, any>; settings?: 
           src={src} 
           alt={alt} 
           className={cn("rounded-lg shadow-lg", data?.fullWidth && 'w-full')}
+          loading="lazy"
+          decoding="async"
           style={data?.maxWidth ? { maxWidth: data.maxWidth } : undefined}
         />
         {caption && (
@@ -251,6 +253,8 @@ const ImageGridBlock = ({ data, settings }: { data: Record<string, any>; setting
             src={img.src}
             alt={img.alt || ''}
             className="rounded-lg shadow-lg w-full h-48 object-cover"
+            loading="lazy"
+            decoding="async"
           />
         ))}
       </div>
@@ -405,6 +409,7 @@ const FAQBlock = ({ data, settings }: { data: Record<string, any>; settings?: Bl
             <button
               className="w-full flex items-center justify-between p-4 sm:p-4 text-left bg-card/50 hover:bg-card transition-colors min-h-[48px]"
               onClick={() => setOpenIndex(openIndex === idx ? null : idx)}
+              aria-expanded={openIndex === idx}
               data-testid={`faq-toggle-${idx}`}
             >
               <span className="font-medium text-foreground text-sm sm:text-base pr-2">{faq.question}</span>
@@ -718,6 +723,7 @@ const SliderBlock = ({ data, settings }: { data: Record<string, any>; settings?:
             <button
               onClick={prev}
               className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center transition-colors"
+              aria-label="Previous slide"
               data-testid="slider-prev"
             >
               <ChevronLeft className="w-6 h-6 text-white" />
@@ -725,6 +731,7 @@ const SliderBlock = ({ data, settings }: { data: Record<string, any>; settings?:
             <button
               onClick={next}
               className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center transition-colors"
+              aria-label="Next slide"
               data-testid="slider-next"
             >
               <ChevronRight className="w-6 h-6 text-white" />
@@ -734,6 +741,7 @@ const SliderBlock = ({ data, settings }: { data: Record<string, any>; settings?:
                 <button
                   key={idx}
                   onClick={() => setCurrent(idx)}
+                  aria-label={`Show slide ${idx + 1}`}
                   data-testid={`slider-dot-${idx}`}
                   className={cn(
                     "w-2 h-2 rounded-full transition-colors",
@@ -927,6 +935,8 @@ const FeaturedProductBlock = ({ data, settings, onAddToCart }: { data: Record<st
                   src={featuredProduct.primaryImage}
                   alt={featuredProduct.name}
                   className="w-full h-full object-contain relative z-10"
+                  loading="lazy"
+                  decoding="async"
                 />
               )}
             </div>
@@ -975,11 +985,11 @@ const FeaturedProductBlock = ({ data, settings, onAddToCart }: { data: Record<st
               </div>
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
                 <div className="flex items-center justify-center gap-2 bg-muted/50 rounded-xl p-1">
-                  <Button variant="ghost" size="icon" className="w-11 h-11 min-w-[44px] min-h-[44px]" onClick={() => setQuantity(Math.max(1, quantity - 1))} disabled={quantity <= 1}>
+                  <Button variant="ghost" size="icon" className="w-11 h-11 min-w-[44px] min-h-[44px]" onClick={() => setQuantity(Math.max(1, quantity - 1))} disabled={quantity <= 1} aria-label="Decrease quantity">
                     <ChevronDown className="w-4 h-4" />
                   </Button>
                   <span className="font-medium w-8 text-center text-lg">{quantity}</span>
-                  <Button variant="ghost" size="icon" className="w-11 h-11 min-w-[44px] min-h-[44px]" onClick={() => setQuantity(quantity + 1)}>
+                  <Button variant="ghost" size="icon" className="w-11 h-11 min-w-[44px] min-h-[44px]" onClick={() => setQuantity(quantity + 1)} aria-label="Increase quantity">
                     <ChevronUp className="w-4 h-4" />
                   </Button>
                 </div>

@@ -106,6 +106,20 @@ router.get("/me", async (req: any, res) => {
   res.json({ id: admin.id, email: admin.email, name: admin.name, role: admin.role, avatarUrl: admin.avatarUrl || null });
 });
 
+router.get("/optional-me", async (req: any, res) => {
+  if (!req.session.adminId) {
+    return res.json(null);
+  }
+
+  const admin = await storage.getAdminUser(req.session.adminId);
+  if (!admin) {
+    req.session.destroy(() => {});
+    return res.json(null);
+  }
+
+  res.json({ id: admin.id, email: admin.email, name: admin.name, role: admin.role, avatarUrl: admin.avatarUrl || null });
+});
+
 router.get("/me/profile", async (req: any, res) => {
   if (!req.session.adminId) {
     return res.status(401).json({ message: "Not authenticated" });

@@ -12,6 +12,8 @@ import PostTaxonomy from "./components/PostTaxonomy";
 import PostCard from "./components/PostCard";
 import SocialShareBar from "./components/SocialShareBar";
 
+const SITE_URL = "https://powerplunge.com";
+
 interface TaxonomyItem {
   id: string;
   name: string;
@@ -60,7 +62,7 @@ interface PostListItem {
 export default function BlogPostPage() {
   const params = useParams<{ slug: string }>();
   const [, navigate] = useLocation();
-  const { isAuthenticated: isAdmin } = useAdmin();
+  const { isAuthenticated: isAdmin } = useAdmin({ optional: true });
 
   const { data: post, isLoading, error } = useQuery<BlogPost>({
     queryKey: [`/api/blog/posts/${params.slug}`],
@@ -127,7 +129,16 @@ export default function BlogPostPage() {
   const robotsMeta = robotsDirectives.length > 0 ? robotsDirectives.join(", ") : null;
 
   const coverSrc = post.coverImageUrl || null;
-  const ogImage = post.ogImageUrl || coverSrc;
+  const absoluteUrl = (url: string | null | undefined, fallback: string) => {
+    if (!url) return fallback;
+    try {
+      return new URL(url, SITE_URL).toString();
+    } catch {
+      return fallback;
+    }
+  };
+  const canonicalUrl = absoluteUrl(post.canonicalUrl || `/blog/${post.slug}`, `${SITE_URL}/blog/${post.slug}`);
+  const ogImage = absoluteUrl(post.ogImageUrl || coverSrc, `${SITE_URL}/og-image.jpg`);
   const hasBlocks = post.contentJson?.blocks && post.contentJson.blocks.length > 0;
 
   return (
@@ -136,8 +147,9 @@ export default function BlogPostPage() {
         pageTitle={`${post.metaTitle || post.title} | Power Plunge`}
         metaTitle={post.metaTitle || post.title}
         metaDescription={post.metaDescription || post.excerpt || undefined}
-        canonicalUrl={post.canonicalUrl || undefined}
+        canonicalUrl={canonicalUrl}
         robots={robotsMeta}
+        ogUrl={canonicalUrl}
         ogTitle={post.metaTitle || post.title}
         ogDescription={post.metaDescription || post.excerpt || undefined}
         ogImage={ogImage}

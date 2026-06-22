@@ -69,6 +69,9 @@ function VideoBackground({
             "absolute inset-0 w-full h-full object-cover transition-opacity duration-700",
             videoReady ? "opacity-0" : "opacity-100"
           )}
+          loading="eager"
+          decoding="async"
+          fetchPriority="high"
           data-testid="img-hero-background-fallback"
         />
       )}
@@ -138,6 +141,8 @@ function SplitImage({ src, side }: { src: string; side: "left" | "right" }) {
         src={src}
         alt=""
         className="absolute inset-0 w-full h-full object-cover"
+        loading="eager"
+        decoding="async"
         onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
       />
       <div
@@ -200,6 +205,9 @@ export default function HeroBlock({ data, settings }: BlockRenderProps) {
               src={backgroundImage}
               alt=""
               className="w-full h-full object-cover"
+              loading="eager"
+              decoding="async"
+              fetchPriority="high"
               data-testid="img-hero-background"
               onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
             />

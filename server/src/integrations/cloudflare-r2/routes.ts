@@ -100,6 +100,7 @@ export function registerR2Routes(app: Express): void {
       }
 
       const downloadUrl = await r2Service.getDownloadPresignedUrl(objectKey);
+      res.setHeader("Cache-Control", "public, max-age=300");
       res.redirect(downloadUrl);
     } catch (error: any) {
       const code = error?.Code || error?.name || "";

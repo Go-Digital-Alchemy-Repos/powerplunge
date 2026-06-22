@@ -43,15 +43,19 @@ export function ThemeSelector({
   testIdSuffix?: string;
 }) {
   const queryClient = useQueryClient();
+  const { admin } = useAdmin();
+  const isAdmin = !!admin;
 
   const { data: legacyThemes } = useQuery<ThemePreset[]>({
     queryKey: ["/api/admin/cms/themes"],
+    enabled: isAdmin,
     // Fallback to presets if not admin or failed
     retry: false,
   });
 
   const { data: packThemes } = useQuery<ThemePackPreset[]>({
     queryKey: ["/api/admin/cms/theme-packs"],
+    enabled: isAdmin,
     retry: false,
   });
 
@@ -105,9 +109,6 @@ export function ThemeSelector({
     // The requirement says "all users should be able to set their theme preference".
   };
 
-  const { admin } = useAdmin();
-  const isAdmin = !!admin;
-
   if (!isAdmin) {
     return null;
   }
@@ -119,6 +120,7 @@ export function ThemeSelector({
           variant="ghost"
           size="sm"
           className={cn("gap-2 h-10 w-10 p-0 hover:bg-transparent", triggerClassName)}
+          aria-label="Select admin theme"
           data-testid={`button-theme-selector${testIdSuffix || ""}`}
         >
           <Sun className="w-4 h-4" />
