@@ -2,6 +2,8 @@ import type { Plugin } from 'vite';
 import fs from 'fs';
 import path from 'path';
 
+const DEFAULT_PUBLIC_SITE_URL = 'https://powerplunge.com';
+
 export function metaImagesPlugin(): Plugin {
   return {
     name: 'vite-plugin-meta-images',
@@ -61,9 +63,11 @@ function resolveBaseUrl(): string | null {
   if (process.env.NODE_ENV === 'production') {
     console.warn(
       '[meta-images] WARNING: PUBLIC_SITE_URL is not set. ' +
-      'Meta image URLs may reference a Replit preview domain instead of your public site. ' +
+      `Falling back to ${DEFAULT_PUBLIC_SITE_URL}. ` +
       'Set PUBLIC_SITE_URL=https://yourdomain.com to fix this.'
     );
+    log('[meta-images] using default public site URL:', DEFAULT_PUBLIC_SITE_URL);
+    return DEFAULT_PUBLIC_SITE_URL;
   }
 
   if (process.env.REPLIT_INTERNAL_APP_DOMAIN) {
