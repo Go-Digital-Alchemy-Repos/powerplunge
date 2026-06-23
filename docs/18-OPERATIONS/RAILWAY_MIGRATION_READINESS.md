@@ -1,6 +1,7 @@
 # Railway Migration Readiness
 
 Date: 2026-06-22
+Updated: 2026-06-23
 
 This runbook tracks the first-pass Railway migration checks for moving Power Plunge runtime toward Railway + Neon Postgres + Cloudflare R2.
 
@@ -17,8 +18,7 @@ Out of scope until explicit confirmation:
 
 - Cloudflare DNS changes.
 - Stripe webhook URL changes.
-- Further Railway config mutations, production deploys, or restarts after the confirmed 2026-06-22 Railway redeploy.
-- Committing, pushing, or opening a PR.
+- Switching Stripe active mode to live.
 
 ## Railway Target
 
@@ -38,9 +38,9 @@ Current service inventory:
 - Build command: `npm run build`
 - Start command: `npm run start`
 - Status: `SUCCESS`
-- Current deployment ID: `3cb9858c-2866-4944-94e6-f9cc44e0a844`
-- Sleep when inactive: enabled
-- Healthcheck path: not configured in Railway
+- Current deployment ID: verify with `railway service status --json` before action.
+- Sleep when inactive: disabled by `railway.json` after the next successful config-as-code deploy
+- Healthcheck path: `/api/health` by `railway.json` after the next successful config-as-code deploy
 - App health endpoint: `/api/health`
 
 ## Current Readiness
@@ -52,7 +52,7 @@ Current service inventory:
 | Neon project | Ready | Project `powerplunge`, branch `main`, database `powerplunge`, Postgres 17. |
 | Neon schema | Ready for schema-only dry run | Schema verifier passes against the migration target; seed/content data is not migrated. |
 | Cloudflare R2 refs | Staged in Railway | Required R2 ref names resolve through `.env.cloudflare.local` and are now configured on Railway with `--skip-deploys`. |
-| Stripe env model | Needs correction | Runtime Stripe service prefers mode-specific vars when `STRIPE_MODE` is set. Generic vars can pass validation but may not configure runtime Stripe payments. |
+| Stripe env model | DB-first dry run staged | Runtime Stripe uses DB settings first. Neon has test mode active, with test and live Stripe values staged in encrypted DB fields. Generic Railway Stripe vars remain fallback-only and should not be relied on for cutover. |
 | Stripe primary webhook secret | Rotated | Historically exposed primary PowerPlunge signing secret was rotated in Stripe Workbench on 2026-06-22; Neon now has an encrypted DB-stored live webhook secret. |
 | Stripe primary webhook endpoint | Not ready | The primary `https://powerplunge.com/api/webhook/stripe` destination exists under the Nano-Shield Stripe account, but it is currently disabled. |
 | Public URL config | Staged in Railway | `PUBLIC_SITE_URL` and `BASE_URL` are set to the Railway dry-run URL with `--skip-deploys`; update to the canonical domain only during DNS cutover. |
@@ -101,8 +101,8 @@ Before cutover, verify or update the DB Stripe settings through the admin integr
 
 Current first-pass state:
 
-- Neon has `integration_settings.id = main`, `stripe_active_mode = live`, and an encrypted live primary webhook secret.
-- Neon does not yet have live Stripe API keys in `integration_settings`.
+- Neon has `integration_settings.id = main`, `stripe_active_mode = test`, and encrypted test and live Stripe API/webhook values.
+- Railway dry-run still serves the test publishable key from `/api/stripe/config`.
 - Stripe Workbench shows the primary PowerPlunge endpoint under Nano-Shield, and that endpoint is disabled as of 2026-06-22.
 
 Recommended Railway fallback mapping:
@@ -159,9 +159,9 @@ Railway production auth is still a migration blocker because Replit OIDC does no
 2. Set Railway database and core variables with `--skip-deploys`. Done for `DATABASE_URL`, `PUBLIC_SITE_URL`, and `BASE_URL`.
 3. Add R2 vars to Railway. Done with `--skip-deploys`.
 4. Verify DB Stripe live-mode API keys and add Railway Stripe fallback vars.
-5. Disable sleep and configure `/api/health` healthcheck if Railway should be treated as a production standby.
-6. Trigger one explicit deployment. Done: `3cb9858c-2866-4944-94e6-f9cc44e0a844`.
-7. Run smoke tests against Railway domain. Partially done: health, public endpoints, admin auth enforcement, and Stripe config returned expected statuses. A local code fix now makes unauthenticated `/api/customer/profile` return HTTP 401 quickly; Railway needs a confirmed deploy before rerunning full remote smoke.
+5. Disable sleep and configure `/api/health` healthcheck if Railway should be treated as a production standby. Done in `railway.json`; verify after next deploy.
+6. Trigger one explicit deployment after config or runtime-pin changes.
+7. Run smoke tests against Railway domain. Done after the auth fix: health, public endpoints, admin auth enforcement, customer profile auth failure, and Stripe config returned expected statuses.
 8. Only after smoke tests pass, plan DNS and Stripe webhook endpoint cutover.
 9. Enable or replace the primary Stripe webhook destination only during the coordinated cutover.
 
@@ -198,10 +198,11 @@ Expected first successful Railway health state:
 
 ## Remaining Blockers
 
-- Full Railway smoke must be rerun after deploying the customer-route auth fix. The previous remote deployment timed out on unauthenticated `/api/customer/profile`; local built-server smoke now passes 22/22.
+- Railway service must be redeployed after the Node 22 `.nvmrc` and `railway.json` changes, then smoke-tested again.
 - Production data/content has not been migrated into Neon.
 - Stripe primary webhook endpoint is disabled in Stripe Workbench.
-- Neon DB has the live webhook secret but not live Stripe API keys.
+- Neon DB has Stripe test mode active, with live values staged but inactive.
 - Railway auth path needs a separate production decision.
-- Sleep/healthcheck settings are not production-standby ready.
-- Node runtime pinning should be normalized around Node 22 before relying on Railway builds.
+- Public R2 upload routes need auth/rate-limit review before production cutover.
+- Content parity between source and Neon still needs read-only count comparison.
+- Node runtime pinning is normalized in the repo via `.nvmrc`; verify Railway build metadata resolves Node 22 after the next deploy.
