@@ -908,6 +908,7 @@ router.post("/confirm-payment", paymentLimiter, async (req: any, res) => {
     if (startedPending) {
       const confirmUpdate: Record<string, any> = {
         status: "paid",
+        paymentStatus: "paid",
         stripePaymentIntentId: paymentIntentId,
       };
       if (hasMetaTracking) {
