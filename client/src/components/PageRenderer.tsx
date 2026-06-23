@@ -9,6 +9,7 @@ import { getBlock as getLegacyBlock } from "@/lib/blockRegistry";
 import { getBlock as getCmsBlock } from "@/cms/blocks/registry";
 import { ensureBlocksRegistered } from "@/cms/blocks/init";
 import { sanitizeHtml } from "@/lib/sanitizeHtml";
+import { getResponsiveImageProps } from "@/lib/responsiveImage";
 import BlogPostFeedBlock from "@/cms/blocks/BlogPostFeedBlock";
 
 interface BlockSettings {
@@ -112,7 +113,7 @@ const HeroBlock = ({ data, settings, onAddToCart }: { data: Record<string, any>;
     >
       {backgroundImage && (
         <div className="absolute inset-0">
-          <img src={backgroundImage} alt="" className="w-full h-full object-cover object-top" loading="eager" decoding="async" fetchPriority="high" />
+          <img {...getResponsiveImageProps(backgroundImage, { sizes: "100vw" })} alt="" className="w-full h-full object-cover object-top" loading="eager" decoding="async" fetchPriority="high" />
           <div className="absolute inset-0 bg-gradient-to-r from-background/90 sm:from-background/80 via-background/60 sm:via-background/50 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
         </div>
@@ -171,7 +172,7 @@ const HeroBlock = ({ data, settings, onAddToCart }: { data: Record<string, any>;
             </div>
             {image && splitLayout !== 'none' && (
               <div className={cn(splitLayout === 'right' ? 'order-1 md:order-2' : '')}>
-                <img src={image} alt={title} className="rounded-lg shadow-2xl" loading="eager" decoding="async" />
+                <img {...getResponsiveImageProps(image, { sizes: "(max-width: 768px) 100vw, 50vw" })} alt={title} className="rounded-lg shadow-2xl" loading="eager" decoding="async" />
               </div>
             )}
           </div>
@@ -217,7 +218,7 @@ const ImageBlock = ({ data, settings }: { data: Record<string, any>; settings?: 
         settings?.alignment === 'right' && 'flex flex-col items-end'
       )}>
         <img 
-          src={src} 
+          {...getResponsiveImageProps(src, { sizes: data?.fullWidth ? "100vw" : "(max-width: 1280px) 100vw, 1280px" })}
           alt={alt} 
           className={cn("rounded-lg shadow-lg", data?.fullWidth && 'w-full')}
           loading="lazy"
@@ -250,7 +251,7 @@ const ImageGridBlock = ({ data, settings }: { data: Record<string, any>; setting
         {(data.images || []).map((img: { src: string; alt?: string }, idx: number) => (
           <img 
             key={idx}
-            src={img.src}
+            {...getResponsiveImageProps(img.src, { sizes: "(max-width: 768px) 50vw, 33vw" })}
             alt={img.alt || ''}
             className="rounded-lg shadow-lg w-full h-48 object-cover"
             loading="lazy"
@@ -335,7 +336,7 @@ const ProductGridBlock = ({ data, settings, onAddToCart }: {
           >
             {product.primaryImage && (
               <img 
-                src={product.primaryImage} 
+                {...getResponsiveImageProps(product.primaryImage, { sizes: "(max-width: 768px) 100vw, 33vw" })}
                 alt={product.name}
                 className="w-full h-48 object-cover rounded-lg mb-4"
               />
@@ -500,7 +501,7 @@ const LogoCloudBlock = ({ data, settings }: { data: Record<string, any>; setting
     <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12">
       {(data.logos || []).map((logo: { src: string; alt?: string; url?: string }, idx: number) => (
         <a key={idx} href={logo.url || '#'} className="opacity-60 hover:opacity-100 transition-opacity">
-          <img src={logo.src} alt={logo.alt || ''} className="h-8 md:h-10 w-auto grayscale hover:grayscale-0" />
+          <img {...getResponsiveImageProps(logo.src, { sizes: "160px" })} alt={logo.alt || ''} className="h-8 md:h-10 w-auto grayscale hover:grayscale-0" />
         </a>
       ))}
     </div>
@@ -578,7 +579,7 @@ const VideoEmbedBlock = ({ data, settings }: { data: Record<string, any>; settin
       <div className="relative aspect-video bg-card rounded-xl overflow-hidden">
         {!playing && data.thumbnail ? (
           <div className="relative w-full h-full cursor-pointer" onClick={() => setPlaying(true)}>
-            <img src={data.thumbnail} alt={data.title || 'Video'} className="w-full h-full object-cover" />
+            <img {...getResponsiveImageProps(data.thumbnail, { sizes: "(max-width: 768px) 100vw, 640px" })} alt={data.title || 'Video'} className="w-full h-full object-cover" />
             <div className="absolute inset-0 flex items-center justify-center bg-black/30">
               <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center">
                 <Play className="w-8 h-8 text-primary-foreground ml-1" />
@@ -604,7 +605,7 @@ const GuaranteeBlock = ({ data, settings }: { data: Record<string, any>; setting
     <div className="bg-card/50 backdrop-blur border border-border rounded-2xl p-8 flex flex-col md:flex-row items-center gap-6">
       <div className="flex-shrink-0">
         {data.icon ? (
-          <img src={data.icon} alt="Guarantee" className="w-24 h-24" />
+          <img {...getResponsiveImageProps(data.icon, { sizes: "96px" })} alt="Guarantee" className="w-24 h-24" />
         ) : (
           <div className="w-24 h-24 bg-primary/20 rounded-full flex items-center justify-center">
             <Shield className="w-12 h-12 text-primary" />
@@ -704,7 +705,7 @@ const SliderBlock = ({ data, settings }: { data: Record<string, any>; settings?:
             {slides.map((slide: { image: string; title?: string; description?: string }, idx: number) => (
               <div key={idx} className="min-w-full">
                 <div className="relative aspect-[16/9]">
-                  <img src={slide.image} alt={slide.title || ''} className="w-full h-full object-cover" />
+                  <img {...getResponsiveImageProps(slide.image, { sizes: "100vw" })} alt={slide.title || ''} className="w-full h-full object-cover" />
                   {(slide.title || slide.description) && (
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-8">
                       <div>
@@ -932,7 +933,7 @@ const FeaturedProductBlock = ({ data, settings, onAddToCart }: { data: Record<st
               )}
               {featuredProduct.primaryImage && (
                 <img
-                  src={featuredProduct.primaryImage}
+                  {...getResponsiveImageProps(featuredProduct.primaryImage, { sizes: "(max-width: 1024px) 100vw, 50vw" })}
                   alt={featuredProduct.name}
                   className="w-full h-full object-contain relative z-10"
                   loading="lazy"

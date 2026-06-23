@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { Check, ChevronUp, ChevronDown, Zap } from "lucide-react";
 import { getIconWithFallback } from "@/lib/iconUtils";
 import { Button } from "@/components/ui/button";
+import { getResponsiveImageProps } from "@/lib/responsiveImage";
 import type { BlockRenderProps } from "./types";
 
 interface Product {
@@ -131,7 +132,7 @@ export default function FeaturedProductBlock({ data, settings, onAddToCart }: Bl
               )}
               {featuredProduct.primaryImage && (
                 <img
-                  src={featuredProduct.primaryImage}
+                  {...getResponsiveImageProps(featuredProduct.primaryImage, { sizes: "(max-width: 1024px) 100vw, 50vw" })}
                   alt={featuredProduct.name}
                   className="w-full h-full object-contain relative z-10"
                   loading="lazy"

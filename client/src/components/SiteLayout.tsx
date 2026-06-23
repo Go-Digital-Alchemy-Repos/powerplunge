@@ -11,6 +11,7 @@ import { useCustomerAuth } from "@/hooks/use-customer-auth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useBranding } from "@/hooks/use-branding";
 import { CustomerAuthModal } from "@/components/CustomerAuthModal";
+import { getResponsiveImageProps } from "@/lib/responsiveImage";
 
 
 interface CartItem {
@@ -104,7 +105,7 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
             <button onClick={() => setLocation("/")} className="flex-shrink-0" data-testid="nav-logo-link">
-              <img src={logoSrc} alt={companyName} className="h-8 sm:h-10" data-testid="img-logo" />
+              <img {...getResponsiveImageProps(logoSrc, { sizes: "(max-width: 640px) 160px, 220px" })} alt={companyName} className="h-8 sm:h-10" data-testid="img-logo" />
             </button>
           </div>
           <div className="flex items-center gap-1.5 sm:gap-2">
@@ -239,7 +240,7 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex flex-col items-center gap-6 md:flex-row md:justify-between">
             <div className="flex items-center">
-              <img src={logoSrc} alt={companyName} className="h-8" />
+              <img {...getResponsiveImageProps(logoSrc, { sizes: "160px" })} alt={companyName} className="h-8" />
             </div>
             <div className="flex flex-col items-center gap-3 md:items-end">
               <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4">

@@ -8,6 +8,7 @@ import SiteLayout from "@/components/SiteLayout";
 import ImageLightbox from "@/components/ui/image-lightbox";
 import SeoHead from "@/components/SeoHead";
 import { trackViewItem, trackAddToCart } from "@/lib/analytics";
+import { getResponsiveImageProps } from "@/lib/responsiveImage";
 import SocialShareBar from "@/blog/components/SocialShareBar";
 
 const SITE_URL = "https://powerplunge.com";
@@ -226,7 +227,7 @@ export default function ProductDetail() {
                   data-testid="button-open-lightbox"
                 >
                   <img
-                    src={allImages[selectedImageIndex]}
+                    {...getResponsiveImageProps(allImages[selectedImageIndex], { sizes: "(max-width: 1024px) 100vw, 50vw" })}
                     alt={product.name}
                     className="w-full h-[400px] sm:h-[500px] object-cover transition-transform duration-300 group-hover:scale-[1.02]"
                     loading="eager"
@@ -280,7 +281,7 @@ export default function ProductDetail() {
                         aria-label={`Show product image ${idx + 1}`}
                         data-testid={`button-thumbnail-${idx}`}
                       >
-                        <img src={img} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                        <img {...getResponsiveImageProps(img, { sizes: "80px" })} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                       </button>
                     ))}
                   </div>

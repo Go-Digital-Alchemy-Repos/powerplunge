@@ -2,6 +2,7 @@ import { cn } from "@/lib/utils";
 import { Section, Container } from "@/cms/layout";
 import { FadeIn } from "@/cms/motion";
 import { Text } from "@/cms/typography";
+import { getResponsiveImageProps } from "@/lib/responsiveImage";
 import type { BlockRenderProps } from "./types";
 
 export default function ImageBlock({ data, settings }: BlockRenderProps) {
@@ -28,7 +29,7 @@ export default function ImageBlock({ data, settings }: BlockRenderProps) {
 
   const imgEl = (
     <img
-      src={src}
+      {...getResponsiveImageProps(src, { sizes: "(max-width: 1280px) 100vw, 1280px" })}
       alt={alt}
       className={cn(
         "shadow-lg w-full",

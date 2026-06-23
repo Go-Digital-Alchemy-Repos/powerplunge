@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Section, Container } from "@/cms/layout";
 import { Heading, Text } from "@/cms/typography";
+import { getResponsiveImageProps } from "@/lib/responsiveImage";
 import type { BlockRenderProps } from "./types";
 
 interface Product {
@@ -142,7 +143,7 @@ export default function ProductHighlightBlock({
                 }}
               >
                 <img
-                  src={gallery[activeImageIdx] || gallery[0]}
+                  {...getResponsiveImageProps(gallery[activeImageIdx] || gallery[0], { sizes: "(max-width: 1024px) 100vw, 50vw" })}
                   alt={product.name}
                   className="w-full h-full object-contain"
                   data-testid="img-product-main"
@@ -173,7 +174,7 @@ export default function ProductHighlightBlock({
                       data-testid={`thumb-product-${idx}`}
                     >
                       <img
-                        src={img}
+                        {...getResponsiveImageProps(img, { sizes: "64px" })}
                         alt=""
                         className="w-full h-full object-cover"
                       />

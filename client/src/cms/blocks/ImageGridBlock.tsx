@@ -2,6 +2,7 @@ import { cn } from "@/lib/utils";
 import { Section, Container } from "@/cms/layout";
 import { FadeIn } from "@/cms/motion";
 import { Text } from "@/cms/typography";
+import { getResponsiveImageProps } from "@/lib/responsiveImage";
 import type { BlockRenderProps } from "./types";
 
 const gridColsMap: Record<number, string> = {
@@ -45,7 +46,7 @@ export default function ImageGridBlock({ data, settings }: BlockRenderProps) {
                   }}
                 >
                   <img
-                    src={img.src}
+                    {...getResponsiveImageProps(img.src, { sizes: "(max-width: 768px) 50vw, 33vw" })}
                     alt={img.alt || ""}
                     className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
                     data-testid={`img-grid-${idx}`}

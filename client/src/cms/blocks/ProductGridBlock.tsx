@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Section, Container } from "@/cms/layout";
 import { Heading, Text } from "@/cms/typography";
+import { getResponsiveImageProps } from "@/lib/responsiveImage";
 import type { BlockRenderProps } from "./types";
 
 interface Product {
@@ -63,7 +64,7 @@ function ProductCard({
       <div className="relative aspect-[4/3] overflow-hidden">
         {product.primaryImage ? (
           <img
-            src={product.primaryImage}
+            {...getResponsiveImageProps(product.primaryImage, { sizes: "(max-width: 768px) 100vw, 33vw" })}
             alt={product.name}
             className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
           />

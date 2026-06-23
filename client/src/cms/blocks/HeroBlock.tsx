@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { Container } from "@/cms/layout";
 import { Heading, Text } from "@/cms/typography";
 import { CmsButton } from "@/cms/ui";
+import { getResponsiveImageProps } from "@/lib/responsiveImage";
 import type { BlockRenderProps } from "./types";
 
 const minHeightMap: Record<string, string> = {
@@ -63,7 +64,7 @@ function VideoBackground({
     <>
       {fallbackImage && (
         <img
-          src={fallbackImage}
+          {...getResponsiveImageProps(fallbackImage, { sizes: "100vw" })}
           alt=""
           className={cn(
             "absolute inset-0 w-full h-full object-cover transition-opacity duration-700",
@@ -138,7 +139,7 @@ function SplitImage({ src, side }: { src: string; side: "left" | "right" }) {
       transition={{ duration: 0.8, delay: 0.2 }}
     >
       <img
-        src={src}
+        {...getResponsiveImageProps(src, { sizes: "(max-width: 1024px) 100vw, 50vw" })}
         alt=""
         className="absolute inset-0 w-full h-full object-cover"
         loading="eager"
@@ -202,7 +203,7 @@ export default function HeroBlock({ data, settings }: BlockRenderProps) {
             <VideoBackground videoUrl={videoUrl} fallbackImage={backgroundImage} />
           ) : backgroundImage ? (
             <img
-              src={backgroundImage}
+              {...getResponsiveImageProps(backgroundImage, { sizes: "100vw" })}
               alt=""
               className="w-full h-full object-cover"
               loading="eager"

@@ -8,6 +8,7 @@ import SiteLayout from "@/components/SiteLayout";
 import PageSeoHead from "@/components/PageSeoHead";
 import { useCustomerAuth } from "@/hooks/use-customer-auth";
 import { trackAddToCart, trackViewItemList } from "@/lib/analytics";
+import { getResponsiveImageProps } from "@/lib/responsiveImage";
 
 interface Product {
   id: string;
@@ -192,7 +193,7 @@ function FallbackShopContent({
                   <Link href={productUrl} className="block cursor-pointer">
                     {product.primaryImage && (
                       <img 
-                        src={product.primaryImage} 
+                        {...getResponsiveImageProps(product.primaryImage, { sizes: "(max-width: 1024px) 100vw, 33vw" })}
                         alt={product.name}
                         className="w-full h-48 sm:h-64 object-cover group-hover:scale-105 transition-transform duration-300"
                         loading="lazy"
@@ -210,7 +211,7 @@ function FallbackShopContent({
                   <>
                     {product.primaryImage && (
                       <img 
-                        src={product.primaryImage} 
+                        {...getResponsiveImageProps(product.primaryImage, { sizes: "(max-width: 1024px) 100vw, 33vw" })}
                         alt={product.name}
                         className="w-full h-48 sm:h-64 object-cover"
                         loading="lazy"
