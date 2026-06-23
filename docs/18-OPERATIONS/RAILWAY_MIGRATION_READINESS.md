@@ -52,8 +52,8 @@ Current service inventory:
 | Required env names | Present in Railway | `DATABASE_URL`, `SESSION_SECRET`, generic Stripe vars, `APP_SECRETS_ENCRYPTION_KEY`, R2 vars, `PUBLIC_SITE_URL`, and `BASE_URL` are configured by name. |
 | Railway health | Ready for dry-run smoke | Confirmed redeploy on 2026-06-23 picked up `railway.json`, Node 22, and the staged Neon `DATABASE_URL`; `/api/health` returns HTTP 200 with DB connected and smoke passes 22/22. |
 | Neon project | Ready | Project `powerplunge`, branch `main`, database `powerplunge`, Postgres 17. |
-| Neon schema | Ready for schema-only dry run | Schema verifier passes against the migration target; production content data is not migrated. Replit has storefront/content rows that Neon currently lacks. |
-| Cloudflare R2 refs | Verified in Railway runtime | Required R2 vars are configured on Railway. A runtime write/read/delete smoke passed on 2026-06-23. |
+| Neon schema/content | Ready for dry-run smoke | Schema verifier passes against the migration target. Storefront/CMS content was imported from Replit into Neon on 2026-06-23; source and target counts match for the selected content allowlist. |
+| Cloudflare R2 refs | Verified in Railway runtime | Required R2 vars are configured on Railway. A runtime write/read/delete smoke passed on 2026-06-23. Three Replit-local storefront image assets were copied to R2 and Neon image refs now resolve through `/r2/...`. |
 | Stripe env model | DB-first dry run staged | Runtime Stripe uses DB settings first. Neon has test mode active, with test and live Stripe values staged in encrypted DB fields. Generic Railway Stripe vars remain fallback-only and should not be relied on for cutover. |
 | Stripe primary webhook secret | Rotated | Historically exposed primary PowerPlunge signing secret was rotated in Stripe Workbench on 2026-06-22; Neon now has an encrypted DB-stored live webhook secret. |
 | Stripe primary webhook endpoint | Not ready | The primary `https://powerplunge.com/api/webhook/stripe` destination exists under the Nano-Shield Stripe account, but it is currently disabled. |
@@ -198,26 +198,41 @@ Expected first successful Railway health state:
 - Public smoke endpoints do not return 500
 - R2 upload/read/delete works through a targeted runtime smoke
 
-Observed source-vs-Neon content counts on 2026-06-23:
+Observed source-vs-Neon content counts after the 2026-06-23 content import from the Replit SSH runtime database:
 
 | Data set | Replit source | Neon target |
 |---|---:|---:|
-| Active products | 6 | 0 |
-| Published products | 5 | 0 |
-| Pages | 3 | 0 |
-| Home pages | 1 | 0 |
-| Shop pages | 1 | 0 |
-| Published posts | 1 | 0 |
-| Active menus | 1 | 0 |
-| Media items | 1 | 0 |
-| `site_settings.main` | present | missing |
+| Active products | 6 | 6 |
+| Published products | 5 | 5 |
+| Pages | 3 | 3 |
+| Home pages | 1 | 1 |
+| Shop pages | 1 | 1 |
+| Posts | 8 | 8 |
+| Published posts | 6 | 6 |
+| Public posts | 5 | 5 |
+| Active menus | 1 | 1 |
+| Media items | 1 | 1 |
+| Saved sections | 5 | 5 |
+| Sidebars | 1 | 1 |
+| Sidebar widgets | 3 | 3 |
+| Coupons | 1 | 1 |
+| VIP settings | 1 | 1 |
+| Revenue alert thresholds | 4 | 4 |
+| `site_settings.main` | present | present |
+
+The import intentionally skipped `integration_settings`, `email_settings`, auth, customer, order, and payment ledger tables. Stripe/R2 settings remain managed separately through the Railway/Neon encrypted settings path. The Replit source had no `product_relationships`, `upsell_rules`, or `post_purchase_offers` rows to migrate.
+
+Additional content checks:
+
+- Railway public endpoints return products, home page, shop page, blog posts, and main menu.
+- Product/media image refs now point at R2-backed `/r2/...` paths and return HTTP redirects from Railway.
+- One published page contains one `sectionRef` whose target saved section is missing in both the Replit source and Neon target. This is a source content cleanup blocker before DNS cutover if that section appears on a customer-visible page.
 
 ## Remaining Blockers
 
-- Production data/content has not been migrated into Neon.
 - Stripe primary webhook endpoint is disabled in Stripe Workbench.
 - Neon DB has Stripe test mode active, with live values staged but inactive.
 - Railway auth path needs a separate production decision.
 - Public R2 read redirects remain open for media display; R2 write/presign routes require admin full access and rate limiting.
-- Content parity between source and Neon needs migration execution and a post-migration recount.
+- One published page has a dangling saved-section reference inherited from the Replit source.
 - Runtime logs still show optional integration warnings, MemoryStore warning, Better Auth default-secret warning, and a future `pg` SSL-mode warning.
