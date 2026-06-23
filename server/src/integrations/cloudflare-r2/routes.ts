@@ -1,5 +1,7 @@
 import type { Express, Response, Request } from "express";
 import multer from "multer";
+import { requireFullAccess } from "../../middleware/auth.middleware";
+import { createRateLimiter } from "../../middleware/rate-limiter";
 import { R2StorageService, isR2ConfiguredAsync } from "./r2Storage";
 
 const upload = multer({
@@ -9,10 +11,17 @@ const upload = multer({
   },
 });
 
+const r2WriteLimiter = createRateLimiter({
+  windowMs: 60 * 1000,
+  maxRequests: 20,
+  name: "r2-write",
+  message: "Too many storage requests. Please wait a moment.",
+});
+
 export function registerR2Routes(app: Express): void {
   console.log("[R2] Registering R2 upload routes (credentials checked per-request)");
 
-  app.post("/api/r2/request-upload-url", async (req, res) => {
+  app.post("/api/r2/request-upload-url", r2WriteLimiter, requireFullAccess, async (req, res) => {
     try {
       const configured = await isR2ConfiguredAsync();
       if (!configured) {
@@ -44,7 +53,7 @@ export function registerR2Routes(app: Express): void {
     }
   });
 
-  app.post("/api/r2/upload", upload.single("file"), async (req: Request, res: Response) => {
+  app.post("/api/r2/upload", r2WriteLimiter, requireFullAccess, upload.single("file"), async (req: Request, res: Response) => {
     try {
       const configured = await isR2ConfiguredAsync();
       if (!configured) {

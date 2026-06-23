@@ -38,8 +38,8 @@ Current service inventory:
 - Build command: `npm run build`
 - Start command: `npm run start`
 - Status: `SUCCESS`
-- Current deployment ID: `1d9449e1-2e7c-44a0-8c20-1424182dc290`
-- Current commit: `f5c1e708f792c1bd8aedaba50a9b308751f1f82e`
+- Current deployment ID: verify with `railway service status --json` before action.
+- Current commit: verify with `railway status --json` before action.
 - Node runtime: Railpack requested and resolved `22.22.1`
 - Sleep when inactive: disabled by `railway.json`
 - Healthcheck path: `/api/health`
@@ -162,7 +162,7 @@ Railway production auth is still a migration blocker because Replit OIDC does no
 3. Add R2 vars to Railway. Done with `--skip-deploys`.
 4. Verify DB Stripe live-mode API keys and add Railway Stripe fallback vars.
 5. Disable sleep and configure `/api/health` healthcheck if Railway should be treated as a production standby. Done in `railway.json` and verified after deploy.
-6. Trigger one explicit deployment after config or runtime-pin changes. Done: `1d9449e1-2e7c-44a0-8c20-1424182dc290`.
+6. Trigger one explicit deployment after config or runtime-pin changes. Done and verified on 2026-06-23.
 7. Run smoke tests against Railway domain. Done after the Node/config deploy: health, public endpoints, admin auth enforcement, customer profile auth failure, and Stripe config returned expected statuses.
 8. Only after smoke tests pass, plan DNS and Stripe webhook endpoint cutover.
 9. Enable or replace the primary Stripe webhook destination only during the coordinated cutover.
@@ -218,6 +218,6 @@ Observed source-vs-Neon content counts on 2026-06-23:
 - Stripe primary webhook endpoint is disabled in Stripe Workbench.
 - Neon DB has Stripe test mode active, with live values staged but inactive.
 - Railway auth path needs a separate production decision.
-- Public R2 upload routes need auth/rate-limit review before production cutover.
+- Public R2 read redirects remain open for media display; R2 write/presign routes require admin full access and rate limiting.
 - Content parity between source and Neon needs migration execution and a post-migration recount.
 - Runtime logs still show optional integration warnings, MemoryStore warning, Better Auth default-secret warning, and a future `pg` SSL-mode warning.
