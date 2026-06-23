@@ -53,7 +53,7 @@ Current service inventory:
 | Railway health | Ready for dry-run smoke | Confirmed redeploy on 2026-06-23 picked up `railway.json`, Node 22, and the staged Neon `DATABASE_URL`; `/api/health` returns HTTP 200 with DB connected and smoke passes 22/22. |
 | Neon project | Ready | Project `powerplunge`, branch `main`, database `powerplunge`, Postgres 17. |
 | Neon schema/content | Ready for dry-run smoke | Schema verifier passes against the migration target. Storefront/CMS content was imported from Replit into Neon on 2026-06-23; source and target counts match for the selected content allowlist. |
-| Cloudflare R2 refs | Verified in Railway runtime | Required R2 vars are configured on Railway. A runtime write/read/delete smoke passed on 2026-06-23. Three Replit-local storefront image assets were copied to R2 and Neon image refs now resolve through `/r2/...`. |
+| Cloudflare R2 refs | Verified in Railway runtime | Required R2 vars are configured on Railway. A runtime write/read/delete smoke passed on 2026-06-23. All 11 Replit-local upload assets were copied to R2, remaining Neon `/local-uploads/...` refs were rewritten to `/r2/...`, and Railway redirects resolve for every copied object. |
 | Stripe env model | DB-first dry run staged | Runtime Stripe uses DB settings first. Neon has test mode active, with test and live Stripe values staged in encrypted DB fields. Generic Railway Stripe vars remain fallback-only and should not be relied on for cutover. |
 | Stripe primary webhook secret | Rotated | Historically exposed primary PowerPlunge signing secret was rotated in Stripe Workbench on 2026-06-22; Neon now has an encrypted DB-stored live webhook secret. |
 | Stripe primary webhook endpoint | Not ready | The primary `https://powerplunge.com/api/webhook/stripe` destination exists under the Nano-Shield Stripe account, but it is currently disabled. |
@@ -225,7 +225,7 @@ The import intentionally skipped `integration_settings`, `email_settings`, auth,
 Additional content checks:
 
 - Railway public endpoints return products, home page, shop page, blog posts, and main menu.
-- Product/media image refs now point at R2-backed `/r2/...` paths and return HTTP redirects from Railway.
+- Product, media, page hero, and site logo image refs now point at R2-backed `/r2/...` paths and return HTTP redirects from Railway.
 - The inherited broken Shop page `sectionRef` was removed directly in Neon on 2026-06-23; published pages now have zero missing saved-section references.
 
 ## Remaining Blockers
