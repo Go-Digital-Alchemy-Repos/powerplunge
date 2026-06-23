@@ -226,7 +226,7 @@ Additional content checks:
 
 - Railway public endpoints return products, home page, shop page, blog posts, and main menu.
 - Product/media image refs now point at R2-backed `/r2/...` paths and return HTTP redirects from Railway.
-- One published page contains one `sectionRef` whose target saved section is missing in both the Replit source and Neon target. This is a source content cleanup blocker before DNS cutover if that section appears on a customer-visible page.
+- The inherited broken Shop page `sectionRef` was removed directly in Neon on 2026-06-23; published pages now have zero missing saved-section references.
 
 ## Remaining Blockers
 
@@ -234,5 +234,4 @@ Additional content checks:
 - Neon DB has Stripe test mode active, with live values staged but inactive.
 - Railway auth path needs a separate production decision.
 - Public R2 read redirects remain open for media display; R2 write/presign routes require admin full access and rate limiting.
-- One published page has a dangling saved-section reference inherited from the Replit source.
 - Runtime logs still show optional integration warnings, MemoryStore warning, Better Auth default-secret warning, and a future `pg` SSL-mode warning.
