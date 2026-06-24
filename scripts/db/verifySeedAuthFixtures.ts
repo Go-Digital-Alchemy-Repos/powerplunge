@@ -2,7 +2,7 @@
 import { and, eq, sql } from "drizzle-orm";
 import { verifyPassword } from "better-auth/crypto";
 import { db } from "../../server/db";
-import { adminUsers, affiliates, affiliateAgreements, customers } from "../../shared/schema";
+import { adminUsers, affiliates, affiliateAgreements, affiliateSettings, customers } from "../../shared/schema";
 import { betterAuthAccount, betterAuthUser } from "../../shared/models/better-auth";
 import { BETTER_AUTH_LEGACY_PASSWORD_PLACEHOLDER } from "../../server/src/auth/adminBetterAuth";
 import { BETTER_AUTH_CUSTOMER_PASSWORD_PLACEHOLDER } from "../../server/src/auth/customerBetterAuth";
@@ -92,6 +92,16 @@ async function verifySeedAuthFixtures() {
 
   await verifyCustomer("customer@test.com", "customer@test.com");
   const affiliateCustomer = await verifyCustomer("affiliate@test.com", "affiliate@test.com");
+
+  const [settings] = await db
+    .select({ ffEnabled: affiliateSettings.ffEnabled })
+    .from(affiliateSettings)
+    .where(eq(affiliateSettings.id, "main"))
+    .limit(1);
+  check(settings ? "PASS" : "FAIL", "affiliate program settings row exists");
+  if (settings) {
+    check(settings.ffEnabled ? "PASS" : "FAIL", "affiliate program F&F is enabled");
+  }
 
   if (affiliateCustomer) {
     const [affiliate] = await db
