@@ -20,7 +20,7 @@ Date: 2026-02-07
 **Severity:** Medium | **Impact:** `/api/vip/admin/customers`  
 **Problem:** For each VIP customer, the endpoint made 2 separate DB queries (getCustomer + getOrdersByCustomerId). With 50 VIP customers, that's 101 queries instead of 3.  
 **Fix:** Added batch methods `getCustomersByIds()` and `getOrdersByCustomerIds()` using `inArray()` queries. The endpoint now runs exactly 3 queries (getVipCustomers + batch customers + batch orders) regardless of VIP count, then maps results in memory.  
-**Files:** `server/src/routes/vip.routes.ts`, `server/storage.ts`
+**Files:** `server/src/routes/admin/vip.routes.ts`, `server/storage.ts`
 
 ### 4. No Cache-Control Headers for Static Assets (FIXED)
 **Severity:** Medium | **Impact:** Production asset delivery  
@@ -62,7 +62,7 @@ Date: 2026-02-07
 **Severity:** Informational | **Impact:** `/api/admin/support`  
 **Current state:** The support tickets list endpoint uses a proper `LEFT JOIN` with customers table and a single aggregate query for stats. This is the correct pattern.  
 **Assessment:** No change needed. This is a good reference implementation for other admin lists.  
-**File:** `server/src/routes/support.routes.ts`
+**File:** `server/src/routes/admin/support.routes.ts`
 
 ---
 
@@ -81,7 +81,7 @@ Date: 2026-02-07
 - `server/index.ts` — Added compression + server timing middleware
 - `server/static.ts` — Added cache-control headers for production static assets
 - `server/src/middleware/server-timing.middleware.ts` — New: slow endpoint logger
-- `server/src/routes/vip.routes.ts` — Batch queries for VIP customers
+- `server/src/routes/admin/vip.routes.ts` — Batch queries for VIP customers
 - `server/storage.ts` — Added `getCustomersByIds()` and `getOrdersByCustomerIds()`
 - `client/src/App.tsx` — React.lazy code splitting for 40+ admin routes
 

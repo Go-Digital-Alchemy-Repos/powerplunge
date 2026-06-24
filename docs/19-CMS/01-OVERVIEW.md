@@ -15,14 +15,15 @@ shared/schema.ts                              → Page, SavedSection, CmsPost, C
 
 server/src/
   routes/admin/cms.router.ts               → Pages, sections, themes, packs, settings API
-  routes/admin/cms-posts.routes.ts         → Admin posts API (CRUD, publish, unpublish)
+  routes/admin/cms-posts-v2.routes.ts      → Admin posts API (CRUD, publish, unpublish)
   routes/admin/cms-menus.routes.ts         → Admin menus API (CRUD, by-location upsert)
-  routes/public.blog.routes.ts                 → Public blog API (list, by-slug, tags, categories)
+  routes/public/cms-menus.routes.ts        → Public menu API (active menu by location)
+  routes/public/blog-v2.routes.ts              → Public blog API (list, by-slug, tags, categories)
   services/cms.service.ts                  → Pages/themes/presets business logic
-  services/cms-posts.service.ts            → Posts business logic
+  services/cms.posts.service.ts            → Posts business logic
   services/cms-menus.service.ts            → Menus business logic
   repositories/cms.repository.ts           → Page/section/theme DB queries
-  repositories/cms-posts.repository.ts     → Posts DB queries
+  repositories/cms.posts.repo.ts           → Posts DB queries
   repositories/cms-menus.repository.ts     → Menus DB queries
   schemas/cms.schema.ts                    → Page Zod schemas
   schemas/cms.posts.schema.ts               → Post Zod schemas
@@ -44,8 +45,7 @@ client/src/
   pages/admin-cms-generator-landing.tsx    → Landing page generator wizard
   pages/admin-cms-generator-campaigns.tsx  → Campaign packs generator
   cms/blocks/registry.ts                      → Block type registry (Map-based)
-  cms/blocks/entries.ts                       → 25 registered block types
-  cms/blocks/schemas.ts                       → Zod validation schemas per block
+  cms/blocks/entries.ts                       → 31 registered editor block types
   cms/blocks/types.ts                         → TypeScript interfaces
   cms/blocks/blockCategories.ts               → Block category definitions (single source of truth)
   cms/themes/presets.ts                       → 10 CSS-variable theme presets
@@ -76,7 +76,7 @@ Every page has a `title`, `slug`, `status` (draft/published), and optional block
 
 ### Blocks
 
-Blocks are the atomic content units. Each block has a `type`, `data` (props), and `settings`. The block registry defines 12 types across six categories: layout, marketing, ecommerce, trust, media, and utility. See [Block Registry](02-BLOCK-REGISTRY.md). Domain-specific blocks for cold plunge marketing are documented in [Power Plunge Blocks](11-POWERPLUNGE-BLOCKS.md).
+Blocks are the atomic content units. Each block has a `type`, `data` (props), and `settings`. The editor registry currently defines 31 block types across seven categories: layout, marketing, ecommerce, trust, media, utility, and powerplunge. See [Block Registry](02-BLOCK-REGISTRY.md). Domain-specific blocks for cold plunge marketing are documented in [Power Plunge Blocks](11-POWERPLUNGE-BLOCKS.md).
 
 ### Sections & Kits
 
@@ -164,7 +164,7 @@ Run all CMS health checks:
 ```bash
 npx tsx scripts/db/verifySchema.ts    # 80 tables including cms_v2_posts, cms_v2_menus
 npx tsx scripts/smoke/apiSmoke.ts     # 22 endpoint checks
-npx tsx scripts/smoke/blogSmoke.ts    # 19 post lifecycle tests
+npx tsx scripts/smoke/blogSmoke.ts    # post lifecycle smoke test
 npx tsx scripts/smoke/cmsContentSafety.ts  # 21 content validation tests
 ```
 

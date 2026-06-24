@@ -5,7 +5,7 @@
 | Property | Value |
 |----------|-------|
 | Domain | upsells |
-| Source Files | server/src/routes/upsell.routes.ts |
+| Source Files | server/src/routes/admin/upsells.routes.ts |
 | Endpoint Count | 14 |
 
 ## Auth & Authorization

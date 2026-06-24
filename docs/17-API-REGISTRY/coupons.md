@@ -5,7 +5,7 @@
 | Property | Value |
 |----------|-------|
 | Domain | coupons |
-| Source Files | server/src/routes/coupon.routes.ts |
+| Source Files | server/src/routes/admin/coupon-analytics.routes.ts |
 | Endpoint Count | 6 |
 
 ## Auth & Authorization

@@ -610,7 +610,7 @@ The legacy handlers are registered first (line order in `registerRoutes()`), so 
 ### 7.3 Affiliates Route Naming
 
 Two affiliate admin route files will coexist during migration:
-- **Existing migrated:** `server/src/routes/affiliate.routes.ts` → mounted at `/api/admin/affiliates-v2`
+- **Existing migrated:** `server/src/routes/admin/affiliates-v2.routes.ts` → mounted at `/api/admin/affiliates-v2`
 - **Legacy to migrate:** 10 endpoints at `/api/admin/affiliate*`
 
 The legacy endpoints use `/api/admin/affiliates`, `/api/admin/affiliate-settings`, `/api/admin/affiliate-invites`, and `/api/admin/affiliate-payouts`. The migrated file should be named `admin/affiliates-legacy.routes.ts` to avoid collision with the existing v2 file. After migration, evaluate merging the two.
@@ -672,7 +672,7 @@ The following files were modified or created during the refactoring (2026-02-07)
 | `upsell.routes.ts` | `admin/upsells.routes.ts` | `/api/upsells` | admin |
 | `vip.routes.ts` | `admin/vip.routes.ts` | `/api/vip` | admin |
 | `coupon.routes.ts` | `public/coupons.routes.ts` | `/api/coupons` | public |
-| `public.blog.routes.ts` | `public/blog-posts.routes.ts` | `/api/blog` | public |
+| legacy public blog root shim | `public/blog-v2.routes.ts` | `/api/blog` | public |
 | `support.routes.ts` | kept at root (mixed exports) | `/api/admin/support` + `/api/customer/support` | mixed |
 
 ### Migration Strategy

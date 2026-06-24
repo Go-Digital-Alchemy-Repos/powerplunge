@@ -87,5 +87,5 @@ A blog page can include any combination of blocks:
 | File | Purpose |
 |------|---------|
 | `client/src/cms/blocks/BlogPostFeedBlock.tsx` | Block component + Puck config |
-| `server/src/routes/public/blog.routes.ts` | API providing post data |
+| `server/src/routes/public/blog-v2.routes.ts` | API providing post data |
 | `client/src/pages/admin-cms-pages.tsx` | Page builder integration |

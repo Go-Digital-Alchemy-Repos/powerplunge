@@ -91,5 +91,5 @@ These are derived from existing post data (no separate management table).
 | File | Purpose |
 |------|---------|
 | `client/src/pages/admin-cms-posts.tsx` | Posts library + editor UI |
-| `server/src/routes/admin/cms-posts.routes.ts` | Admin API endpoints |
-| `server/src/services/cms-posts.service.ts` | Service layer |
+| `server/src/routes/admin/cms-posts-v2.routes.ts` | Admin API endpoints |
+| `server/src/services/cms.posts.service.ts` | Service layer |

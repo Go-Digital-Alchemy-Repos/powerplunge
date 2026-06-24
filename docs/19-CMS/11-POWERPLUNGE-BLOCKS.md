@@ -191,5 +191,4 @@ Several block types include a `disclaimerText` prop. This disclaimer should alwa
 |------|---------|
 | `server/src/data/sectionKits.ts` | Kit definitions and block data |
 | `client/src/cms/blocks/entries.ts` | Block registration (core blocks) |
-| `client/src/cms/blocks/schemas.ts` | Zod validation schemas |
 | `client/src/cms/blocks/types.ts` | TypeScript interfaces |

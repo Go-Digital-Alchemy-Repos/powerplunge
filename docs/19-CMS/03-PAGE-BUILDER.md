@@ -21,7 +21,6 @@ client/src/pages/admin-cms-post-builder.tsx   → Post builder component
 client/src/cms/blocks/registry.ts                → Block type definitions (Map-based)
 client/src/cms/blocks/entries.ts                 → Block registrations (registerCmsV1Blocks)
 client/src/cms/blocks/types.ts                   → TypeScript interfaces
-client/src/cms/blocks/schemas.ts                 → Zod validation schemas
 ```
 
 ### Key Functions

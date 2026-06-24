@@ -156,9 +156,9 @@ grep -r "registerBlock" client/src/cms/blocks/entries.ts
 
 **Symptom:** Saving a page with a specific block returns a 400 error.
 
-**Cause:** Block data doesn't match its Zod schema in `schemas.ts`.
+**Cause:** Block data does not match the persisted `contentJson` shape expected by `server/src/utils/contentValidation.ts`.
 
-**Fix:** Check the schema definition and ensure all required fields have defaults.
+**Fix:** Check the response body for the exact validation error, then ensure each block has a non-empty `id`, non-empty `type`, and object-shaped `data`.
 
 ---
 

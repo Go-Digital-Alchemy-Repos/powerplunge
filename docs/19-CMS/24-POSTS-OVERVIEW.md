@@ -92,10 +92,10 @@ This means the post becomes visible only when the scheduled time arrives, with n
 | File | Purpose |
 |------|---------|
 | `shared/schema.ts` | Drizzle table + Zod insert schema |
-| `server/src/services/cms-posts.service.ts` | Business logic (list, create, publish, etc.) |
-| `server/src/repositories/cms-posts.repository.ts` | Database queries |
-| `server/src/routes/admin/cms-posts.routes.ts` | Admin API routes |
-| `server/src/routes/public/blog.routes.ts` | Public read-only routes |
+| `server/src/services/cms.posts.service.ts` | Business logic (list, create, publish, etc.) |
+| `server/src/repositories/cms.posts.repo.ts` | Database queries |
+| `server/src/routes/admin/cms-posts-v2.routes.ts` | Admin API routes |
+| `server/src/routes/public/blog-v2.routes.ts` | Public read-only routes |
 | `client/src/pages/admin-cms-posts.tsx` | Admin UI for post management |
 
 ---

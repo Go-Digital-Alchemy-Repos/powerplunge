@@ -50,9 +50,9 @@ Relocated all 12 files to their proper subdirectories:
 | `cms.posts.routes.ts` | `admin/cms-posts-v2.routes.ts` |
 | ~~`cms.sitePresets.routes.ts`~~ | ~~Removed — Site Presets feature deleted~~ |
 | `cms.siteSettings.routes.ts` | `admin/cms-site-settings.routes.ts` |
-| `public.blog.routes.ts` | `public/blog-v2.routes.ts` |
+| legacy public blog root shim | `public/blog-v2.routes.ts` |
 
-Backward-compatible re-export stubs left at original locations. `server/routes.ts` updated to import from new canonical paths.
+`server/routes.ts` imports from the canonical paths. The temporary backward-compatible re-export stubs have since been removed.
 
 ## 3. Performance (carried from Phase 1)
 
@@ -78,7 +78,7 @@ Round 2 optimizations completed in prior session:
 - `docs/architecture/ADMIN_UI_RULES.md`
 - `docs/stabilization/STABILIZATION_REPORT.md`
 - 12 new route files in `admin/` and `public/` subdirectories
-- 12 re-export stubs at original locations
+- temporary re-export stubs at original locations (since removed)
 
 ### Modified Files
 - `client/src/components/ThemeProvider.tsx` — Added scoped theme variable functions

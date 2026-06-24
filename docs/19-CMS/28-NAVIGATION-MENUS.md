@@ -209,6 +209,6 @@ DynamicNav is integrated into `home.tsx` alongside the logo. When no menu is con
 | `server/src/routes/admin/cms-menus.routes.ts` | Admin API routes |
 | `server/src/services/cms-menus.service.ts` | Service layer |
 | `server/src/repositories/cms-menus.repository.ts` | Database queries |
-| `server/src/routes/public/blog.routes.ts` | Public menu endpoint (`publicMenuRoutes`) |
+| `server/src/routes/public/cms-menus.routes.ts` | Public menu endpoint |
 | `client/src/pages/admin-cms-menus.tsx` | Admin UI |
 | `client/src/components/DynamicNav.tsx` | Frontend rendering component |

@@ -2,7 +2,7 @@
 
 Public-facing, read-only endpoints for rendering blog content on the storefront.
 
-All routes are defined in `server/src/routes/public/blog.routes.ts` and mounted at `/api/blog`.
+All routes are defined in `server/src/routes/public/blog-v2.routes.ts` and mounted at `/api/blog`.
 
 ---
 
@@ -135,6 +135,6 @@ const { data: post } = useQuery({
 
 | File | Purpose |
 |------|---------|
-| `server/src/routes/public/blog.routes.ts` | Route definitions |
-| `server/src/services/cms-posts.service.ts` | `listPublished()`, `getPublishedBySlug()` |
-| `server/src/repositories/cms-posts.repository.ts` | DB queries with status filtering |
+| `server/src/routes/public/blog-v2.routes.ts` | Route definitions |
+| `server/src/services/public.blog.service.ts` | `listPublished()`, `getPublishedBySlug()` |
+| `server/src/repositories/cms.posts.repo.ts` | DB queries for active post data |

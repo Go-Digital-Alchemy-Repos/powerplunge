@@ -309,7 +309,7 @@ Update global site settings directly (independent of presets). Validated against
 
 ## Posts
 
-Admin post endpoints are mounted under `/api/admin/cms/posts` via `server/src/routes/admin/cms-posts.routes.ts`.
+Admin post endpoints are mounted under `/api/admin/cms/posts` via `server/src/routes/admin/cms-posts-v2.routes.ts`.
 
 ### GET /posts
 
@@ -416,7 +416,7 @@ List all unique categories across all posts.
 
 ### Public Blog Endpoints
 
-Public endpoints are mounted at `/api/blog/` via `server/src/routes/public.blog.routes.ts`.
+Public endpoints are mounted at `/api/blog/` via `server/src/routes/public/blog-v2.routes.ts`.
 
 | Method | Endpoint | Purpose |
 |--------|----------|---------|

@@ -5,7 +5,7 @@
 | Property | Value |
 |----------|-------|
 | Domain | affiliates |
-| Source Files | `server/src/routes/admin/affiliates-v2.routes.ts` (canonical), `server/src/routes/affiliate.routes.ts` (re-export shim) |
+| Source Files | `server/src/routes/admin/affiliates-v2.routes.ts` |
 | Mount Point | `/api/admin/affiliates-v2` |
 | Endpoint Count | 18 |
 
@@ -19,7 +19,6 @@
 ## Current reality
 
 - **Canonical source:** `server/src/routes/admin/affiliates-v2.routes.ts`
-- **Re-export shim:** `server/src/routes/affiliate.routes.ts` re-exports the default from `admin/affiliates-v2.routes.ts`.
 - **Effective base mount:** `/api/admin/affiliates-v2` (see `server/routes.ts` line 93).
 - **Paths in the corrected table in the Notes section are fully qualified** (mount prefix + router path). The auto-generated table further below has incorrect paths — see the correction notice in Notes.
 
