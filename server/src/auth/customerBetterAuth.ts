@@ -7,7 +7,6 @@ import { storage } from "../../storage";
 import type { Customer } from "@shared/schema";
 import { betterAuthAccount, betterAuthUser, betterAuthVerification } from "@shared/models/better-auth";
 import { auth } from "./betterAuth";
-import { isBetterAuthEnabled } from "./betterAuthConfig";
 import { applyBetterAuthHeaders } from "./adminBetterAuth";
 
 export const BETTER_AUTH_CUSTOMER_PASSWORD_PLACEHOLDER = "better-auth-managed";
@@ -33,7 +32,7 @@ declare module "express-serve-static-core" {
 }
 
 export function assertCustomerBetterAuthReady() {
-  if (!isBetterAuthEnabled() || !process.env.BETTER_AUTH_SECRET) {
+  if (!process.env.BETTER_AUTH_SECRET) {
     throw new Error("Better Auth is not configured for customer authentication");
   }
 }

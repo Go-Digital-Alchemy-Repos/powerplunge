@@ -5,8 +5,6 @@ import {
   normalizeBetterAuthRole,
 } from "@shared/auth/roles";
 
-const USE_BETTER_AUTH = import.meta.env.VITE_USE_BETTER_AUTH === "true";
-
 export const authClient = createAuthClient({
   baseURL: window.location.origin,
   plugins: [magicLinkClient()],
@@ -64,5 +62,3 @@ export async function betterAuthSignOut() {
     throw error;
   }
 }
-
-export { USE_BETTER_AUTH };

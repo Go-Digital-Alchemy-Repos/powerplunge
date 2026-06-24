@@ -5,10 +5,6 @@ import { pool } from "./db";
 import { validateEnv } from "./src/config/env-validation";
 import { storage } from "./storage";
 
-// Canonical imports from server/src/
-import { setupAuth, registerAuthRoutes, isAuthenticated } from "./src/integrations/replit/auth";
-import { runtime } from "./src/config/runtime";
-import { setupLocalDevAuth, setupAuthDisabledRoutes } from "./src/config/local-auth-stub";
 import { registerObjectStorageRoutes } from "./src/integrations/replit/object-storage";
 import { registerR2Routes, isR2Configured } from "./src/integrations/cloudflare-r2";
 import { requireAdmin, errorHandler, requireFullAccess, requireOrderAccess } from "./src/middleware";
@@ -84,17 +80,7 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  // Setup auth: Replit OIDC when on Replit, local stub or disabled otherwise
-  if (runtime.shouldEnableReplitOIDC) {
-    await setupAuth(app);
-    registerAuthRoutes(app);
-  } else if (runtime.enableDevAuth) {
-    setupLocalDevAuth(app);
-  } else {
-    setupAuthDisabledRoutes(app);
-  }
-  
-  // Register Better Auth routes (feature-flagged)
+  // Better Auth is the app login surface after the auth cutover.
   registerBetterAuthRoutes(app);
   
   // Register file storage routes
@@ -165,7 +151,7 @@ export async function registerRoutes(
   app.use("/api/coupons", couponRoutes);
   app.use("/api/recovery", requireFullAccess, recoveryRoutes);
   app.use("/api/alerts", requireFullAccess, alertsRoutes);
-  app.use("/api/customer/support", isAuthenticated, supportRoutes);
+  app.use("/api/customer/support", supportRoutes);
   app.use("/api/admin/support/settings", requireFullAccess, adminSupportSettingsRoutes);
   app.use("/api/admin/support", requireAdmin, adminSupportRouter);
   app.use("/api/admin/docs", requireFullAccess, docsRouter);
@@ -227,7 +213,7 @@ export async function registerRoutes(
   app.use("/api/affiliate", publicAffiliateRoutes);
   app.use("/api/coupons", publicCouponRoutes);
 
-  // Customer routes handle platform/session-token auth internally.
+  // Customer routes resolve Better Auth sessions internally.
   app.use("/api/customer", customerProfileRoutes);
   app.use("/api/customer", customerAffiliateRoutes);
 

@@ -985,7 +985,7 @@ Welcome to the Power Plunge e-commerce platform documentation.
 - **Backend**: Express.js with TypeScript
 - **Database**: PostgreSQL with Drizzle ORM
 - **Payments**: Stripe (embedded checkout)
-- **Authentication**: Replit Auth (OIDC-based)
+- **Authentication**: Better Auth
 
 ## Core Features
 

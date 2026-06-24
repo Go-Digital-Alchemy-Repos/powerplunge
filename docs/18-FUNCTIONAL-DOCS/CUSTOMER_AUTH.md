@@ -2,108 +2,74 @@
 
 ## Overview
 
-Power Plunge uses a custom authentication system for customer accounts, supporting email/password registration, magic link (passwordless) login, and JWT-based session management. Session tokens are stored in localStorage on the client and passed as Bearer tokens in API requests.
+Power Plunge customer accounts use Better Auth. Customer sessions are stored in secure HTTP-only cookies and resolved on the server through `getCustomerAuthContext` / `requireCustomerAuth`.
 
 ## Authentication Methods
 
 ### Email & Password
 
 **Registration** (`POST /api/customer/auth/register`):
-- Requires: email, password (min 8 characters), name
-- Email is normalized (lowercase, trimmed)
-- Password is hashed using `bcrypt` with salt rounds of 10
-- If an account exists without a password (created via guest checkout), the password is added
-- Returns a session token on success
+- Requires email, password (min 8 characters), and name.
+- Creates or links a customer profile.
+- Syncs the profile to Better Auth.
+- Sets Better Auth session cookies on success.
 
 **Login** (`POST /api/customer/auth/login`):
-- Validates email and password against stored hash
-- Checks account is not disabled
-- Returns session token and customer profile on success
-- Rate limited to prevent brute force attacks
+- Validates credentials through Better Auth.
+- Rejects disabled or merged customer accounts.
+- Sets Better Auth session cookies and returns the customer profile.
+- Rate limited to reduce brute-force risk.
 
-### Magic Link (Passwordless)
+### Magic Link
 
 **Request Link** (`POST /api/customer/auth/magic-link`):
-- Accepts an email address
-- Generates a time-limited token and sends an email with a login link
-- Response is deliberately vague to prevent email enumeration
-- Rate limited separately from password login
+- Accepts an email address.
+- Sends a Better Auth magic-link email through the existing Mailgun/email-outbox integration.
+- Uses a vague response to prevent email enumeration.
 
 **Verify Link** (`POST /api/customer/auth/verify-magic-link`):
-- Validates the magic link token
-- Checks token hasn't expired
-- Checks customer account is not disabled
-- Creates a session token on success
+- Validates the Better Auth magic-link token.
+- Resolves or creates the customer profile.
+- Sets Better Auth session cookies.
 
 ### Password Reset
 
 **Request Reset** (`POST /api/customer/auth/forgot-password`):
-- Sends a password reset email with a time-limited token
-- Same vague response pattern as magic links
+- Sends a Better Auth password reset link.
+- Uses the same vague response pattern as magic links.
 
 **Reset Password** (`POST /api/customer/auth/reset-password`):
-- Validates reset token
-- Updates password hash
-- Invalidates the reset token after use
+- Validates the Better Auth reset token.
+- Updates the Better Auth credential password.
+- Signs the customer in after a successful reset.
 
 ## Session Management
 
-### Token Format
+Customer routes authenticate by resolving Better Auth cookies. `server/src/middleware/customer-auth.middleware.ts` calls `getCustomerAuthContext`, attaches `req.customerSession`, and preserves Better Auth error semantics:
 
-Sessions use JWT tokens containing:
-- `customerId` - The customer's UUID
-- `email` - Customer email address
-- `iat` - Issued at timestamp
-- `exp` - Expiration timestamp
+- `401` for missing or invalid sessions.
+- `403` for disabled accounts.
+- `409` for merged accounts.
+- `503` when Better Auth is not configured.
 
-### Client-Side Storage
-
-- Tokens are stored in `localStorage` under a consistent key
-- The `useAuth` hook manages token lifecycle on the frontend
-- Tokens are included in requests via `Authorization: Bearer <token>` header
-
-### Session Verification
-
-`POST /api/customer/auth/verify-session`:
-- Validates the JWT token signature and expiration
-- Confirms the customer still exists and is not disabled
-- Returns customer profile data if valid
-
-### Middleware
-
-The `requireCustomerAuth` middleware (in `server/src/middleware/customer-auth.middleware.ts`):
-- Extracts Bearer token from Authorization header
-- Verifies JWT validity
-- Attaches `customerSession` to the request object
-- Returns 401 for missing/invalid tokens
+`customerIdentityService` is used by routes that need customer identity without mount-level middleware. It resolves the same Better Auth session and returns the linked customer profile.
 
 ## Account Management
 
-### Profile Updates
-
-Authenticated customers can update their profile via the customer profile routes:
-- Name, email, phone number
-- Shipping address
-- Password change (requires current password)
-
-### Account Security
-
-- Accounts can be disabled by admins (blocks all login attempts)
-- Force logout invalidates all active sessions for a customer
-- Rate limiting on auth endpoints prevents abuse
-- Failed login attempts are logged
+Authenticated customers can update their profile, view orders, manage support tickets, and access affiliate/VIP views through customer routes. Better Auth owns password changes, password resets, magic links, login, logout, and session cookies.
 
 ## Admin Controls
 
-Admins can manage customer accounts through the Customer Profile Drawer:
-- View customer details and order history
-- Disable/enable accounts
-- Force logout (invalidate all sessions)
-- View authentication activity
+Admins can manage customer accounts through admin customer management screens:
+- View customer details and order history.
+- Disable or enable accounts.
+- Trigger password reset flows.
+- Invalidate Better Auth sessions where supported by the route.
 
 ## Related Files
 
-- `server/src/routes/customer/auth.routes.ts` - All auth endpoints
-- `server/src/middleware/customer-auth.middleware.ts` - Auth middleware
-- `server/src/utils/session.ts` - JWT creation and verification
-- `client/src/hooks/use-auth.ts` - Frontend auth state management
+- `server/src/routes/customer/auth.routes.ts` - Customer auth endpoints.
+- `server/src/auth/customerBetterAuth.ts` - Better Auth customer helpers.
+- `server/src/middleware/customer-auth.middleware.ts` - Customer route middleware.
+- `server/src/services/customer-identity.service.ts` - Shared customer identity resolver.
+- `client/src/hooks/use-customer-auth.ts` - Frontend customer auth state.

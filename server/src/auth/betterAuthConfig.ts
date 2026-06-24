@@ -23,10 +23,6 @@ function addCommaSeparatedOrigins(origins: Set<string>, value: string | undefine
   }
 }
 
-export function isBetterAuthEnabled(): boolean {
-  return process.env.USE_BETTER_AUTH === "true";
-}
-
 export function getBetterAuthBaseURL(): string {
   const configured = firstConfiguredValue(
     process.env.BETTER_AUTH_BASE_URL,
@@ -89,10 +85,8 @@ export function getBetterAuthTrustedOrigins(): string[] {
 }
 
 export function assertBetterAuthReady(): void {
-  if (!isBetterAuthEnabled()) return;
-
   if (!process.env.BETTER_AUTH_SECRET) {
-    throw new Error("USE_BETTER_AUTH=true requires BETTER_AUTH_SECRET");
+    throw new Error("Better Auth requires BETTER_AUTH_SECRET");
   }
 
   getBetterAuthBaseURL();

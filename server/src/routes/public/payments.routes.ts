@@ -272,8 +272,6 @@ router.post("/create-payment-intent", paymentLimiter, async (req: any, res) => {
       affiliate = await storage.getAffiliate(cookieAffiliateId);
     }
 
-    const userId = req.user?.claims?.sub;
-
     const customerAuthContext = await getCustomerAuthContext(req).catch(() => null);
     const loggedInCustomerId = customerAuthContext?.customer.id ?? null;
 
@@ -287,7 +285,7 @@ router.post("/create-payment-intent", paymentLimiter, async (req: any, res) => {
 
     let existingCustomer = await storage.getCustomerByEmail(customerData.email);
     if (!existingCustomer) {
-      existingCustomer = await storage.createCustomer({ ...customerData, userId });
+      existingCustomer = await storage.createCustomer({ ...customerData, userId: null });
     } else {
       if (affiliate && affiliate.status === "active" && existingCustomer.id === affiliate.customerId) {
         console.log(`[SELF-REFERRAL] Blocked self-referral: customerId ${existingCustomer.id} is affiliate owner for ${affiliate.affiliateCode}`);
@@ -295,7 +293,7 @@ router.post("/create-payment-intent", paymentLimiter, async (req: any, res) => {
       }
       const updated = await storage.updateCustomer(existingCustomer.id, {
         ...customerData,
-        userId: existingCustomer.userId || userId,
+        userId: existingCustomer.userId || null,
       });
       if (updated) existingCustomer = updated;
     }
@@ -644,14 +642,13 @@ router.post("/reprice-payment-intent", paymentLimiter, async (req: any, res) => 
     }
 
     let existingCustomer = await storage.getCustomerByEmail(customerData.email);
-    const userId = req.user?.claims?.sub;
     if (existingCustomer) {
       if (affiliate && affiliate.status === "active" && existingCustomer.id === affiliate.customerId) {
         affiliate = null;
       }
       const updated = await storage.updateCustomer(existingCustomer.id, {
         ...customerData,
-        userId: existingCustomer.userId || userId,
+        userId: existingCustomer.userId || null,
       });
       if (updated) existingCustomer = updated;
     }
@@ -1020,8 +1017,6 @@ router.post("/checkout", checkoutLimiter, async (req: any, res) => {
       affiliate = await storage.getAffiliate(cookieAffiliateId);
     }
 
-    const userId = req.user?.claims?.sub;
-
     if (affiliate && affiliate.status === "active") {
       const affiliateCustomer = await storage.getCustomer(affiliate.customerId);
       if (affiliateCustomer && normalizeEmail(affiliateCustomer.email) === customerData.email) {
@@ -1029,20 +1024,30 @@ router.post("/checkout", checkoutLimiter, async (req: any, res) => {
         affiliate = null;
       }
     }
-    
+    const customerAuthContext = await getCustomerAuthContext(req).catch(() => null);
+    const loggedInCustomerId = customerAuthContext?.customer.id ?? null;
+
     let existingCustomer = await storage.getCustomerByEmail(customerData.email);
     if (!existingCustomer) {
-      existingCustomer = await storage.createCustomer({ ...customerData, userId });
+      existingCustomer = await storage.createCustomer({ ...customerData, userId: null });
     } else {
       if (affiliate && affiliate.status === "active" && existingCustomer.id === affiliate.customerId) {
         console.log(`[SELF-REFERRAL] Blocked self-referral in checkout: customerId ${existingCustomer.id} is affiliate owner for ${affiliate.affiliateCode}`);
         affiliate = null;
       }
-      const updated = await storage.updateCustomer(existingCustomer.id, { 
-        ...customerData, 
-        userId: existingCustomer.userId || userId 
+      const updated = await storage.updateCustomer(existingCustomer.id, {
+        ...customerData,
+        userId: existingCustomer.userId || null,
       });
       if (updated) existingCustomer = updated;
+    }
+
+    if (loggedInCustomerId && loggedInCustomerId !== existingCustomer.id) {
+      const loggedInCustomer = await storage.getCustomer(loggedInCustomerId);
+      if (loggedInCustomer && !loggedInCustomer.isDisabled) {
+        console.log(`[CHECKOUT] Logged-in customer ${loggedInCustomerId} using checkout email ${customerData.email} (customer ${existingCustomer.id}). Assigning order to logged-in account.`);
+        existingCustomer = loggedInCustomer;
+      }
     }
 
     let subtotalAmount = 0;

@@ -8,11 +8,10 @@ import {
   betterAuthAccount,
   betterAuthVerification,
 } from "@shared/models/better-auth";
-import { getBetterAuthBaseURL, getBetterAuthTrustedOrigins, isBetterAuthEnabled } from "./betterAuthConfig";
+import { getBetterAuthBaseURL, getBetterAuthTrustedOrigins } from "./betterAuthConfig";
 import { sendBetterAuthMagicLink, sendBetterAuthPasswordReset } from "./betterAuthEmail";
 
 const isProduction = process.env.NODE_ENV === "production";
-const betterAuthEnabled = isBetterAuthEnabled();
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -25,7 +24,7 @@ export const auth = betterAuth({
     },
   }),
   secret: process.env.BETTER_AUTH_SECRET,
-  baseURL: betterAuthEnabled ? getBetterAuthBaseURL() : undefined,
+  baseURL: getBetterAuthBaseURL(),
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: false,
@@ -55,7 +54,7 @@ export const auth = betterAuth({
       enabled: false,
     },
   },
-  trustedOrigins: betterAuthEnabled ? getBetterAuthTrustedOrigins() : [],
+  trustedOrigins: getBetterAuthTrustedOrigins(),
   user: {
     additionalFields: {
       role: {

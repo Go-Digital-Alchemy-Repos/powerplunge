@@ -12,7 +12,7 @@ All API endpoints are prefixed with `/api/` and organized by access level:
 
 ## Authentication
 
-- **Customer Auth:** Bearer token in Authorization header
+- **Customer Auth:** Better Auth session cookie
 - **Admin Auth:** Session-based with role checks (super_admin, admin, store_manager, fulfillment)
 
 ## Admin Role Middleware

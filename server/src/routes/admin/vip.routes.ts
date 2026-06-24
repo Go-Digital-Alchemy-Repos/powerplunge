@@ -2,45 +2,9 @@ import { Router } from "express";
 import { storage } from "../../../storage";
 import { vipService } from "../../services/vip.service";
 import { asyncHandler } from "../../utils/async-handler";
-import { requireAdmin, isAuthenticated } from "../../middleware/auth.middleware";
+import { requireAdmin } from "../../middleware/auth.middleware";
 
 const router = Router();
-
-// ==================== CUSTOMER ROUTES ====================
-
-// Get VIP status and benefits for authenticated customer
-router.get("/status", isAuthenticated, asyncHandler(async (req: any, res) => {
-  const userId = req.user.claims.sub;
-  const customer = await storage.getCustomerByUserId(userId);
-  
-  if (!customer) {
-    return res.json({ isVip: false, benefits: null });
-  }
-
-  const vipStatus = await vipService.getVipStatus(customer.id);
-  const benefits = await vipService.getVipBenefits(customer.id);
-  const eligibility = await vipService.checkVipEligibility(customer.id);
-
-  res.json({
-    isVip: vipStatus?.status === "active",
-    vipStatus,
-    benefits,
-    eligibility,
-  });
-}));
-
-// Get VIP activity log for authenticated customer
-router.get("/activity", isAuthenticated, asyncHandler(async (req: any, res) => {
-  const userId = req.user.claims.sub;
-  const customer = await storage.getCustomerByUserId(userId);
-  
-  if (!customer) {
-    return res.json({ activities: [] });
-  }
-
-  const activities = await storage.getVipActivityLogs(customer.id);
-  res.json({ activities });
-}));
 
 // ==================== ADMIN ROUTES ====================
 

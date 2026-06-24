@@ -6,11 +6,11 @@ The server uses a centralized runtime detection module (`server/src/config/runti
 
 | Environment | How detected | Backend port | Auth | Dotenv |
 |---|---|---|---|---|
-| **Replit Deployment** | `REPLIT_DEPLOYMENT` set, or Replit + `NODE_ENV=production` | 5000 (from `PORT`) | Replit OIDC | No (Replit secrets) |
-| **Replit Workspace** | `REPL_ID` set + not production | 5000 (from `PORT`) | Replit OIDC | No (Replit secrets) |
-| **Codex Web** | `CODEX_SANDBOX=1` or `CODEX_ENV=web` (no Replit vars) | 5001 (default) | Disabled or dev stub | Yes (.env files) |
-| **Codex Local** | `CODEX=1` without sandbox/web flag (no Replit vars) | 5001 (default) | Disabled or dev stub | Yes (.env files) |
-| **Local** | No Replit, Codex, or CI env vars | 5001 (default) | Disabled or dev stub | Yes (.env files) |
+| **Replit Deployment** | `REPLIT_DEPLOYMENT` set, or Replit + `NODE_ENV=production` | 5000 (from `PORT`) | Better Auth | No (Replit secrets) |
+| **Replit Workspace** | `REPL_ID` set + not production | 5000 (from `PORT`) | Better Auth | No (Replit secrets) |
+| **Codex Web** | `CODEX_SANDBOX=1` or `CODEX_ENV=web` (no Replit vars) | 5001 (default) | Better Auth | Yes (.env files) |
+| **Codex Local** | `CODEX=1` without sandbox/web flag (no Replit vars) | 5001 (default) | Better Auth | Yes (.env files) |
+| **Local** | No Replit, Codex, or CI env vars | 5001 (default) | Better Auth | Yes (.env files) |
 | **CI** | `CI=true` | — | — | Yes |
 
 ## Detection Logic
@@ -29,9 +29,9 @@ Precedence: Replit > CI > Codex Web > Codex Local > Local. The flags are mutuall
 
 ## Auth Behavior
 
-- **On Replit**: Full OIDC auth via `setupAuth()` using `REPL_ID`.
-- **Non-Replit (default)**: Auth routes return `503 Auth not configured`. Protected routes remain blocked (fail closed).
-- **Non-Replit with `ENABLE_DEV_AUTH=true`**: A dev auth stub is active. `/api/login` auto-logs in as a dev user. Useful for testing authenticated flows without Replit.
+Better Auth is the login surface in every runtime after the auth cutover. Admin routes use `/api/admin/auth/*`, customer routes use `/api/customer/auth/*`, and Better Auth core routes mount under `/api/auth/*` when `BETTER_AUTH_SECRET` is configured.
+
+Local and Codex testing should use seeded Better Auth accounts. Run commands through `npm run with:local-auth-env -- <command>` or use the local scripts `verify:seed-auth:local` and `test:e2e:local-auth`.
 
 ## Dotenv Loading
 
@@ -55,8 +55,6 @@ Files are loaded with `override: false`, so earlier files take precedence. Doten
 | `runtime.isLocal` | Not Replit, not CI, not Codex |
 | `runtime.isCI` | CI environment |
 | `runtime.shouldLoadDotenv` | Should load .env files |
-| `runtime.shouldEnableReplitOIDC` | Should set up Replit OIDC auth |
-| `runtime.enableDevAuth` | Dev auth stub is active |
 | `runtime.shouldTrustProxy` | Should set Express `trust proxy` |
 | `runtime.defaultBackendPort` | Resolved port for backend |
 
@@ -64,4 +62,3 @@ Files are loaded with `override: false`, so earlier files take precedence. Doten
 
 - `server/src/config/runtime.ts` — detection and flags
 - `server/src/config/load-env.ts` — conditional dotenv loading
-- `server/src/config/local-auth-stub.ts` — dev auth stub + disabled routes

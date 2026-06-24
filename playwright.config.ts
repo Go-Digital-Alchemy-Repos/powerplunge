@@ -8,13 +8,10 @@ const betterAuthSecret =
 const sessionSecret =
   process.env.SESSION_SECRET ?? "dev-session-secret-dev-session-secret";
 
-process.env.USE_BETTER_AUTH ??= "true";
-process.env.VITE_USE_BETTER_AUTH ??= "true";
 process.env.BETTER_AUTH_SECRET ??= betterAuthSecret;
 process.env.SESSION_SECRET ??= sessionSecret;
 process.env.BETTER_AUTH_BASE_URL ??= baseURL;
 process.env.PUBLIC_SITE_URL ??= baseURL;
-process.env.ENABLE_DEV_AUTH ??= "true";
 process.env.E2E_TEST_MODE ??= "true";
 process.env.E2E_EMAIL_MODE ??= "outbox";
 process.env.MAILGUN_API_KEY ??= "";

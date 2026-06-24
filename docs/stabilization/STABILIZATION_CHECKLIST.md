@@ -32,7 +32,7 @@ This document defines the stabilization checklist and definition of done for the
 | 3.6 | Affiliate tracking | `GET /api/validate-referral-code/:code` | 200 with `{ valid: true/false }` |
 | 3.7 | Site settings | `GET /api/site-settings` | 200 with `featuredProductId` |
 | 3.8 | Stripe config | `GET /api/stripe/config` | 200 with `publishableKey` |
-| 3.9 | Admin CRUD | All admin `/api/admin/*` endpoints | Correct auth enforcement (401 without token) |
+| 3.9 | Admin CRUD | All admin `/api/admin/*` endpoints | Correct auth enforcement (401 without session cookie) |
 | 3.10 | CMS API | `GET/POST/PUT/DELETE /api/admin/cms/*` | CRUD operations succeed with auth |
 | 3.11 | ~~Site Presets API~~ | ~~Removed~~ | Site Presets feature was removed |
 | 3.12 | Site Settings API | `GET/PUT /api/admin/cms/site-settings` | Read/write with Zod validation |
@@ -88,12 +88,12 @@ This document defines the stabilization checklist and definition of done for the
 
 | # | Check | Method | Pass Criteria |
 |---|-------|--------|---------------|
-| 7.1 | Unauthenticated access blocked | Hit `/api/admin/*` without token | 401 Unauthorized |
-| 7.2 | Invalid token rejected | Hit `/api/admin/*` with bad token | 401 Unauthorized |
+| 7.1 | Unauthenticated access blocked | Hit `/api/admin/*` without session cookie | 401 Unauthorized |
+| 7.2 | Invalid session rejected | Hit `/api/admin/*` with bad session cookie | 401 Unauthorized |
 | 7.3 | Fulfillment role restrictions | Login as fulfillment, hit sensitive endpoints | 403 Forbidden on 50+ restricted endpoints |
 | 7.4 | Admin/store_manager full access | Login as admin | All endpoints accessible |
-| 7.5 | Customer auth | Login via email/password or magic link | Session token issued, My Account accessible |
-| 7.6 | Better Auth (if enabled) | Set `USE_BETTER_AUTH=true` | `/auth/login` and `/auth/register` render |
+| 7.5 | Customer auth | Login via email/password or magic link | Better Auth session cookie issued, My Account accessible |
+| 7.6 | Better Auth | Set `BETTER_AUTH_SECRET` | `/auth/login` and `/auth/register` render |
 
 ## 8. CMS Health Checks
 
@@ -196,10 +196,10 @@ This document defines the stabilization checklist and definition of done for the
 | 15.2 | routes.ts is orchestrator only | `wc -l server/routes.ts` | ~159 lines |
 | 15.3 | All 46 router files present | `find server/src/routes -name "*.ts" -not -name "index.ts" \| wc -l` | 46 files |
 | 15.4 | Public endpoints respond | `curl /api/products`, `/api/pages/home`, `/api/site-settings` | 200 OK |
-| 15.5 | Admin auth enforced | `curl /api/admin/orders` (no token) | 401 Unauthorized |
+| 15.5 | Admin auth enforced | `curl /api/admin/orders` (no session cookie) | 401 Unauthorized |
 | 15.6 | Fulfillment role blocked | Login as fulfillment, hit `/api/admin/settings` | 403 Forbidden |
 | 15.7 | Webhook endpoints respond | `POST /api/webhook/stripe` (invalid sig) | 400 (not 404) |
-| 15.8 | Customer auth enforced | `curl /api/customer/profile` (no token) | 401 Unauthorized |
+| 15.8 | Customer auth enforced | `curl /api/customer/profile` (no session cookie) | 401 Unauthorized |
 | 15.9 | Multi-router mounts correct | Shipping zones at `/api/admin/shipping/zones`, shipments at `/api/admin/orders/:id/shipments` | 200 or 401 (not 404) |
 | 15.10 | Payment endpoints rate limited | Rapid-fire `POST /api/create-payment-intent` | 429 after threshold |
 

@@ -8,7 +8,6 @@ import { adminUsers, type AdminUser } from "@shared/schema";
 import { betterAuthAccount, betterAuthUser } from "@shared/models/better-auth";
 import { normalizeBetterAuthRole, isBetterAuthAdminRole, type BetterAuthRole } from "@shared/auth/roles";
 import { auth } from "./betterAuth";
-import { isBetterAuthEnabled } from "./betterAuthConfig";
 
 export const BETTER_AUTH_LEGACY_PASSWORD_PLACEHOLDER = "better-auth-managed";
 
@@ -37,7 +36,7 @@ export function serializeAdmin(admin: AdminUser) {
 }
 
 export function assertAdminBetterAuthReady() {
-  if (!isBetterAuthEnabled() || !process.env.BETTER_AUTH_SECRET) {
+  if (!process.env.BETTER_AUTH_SECRET) {
     throw new Error("Better Auth is not configured for admin authentication");
   }
 }

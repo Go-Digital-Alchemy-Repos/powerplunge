@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { storage } from "../../../storage";
-import { customerIdentityService, normalizeEmail } from "../../services/customer-identity.service";
+import { customerIdentityService } from "../../services/customer-identity.service";
 
 function generateAffiliateCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -205,7 +205,6 @@ router.get("/affiliate", async (req: any, res) => {
 
 router.post("/affiliate", async (req: any, res) => {
   try {
-    const userId = req.user?.claims?.sub;
     const { signatureName, paypalEmail } = req.body;
 
     if (!signatureName) {
@@ -213,20 +212,10 @@ router.post("/affiliate", async (req: any, res) => {
     }
 
     const identityResult = await customerIdentityService.resolve(req);
-    let customer;
-    if (identityResult.ok) {
-      customer = identityResult.identity.customer;
-    } else if (userId) {
-      const userEmail = normalizeEmail(req.user.claims.email || `user_${userId}@example.com`);
-      const userName = req.user.claims.name || signatureName;
-      customer = await storage.createCustomer({
-        userId,
-        email: userEmail,
-        name: userName,
-      });
-    } else {
-      return res.status(401).json({ message: "Authentication required" });
+    if (!identityResult.ok) {
+      return res.status(identityResult.error.httpStatus).json({ message: identityResult.error.message });
     }
+    const customer = identityResult.identity.customer;
 
     const existingAffiliate = await storage.getAffiliateByCustomerId(customer.id);
     if (existingAffiliate) {

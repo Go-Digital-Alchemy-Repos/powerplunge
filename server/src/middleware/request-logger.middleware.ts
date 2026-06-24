@@ -11,7 +11,6 @@ declare global {
 
 const SENSITIVE_PATHS = [
   "/api/auth",
-  "/api/login",
   "/api/admin/login",
   "/api/create-payment-intent",
   "/api/stripe/webhook",
