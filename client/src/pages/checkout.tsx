@@ -442,7 +442,7 @@ export default function Checkout() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { logoSrc, companyName } = useBranding();
-  const { getAuthHeader } = useCustomerAuth();
+  const { customer: authCustomer, getAuthHeader } = useCustomerAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState<"shipping" | "payment">("shipping");
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -464,6 +464,15 @@ export default function Checkout() {
     }
     return defaults;
   });
+
+  useEffect(() => {
+    if (!authCustomer) return;
+
+    setContactData((current) => ({
+      email: current.email || authCustomer.email || "",
+      phone: current.phone || authCustomer.phone || "",
+    }));
+  }, [authCustomer]);
 
   const [stripeShippingAddress, setStripeShippingAddress] = useState<ShippingAddressData | null>(() => {
     const saved = sessionStorage.getItem("checkoutShippingAddress");

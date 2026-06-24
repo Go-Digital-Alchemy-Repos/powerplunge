@@ -152,20 +152,13 @@ test.describe("Customer Email Flows @customer", () => {
     });
     expect(shippingLink).toContain(`/order-status/${orderId}`);
 
-    const loginResponse = await request.post("/api/customer/auth/login", {
+    const loginResponse = await page.request.post("/api/customer/auth/login", {
       data: {
         email: customer.email,
         password: customer.password,
       },
     });
     expect(loginResponse.ok()).toBeTruthy();
-    const loginBody = await loginResponse.json();
-    const sessionToken = loginBody.sessionToken as string;
-
-    await page.goto("/");
-    await page.evaluate((token) => {
-      localStorage.setItem("customerSessionToken", token);
-    }, sessionToken);
 
     await page.goto("/my-account?tab=orders");
     await expect(page.locator(`[data-testid="card-order-${orderId}"]`)).toBeVisible({

@@ -3,9 +3,16 @@ import { defineConfig, devices } from "@playwright/test";
 const defaultPort = process.env.REPL_ID ? 5000 : 5001;
 const e2ePort = Number(process.env.E2E_PORT ?? defaultPort);
 const baseURL = process.env.E2E_BASE_URL ?? `http://localhost:${e2ePort}`;
+
+process.env.USE_BETTER_AUTH ??= "true";
+process.env.VITE_USE_BETTER_AUTH ??= "true";
+process.env.BETTER_AUTH_SECRET ??= "dev-test-secret-dev-test-secret";
+process.env.BETTER_AUTH_BASE_URL ??= baseURL;
+process.env.PUBLIC_SITE_URL ??= baseURL;
+
 const webServerCommand =
   process.env.PLAYWRIGHT_WEB_SERVER_COMMAND ??
-  `ENABLE_DEV_AUTH=true E2E_TEST_MODE=true E2E_EMAIL_MODE=outbox PUBLIC_SITE_URL=${baseURL} MAILGUN_API_KEY= MAILGUN_DOMAIN= npm run dev`;
+  `ENABLE_DEV_AUTH=true USE_BETTER_AUTH=true VITE_USE_BETTER_AUTH=true BETTER_AUTH_SECRET=dev-test-secret-dev-test-secret E2E_TEST_MODE=true E2E_EMAIL_MODE=outbox PUBLIC_SITE_URL=${baseURL} BETTER_AUTH_BASE_URL=${baseURL} MAILGUN_API_KEY= MAILGUN_DOMAIN= npm run dev`;
 
 export default defineConfig({
   testDir: "e2e",

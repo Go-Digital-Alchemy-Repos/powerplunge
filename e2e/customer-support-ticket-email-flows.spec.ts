@@ -3,12 +3,6 @@ import { adminLogin } from "./helpers/api";
 import { clearEmailOutbox, waitForEmailLink } from "./helpers/email-outbox";
 import { uniqueEmail, uniqueName } from "./helpers/test-data";
 
-function customerAuthHeaders(sessionToken: string): Record<string, string> {
-  return {
-    Authorization: `Bearer ${sessionToken}`,
-  };
-}
-
 async function registerAndLoginCustomer(request: APIRequestContext) {
   const email = uniqueEmail();
   const name = uniqueName();
@@ -30,12 +24,10 @@ async function registerAndLoginCustomer(request: APIRequestContext) {
     },
   });
   expect(loginResponse.ok()).toBeTruthy();
-  const loginBody = await loginResponse.json();
 
   return {
     email,
     name,
-    sessionToken: loginBody.sessionToken as string,
   };
 }
 
@@ -54,11 +46,9 @@ async function configureSupportNotifications(request: APIRequestContext) {
 
 async function createSupportTicket(
   request: APIRequestContext,
-  sessionToken: string,
   params: { subject: string; message: string; type?: "general" | "return" | "refund" | "shipping" | "technical" },
 ) {
   const response = await request.post("/api/customer/orders/support", {
-    headers: customerAuthHeaders(sessionToken),
     data: {
       subject: params.subject,
       message: params.message,
@@ -80,7 +70,7 @@ test.describe("Support Ticket Email Flows @customer @support", () => {
     const subject = `Support Ticket ${Date.now()}`;
 
     await clearEmailOutbox(request);
-    await createSupportTicket(request, customer.sessionToken, {
+    await createSupportTicket(request, {
       subject,
       message: "I need help with my order tracking details.",
       type: "shipping",
@@ -108,13 +98,14 @@ test.describe("Support Ticket Email Flows @customer @support", () => {
     const customer = await registerAndLoginCustomer(request);
     const subject = `Support Reply ${Date.now()}`;
 
-    const ticket = await createSupportTicket(request, customer.sessionToken, {
+    const ticket = await createSupportTicket(request, {
       subject,
       message: "I need help with a billing question.",
       type: "general",
     });
 
     await clearEmailOutbox(request);
+    await adminLogin(request);
 
     const patchResponse = await request.patch(`/api/admin/support/${ticket.id}`, {
       data: {
@@ -138,13 +129,14 @@ test.describe("Support Ticket Email Flows @customer @support", () => {
     const customer = await registerAndLoginCustomer(request);
     const subject = `Support Status ${Date.now()}`;
 
-    const ticket = await createSupportTicket(request, customer.sessionToken, {
+    const ticket = await createSupportTicket(request, {
       subject,
       message: "Please update me on this ticket status.",
       type: "technical",
     });
 
     await clearEmailOutbox(request);
+    await adminLogin(request);
 
     const patchResponse = await request.patch(`/api/admin/support/${ticket.id}`, {
       data: {
@@ -168,7 +160,7 @@ test.describe("Support Ticket Email Flows @customer @support", () => {
     const customer = await registerAndLoginCustomer(request);
     const subject = `Support Customer Reply ${Date.now()}`;
 
-    const ticket = await createSupportTicket(request, customer.sessionToken, {
+    const ticket = await createSupportTicket(request, {
       subject,
       message: "I need additional help and want to reply.",
       type: "return",
@@ -179,7 +171,6 @@ test.describe("Support Ticket Email Flows @customer @support", () => {
     const replyResponse = await request.post(
       `/api/customer/orders/support/${ticket.id}/reply`,
       {
-        headers: customerAuthHeaders(customer.sessionToken),
         data: {
           message: "Here are more details from the customer side.",
         },
