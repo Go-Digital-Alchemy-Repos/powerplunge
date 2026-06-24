@@ -448,10 +448,10 @@ Verifies all tables exported by `shared/schema.ts`.
 ```sql
 SELECT tablename FROM pg_tables
 WHERE schemaname = 'public'
-AND tablename IN ('pages', 'saved_sections', 'site_settings', 'posts', 'cms_v2_posts', 'cms_v2_menus');
+AND tablename IN ('pages', 'saved_sections', 'site_settings', 'posts', 'cms_v2_menus');
 ```
 
-`cms_v2_posts` is still exported from `shared/schema.ts` as a legacy artifact, so it is expected until the DB cleanup gate in `docs/architecture/CMS_POSTS_CONVERGENCE.md` passes.
+`cms_v2_posts` belonged to the removed Stack B posts implementation. It is no longer exported from `shared/schema.ts` and should not be present in active target databases after the cleanup recorded in `docs/architecture/CMS_POSTS_CONVERGENCE.md`.
 
 ### Check Page Data
 

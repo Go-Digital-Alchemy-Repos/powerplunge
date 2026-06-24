@@ -1,7 +1,7 @@
 # CMS Posts Dual-Stack Convergence Plan
 
 **Date:** February 10, 2026
-**Status:** Cleanup implemented for application code; legacy DB artifact pending verification
+**Status:** Cleanup implemented; legacy `cms_v2_posts` schema export and DB table removed
 
 ## Current State: Two Parallel Stacks
 
@@ -30,7 +30,7 @@
 | Routes (admin) | Removed | Was not imported in `server/routes.ts` |
 | Service | Removed | Replaced by active `postsService` stack |
 | Repository | Removed | Replaced by active `postsRepository` stack |
-| DB Table | `cmsPosts` -> `cms_v2_posts` | Still present in `shared/schema.ts` as a legacy artifact |
+| DB Table | `cmsPosts` -> `cms_v2_posts` | Removed from active schema after production verification |
 
 **Consumers:** None. No frontend page imported or called these routes.
 
@@ -40,12 +40,12 @@
 
 **Keep Stack A as the canonical CMS posts system.** It is fully integrated with the admin UI, supports the complete feature set, and is the only stack with active consumers.
 
-**Stack B application code has been removed.** The `cms_v2_posts` table and related schema exports remain until production data can be verified and migrated or dropped safely.
+**Stack B application code has been removed.** The legacy `cms_v2_posts` table and related active schema exports were removed after production verification showed the table was empty and had no inbound dependencies.
 
 ## Risk Assessment
 
 - **Low risk:** Stack B had zero consumers and was not mounted. Removal has no runtime impact.
-- **Schema note:** The `cms_v2_posts` table may exist in the production DB. Verify it's empty before dropping.
+- **Schema note:** `cms_v2_posts` is no longer part of the active Drizzle schema. The historical baseline snapshot may still mention it, but `shared/schema.ts` no longer exports it.
 
 ## Phase 2 Verification Status
 
@@ -53,9 +53,18 @@
 
 Read-only repository verification found no active runtime consumers of `cmsPosts`, `insertCmsPostSchema`, `InsertCmsPost`, or `CmsPost`. Active admin and public blog routes use the `posts` data model and related tables (`post_categories`, `post_tags`, `post_category_map`, `post_tag_map`, `post_revisions`, `post_settings`).
 
-No schema or DB artifact was removed in this pass because removing `cmsPosts` from `shared/schema.ts` changes Drizzle's desired schema and can cause a later `drizzle-kit push` or generated migration to drop `cms_v2_posts`. Target staging/production DB contents were not verified locally because `DATABASE_URL` was unavailable.
+Neon production verification found:
 
-Run these read-only checks against the intended target DB before removing `cmsPosts` or dropping `cms_v2_posts`:
+- `posts`: 8 rows
+- `cms_v2_posts`: 0 rows
+- non-empty legacy payload fields: 0 rows
+- inbound foreign keys to `cms_v2_posts`: 0
+- dependent views/materialized views/functions: 0
+- only outbound dependency: the legacy table's own FK to `admin_users`
+
+The guarded production cleanup rechecked those conditions in the same transaction before dropping `public.cms_v2_posts`. Local Postgres was aligned with the same guarded empty-table check.
+
+Reference verification SQL used before cleanup:
 
 ```sql
 SELECT to_regclass('public.cms_v2_posts') AS cms_v2_posts_table;
@@ -143,12 +152,20 @@ WHERE definition ILIKE '%cms_v2_posts%';
 SELECT n.nspname AS schema_name, p.proname AS function_name
 FROM pg_proc p
 JOIN pg_namespace n ON n.oid = p.pronamespace
-WHERE pg_get_functiondef(p.oid) ILIKE '%cms_v2_posts%'
+WHERE p.prokind IN ('f', 'p')
+  AND pg_get_functiondef(p.oid) ILIKE '%cms_v2_posts%'
 ORDER BY 1, 2;
 ```
 
 Decision rule:
 
-- `count = 0`, no FK/view/function dependencies: safe candidate for schema cleanup and DB drop in a coordinated migration.
+- `count = 0`, no inbound FK/view/function dependencies: safe candidate for schema cleanup and guarded DB drop.
 - `count > 0` with missing or mismatched active `posts` rows: migrate or retain; do not drop.
 - `count > 0` with all rows matched on basic fields: still not drop-safe by itself. Review legacy body, SEO, taxonomy, media, and author inventory, then make an archive/export/migration decision before drop.
+
+Implementation notes:
+
+- Removed `cmsPosts`, `insertCmsPostSchema`, `InsertCmsPost`, and `CmsPost` from `shared/schema.ts`.
+- Dropped `public.cms_v2_posts` in Neon production with a guarded transaction after verifying it was empty and had no inbound dependencies.
+- Did not hand-edit `migrations/meta/0000_snapshot.json`; it is a historical Drizzle baseline. `drizzle-kit generate` is not clean in this repo because the baseline snapshot is stale against unrelated tables, so this cleanup used an explicit guarded DB operation instead of a noisy generated migration.
+- If a future migration-generation pass emits a `DROP TABLE cms_v2_posts` delta from the stale baseline, treat it as already applied in active environments and replace any generated destructive SQL with an idempotent guard or omit it.

@@ -6,7 +6,7 @@ CMS is a block-based page builder system for Power Plunge. It provides a visual 
 
 CMS is always active. The `CMS_ENABLED` feature flag was previously used during initial development but has been removed. CMS functionality is now permanently enabled.
 
-CMS is fully non-destructive — it shares the same `pages` database table but stores block content in the `contentJson` JSONB column alongside the legacy `content` HTML field. Posts use the active `posts` data model; menus use `cms_v2_menus`. The older `cms_v2_posts` table is a legacy artifact pending DB verification.
+CMS is fully non-destructive — it shares the same `pages` database table but stores block content in the `contentJson` JSONB column alongside the legacy `content` HTML field. Posts use the active `posts` data model; menus use `cms_v2_menus`. The older Stack B `cms_v2_posts` table was verified empty and removed from the active schema/database cleanup path.
 
 ## Architecture
 

@@ -6,7 +6,7 @@ The CMS Posts system provides blog/article management with a full publishing wor
 
 ## Data Model
 
-Posts are stored in the active `posts` table. The older `cms_v2_posts` table belongs to the removed Stack B implementation and remains only as a legacy DB artifact pending staging/production verification.
+Posts are stored in the active `posts` table. The older `cms_v2_posts` table belonged to the removed Stack B implementation; it was verified empty and removed from the active schema/database cleanup path.
 
 | Column | Type | Description |
 |--------|------|-------------|
