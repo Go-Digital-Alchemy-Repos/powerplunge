@@ -1,77 +1,65 @@
 import type { Request, Response, NextFunction } from "express";
-import { db } from "../../db";
-import { adminUsers } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import type { AdminUser } from "@shared/schema";
+import {
+  BETTER_AUTH_FULL_ACCESS_ROLES,
+  BETTER_AUTH_ORDER_ACCESS_ROLES,
+} from "@shared/auth/roles";
+import {
+  attachAdminAuthContext,
+  getAdminAuthContext,
+  serializeAdmin,
+} from "../auth/adminBetterAuth";
+
+type SerializedAdminUser = ReturnType<typeof serializeAdmin>;
 
 declare module "express-session" {
   interface SessionData {
     adminId?: string;
     adminRole?: string;
+    adminEmail?: string;
+    adminUser?: SerializedAdminUser;
   }
 }
 
-// Validates admin session by checking both session.adminId and that the admin user
-// still exists in the database. Rejects stale/deleted admin sessions.
-export async function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  if (!req.session.adminId) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-
-  try {
-    const [admin] = await db
-      .select({ id: adminUsers.id })
-      .from(adminUsers)
-      .where(eq(adminUsers.id, req.session.adminId));
-
-    if (!admin) {
-      req.session.destroy(() => {});
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-
-    next();
-  } catch (error) {
-    return res.status(500).json({ message: "Error validating admin session" });
+declare module "express-serve-static-core" {
+  interface Request {
+    adminId?: string;
+    adminUser?: SerializedAdminUser;
   }
 }
 
-// Middleware to require specific roles (admin, store_manager, or fulfillment)
-// Fulfillment role can only access order-related endpoints
+function isAllowedRole(admin: AdminUser, allowedRoles: readonly string[]) {
+  if (admin.role === "admin" || admin.role === "super_admin") {
+    return true;
+  }
+
+  return allowedRoles.includes(admin.role);
+}
+
 export function requireRole(...allowedRoles: string[]) {
   return async (req: Request, res: Response, next: NextFunction) => {
-    if (!req.session.adminId) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-
     try {
-      const [admin] = await db
-        .select({ role: adminUsers.role })
-        .from(adminUsers)
-        .where(eq(adminUsers.id, req.session.adminId));
-
-      if (!admin) {
-        req.session.destroy(() => {});
+      const context = await getAdminAuthContext(req);
+      if (!context) {
         return res.status(401).json({ message: "Unauthorized" });
       }
 
-      // Admin and super_admin roles have access to everything
-      if (admin.role === "admin" || admin.role === "super_admin") {
-        return next();
+      if (!isAllowedRole(context.admin, allowedRoles)) {
+        return res.status(403).json({ message: "Forbidden: Insufficient permissions" });
       }
 
-      // Check if user's role is in allowed roles
-      if (allowedRoles.includes(admin.role)) {
-        return next();
-      }
-
-      return res.status(403).json({ message: "Forbidden: Insufficient permissions" });
+      attachAdminAuthContext(req, context);
+      next();
     } catch (error) {
+      const message = error instanceof Error ? error.message : "Error checking permissions";
+      if (message.includes("Better Auth is not configured")) {
+        return res.status(503).json({ message });
+      }
       return res.status(500).json({ message: "Error checking permissions" });
     }
   };
 }
 
-// Shorthand middlewares for common role combinations
-export const requireFullAccess = requireRole("super_admin", "admin", "store_manager");
-export const requireOrderAccess = requireRole("super_admin", "admin", "store_manager", "fulfillment");
-
-export { isAuthenticated } from "../integrations/replit/auth";
+export const requireAdmin = requireRole(...BETTER_AUTH_FULL_ACCESS_ROLES);
+export const requireFullAccess = requireRole(...BETTER_AUTH_FULL_ACCESS_ROLES);
+export const requireOrderAccess = requireRole(...BETTER_AUTH_ORDER_ACCESS_ROLES);

@@ -4,19 +4,17 @@ import { realtimeClient } from "@/lib/realtime/socketClient";
 
 interface UseRealtimeNotificationsOptions {
   role: "admin" | "customer";
-  token?: string;
   enabled?: boolean;
 }
 
-export function useRealtimeNotifications({ role, token, enabled = true }: UseRealtimeNotificationsOptions) {
+export function useRealtimeNotifications({ role, enabled = true }: UseRealtimeNotificationsOptions) {
   const queryClient = useQueryClient();
   const cleanupRef = useRef<(() => void)[]>([]);
 
   useEffect(() => {
     if (!enabled) return;
-    if (role === "customer" && !token) return;
 
-    realtimeClient.connect(role, token);
+    realtimeClient.connect(role);
 
     const unsubNew = realtimeClient.on("notif:new", (payload) => {
       const prefix = role === "admin" ? "/api/admin/notifications" : "/api/customer/notifications";
@@ -61,5 +59,5 @@ export function useRealtimeNotifications({ role, token, enabled = true }: UseRea
       cleanupRef.current = [];
       realtimeClient.disconnect();
     };
-  }, [role, token, enabled, queryClient]);
+  }, [role, enabled, queryClient]);
 }

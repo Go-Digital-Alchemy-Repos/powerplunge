@@ -29,7 +29,6 @@ interface CustomerSession {
   customerId: string;
   customerName: string;
   customerEmail: string;
-  sessionToken: string;
 }
 
 function formatCurrency(cents: number): string {
@@ -101,7 +100,6 @@ export default function TrackOrder() {
       const data = await response.json();
 
       if (response.ok) {
-        localStorage.setItem("customerSessionToken", data.sessionToken);
         setLocation("/my-account");
         return;
       } else {
@@ -125,11 +123,9 @@ export default function TrackOrder() {
   const { data: ordersData, isLoading: ordersLoading, error: ordersError } = useQuery<{ orders: Order[] }>({
     queryKey: ["/api/customer/orders", customerSession?.customerId],
     queryFn: async () => {
-      if (!customerSession?.sessionToken) return { orders: [] };
+      if (!customerSession?.customerId) return { orders: [] };
       const response = await fetch("/api/customer/orders", {
-        headers: {
-          Authorization: `Bearer ${customerSession.sessionToken}`,
-        },
+        credentials: "include",
       });
       if (response.status === 401) {
         handleLogout();
@@ -138,7 +134,7 @@ export default function TrackOrder() {
       if (!response.ok) throw new Error("Failed to fetch orders");
       return response.json();
     },
-    enabled: !!customerSession?.sessionToken,
+    enabled: !!customerSession?.customerId,
   });
   const orders = ordersData?.orders || [];
 

@@ -1,9 +1,13 @@
 import { createAuthClient } from "better-auth/react";
-
-const USE_BETTER_AUTH = import.meta.env.VITE_USE_BETTER_AUTH === "true";
+import { magicLinkClient } from "better-auth/client/plugins";
+import {
+  isBetterAuthAdminRole,
+  normalizeBetterAuthRole,
+} from "@shared/auth/roles";
 
 export const authClient = createAuthClient({
   baseURL: window.location.origin,
+  plugins: [magicLinkClient()],
 });
 
 export const { signIn, signUp, signOut, useSession } = authClient;
@@ -17,9 +21,9 @@ export function useBetterAuth() {
     isLoading: isPending,
     isAuthenticated: !!session?.user,
     error,
-    role: (session?.user as any)?.role ?? "customer",
-    isAdmin: ["admin", "superadmin", "store_manager"].includes((session?.user as any)?.role ?? ""),
-    isSuperAdmin: (session?.user as any)?.role === "superadmin",
+    role: normalizeBetterAuthRole((session?.user as any)?.role),
+    isAdmin: isBetterAuthAdminRole((session?.user as any)?.role),
+    isSuperAdmin: normalizeBetterAuthRole((session?.user as any)?.role) === "super_admin",
   };
 }
 
@@ -58,5 +62,3 @@ export async function betterAuthSignOut() {
     throw error;
   }
 }
-
-export { USE_BETTER_AUTH };

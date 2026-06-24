@@ -14,7 +14,6 @@ const ALL_DETECTION_VARS = [
   "CI",
   "NODE_ENV",
   "PORT",
-  "ENABLE_DEV_AUTH",
 ];
 
 let savedEnv: Record<string, string | undefined>;
@@ -71,7 +70,6 @@ describe("runtime environment detection", () => {
       expect(rt.isCodexLocal).toBe(false);
       expect(rt.isLocal).toBe(false);
       expect(rt.isCI).toBe(false);
-      expect(rt.shouldEnableReplitOIDC).toBe(true);
       expect(rt.shouldLoadDotenv).toBe(false);
       expect(rt.shouldTrustProxy).toBe(true);
     });
@@ -95,7 +93,6 @@ describe("runtime environment detection", () => {
       expect(rt.isCodexWeb).toBe(false);
       expect(rt.isCodexLocal).toBe(false);
       expect(rt.isLocal).toBe(false);
-      expect(rt.shouldEnableReplitOIDC).toBe(true);
       expect(rt.defaultBackendPort).toBe(5000);
     });
   });
@@ -165,33 +162,6 @@ describe("runtime environment detection", () => {
       process.env.PORT = "3000";
       const rt = await loadRuntime();
       expect(rt.defaultBackendPort).toBe(3000);
-    });
-  });
-
-  describe("enableDevAuth", () => {
-    it("is false by default in local dev", async () => {
-      const rt = await loadRuntime();
-      expect(rt.enableDevAuth).toBe(false);
-    });
-
-    it("is true when ENABLE_DEV_AUTH=true in development", async () => {
-      process.env.ENABLE_DEV_AUTH = "true";
-      const rt = await loadRuntime();
-      expect(rt.enableDevAuth).toBe(true);
-    });
-
-    it("is false on Replit even if ENABLE_DEV_AUTH=true", async () => {
-      process.env.REPL_ID = "abc";
-      process.env.ENABLE_DEV_AUTH = "true";
-      const rt = await loadRuntime();
-      expect(rt.enableDevAuth).toBe(false);
-    });
-
-    it("is false in production even if ENABLE_DEV_AUTH=true", async () => {
-      process.env.NODE_ENV = "production";
-      process.env.ENABLE_DEV_AUTH = "true";
-      const rt = await loadRuntime();
-      expect(rt.enableDevAuth).toBe(false);
     });
   });
 

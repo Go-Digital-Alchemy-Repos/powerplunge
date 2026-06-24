@@ -27,7 +27,7 @@ npx tsx scripts/doctor.ts
 1. Required environment variables (`DATABASE_URL`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`)
 2. Optional environment variables with warnings (`MAILGUN_API_KEY`, etc.)
 3. Database connection (attempts a simple query)
-4. Integration configuration status (Stripe, Mailgun, Replit Auth)
+4. Integration configuration status (Stripe, Mailgun, Better Auth)
 
 **Output format:**
 ```
@@ -320,14 +320,17 @@ curl -s "$BASE_URL/api/health/config" | head -c 100
 
 All should return valid JSON (200 OK). These are public endpoints that don't require authentication.
 
-### Admin Endpoint Verification (requires admin JWT)
+### Admin Endpoint Verification (requires admin Better Auth cookie)
 
 ```bash
-TOKEN="your-admin-jwt-here"
 BASE_URL="${BASE_URL:-http://localhost:5001}" # use 5000 in Replit
-curl -s -H "Authorization: Bearer $TOKEN" "$BASE_URL/api/admin/me"
-curl -s -H "Authorization: Bearer $TOKEN" "$BASE_URL/api/admin/dashboard"
-curl -s -H "Authorization: Bearer $TOKEN" "$BASE_URL/api/admin/orders"
+COOKIE_JAR="$(mktemp)"
+curl -s -c "$COOKIE_JAR" -H "Content-Type: application/json" \
+  -d '{"email":"admin@test.com","password":"testpass123"}' \
+  "$BASE_URL/api/admin/login"
+curl -s -b "$COOKIE_JAR" "$BASE_URL/api/admin/me"
+curl -s -b "$COOKIE_JAR" "$BASE_URL/api/admin/dashboard"
+curl -s -b "$COOKIE_JAR" "$BASE_URL/api/admin/orders"
 ```
 
 ### Auth Enforcement Check

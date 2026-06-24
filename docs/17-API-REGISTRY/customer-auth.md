@@ -6,18 +6,19 @@
 |----------|-------|
 | Domain | customer-auth |
 | Source Files | server/src/routes/customer/auth.routes.ts |
-| Endpoint Count | 8 |
+| Endpoint Count | 12 |
+| Mount Point | `/api/customer/auth` |
 
 ## Auth & Authorization
 
 | Property | Value |
 |----------|-------|
-| Auth Required | TBD |
-| Roles Allowed | TBD |
+| Auth Required | Per-route Better Auth customer session |
+| Roles Allowed | Customer |
 
 ## Notes
 
-_Add manual documentation notes here. This section is preserved during sync._
+Customer authentication uses Better Auth cookie sessions. Public registration, login, magic-link, forgot-password, and reset-password endpoints create or recover customer sessions; profile and password update endpoints require an existing customer session.
 
 
 <!-- === AUTO-GENERATED SECTION (do not edit below this line) === -->
@@ -26,23 +27,19 @@ _Add manual documentation notes here. This section is preserved during sync._
 
 | Method | Path | Source File | Line |
 |--------|------|-------------|------|
-| `POST` | `/api/customer/change-password` | server/src/routes/customer/auth.routes.ts | 292 |
-| `GET` | `/api/customer/check-admin-eligible` | server/src/routes/customer/auth.routes.ts | 201 |
-| `GET` | `/api/customer/check-setup` | server/src/routes/admin/auth.routes.ts | 8 |
-| `POST` | `/api/customer/forgot-password` | server/src/routes/customer/auth.routes.ts | 328 |
-| `POST` | `/api/customer/login` | server/src/routes/admin/auth.routes.ts | 55 |
-| `POST` | `/api/customer/login` | server/src/routes/customer/auth.routes.ts | 82 |
-| `POST` | `/api/customer/logout` | server/src/routes/admin/auth.routes.ts | 86 |
-| `POST` | `/api/customer/magic-link` | server/src/routes/customer/auth.routes.ts | 136 |
-| `GET` | `/api/customer/me` | server/src/routes/admin/auth.routes.ts | 95 |
-| `GET` | `/api/customer/me` | server/src/routes/customer/auth.routes.ts | 216 |
-| `POST` | `/api/customer/register` | server/src/routes/customer/auth.routes.ts | 24 |
-| `POST` | `/api/customer/reset-password` | server/src/routes/customer/auth.routes.ts | 366 |
-| `POST` | `/api/customer/setup` | server/src/routes/admin/auth.routes.ts | 17 |
-| `PATCH` | `/api/customer/update-profile` | server/src/routes/customer/auth.routes.ts | 258 |
-| `POST` | `/api/customer/verify-magic-link` | server/src/routes/customer/auth.routes.ts | 160 |
-| `POST` | `/api/customer/verify-session` | server/src/routes/customer/auth.routes.ts | 418 |
+| `POST` | `/api/customer/auth/register` | server/src/routes/customer/auth.routes.ts | 112 |
+| `POST` | `/api/customer/auth/login` | server/src/routes/customer/auth.routes.ts | 169 |
+| `POST` | `/api/customer/auth/logout` | server/src/routes/customer/auth.routes.ts | 215 |
+| `POST` | `/api/customer/auth/magic-link` | server/src/routes/customer/auth.routes.ts | 226 |
+| `POST` | `/api/customer/auth/verify-magic-link` | server/src/routes/customer/auth.routes.ts | 245 |
+| `GET` | `/api/customer/auth/check-admin-eligible` | server/src/routes/customer/auth.routes.ts | 268 |
+| `GET` | `/api/customer/auth/me` | server/src/routes/customer/auth.routes.ts | 282 |
+| `PATCH` | `/api/customer/auth/update-profile` | server/src/routes/customer/auth.routes.ts | 295 |
+| `POST` | `/api/customer/auth/change-password` | server/src/routes/customer/auth.routes.ts | 329 |
+| `POST` | `/api/customer/auth/forgot-password` | server/src/routes/customer/auth.routes.ts | 350 |
+| `POST` | `/api/customer/auth/reset-password` | server/src/routes/customer/auth.routes.ts | 378 |
+| `POST` | `/api/customer/auth/verify-session` | server/src/routes/customer/auth.routes.ts | 402 |
 
-_16 endpoint(s) detected._
+_12 endpoint(s) detected._
 
 <!-- === END AUTO-GENERATED SECTION === -->

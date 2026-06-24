@@ -11,7 +11,7 @@ Power Plunge is a full-stack e-commerce platform for selling cold plunge tanks. 
 | Database | PostgreSQL (Neon) | 80 tables managed by Drizzle ORM |
 | Payments | Stripe | Checkout, webhooks, Stripe Connect for affiliates |
 | Email | Mailgun | Transactional emails, recovery flows |
-| Auth | Custom + Replit Auth | Email/password, magic link, Google/Apple via Replit |
+| Auth | Better Auth | Admin/customer email-password, password reset, magic link |
 | Storage | Replit Object Storage / Cloudflare R2 | File uploads, media |
 | CMS | CMS (block-based) | Always active |
 
@@ -134,7 +134,7 @@ Seed logic is idempotent: `ensureCmsDefaults()`, `seedDatabase()`, and section k
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `USE_BETTER_AUTH` | `false` | Enable Better Auth integration |
+| `BETTER_AUTH_SECRET` | required | Better Auth session secret |
 | `BETTER_AUTH_SECRET` | — | Session encryption for Better Auth |
 | `MAILGUN_API_KEY` | — | Mailgun API key for transactional emails |
 | `MAILGUN_DOMAIN` | — | Mailgun sending domain |

@@ -13,7 +13,7 @@
 ## Notes
 
 Customer-facing profile, order history, account linking, and password management.
-Profile handlers accept platform identity when available and customer bearer-token identity on non-Replit runtimes.
+Profile handlers resolve Better Auth customer sessions through `customerIdentityService`.
 Rate limiter applied on password change endpoint.
 
 <!-- === AUTO-GENERATED SECTION (do not edit below this line) === -->

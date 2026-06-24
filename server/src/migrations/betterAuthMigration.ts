@@ -1,8 +1,7 @@
 import { db } from "../db";
-import { sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { 
-  betterAuthUser, 
-  betterAuthAccount 
+  betterAuthUser,
 } from "@shared/models/better-auth";
 import { customers, adminUsers } from "@shared/schema";
 
@@ -29,7 +28,7 @@ export async function migrateCustomersToBetterAuth(): Promise<MigrationResult> {
         const existingUser = await db
           .select()
           .from(betterAuthUser)
-          .where(sql`email = ${customer.email}`)
+          .where(eq(betterAuthUser.email, customer.email))
           .limit(1);
 
         if (existingUser.length > 0) {
@@ -52,16 +51,7 @@ export async function migrateCustomersToBetterAuth(): Promise<MigrationResult> {
         });
 
         if (customer.passwordHash) {
-          console.log(`[MIGRATION] Note: Customer ${customer.email} has existing password hash. User may need to reset password if hash formats differ.`);
-          await db.insert(betterAuthAccount).values({
-            id: crypto.randomUUID(),
-            userId: userId,
-            accountId: userId,
-            providerId: "credential",
-            password: customer.passwordHash,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          });
+          console.log(`[MIGRATION] Customer ${customer.email} has a legacy password hash; Better Auth password reset required after migration.`);
         }
 
         console.log(`[MIGRATION] Migrated customer ${customer.email} (linked to customerId: ${customer.id})`);
@@ -95,7 +85,7 @@ export async function migrateAdminsToBetterAuth(): Promise<MigrationResult> {
         const existingUser = await db
           .select()
           .from(betterAuthUser)
-          .where(sql`email = ${admin.email}`)
+          .where(eq(betterAuthUser.email, admin.email))
           .limit(1);
 
         if (existingUser.length > 0) {
@@ -119,16 +109,7 @@ export async function migrateAdminsToBetterAuth(): Promise<MigrationResult> {
         });
 
         if (admin.password) {
-          console.log(`[MIGRATION] Note: Admin ${admin.email} has existing password hash. User may need to reset password if hash formats differ.`);
-          await db.insert(betterAuthAccount).values({
-            id: crypto.randomUUID(),
-            userId: userId,
-            accountId: userId,
-            providerId: "credential",
-            password: admin.password,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          });
+          console.log(`[MIGRATION] Admin ${admin.email} has a legacy password hash; Better Auth password reset required after migration.`);
         }
 
         console.log(`[MIGRATION] Migrated admin ${admin.email} with role ${betterAuthRole} (linked to adminUserId: ${admin.id})`);
@@ -148,8 +129,9 @@ export async function migrateAdminsToBetterAuth(): Promise<MigrationResult> {
 
 function mapAdminRoleToBetterAuth(role: string | null): string {
   switch (role) {
+    case "super_admin":
     case "superadmin":
-      return "superadmin";
+      return "super_admin";
     case "store_manager":
       return "store_manager";
     case "fulfillment":

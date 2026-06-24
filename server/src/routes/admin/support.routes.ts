@@ -6,6 +6,7 @@ import { eq, desc, and, sql, or, ilike } from "drizzle-orm";
 import { requireAdmin } from "../../middleware";
 import { notificationService } from "../../services/notification.service";
 import { sendAdminReplyToCustomer, sendStatusChangeToCustomer } from "../../services/support-email.service";
+import { customerIdentityService } from "../../services/customer-identity.service";
 
 const router = Router();
 
@@ -18,9 +19,9 @@ const createTicketSchema = z.object({
 
 router.post("/", async (req, res, next) => {
   try {
-    const user = (req as any).user;
-    if (!user) {
-      return res.status(401).json({ message: "Authentication required" });
+    const identityResult = await customerIdentityService.resolve(req);
+    if (!identityResult.ok) {
+      return res.status(identityResult.error.httpStatus).json({ message: identityResult.error.message });
     }
 
     const parsed = createTicketSchema.safeParse(req.body);
@@ -28,13 +29,7 @@ router.post("/", async (req, res, next) => {
       return res.status(400).json({ message: parsed.error.errors[0].message });
     }
 
-    const customer = await db.query.customers.findFirst({
-      where: eq(customers.userId, user.id),
-    });
-
-    if (!customer) {
-      return res.status(404).json({ message: "Customer profile not found" });
-    }
+    const customer = identityResult.identity.customer;
 
     if (parsed.data.orderId) {
       const order = await db.query.orders.findFirst({
@@ -64,18 +59,11 @@ router.post("/", async (req, res, next) => {
 
 router.get("/", async (req, res, next) => {
   try {
-    const user = (req as any).user;
-    if (!user) {
-      return res.status(401).json({ message: "Authentication required" });
+    const identityResult = await customerIdentityService.resolve(req);
+    if (!identityResult.ok) {
+      return res.status(identityResult.error.httpStatus).json({ message: identityResult.error.message });
     }
-
-    const customer = await db.query.customers.findFirst({
-      where: eq(customers.userId, user.id),
-    });
-
-    if (!customer) {
-      return res.json({ tickets: [] });
-    }
+    const customer = identityResult.identity.customer;
 
     const tickets = await db.select({
       id: supportTickets.id,

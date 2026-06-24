@@ -23,7 +23,7 @@
 - **Paths in the corrected table in the Notes section are fully qualified** (mount prefix + router path). The auto-generated table further below has incorrect paths — see the correction notice in Notes.
 - **Auth model:** Routes are split into two groups:
   - `/portal`, `/payout-request`, `/payouts`, `/commissions` — use `customerIdentityService.resolve()` (session/cookie-based customer identity).
-  - `/`, `/join`, `/connect/status`, `/connect/start`, `/connect/refresh`, `/code` — use `requireCustomerAuth` middleware (Bearer token with `x-customer-auth` header).
+  - `/`, `/join`, `/connect/status`, `/connect/start`, `/connect/refresh`, `/code` — use `requireCustomerAuth` middleware with Better Auth session cookies.
 
 ## Notes
 

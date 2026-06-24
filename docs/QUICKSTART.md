@@ -81,29 +81,23 @@ Visit `http://localhost:5002` for the frontend (proxied to backend on 5001).
 
 ## Auth in local dev
 
-By default, auth routes return "not configured" and protected routes are blocked.
-
-To enable a simple dev auth stub:
+Local auth uses Better Auth seed accounts. For local Postgres defaults, run auth-sensitive commands through:
 
 ```bash
-# Add to your .env
-ENABLE_DEV_AUTH=true
+npm run with:local-auth-env -- <command>
 ```
-
-With this set, `/api/login` auto-logs you in as a dev user. This is useful for testing authenticated flows.
 
 ## Seed test users (optional)
 
 ```bash
-npm run seed:dev-users
+npm run with:local-auth-env -- npm run seed:dev-users -- --confirm
+npm run verify:seed-auth:local
 ```
 
 ## Run Playwright E2E (optional)
 
-For local/Codex runs, enable the dev auth stub so admin session routes work:
-
 ```bash
-ENABLE_DEV_AUTH=true npx playwright test
+npm run test:e2e:local-auth
 ```
 
 Playwright base URL defaults:
@@ -129,4 +123,4 @@ You can override with `E2E_PORT` or `E2E_BASE_URL`.
 - **Vite crashes on missing assets**: Run `npm run setup:local`
 - **Database connection fails**: Check your `DATABASE_URL` in `.env`
 - **Port already in use**: Change `PORT` in `.env` or use different ports
-- **Auth errors**: Make sure `SESSION_SECRET` is set. For local auth, set `ENABLE_DEV_AUTH=true`
+- **Auth errors**: Make sure `SESSION_SECRET` and `BETTER_AUTH_SECRET` are set, or run through `npm run with:local-auth-env -- <command>`.

@@ -26,6 +26,6 @@ All other files in this folder document currently active route modules.
 |------|-------------|
 | `main.md` | Health, readiness, and version endpoints defined directly in `server/routes.ts` |
 | `admin-*.md` | Admin-scoped routes (require `requireAdmin` or `requireFullAccess`) |
-| `customer-*.md` | Customer-scoped routes (require `isAuthenticated`) |
+| `customer-*.md` | Customer-scoped routes (require Better Auth customer identity) |
 | `payments.md` | Public payment/checkout routes |
 | `webhooks-stripe.md` | Stripe webhook handler |

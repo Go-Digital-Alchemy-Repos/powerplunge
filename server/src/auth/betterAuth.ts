@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { magicLink } from "better-auth/plugins";
 import { db } from "../../db";
 import {
   betterAuthUser,
@@ -7,9 +8,10 @@ import {
   betterAuthAccount,
   betterAuthVerification,
 } from "@shared/models/better-auth";
+import { getBetterAuthBaseURL, getBetterAuthTrustedOrigins } from "./betterAuthConfig";
+import { sendBetterAuthMagicLink, sendBetterAuthPasswordReset } from "./betterAuthEmail";
 
 const isProduction = process.env.NODE_ENV === "production";
-const baseUrl = process.env.BETTER_AUTH_BASE_URL || process.env.APP_URL || `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`;
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -22,11 +24,20 @@ export const auth = betterAuth({
     },
   }),
   secret: process.env.BETTER_AUTH_SECRET,
-  baseURL: baseUrl,
+  baseURL: getBetterAuthBaseURL(),
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: false,
     autoSignIn: true,
+    resetPasswordTokenExpiresIn: 60 * 60,
+    revokeSessionsOnPasswordReset: true,
+    sendResetPassword: async ({ user, url }) => {
+      await sendBetterAuthPasswordReset({
+        email: user.email,
+        name: user.name,
+        url,
+      });
+    },
   },
   session: {
     expiresIn: 60 * 60 * 24 * 7,
@@ -43,7 +54,7 @@ export const auth = betterAuth({
       enabled: false,
     },
   },
-  trustedOrigins: process.env.REPLIT_DOMAINS?.split(",") || [],
+  trustedOrigins: getBetterAuthTrustedOrigins(),
   user: {
     additionalFields: {
       role: {
@@ -64,6 +75,14 @@ export const auth = betterAuth({
       },
     },
   },
+  plugins: [
+    magicLink({
+      expiresIn: 60 * 15,
+      sendMagicLink: async ({ email, url }) => {
+        await sendBetterAuthMagicLink({ email, url });
+      },
+    }),
+  ],
 });
 
 export type BetterAuthSession = typeof auth.$Infer.Session;

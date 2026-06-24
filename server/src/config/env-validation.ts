@@ -94,9 +94,14 @@ const ENV_VARS: Record<string, EnvVarSpec> = {
     description: "Canonical public URL used for OpenGraph meta image URLs during build",
   },
   BETTER_AUTH_SECRET: {
+    level: "required",
+    feature: "Better Auth",
+    description: "Secret for Better Auth sessions",
+  },
+  BETTER_AUTH_BASE_URL: {
     level: "optional",
     feature: "Better Auth",
-    description: "Secret for Better Auth sessions (only if USE_BETTER_AUTH=true)",
+    description: "Canonical origin for Better Auth callbacks, for example https://www.powerplunge.com",
   },
   IP_HASH_SALT: {
     level: "optional",

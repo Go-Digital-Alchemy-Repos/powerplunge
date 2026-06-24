@@ -20,25 +20,15 @@
  */
 
 import type { Express } from "express";
-import { setupAuth, registerAuthRoutes } from "../integrations/replit/auth";
 import { registerObjectStorageRoutes } from "../integrations/replit/object-storage";
 import { registerR2Routes, isR2Configured } from "../integrations/cloudflare-r2";
 import { errorHandler } from "../middleware";
-import { runtime } from "../config/runtime";
-import { setupLocalDevAuth, setupAuthDisabledRoutes } from "../config/local-auth-stub";
+import { registerBetterAuthRoutes } from "../auth/betterAuthRoutes";
 import adminRoutes from "./admin";
 import publicRoutes from "./public";
 
 export async function registerLayeredRoutes(app: Express): Promise<void> {
-  // Setup auth: Replit OIDC when on Replit, local stub or disabled otherwise
-  if (runtime.shouldEnableReplitOIDC) {
-    await setupAuth(app);
-    registerAuthRoutes(app);
-  } else if (runtime.enableDevAuth) {
-    setupLocalDevAuth(app);
-  } else {
-    setupAuthDisabledRoutes(app);
-  }
+  registerBetterAuthRoutes(app);
   
   // Register both R2 and Object Storage routes; R2 checks credentials per-request
   registerR2Routes(app);

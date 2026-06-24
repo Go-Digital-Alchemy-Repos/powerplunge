@@ -1,18 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useCallback } from "react";
 import { authClient, useBetterAuth as useBetterAuthClient } from "@/lib/authClient";
-
-export type BetterAuthRole = "customer" | "admin" | "superadmin" | "store_manager" | "fulfillment";
-
-interface BetterAuthState {
-  user: {
-    id: string;
-    email: string;
-    name: string;
-    role: BetterAuthRole;
-  } | null;
-  isLoading: boolean;
-  isAuthenticated: boolean;
-}
+import type { BetterAuthRole } from "@shared/auth/roles";
+export type { BetterAuthRole };
 
 export function useBetterAuth() {
   const { session, user, isLoading, isAuthenticated, error, role, isAdmin, isSuperAdmin } = useBetterAuthClient();
@@ -54,28 +43,4 @@ export function useBetterAuth() {
     signUp,
     signOut,
   };
-}
-
-export function useBetterAuthFeatureFlag() {
-  const [isEnabled, setIsEnabled] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    async function checkFeatureFlag() {
-      try {
-        const response = await fetch("/api/auth/feature-flag");
-        if (response.ok) {
-          const data = await response.json();
-          setIsEnabled(data.enabled);
-        }
-      } catch (error) {
-        console.error("[BETTER_AUTH] Failed to check feature flag:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    checkFeatureFlag();
-  }, []);
-
-  return { isEnabled, isLoading };
 }

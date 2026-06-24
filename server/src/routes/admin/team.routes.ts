@@ -1,6 +1,11 @@
 import { Router, Request, Response } from "express";
 import { storage } from "../../../storage";
-import bcrypt from "bcryptjs";
+import {
+  BETTER_AUTH_LEGACY_PASSWORD_PLACEHOLDER,
+  deleteBetterAuthAdminUser,
+  getBetterAuthUserByEmail,
+  syncBetterAuthAdminUser,
+} from "../../auth/adminBetterAuth";
 
 const router = Router();
 
@@ -22,8 +27,11 @@ router.get("/", async (req: Request, res: Response) => {
 });
 
 router.post("/", async (req: Request, res: Response) => {
+  let createdAdminId: string | null = null;
+
   try {
     const { email, password, firstName, lastName, name, phone, role = "admin" } = req.body;
+    const normalizedEmail = String(email || "").toLowerCase();
 
     const resolvedFirstName = firstName || (name ? name.split(" ")[0] : "");
     const resolvedLastName = lastName || (name ? name.split(" ").slice(1).join(" ") : "");
@@ -38,21 +46,28 @@ router.post("/", async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Invalid role. Must be admin, store_manager, or fulfillment" });
     }
 
-    const existingAdmin = await storage.getAdminUserByEmail(email);
+    const existingAdmin = await storage.getAdminUserByEmail(normalizedEmail);
     if (existingAdmin) {
       return res.status(400).json({ message: "Team member with this email already exists" });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const existingAuthUser = await getBetterAuthUserByEmail(normalizedEmail);
+    if (existingAuthUser) {
+      return res.status(400).json({ message: "A user with this email already exists" });
+    }
+
     const admin = await storage.createAdminUser({
-      email,
-      password: hashedPassword,
+      email: normalizedEmail,
+      password: BETTER_AUTH_LEGACY_PASSWORD_PLACEHOLDER,
       firstName: resolvedFirstName,
       lastName: resolvedLastName,
       name: fullName,
       phone: phone || "",
       role,
     });
+    createdAdminId = admin.id;
+
+    await syncBetterAuthAdminUser(admin, password);
 
     res.json({ 
       id: admin.id, 
@@ -64,6 +79,9 @@ router.post("/", async (req: Request, res: Response) => {
       role: admin.role 
     });
   } catch (error) {
+    if (createdAdminId) {
+      await storage.deleteAdminUser(createdAdminId).catch(() => {});
+    }
     res.status(500).json({ message: "Failed to add team member" });
   }
 });
@@ -88,26 +106,34 @@ router.patch("/:id", async (req: Request, res: Response) => {
 
     if (email !== undefined) {
       const currentAdmin = await storage.getAdminUser(req.params.id);
-      if (email !== currentAdmin?.email) {
-        const existingAdmin = await storage.getAdminUserByEmail(email);
+      const normalizedEmail = String(email).toLowerCase();
+      if (normalizedEmail !== currentAdmin?.email) {
+        const existingAdmin = await storage.getAdminUserByEmail(normalizedEmail);
         if (existingAdmin) {
           return res.status(400).json({ message: "Another team member already uses this email" });
         }
+        const existingAuthUser = await getBetterAuthUserByEmail(normalizedEmail);
+        if (existingAuthUser && existingAuthUser.adminUserId !== req.params.id) {
+          return res.status(400).json({ message: "Another user already uses this email" });
+        }
       }
-      updateData.email = email;
+      updateData.email = normalizedEmail;
     }
 
     if (phone !== undefined) updateData.phone = phone;
     
-    if (password) updateData.password = await bcrypt.hash(password, 10);
+    if (password) updateData.password = BETTER_AUTH_LEGACY_PASSWORD_PLACEHOLDER;
     if (role) {
-      const validRoles = ["admin", "store_manager", "fulfillment"];
-      if (!validRoles.includes(role)) {
-        return res.status(400).json({ message: "Invalid role. Must be admin, store_manager, or fulfillment" });
-      }
       const currentAdmin = await storage.getAdminUser(req.params.id);
       if (currentAdmin?.role === "super_admin") {
-        return res.status(403).json({ message: "Cannot change the role of the Super Admin account." });
+        if (role !== "super_admin") {
+          return res.status(403).json({ message: "Cannot change the role of the Super Admin account." });
+        }
+      } else {
+        const validRoles = ["admin", "store_manager", "fulfillment"];
+        if (!validRoles.includes(role)) {
+          return res.status(400).json({ message: "Invalid role. Must be admin, store_manager, or fulfillment" });
+        }
       }
       if (currentAdmin?.role === "admin" && role !== "admin") {
         const allAdmins = await storage.getAdminUsers();
@@ -123,6 +149,8 @@ router.patch("/:id", async (req: Request, res: Response) => {
     if (!admin) {
       return res.status(404).json({ message: "Team member not found" });
     }
+
+    await syncBetterAuthAdminUser(admin, password || undefined);
 
     res.json({ 
       id: admin.id, 
@@ -140,7 +168,7 @@ router.patch("/:id", async (req: Request, res: Response) => {
 
 router.delete("/:id", async (req: any, res: Response) => {
   try {
-    if (req.params.id === req.session.adminId) {
+    if (req.params.id === req.adminUser?.id || req.params.id === req.session?.adminId) {
       return res.status(400).json({ message: "Cannot delete your own account" });
     }
 
@@ -157,6 +185,7 @@ router.delete("/:id", async (req: any, res: Response) => {
     }
 
     await storage.deleteAdminUser(req.params.id);
+    await deleteBetterAuthAdminUser(req.params.id);
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ message: "Failed to delete team member" });

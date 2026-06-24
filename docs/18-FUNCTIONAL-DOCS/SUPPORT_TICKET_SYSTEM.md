@@ -111,7 +111,7 @@ Flow:
 
 **Route:** `POST /api/customer/orders/support`
 **Source:** `server/src/routes/customer/order-tracking.routes.ts`
-**Auth:** Customer session token (Bearer, via `requireCustomerAuth`)
+**Auth:** Better Auth customer session (via `requireCustomerAuth`)
 
 Flow:
 1. Validate input (subject, message, optional orderId, type).
@@ -120,13 +120,13 @@ Flow:
 4. `notificationService.notifyAdminsOfNewTicket()` → in-app + real-time for all admins.
 5. If customer has email: `sendNewTicketAdminNotification()` + `sendTicketConfirmationToCustomer()`.
 
-### 3. Customer Support (Legacy Replit Auth Routes)
+### 3. Customer Support (Minimal Better Auth Routes)
 
 **Route:** `POST /api/customer/support`
 **Source:** `server/src/routes/admin/support.routes.ts` (default export `router`, mounted at `/api/customer/support`)
-**Auth:** Replit Auth (`(req as any).user` — `isAuthenticated` middleware)
+**Auth:** Better Auth customer identity via `customerIdentityService`
 
-This is a legacy route using Replit Auth. It creates a ticket but does **not** trigger any email or in-app notifications. Only the DB insert is performed.
+This alternate route creates or lists tickets for the authenticated customer. Ticket creation still does **not** trigger email or in-app notifications; only the DB insert is performed.
 
 ### 4. Inbound Email (Mailgun Webhook)
 
@@ -173,7 +173,7 @@ Flow:
 
 **Route:** `POST /api/customer/orders/support/:id/reply`
 **Source:** `server/src/routes/customer/order-tracking.routes.ts`
-**Auth:** Customer session token
+**Auth:** Better Auth customer session
 
 Flow:
 1. Validate message (1–5000 chars).
@@ -231,7 +231,7 @@ Returns all `email_logs` entries for a ticket, showing the complete email histor
 |-------|:-----------:|:------------:|:--------------:|:---------------:|:---------:|
 | New ticket (contact form) | ✅ | ❌ | ✅ (auto-reply) | ❌ | ❌ |
 | New ticket (customer dashboard) | ✅ | ✅ | ✅ (auto-reply) | ❌ | ✅ |
-| New ticket (legacy Replit Auth) | ❌ | ❌ | ❌ | ❌ | ❌ |
+| New ticket (minimal customer support route) | ❌ | ❌ | ❌ | ❌ | ❌ |
 | New ticket (inbound email) | ✅ | ❌ | ✅ (auto-reply) | ❌ | ❌ |
 | Admin creates ticket | ❌ | ❌ | ❌ | ✅ | ✅ |
 | Admin replies (note) | N/A | N/A | ✅ | ✅ | ✅ |
@@ -246,7 +246,7 @@ Returns all `email_logs` entries for a ticket, showing the complete email histor
 1. **Contact form & inbound email new tickets** do not trigger admin in-app notifications (`notifyAdminsOfNewTicket()` is not called from those routes). Admins receive only the email notification.
 2. **Inbound email replies** do not trigger an admin email notification (`sendNewReplyAdminNotification()` is not called in the webhook handler). Admins receive only in-app + real-time notifications.
 3. **Status change email** reuses the `supportNotifyOnReply` setting flag rather than having its own dedicated toggle. Disabling reply notifications also disables status change emails.
-4. **Legacy Replit Auth route** (`POST /api/customer/support`) creates tickets without any notifications — no emails, no in-app, no real-time. This appears to be an older code path that was not updated when the notification system was built.
+4. **Minimal customer support route** (`POST /api/customer/support`) creates tickets without any notifications — no emails, no in-app, no real-time. Prefer `/api/customer/orders/support` for the fuller dashboard flow.
 5. **Admin-created tickets** send only in-app/real-time notifications to the customer. No email confirmation is sent.
 
 ---

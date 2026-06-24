@@ -1,9 +1,16 @@
 import { storage } from "./storage";
 import { db } from "./db";
-import { adminUsers, products, affiliates } from "@shared/schema";
+import { adminUsers, products, affiliates, type AdminUser, type Affiliate, type Customer } from "@shared/schema";
 import { eq, asc, isNull } from "drizzle-orm";
-import bcrypt from "bcryptjs";
 import { slugify } from "./src/utils/slugify";
+import {
+  BETTER_AUTH_LEGACY_PASSWORD_PLACEHOLDER,
+  syncBetterAuthAdminUser,
+} from "./src/auth/adminBetterAuth";
+import {
+  BETTER_AUTH_CUSTOMER_PASSWORD_PLACEHOLDER,
+  syncBetterAuthCustomerUser,
+} from "./src/auth/customerBetterAuth";
 
 export async function ensureSuperAdmin() {
   const allAdmins = await db.select().from(adminUsers).orderBy(asc(adminUsers.createdAt));
@@ -25,6 +32,81 @@ export async function ensureSuperAdmin() {
 
 function getTestPassword(): string {
   return process.env.SEED_TEST_PASSWORD || "testpass123";
+}
+
+async function ensureSeedAdminProfile(
+  admin: AdminUser,
+  expected: Partial<Pick<AdminUser, "password" | "firstName" | "lastName" | "name" | "role">>,
+) {
+  const updates = Object.fromEntries(
+    Object.entries(expected).filter(([key, value]) => value !== undefined && admin[key as keyof AdminUser] !== value),
+  );
+
+  if (Object.keys(updates).length === 0) {
+    return admin;
+  }
+
+  return await storage.updateAdminUser(admin.id, updates) ?? { ...admin, ...updates };
+}
+
+async function syncSeedCustomerAuth(customer: Customer, password: string) {
+  await syncBetterAuthCustomerUser(customer, password);
+
+  if (customer.passwordHash === BETTER_AUTH_CUSTOMER_PASSWORD_PLACEHOLDER) {
+    return customer;
+  }
+
+  return await storage.updateCustomer(customer.id, {
+    passwordHash: BETTER_AUTH_CUSTOMER_PASSWORD_PLACEHOLDER,
+  }) ?? customer;
+}
+
+async function ensureSeedCustomerProfile(
+  customer: Customer,
+  expected: Partial<Pick<Customer, "name" | "phone" | "address" | "city" | "state" | "zipCode" | "country">>,
+) {
+  const updates = Object.fromEntries(
+    Object.entries(expected).filter(([key, value]) => value !== undefined && customer[key as keyof Customer] !== value),
+  );
+
+  if (Object.keys(updates).length === 0) {
+    return customer;
+  }
+
+  return await storage.updateCustomer(customer.id, updates) ?? customer;
+}
+
+async function ensureTestAffiliateAgreement(affiliate: Affiliate) {
+  const agreements = await storage.getAffiliateAgreements(affiliate.id);
+  if (agreements.length > 0) return;
+
+  await storage.createAffiliateAgreement({
+    affiliateId: affiliate.id,
+    agreementText: "Standard Affiliate Agreement v1.0",
+    signatureName: TEST_AFFILIATE.name,
+    signatureIp: "127.0.0.1",
+  });
+}
+
+async function ensureTestAffiliateProgramSettings() {
+  const expected = {
+    ffEnabled: true,
+    ffDiscountType: "PERCENT",
+    ffDiscountValue: 20,
+    ffCommissionType: "PERCENT",
+    ffCommissionValue: 0,
+    ffMaxUses: 0,
+  };
+  const settings = await storage.getAffiliateSettings();
+  const updates = Object.fromEntries(
+    Object.entries(expected).filter(([key, value]) => !settings || settings[key as keyof typeof settings] !== value),
+  );
+
+  if (Object.keys(updates).length === 0) {
+    return;
+  }
+
+  await storage.updateAffiliateSettings(updates);
 }
 
 const TEST_ADMIN_USERS = [
@@ -62,18 +144,26 @@ export async function seedTestAdminUsers() {
   for (const testUser of TEST_ADMIN_USERS) {
     const existing = await storage.getAdminUserByEmail(testUser.email);
     if (existing) {
+      const admin = await ensureSeedAdminProfile(existing, {
+        password: BETTER_AUTH_LEGACY_PASSWORD_PLACEHOLDER,
+        firstName: testUser.firstName,
+        lastName: testUser.lastName,
+        name: testUser.name,
+        role: testUser.role,
+      });
+      await syncBetterAuthAdminUser(admin, testPassword);
       continue;
     }
 
-    const hashedPassword = await bcrypt.hash(testPassword, 12);
-    await storage.createAdminUser({
+    const admin = await storage.createAdminUser({
       email: testUser.email,
-      password: hashedPassword,
+      password: BETTER_AUTH_LEGACY_PASSWORD_PLACEHOLDER,
       firstName: testUser.firstName,
       lastName: testUser.lastName,
       name: testUser.name,
       role: testUser.role,
     });
+    await syncBetterAuthAdminUser(admin, testPassword);
     console.log(`  Created test user: ${testUser.email} (${testUser.role})`);
   }
 }
@@ -89,10 +179,15 @@ export async function seedTestAffiliateAccount() {
     return;
   }
 
+  const testPassword = getTestPassword();
+  await ensureTestAffiliateProgramSettings();
   const existing = await storage.getCustomerByEmail(TEST_AFFILIATE.email);
   if (existing) {
-    const existingAffiliate = await storage.getAffiliateByCustomerId(existing.id);
+    const customer = await ensureSeedCustomerProfile(existing, { name: TEST_AFFILIATE.name });
+    await syncSeedCustomerAuth(customer, testPassword);
+    const existingAffiliate = await storage.getAffiliateByCustomerId(customer.id);
     if (existingAffiliate) {
+      await ensureTestAffiliateAgreement(existingAffiliate);
       return;
     }
   }
@@ -101,14 +196,14 @@ export async function seedTestAffiliateAccount() {
 
   let customer = await storage.getCustomerByEmail(TEST_AFFILIATE.email);
   if (!customer) {
-    const passwordHash = await bcrypt.hash(getTestPassword(), 10);
     customer = await storage.createCustomer({
       email: TEST_AFFILIATE.email,
       name: TEST_AFFILIATE.name,
-      passwordHash,
+      passwordHash: BETTER_AUTH_CUSTOMER_PASSWORD_PLACEHOLDER,
     });
     console.log(`  Created test customer: ${TEST_AFFILIATE.email}`);
   }
+  customer = await syncSeedCustomerAuth(customer, testPassword);
 
   const existingAffiliateByCode = await db
     .select()
@@ -134,12 +229,7 @@ export async function seedTestAffiliateAccount() {
     ffEnabled: true,
   });
 
-  await storage.createAffiliateAgreement({
-    affiliateId: affiliate.id,
-    agreementText: "Standard Affiliate Agreement v1.0",
-    signatureName: TEST_AFFILIATE.name,
-    signatureIp: "127.0.0.1",
-  });
+  await ensureTestAffiliateAgreement(affiliate);
 
   console.log(`  Created test affiliate: ${TEST_AFFILIATE.email} (code: ${TEST_AFFILIATE.affiliateCode})`);
 }
@@ -160,9 +250,12 @@ export async function seedTestCustomerAccount() {
     return;
   }
 
+  const testPassword = getTestPassword();
   const existing = await storage.getCustomerByEmail(TEST_CUSTOMER.email);
   if (existing) {
-    const orders = await storage.getOrdersByCustomerId(existing.id);
+    const customer = await ensureSeedCustomerProfile(existing, TEST_CUSTOMER);
+    await syncSeedCustomerAuth(customer, testPassword);
+    const orders = await storage.getOrdersByCustomerId(customer.id);
     if (orders.length > 0) {
       return;
     }
@@ -172,11 +265,10 @@ export async function seedTestCustomerAccount() {
 
   let customer = await storage.getCustomerByEmail(TEST_CUSTOMER.email);
   if (!customer) {
-    const passwordHash = await bcrypt.hash(getTestPassword(), 10);
     customer = await storage.createCustomer({
       email: TEST_CUSTOMER.email,
       name: TEST_CUSTOMER.name,
-      passwordHash,
+      passwordHash: BETTER_AUTH_CUSTOMER_PASSWORD_PLACEHOLDER,
       phone: TEST_CUSTOMER.phone,
       address: TEST_CUSTOMER.address,
       city: TEST_CUSTOMER.city,
@@ -185,6 +277,7 @@ export async function seedTestCustomerAccount() {
       country: TEST_CUSTOMER.country,
     });
   }
+  customer = await syncSeedCustomerAuth(customer, testPassword);
 
   const activeProducts = await storage.getActiveProducts();
   if (activeProducts.length > 0) {
@@ -892,7 +985,7 @@ Welcome to the Power Plunge e-commerce platform documentation.
 - **Backend**: Express.js with TypeScript
 - **Database**: PostgreSQL with Drizzle ORM
 - **Payments**: Stripe (embedded checkout)
-- **Authentication**: Replit Auth (OIDC-based)
+- **Authentication**: Better Auth
 
 ## Core Features
 

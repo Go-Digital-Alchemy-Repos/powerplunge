@@ -60,6 +60,8 @@ export async function customerLogin(
     data: { email, password },
   });
   if (!resp.ok()) throw new Error(`Customer login failed: ${resp.status()}`);
-  const body = await resp.json();
-  return body.sessionToken as string;
+  return resp.json() as Promise<{
+    success: boolean;
+    customer: { id: string; email: string; name: string };
+  }>;
 }

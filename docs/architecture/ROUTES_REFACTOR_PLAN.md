@@ -134,12 +134,12 @@ A **1,666-line** monolithic `DatabaseStorage` class implementing the `IStorage` 
 ```
 server/src/middleware/
 ├── auth.middleware.ts         (requireAdmin, requireFullAccess, requireOrderAccess)
-├── customer-auth.middleware.ts (isAuthenticated — customer session)
+├── customer-auth.middleware.ts (requireCustomerAuth — Better Auth customer session)
 ├── error.middleware.ts        (errorHandler — centralized error response)
 ├── index.ts                   (barrel exports)
 ├── rate-limiter.ts            (per-endpoint rate limiting)
 ├── request-logger.middleware.ts (correlation IDs, request logging)
-├── requireBetterAuth.ts       (Better Auth RBAC — feature-flagged)
+├── requireBetterAuth.ts       (Better Auth RBAC)
 └── server-timing.middleware.ts (dev-only slow endpoint detection)
 ```
 
@@ -153,7 +153,7 @@ server/src/integrations/
 ├── mailgun/                   (transactional email)
 ├── openai/                    (AI content generation)
 ├── pinterest-shopping/        (Pinterest product sync)
-├── replit/                    (Auth + Object Storage)
+├── replit/                    (Object Storage compatibility)
 ├── snapchat-shopping/         (Snapchat product sync)
 ├── stripe/                    (payments + Connect)
 ├── tiktok-shop/               (TikTok product sync)
@@ -169,7 +169,7 @@ The **187 legacy endpoints** in `server/routes.ts` break down into **39 feature 
 
 | # | Domain | Count | Prefix | Notes |
 |---|--------|-------|--------|-------|
-| 1 | **Admin Auth** | 5 | `/api/admin/(check-setup\|setup\|login\|logout\|me)` | Setup wizard, JWT login |
+| 1 | **Admin Auth** | 5 | `/api/admin/(check-setup\|setup\|login\|logout\|me)` | Setup wizard, Better Auth login |
 | 2 | **Admin Settings** | 42 | `/api/admin/settings/**` | General (3), email (4), Stripe (3), OpenAI (3), R2 (2), Mailchimp (3), social shops ×6 (24: TikTok, Instagram, Pinterest, Snapchat, X, YouTube — each GET/PATCH/DELETE + verify) |
 | 3 | **Admin Integrations** | 5 | `/api/admin/integrations`, `/api/admin/integrations/(pinterest\|youtube\|snapchat\|x)-shopping/sync` | Integration status list + 4 platform sync triggers |
 | 4 | **Admin Orders** | 7 | `/api/admin/orders/**` | List, detail, update, create, shipment list, shipment create, refund create |
@@ -365,7 +365,7 @@ All routes will use the same middleware chain via the mount point in `admin/inde
 | `requireAdmin` | `/api/admin/*` | Admin session check |
 | `requireFullAccess` | Most admin routes | Blocks fulfillment role |
 | `requireOrderAccess` | Order endpoints | Allows fulfillment |
-| `isAuthenticated` | `/api/customer/*` | Customer session check |
+| `requireCustomerAuth` / `customerIdentityService` | `/api/customer/*` | Better Auth customer session and identity checks |
 | `rateLimiter` | Per-route | Endpoint-specific rate limits |
 | `errorHandler` | Global (last) | Centralized error response |
 
@@ -478,7 +478,7 @@ Higher risk — user-facing. Requires thorough testing.
 | P4.8 | Public Coupons | 1 | Low | coupon service |
 | P4.9 | Public Stripe Config | 1 | Trivial | None |
 | P4.10 | Public Orders | 1 | Low | None |
-| P4.11 | Admin Auth | 5 | Medium | bcrypt, JWT |
+| P4.11 | Admin Auth | 5 | Medium | bcrypt, Better Auth sessions |
 | P4.12 | Health | 1 | Trivial | env config |
 
 **Total:** 31 endpoints
@@ -557,12 +557,12 @@ This ensures no breaking changes during the transition. Callers are migrated one
 
 ---
 
-## 5. Admin Auth Migration Note
+## 5. Admin Auth Note
 
-The admin auth endpoints (setup, login, logout, me) are foundational. They should be migrated in Phase 4 (not Phase 1) because:
-1. They use bcrypt password hashing with specific timing attack considerations
-2. They manage JWT session tokens stored in HTTP-only cookies
-3. Better Auth may replace them (feature-flagged)
+The admin auth endpoints (setup, login, logout, me) are foundational and now use Better Auth cookie sessions:
+1. Credential handling and password hashing remain timing-sensitive
+2. Session checks are performed through Better Auth-backed helpers
+3. Compatibility fields on the Express session are transitional only
 4. Breaking admin auth locks out all admins
 
 ---

@@ -164,12 +164,11 @@ This document describes the reorganized project structure for Power Plunge, desi
 │       │   │   ├── index.ts
 │       │   │   └── EmailService.ts
 │       │   └── replit/
-│       │       ├── auth/
 │       │       └── object-storage/
 │       │
 │       ├── middleware/             # Express middleware
 │       │   ├── auth.middleware.ts  # Admin auth (requireAdmin, requireFullAccess)
-│       │   ├── customer-auth.middleware.ts  # Customer auth (isAuthenticated)
+│       │   ├── customer-auth.middleware.ts  # Customer Better Auth session
 │       │   ├── error.middleware.ts # Error handling
 │       │   ├── rate-limiter.ts     # Rate limiting
 │       │   └── request-logger.middleware.ts
@@ -214,7 +213,7 @@ Routes are grouped by access level into subdirectories under `server/src/routes/
 
 **Access-level directories:**
 - **`public/`** — No auth required (products, payments, CMS pages, affiliate tracking)
-- **`customer/`** — Requires `isAuthenticated` middleware (profile, orders, affiliate portal)
+- **`customer/`** — Requires Better Auth customer identity (profile, orders, affiliate portal)
 - **`admin/`** — Requires `requireAdmin` or `requireFullAccess` middleware (all admin operations)
 - **`webhooks/`** — External webhook handlers (Stripe), no auth (verified by payload signature)
 
@@ -227,7 +226,7 @@ Routes are grouped by access level into subdirectories under `server/src/routes/
 | `requireFullAccess` | super_admin, admin, store_manager (excludes fulfillment) | Settings, products, reports |
 | `requireAdmin` | All admin roles (super_admin, admin, store_manager, fulfillment) | Orders, shipments, dashboard |
 | `requireOrderAccess` | super_admin, admin, store_manager, fulfillment | Order-specific operations |
-| `isAuthenticated` | Logged-in customer | Profile, support, order tracking |
+| `requireCustomerAuth` | Logged-in customer via Better Auth | Profile, support, order tracking |
 | _(none)_ | Public access | Products, CMS pages, webhooks |
 
 **Multi-router exports:** Some router files export multiple sub-routers for different mount points:
@@ -297,7 +296,7 @@ Admin sub-components live in `client/src/admin/` and CMS rendering in `client/sr
    // ...
    app.use("/api/admin/feature", requireFullAccess, featureRoutes);
    ```
-4. **Middleware is applied at mount level** — do not add `requireAdmin` or `isAuthenticated` inside the router file itself.
+4. **Middleware is applied at mount level** where practical — do not add admin middleware inside the router file itself; customer routers may use `requireCustomerAuth` or `customerIdentityService` for Better Auth customer identity.
 
 ### Adding a New Admin Page
 
@@ -382,8 +381,8 @@ Route extraction from the monolithic `routes.ts` is **complete**. Key changes:
 | Folder structure | ✅ Complete | All target directories created |
 | Config layer | ✅ Complete | `env.ts`, centralized configuration |
 | Utils | ✅ Complete | `encryption.ts` moved to `server/src/utils/` |
-| Integrations | ✅ Complete | Stripe, Mailgun, Replit in `server/src/integrations/` |
-| Middleware | ✅ Complete | `requireAdmin`, `requireFullAccess`, `requireOrderAccess`, `isAuthenticated` extracted |
+| Integrations | ✅ Complete | Stripe, Mailgun, Replit object storage in `server/src/integrations/` |
+| Middleware | ✅ Complete | `requireAdmin`, `requireFullAccess`, `requireOrderAccess`, `requireCustomerAuth` extracted |
 | Database index | ✅ Complete | Re-exports from `server/src/db/index.ts` |
 | Route infrastructure | ✅ Complete | Base route modules created |
 | Route migration | ✅ Complete | 46 router files, `routes.ts` reduced to 159-line orchestrator |

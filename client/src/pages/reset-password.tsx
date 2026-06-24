@@ -80,10 +80,6 @@ export default function ResetPassword() {
         throw new Error(data.message || "Failed to reset password");
       }
 
-      if (data.sessionToken) {
-        localStorage.setItem("customerSessionToken", data.sessionToken);
-      }
-
       setResetComplete(true);
       toast({
         title: "Password Reset",

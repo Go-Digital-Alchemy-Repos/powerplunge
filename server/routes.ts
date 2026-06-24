@@ -5,10 +5,6 @@ import { pool } from "./db";
 import { validateEnv } from "./src/config/env-validation";
 import { storage } from "./storage";
 
-// Canonical imports from server/src/
-import { setupAuth, registerAuthRoutes, isAuthenticated } from "./src/integrations/replit/auth";
-import { runtime } from "./src/config/runtime";
-import { setupLocalDevAuth, setupAuthDisabledRoutes } from "./src/config/local-auth-stub";
 import { registerObjectStorageRoutes } from "./src/integrations/replit/object-storage";
 import { registerR2Routes, isR2Configured } from "./src/integrations/cloudflare-r2";
 import { requireAdmin, errorHandler, requireFullAccess, requireOrderAccess } from "./src/middleware";
@@ -84,17 +80,7 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  // Setup auth: Replit OIDC when on Replit, local stub or disabled otherwise
-  if (runtime.shouldEnableReplitOIDC) {
-    await setupAuth(app);
-    registerAuthRoutes(app);
-  } else if (runtime.enableDevAuth) {
-    setupLocalDevAuth(app);
-  } else {
-    setupAuthDisabledRoutes(app);
-  }
-  
-  // Register Better Auth routes (feature-flagged)
+  // Better Auth is the app login surface after the auth cutover.
   registerBetterAuthRoutes(app);
   
   // Register file storage routes
@@ -165,7 +151,7 @@ export async function registerRoutes(
   app.use("/api/coupons", couponRoutes);
   app.use("/api/recovery", requireFullAccess, recoveryRoutes);
   app.use("/api/alerts", requireFullAccess, alertsRoutes);
-  app.use("/api/customer/support", isAuthenticated, supportRoutes);
+  app.use("/api/customer/support", supportRoutes);
   app.use("/api/admin/support/settings", requireFullAccess, adminSupportSettingsRoutes);
   app.use("/api/admin/support", requireAdmin, adminSupportRouter);
   app.use("/api/admin/docs", requireFullAccess, docsRouter);
@@ -227,18 +213,19 @@ export async function registerRoutes(
   app.use("/api/affiliate", publicAffiliateRoutes);
   app.use("/api/coupons", publicCouponRoutes);
 
-  // Customer routes handle platform/session-token auth internally.
+  // Customer routes resolve Better Auth sessions internally.
   app.use("/api/customer", customerProfileRoutes);
   app.use("/api/customer", customerAffiliateRoutes);
 
   // Admin auth routes (no middleware - handles own auth)
   app.use("/api/admin", adminAuthRoutes);
 
-  // Admin routes (requireAdmin - accessible by all admin roles)
-  app.use("/api/admin/orders", requireAdmin, adminOrdersRoutes);
-  app.use("/api/admin/orders", requireAdmin, shipmentRoutes);
-  app.use("/api/admin/dashboard", requireAdmin, dashboardRoutes);
-  app.use("/api/admin/shipments", requireAdmin, shipmentManagementRoutes);
+  // Order-related admin routes are accessible to fulfillment; general admin
+  // routes require full admin/store-manager access.
+  app.use("/api/admin/orders", requireOrderAccess, adminOrdersRoutes);
+  app.use("/api/admin/orders", requireOrderAccess, shipmentRoutes);
+  app.use("/api/admin/dashboard", requireFullAccess, dashboardRoutes);
+  app.use("/api/admin/shipments", requireOrderAccess, shipmentManagementRoutes);
 
   // Admin routes (requireFullAccess - blocks fulfillment role)
   app.use("/api/admin/settings", requireFullAccess, adminSettingsRoutes);
@@ -251,7 +238,7 @@ export async function registerRoutes(
   app.use("/api/admin/shipping", requireFullAccess, adminShippingRoutes);
   app.use("/api/admin", requireFullAccess, adminOperationsRoutes);
   app.use("/api/admin/orders", requireFullAccess, refundOrderRoutes);
-  app.use("/api/admin/customers", requireOrderAccess, adminCustomerMgmtRoutes);
+  app.use("/api/admin/customers", requireFullAccess, adminCustomerMgmtRoutes);
   app.use("/api/admin/reports", requireFullAccess, adminReportsRoutes);
   app.use("/api/admin/analytics", requireFullAccess, adminAnalyticsRoutes);
 

@@ -53,7 +53,9 @@ export default function AdminLogin() {
       }
 
       queryClient.setQueryData(["/api/admin/me"], data.admin);
+      queryClient.setQueryData(["/api/admin/optional-me"], data.admin);
       await queryClient.invalidateQueries({ queryKey: ["/api/admin/me"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/admin/optional-me"] });
 
       toast({
         title: "Welcome back",
