@@ -1,23 +1,19 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { toNodeHandler } from "better-auth/node";
 import { auth } from "./betterAuth";
-
-const USE_BETTER_AUTH = process.env.USE_BETTER_AUTH === "true";
+import { assertBetterAuthReady, isBetterAuthEnabled } from "./betterAuthConfig";
 
 export function registerBetterAuthRoutes(app: Express): void {
   app.get("/api/auth/feature-flag", (_req: Request, res: Response) => {
-    res.json({ enabled: USE_BETTER_AUTH });
+    res.json({ enabled: isBetterAuthEnabled() && !!process.env.BETTER_AUTH_SECRET });
   });
 
-  if (!USE_BETTER_AUTH) {
+  if (!isBetterAuthEnabled()) {
     console.log("[BETTER_AUTH] Feature flag disabled - skipping route registration");
     return;
   }
 
-  if (!process.env.BETTER_AUTH_SECRET) {
-    console.error("[BETTER_AUTH] BETTER_AUTH_SECRET is not set - auth will not work");
-    return;
-  }
+  assertBetterAuthReady();
 
   console.log("[BETTER_AUTH] Registering auth routes at /api/auth/*");
 

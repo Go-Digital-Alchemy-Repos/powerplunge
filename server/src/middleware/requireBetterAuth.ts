@@ -3,6 +3,12 @@ import { auth } from "../auth/betterAuth";
 import { fromNodeHeaders } from "better-auth/node";
 import { db } from "../../db";
 import { adminUsers } from "@shared/schema";
+import {
+  BETTER_AUTH_ADMIN_ROLES,
+  BETTER_AUTH_FULL_ACCESS_ROLES,
+  BETTER_AUTH_ORDER_ACCESS_ROLES,
+  normalizeBetterAuthRole,
+} from "@shared/auth/roles";
 import { eq } from "drizzle-orm";
 
 declare module "express-serve-static-core" {
@@ -67,10 +73,10 @@ export function requireBetterAuthRole(...allowedRoles: string[]) {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    const userRole = (session.user as any).role || "customer";
+    const userRole = normalizeBetterAuthRole((session.user as any).role);
     const adminUserId = (session.user as any).adminUserId;
 
-    const isPrivilegedRole = ["admin", "superadmin", "store_manager", "fulfillment"].includes(userRole);
+    const isPrivilegedRole = (BETTER_AUTH_ADMIN_ROLES as readonly string[]).includes(userRole);
     if (isPrivilegedRole) {
       if (!adminUserId) {
         console.warn(`[BETTER_AUTH] User ${session.user.email} has role ${userRole} but no linked adminUserId`);
@@ -88,7 +94,7 @@ export function requireBetterAuthRole(...allowedRoles: string[]) {
       }
     }
 
-    if (userRole === "superadmin" || userRole === "admin") {
+    if (userRole === "super_admin" || userRole === "admin") {
       req.betterAuthSession = session;
       return next();
     }
@@ -102,10 +108,10 @@ export function requireBetterAuthRole(...allowedRoles: string[]) {
   };
 }
 
-export const requireBetterAuthAdmin = requireBetterAuthRole("admin", "superadmin", "store_manager");
-export const requireBetterAuthSuperAdmin = requireBetterAuthRole("superadmin");
-export const requireBetterAuthFullAccess = requireBetterAuthRole("admin", "superadmin", "store_manager");
-export const requireBetterAuthOrderAccess = requireBetterAuthRole("admin", "superadmin", "store_manager", "fulfillment");
+export const requireBetterAuthAdmin = requireBetterAuthRole(...BETTER_AUTH_ADMIN_ROLES);
+export const requireBetterAuthSuperAdmin = requireBetterAuthRole("super_admin");
+export const requireBetterAuthFullAccess = requireBetterAuthRole(...BETTER_AUTH_FULL_ACCESS_ROLES);
+export const requireBetterAuthOrderAccess = requireBetterAuthRole(...BETTER_AUTH_ORDER_ACCESS_ROLES);
 
 export async function linkBetterAuthToAdminUser(betterAuthUserId: string, adminEmail: string): Promise<boolean> {
   try {

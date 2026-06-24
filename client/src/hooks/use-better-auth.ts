@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { authClient, useBetterAuth as useBetterAuthClient } from "@/lib/authClient";
-
-export type BetterAuthRole = "customer" | "admin" | "superadmin" | "store_manager" | "fulfillment";
+import type { BetterAuthRole } from "@shared/auth/roles";
+export type { BetterAuthRole };
 
 interface BetterAuthState {
   user: {
