@@ -5,7 +5,9 @@ const mocks = vi.hoisted(() => ({
     getCustomerByEmail: vi.fn(),
     getAffiliateByCustomerId: vi.fn(),
     getAffiliateAgreements: vi.fn(),
+    getAffiliateSettings: vi.fn(),
     createAffiliateAgreement: vi.fn(),
+    updateAffiliateSettings: vi.fn(),
     createCustomer: vi.fn(),
     updateCustomer: vi.fn(),
     getOrdersByCustomerId: vi.fn(),
@@ -55,6 +57,8 @@ describe("seed test auth fixtures", () => {
     }));
     mocks.storage.getAffiliateAgreements.mockResolvedValue([]);
     mocks.storage.createAffiliateAgreement.mockResolvedValue({});
+    mocks.storage.getAffiliateSettings.mockResolvedValue({ id: "main", ffEnabled: true });
+    mocks.storage.updateAffiliateSettings.mockResolvedValue({});
     mocks.storage.getActiveProducts.mockResolvedValue([]);
     mocks.storage.getOrdersByCustomerId.mockResolvedValue([]);
     mocks.syncBetterAuthAdminUser.mockResolvedValue(undefined);
@@ -158,9 +162,13 @@ describe("seed test auth fixtures", () => {
     const affiliate = { id: "aff-1", customerId: "cust-aff", affiliateCode: "TESTFF" };
     mocks.storage.getCustomerByEmail.mockResolvedValue(customer);
     mocks.storage.getAffiliateByCustomerId.mockResolvedValue(affiliate);
+    mocks.storage.getAffiliateSettings.mockResolvedValue({ id: "main", ffEnabled: false });
 
     await seedTestAffiliateAccount();
 
+    expect(mocks.storage.updateAffiliateSettings).toHaveBeenCalledWith(expect.objectContaining({
+      ffEnabled: true,
+    }));
     expect(mocks.syncBetterAuthCustomerUser).toHaveBeenCalledWith(customer, "SeedPass123!");
     expect(mocks.storage.updateCustomer).toHaveBeenCalledWith("cust-aff", {
       passwordHash: "better-auth-managed",

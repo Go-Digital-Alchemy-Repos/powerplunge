@@ -88,6 +88,27 @@ async function ensureTestAffiliateAgreement(affiliate: Affiliate) {
   });
 }
 
+async function ensureTestAffiliateProgramSettings() {
+  const expected = {
+    ffEnabled: true,
+    ffDiscountType: "PERCENT",
+    ffDiscountValue: 20,
+    ffCommissionType: "PERCENT",
+    ffCommissionValue: 0,
+    ffMaxUses: 0,
+  };
+  const settings = await storage.getAffiliateSettings();
+  const updates = Object.fromEntries(
+    Object.entries(expected).filter(([key, value]) => !settings || settings[key as keyof typeof settings] !== value),
+  );
+
+  if (Object.keys(updates).length === 0) {
+    return;
+  }
+
+  await storage.updateAffiliateSettings(updates);
+}
+
 const TEST_ADMIN_USERS = [
   {
     email: "admin@test.com",
@@ -159,6 +180,7 @@ export async function seedTestAffiliateAccount() {
   }
 
   const testPassword = getTestPassword();
+  await ensureTestAffiliateProgramSettings();
   const existing = await storage.getCustomerByEmail(TEST_AFFILIATE.email);
   if (existing) {
     const customer = await ensureSeedCustomerProfile(existing, { name: TEST_AFFILIATE.name });
