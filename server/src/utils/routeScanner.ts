@@ -42,6 +42,8 @@ const DOMAIN_MAP: Record<string, { domain: string; displayName: string }> = {
   "affiliate-signup.routes.ts": { domain: "affiliate-signup", displayName: "Affiliate Signup" },
   "affiliate-tracking.routes.ts": { domain: "affiliate-tracking", displayName: "Affiliate Tracking" },
   "order-status.routes.ts": { domain: "order-status", displayName: "Public Order Status" },
+  "server/src/routes/admin/cms-menus.routes.ts": { domain: "cms-menus", displayName: "Cms Menus" },
+  "server/src/routes/public/cms-menus.routes.ts": { domain: "public-cms-menus", displayName: "Public CMS Menus" },
 };
 
 const BASE_PATH_MAP: Record<string, string> = {
@@ -63,21 +65,38 @@ const BASE_PATH_MAP: Record<string, string> = {
   "affiliate-signup.routes.ts": "/api",
   "affiliate-tracking.routes.ts": "/api",
   "order-status.routes.ts": "/api",
+  "server/src/routes/admin/cms-menus.routes.ts": "/api/admin/cms/menus",
+  "server/src/routes/public/cms-menus.routes.ts": "/api/menus",
 };
 
 const STANDARD_ROUTE_REGEX = /(?:router|app)\.(get|post|patch|put|delete)\s*\([^)]{0,200}?["'`]([^"'`]+)["'`]/gi;
 const CHAINED_ROUTE_REGEX = /(?:router|app)\.route\s*\(\s*["'`]([^"'`]+)["'`]\s*\)[^)]{0,100}?\.(get|post|patch|put|delete)\s*\(/gi;
 
-function scanFile(filePath: string): RouteEntry[] {
-  const entries: RouteEntry[] = [];
-  const content = fs.readFileSync(filePath, "utf-8");
-  const lines = content.split("\n");
+function routeMapKey(filePath: string): string {
+  return path.relative(process.cwd(), filePath).replace(/\\/g, "/");
+}
+
+function resolveDomainInfo(filePath: string): { domain: string; displayName: string } {
+  const key = routeMapKey(filePath);
   const basename = path.basename(filePath);
-  const domainInfo = DOMAIN_MAP[basename] || {
+  return DOMAIN_MAP[key] || DOMAIN_MAP[basename] || {
     domain: basename.replace(/\.routes?\.ts$/, ""),
     displayName: basename.replace(/\.routes?\.ts$/, "").replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase()),
   };
-  const basePath = BASE_PATH_MAP[basename] || "";
+}
+
+function resolveBasePath(filePath: string): string {
+  const key = routeMapKey(filePath);
+  const basename = path.basename(filePath);
+  return BASE_PATH_MAP[key] || BASE_PATH_MAP[basename] || "";
+}
+
+function scanFile(filePath: string): RouteEntry[] {
+  const entries: RouteEntry[] = [];
+  const content = fs.readFileSync(filePath, "utf-8");
+  const basename = path.basename(filePath);
+  const domainInfo = resolveDomainInfo(filePath);
+  const basePath = resolveBasePath(filePath);
 
   let match: RegExpExecArray | null;
 
@@ -137,11 +156,7 @@ export function scanAllRoutes(): Map<string, DomainRoutes> {
       const entries = scanFile(filePath);
       if (entries.length === 0) continue;
 
-      const basename = path.basename(file);
-      const domainInfo = DOMAIN_MAP[basename] || {
-        domain: basename.replace(/\.routes?\.ts$/, ""),
-        displayName: basename.replace(/\.routes?\.ts$/, "").replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase()),
-      };
+      const domainInfo = resolveDomainInfo(filePath);
 
       if (!domainMap.has(domainInfo.domain)) {
         domainMap.set(domainInfo.domain, { domain: domainInfo.domain, displayName: domainInfo.displayName, files: [], routes: [] });

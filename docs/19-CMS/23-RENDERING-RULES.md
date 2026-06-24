@@ -96,13 +96,12 @@ Non-CMS uses of `dangerouslySetInnerHTML` (admin email preview, chart tooltips) 
 
 ## Unknown Block Fallback
 
-**File:** `client/src/cms/blocks/unknown/UnknownBlock.tsx`
+**File:** `client/src/components/UnknownBlock.tsx`
 
 When the page renderer encounters a block type not in the registry, it renders the `UnknownBlock` component:
 
 - Displays a yellow warning box with the unregistered type name
 - Shows: "This block type is not registered. It may have been removed or renamed."
-- Provides an expandable section to inspect raw block JSON data
 - Uses `data-testid="block-unknown-{type}"` for testing
 - Never throws — ensures the page continues rendering remaining blocks
 

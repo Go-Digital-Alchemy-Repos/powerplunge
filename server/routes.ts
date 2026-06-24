@@ -46,7 +46,7 @@ import publicCmsThemeRoutes from "./src/routes/public/cms-theme.routes";
 import publicCmsSettingsRoutes from "./src/routes/public/cms-settings.routes";
 import publicCmsSectionsRoutes from "./src/routes/public/cms-sections.routes";
 import publicCmsSidebarsRoutes from "./src/routes/public/cms-sidebars.routes";
-import { publicMenuRoutes } from "./src/routes/public/blog.routes";
+import publicMenuRoutes from "./src/routes/public/cms-menus.routes";
 import publicBlogRoutes from "./src/routes/public/blog-v2.routes";
 import publicGoogleReviewsRoutes from "./src/routes/public/google-reviews.routes";
 import publicNewsletterRoutes from "./src/routes/public/newsletter.routes";

@@ -7,15 +7,12 @@ The Block Registry is the central catalog of all content block types available i
 ```
 client/src/cms/blocks/
   registry.ts           → Core registry (Map<string, BlockDefinition>)
-  entries.ts            → Registers all 25 block types via registerCmsV1Blocks()
+  entries.ts            → Registers all 31 editor block types via registerCmsV1Blocks()
   types.ts              → TypeScript interfaces (BlockDefinition, BlockCategory, etc.)
   blockCategories.ts    → Category definitions (single source of truth)
-  schemas.ts            → Zod validation schemas per block type
   helpers.ts            → Puck field builder helpers (textField, arrayField, etc.)
   init.ts               → Bootstrap/initialization entry point
   index.ts              → Public barrel export
-  unknown/
-    UnknownBlock.tsx    → Fallback renderer for unregistered block types
   HeroBlock.tsx         → Individual block render components
   RichTextBlock.tsx
   ImageBlock.tsx
@@ -36,7 +33,7 @@ client/src/cms/blocks/
 2. Each call to `registerBlock()` adds a `BlockDefinition` to the internal `Map<string, BlockDefinition>`
 3. The Puck page builder reads the registry via `getAllBlocks()` to build its component palette
 4. The public page renderer uses `getBlock(type)` to resolve render components
-5. On save, `validateBlockData()` runs Zod validation against the block's schema
+5. On save, Puck data is converted to `contentJson` and persisted through the CMS API
 
 ### Registry API
 
@@ -86,7 +83,7 @@ interface BlockSettings {
 
 ## Block Categories
 
-Blocks are organized into six categories. The single source of truth is `client/src/cms/blocks/blockCategories.ts`, which exports `BLOCK_CATEGORIES`. Both the Puck editor sidebar and the EnhancedBlockPicker derive their category groupings from this constant.
+Blocks are organized into seven categories. The single source of truth is `client/src/cms/blocks/blockCategories.ts`, which exports `BLOCK_CATEGORIES`. Both the Puck editor sidebar and the EnhancedBlockPicker derive their category groupings from this constant.
 
 | Category ID | Label | Description | Sort Order |
 |-------------|-------|-------------|------------|
@@ -96,6 +93,7 @@ Blocks are organized into six categories. The single source of truth is `client/
 | `trust` | Trust | Social proof and credibility-building blocks | 4 |
 | `media` | Media | Image and visual content blocks | 5 |
 | `utility` | Utility | Informational and supporting content blocks | 6 |
+| `powerplunge` | PowerPlunge | Industry-specific blocks for cold plunge content and conversion | 7 |
 
 ### Category → Block Mapping
 
@@ -107,6 +105,7 @@ Blocks are organized into six categories. The single source of truth is `client/
 | Trust | `testimonials`, `trustBar` |
 | Media | `image`, `imageGrid` |
 | Utility | `faq` |
+| PowerPlunge | `benefitStack`, `scienceExplainer`, `protocolBuilder`, `recoveryUseCases`, `safetyChecklist`, `guaranteeAndWarranty`, `deliveryAndSetup`, `financingAndPayment`, `objectionBusters`, `beforeAfterExpectations`, `pressMentions`, `socialProofStats`, `statsBar`, `featureGrid`, `featuredProduct`, `iconGrid`, `cta`, `blogFeaturedPost`, `blogPostFeed` |
 
 ### Helper Functions
 
@@ -320,36 +319,14 @@ Each block declares its editable fields using helper functions from `client/src/
 
 ## Validation
 
-Block data is validated using Zod schemas defined in `client/src/cms/blocks/schemas.ts`. The validation system provides:
-
-### Per-Block Schemas
-
-Every block type has a corresponding Zod schema (e.g., `heroSchema`, `richTextSchema`). Schemas enforce:
-- Required fields (`z.string().min(1)`)
-- Default values (`z.string().default("")`)
-- Enum constraints (`z.enum(["left", "center", "right"])`)
-- Array item validation (nested object schemas)
-- Numeric ranges (`z.number().min(2).max(4)`)
-
-### Validation API
-
-```typescript
-validateBlockData(type: string, data: unknown)
-// Returns { success: true, data } or { success: false, errors: string[] }
-
-validatePageBlocks(blocks: { type: string; data: unknown }[])
-// Returns { valid: boolean, warnings: string[] }
-```
-
-If a block type has no registered schema, validation passes through (warns to console). This allows forward-compatible content.
+Block props are shaped by Puck field definitions and each block's `defaultProps`. Server-side CMS APIs validate page/post envelopes; individual block props are rendered defensively by `PageRenderer`.
 
 ## UnknownBlock Behavior
 
-When the page renderer encounters a block type not in the registry, it renders the `UnknownBlock` component (`client/src/cms/blocks/unknown/UnknownBlock.tsx`):
+When the page renderer encounters a block type not in the registry, it renders the `UnknownBlock` component (`client/src/components/UnknownBlock.tsx`):
 
 - Displays a yellow warning box with the unregistered type name
 - Shows the message: "This block type is not registered. It may have been removed or renamed."
-- Provides an expandable section to inspect the raw block JSON data
 - Uses `data-testid="block-unknown-{type}"` for testing
 
 This ensures pages with removed or renamed block types never crash — they degrade gracefully with a visible warning.
@@ -431,26 +408,17 @@ interface BlockRenderProps {
 }
 ```
 
-### Step 2: Add a Zod Validation Schema
+### Step 2: Add Types and Defaults
 
-Add to `client/src/cms/blocks/schemas.ts`:
+Add the block props interface to `client/src/cms/blocks/types.ts`, then define matching `defaultProps` in `entries.ts`:
 
 ```typescript
-export const myBlockSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  description: z.string().default(""),
-  ctaText: z.string().default(""),
-  ctaHref: z.string().default("#"),
-});
-export type MyBlockProps = z.infer<typeof myBlockSchema>;
-```
-
-Add the entry to `blockSchemaMap`:
-```typescript
-const blockSchemaMap: Record<string, z.ZodTypeAny> = {
-  // ... existing entries
-  myBlock: myBlockSchema,
-};
+interface MyBlockProps {
+  title: string;
+  description?: string;
+  ctaText?: string;
+  ctaHref?: string;
+}
 ```
 
 ### Step 3: Register the Block
@@ -504,7 +472,7 @@ The block automatically:
 - Appears in the Puck editor component palette under its category
 - Appears in the EnhancedBlockPicker with search and category filtering
 - Is renderable on public-facing pages via the page renderer
-- Gets validated on save via its Zod schema
+- Gets validated on save by `server/src/utils/contentValidation.ts` for content shape and known block type warnings
 - Falls back to `UnknownBlock` if ever unregistered
 
 ## Registry Organization
@@ -517,8 +485,6 @@ blockCategories.ts    ← Category definitions (single source of truth)
 types.ts              ← TypeScript interfaces
        ↓
 helpers.ts            ← Puck field configuration helpers
-       ↓
-schemas.ts            ← Zod validation per block type
        ↓
 entries.ts            ← Block registration (imports components)
        ↓
@@ -535,7 +501,7 @@ The EnhancedBlockPicker in the CMS builder derives its category tabs from `BLOCK
 
 Each block has a `version` field (currently `1` for all blocks). The versioning strategy is:
 
-1. **Non-breaking changes** (adding optional props with defaults): Keep version at `1`. Zod schemas handle missing props via `.default()`.
+1. **Non-breaking changes** (adding optional props with defaults): Keep version at `1`. Add defaults in the block definition so existing saved content still renders.
 2. **Breaking changes** (renaming props, changing data shape): Bump to `version: 2`. Write a migration function in the block's entry to transform `v1 → v2` data.
 3. **Deprecation**: Set `deprecated: true` on the block definition. The block still renders existing content but is hidden from the editor palette.
 
@@ -544,5 +510,5 @@ The `contentJson.version` field at the page level (currently `1`) tracks the ove
 ### Forward Compatibility
 
 - Unknown block types render `UnknownBlock` (no crash)
-- Missing props in block data are filled by Zod defaults
-- Extra props in block data are ignored (Zod strips them only in strict mode; we use passthrough)
+- Missing props in block data are handled by block component defaults and defensive rendering
+- Extra props in block data are preserved by content validation and ignored by components that do not use them

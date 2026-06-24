@@ -5,7 +5,7 @@ import {
   computePaymentStatus,
   computeRefundSummary,
   isValidReasonCode,
-} from "../refund.service";
+} from "../refund-calculations";
 import type { Order, Refund } from "@shared/schema";
 
 function makeOrder(overrides: Partial<Order> = {}): Order {

@@ -79,13 +79,21 @@ These variables are only relevant when running outside Replit (Local, Codex Web,
 
 ### Dotenv Loading
 
-When running outside Replit, the server loads `.env` files automatically on startup. Files are loaded in this order (first match wins):
+When running outside Replit, the server loads `.env` files automatically on startup. `.env` is the standard runtime file for this repo. Keep working local development values there and keep backup/source copies of secrets in 1Password.
 
-1. `.env.local` (git-ignored, your personal overrides)
-2. `.env.development`
-3. `.env` (shared defaults)
+Files are loaded in this order (first match wins):
+
+1. `.env` (standard local/Codex runtime file, git-ignored)
+2. `.env.local` (legacy or personal fallback values)
+3. `.env.development` (development fallback values)
 
 Copy `.env.example` to `.env` to get started: `cp .env.example .env`
+
+### Database Secrets
+
+Local and Codex development use local Postgres by default through `DATABASE_URL` in `.env`, for example `postgres://thomascarney@localhost:5432/powerplunge`. Neon connection strings are for deployed environments, migration checks, or intentional ops work. Keep Neon values in 1Password-backed files such as `.env.neon.local` and run those commands explicitly with `op run --env-file=.env.neon.local -- ...`.
+
+Do not store the old Replit production database URL in `.env`; keep it archived in 1Password only if it is needed for future migration or audit work.
 
 ## Informational Variables (set automatically)
 

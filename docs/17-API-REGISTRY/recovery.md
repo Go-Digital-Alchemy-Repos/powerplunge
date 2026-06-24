@@ -5,7 +5,7 @@
 | Property | Value |
 |----------|-------|
 | Domain | recovery |
-| Source Files | server/src/routes/recovery.routes.ts |
+| Source Files | server/src/routes/admin/recovery.routes.ts |
 | Endpoint Count | 10 |
 
 ## Auth & Authorization

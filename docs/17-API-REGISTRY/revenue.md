@@ -5,7 +5,7 @@
 | Property | Value |
 |----------|-------|
 | Domain | revenue |
-| Source Files | server/src/routes/revenue.routes.ts |
+| Source Files | server/src/routes/admin/revenue.routes.ts |
 | Endpoint Count | 10 |
 
 ## Auth & Authorization

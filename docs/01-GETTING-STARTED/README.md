@@ -5,7 +5,7 @@ Welcome to the Power Plunge documentation. This guide will help you get the deve
 ## Prerequisites
 
 - Node.js 20+
-- PostgreSQL database (provided by Replit)
+- Local PostgreSQL database for development; Neon Postgres for deployed and explicit ops environments
 - npm package manager
 
 ## Quick Start

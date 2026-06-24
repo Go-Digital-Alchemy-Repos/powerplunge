@@ -5,7 +5,7 @@
 | Property | Value |
 |----------|-------|
 | Domain | vip |
-| Source Files | server/src/routes/vip.routes.ts |
+| Source Files | server/src/routes/admin/vip.routes.ts |
 | Endpoint Count | 10 |
 
 ## Auth & Authorization

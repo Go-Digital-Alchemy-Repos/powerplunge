@@ -19,7 +19,7 @@ This file exports two routers:
 ## Notes
 
 Coupon CRUD plus public coupon validation endpoint.
-Note: Separate from the coupon analytics router at `server/src/routes/coupon.routes.ts`.
+Note: Separate from the coupon analytics router at `server/src/routes/admin/coupon-analytics.routes.ts`.
 
 <!-- === AUTO-GENERATED SECTION (do not edit below this line) === -->
 

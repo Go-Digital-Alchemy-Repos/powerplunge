@@ -5,7 +5,7 @@
 | Property | Value |
 |----------|-------|
 | Domain | alerts |
-| Source Files | server/src/routes/alerts.routes.ts |
+| Source Files | server/src/routes/admin/alerts.routes.ts |
 | Endpoint Count | 9 |
 
 ## Auth & Authorization

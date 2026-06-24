@@ -15,9 +15,8 @@ Some modules have both v1 and v2 documentation files. The table below clarifies 
 | File | Status | Notes |
 |------|--------|-------|
 | `blog-v2.md` | **Active** | Mounted at `/api/blog` via `blog-v2.routes.ts` |
-| `blog.md` | Deprecated | Legacy v1. Only `publicMenuRoutes` named export is still mounted. |
 | `cms-posts-v2.md` | **Active** | Mounted via `cms-posts-v2.routes.ts` |
-| `cms-posts.md` | Deprecated | Legacy v1. Not mounted in `routes.ts`. |
+| `public-cms-menus.md` | **Active** | Mounted at `/api/menus` via `public/cms-menus.routes.ts` |
 
 All other files in this folder document currently active route modules.
 

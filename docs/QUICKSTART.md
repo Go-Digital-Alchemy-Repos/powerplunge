@@ -5,7 +5,7 @@ This guide covers running Power Plunge outside Replit (Local, Codex Web, or Code
 ## Prerequisites
 
 - Node.js 20+
-- PostgreSQL database (local or remote)
+- Local PostgreSQL database
 - npm
 
 ## 1. Clone and install
@@ -26,11 +26,19 @@ cp .env.example .env
 
 Edit `.env` with your values. At minimum you need:
 
-- `DATABASE_URL` — PostgreSQL connection string
+- `DATABASE_URL` — local PostgreSQL connection string, for example `postgres://thomascarney@localhost:5432/powerplunge`
 - `SESSION_SECRET` — any random string (32+ chars)
 - `STRIPE_SECRET_KEY` — Stripe test key
 - `STRIPE_PUBLISHABLE_KEY` — Stripe test publishable key
 - `STRIPE_WEBHOOK_SECRET` — Stripe webhook secret
+
+Use `.env` as the active local/Codex runtime file. Local development should point at local Postgres by default. Keep backup copies of secrets in 1Password. Do not put Neon production, Railway production, or legacy Replit production database credentials in `.env`.
+
+Use Neon only when you deliberately run an ops/deploy command with `.env.neon.local`, for example:
+
+```bash
+op run --env-file=.env.neon.local -- npm run db:push
+```
 
 ## 3. Push database schema
 

@@ -12,8 +12,8 @@
 2. **Regex extraction:** Two regex patterns detect route definitions:
    - `STANDARD_ROUTE_REGEX` — matches `router.get("/path", ...)` and `app.post("/path", ...)` patterns.
    - `CHAINED_ROUTE_REGEX` — matches `router.route("/path").get(...)` chained patterns.
-3. **Domain mapping:** Each route file is mapped to a named domain via `DOMAIN_MAP` (e.g., `affiliate.routes.ts` → domain `affiliates`, display name `Affiliate Management`).
-4. **Base path resolution:** Routes that don't start with `/api/` are prefixed with a base path from `BASE_PATH_MAP` to reconstruct the full endpoint URL.
+3. **Domain mapping:** Each route file is mapped to a named domain via `DOMAIN_MAP`. Entries can use either a basename or a repo-relative source path when two route files share the same basename.
+4. **Base path resolution:** Routes that don't start with `/api/` are prefixed with a base path from `BASE_PATH_MAP` to reconstruct the full endpoint URL. Path-specific entries are used for duplicate basenames such as admin and public CMS menus.
 5. **Output generation:** Produces sorted markdown tables with Method, Path, Source File, and Line columns.
 
 ### Key Data Structures
@@ -23,7 +23,7 @@
 | `RouteEntry` | Single endpoint: method, path, file, domain, line number |
 | `DomainRoutes` | Collection of routes for a domain: domain name, display name, source files, route entries |
 
-### Domain Map (15 domains)
+### Domain Map Examples
 | Route File | Domain | Display Name |
 |------------|--------|-------------|
 | `routes.ts` | main | Main Application Routes |
@@ -44,6 +44,8 @@
 | `affiliate-signup.routes.ts` | affiliate-signup | Affiliate Signup |
 | `affiliate-tracking.routes.ts` | affiliate-tracking | Affiliate Tracking |
 | `order-status.routes.ts` | order-status | Public Order Status |
+| `server/src/routes/admin/cms-menus.routes.ts` | cms-menus | Cms Menus |
+| `server/src/routes/public/cms-menus.routes.ts` | public-cms-menus | Public CMS Menus |
 
 ### Exported Functions
 
