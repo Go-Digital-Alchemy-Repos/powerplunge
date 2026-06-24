@@ -14,7 +14,6 @@ export function useRealtimeNotifications({ role, token, enabled = true }: UseRea
 
   useEffect(() => {
     if (!enabled) return;
-    if (role === "customer" && !token) return;
 
     realtimeClient.connect(role, token);
 

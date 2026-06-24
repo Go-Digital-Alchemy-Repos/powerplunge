@@ -164,13 +164,12 @@ function CustomerNotificationBell({ getAuthHeader, onTabChange }: { getAuthHeade
 export default function MyAccount() {
   const [, setLocation] = useLocation();
   const { logoSrc, companyName } = useBranding();
-  const { customer: authCustomer, isLoading: authLoading, isAuthenticated, logout, getAuthHeader, getToken } = useCustomerAuth();
+  const { customer: authCustomer, isLoading: authLoading, isAuthenticated, logout, getAuthHeader } = useCustomerAuth();
   const initialTab = new URLSearchParams(window.location.search).get("tab") || "orders";
   const [activeTab, setActiveTab] = useState(initialTab);
   const { vipData } = useAccountVip();
-  const customerToken = isAuthenticated ? getToken() || undefined : undefined;
 
-  useRealtimeNotifications({ role: "customer", token: customerToken, enabled: isAuthenticated && !!customerToken });
+  useRealtimeNotifications({ role: "customer", enabled: isAuthenticated });
 
   const { data: affiliateCheck } = useQuery<{ affiliate: any | null }>({
     queryKey: ["/api/customer/affiliate-portal"],

@@ -1,12 +1,11 @@
 import { Router } from "express";
 import { storage } from "../../../storage";
 import { z } from "zod";
-import { customerEmailService } from "../../services/customer-email.service";
 import { 
   requireCustomerAuth,
-  createSessionToken,
   AuthenticatedRequest 
 } from "../../middleware/customer-auth.middleware";
+import { requestCustomerMagicLink, serializeCustomer, verifyCustomerMagicLink } from "../../auth/customerBetterAuth";
 import { db } from "../../../db";
 import { supportTickets, orders, customers, emailLogs } from "@shared/schema";
 import { eq, and, desc } from "drizzle-orm";
@@ -24,7 +23,7 @@ router.post("/request-magic-link", async (req, res) => {
   try {
     const { email } = requestMagicLinkSchema.parse(req.body);
     
-    await customerEmailService.sendMagicLinkEmail(email);
+    await requestCustomerMagicLink(req, email, "/my-account");
     
     res.json({ 
       success: true, 
@@ -47,25 +46,14 @@ router.post("/verify-token", async (req, res) => {
   try {
     const { token } = verifyTokenSchema.parse(req.body);
     
-    const result = await customerEmailService.verifyMagicLinkToken(token);
-    
-    if (!result.valid) {
-      return res.status(400).json({ message: result.error || "Invalid or expired link" });
-    }
-
-    const customer = await storage.getCustomer(result.customerId!);
-    if (!customer) {
-      return res.status(400).json({ message: "Customer not found" });
-    }
-
-    const sessionToken = createSessionToken(String(customer.id), customer.email);
+    const customer = await verifyCustomerMagicLink(req, res, token, "/my-account");
 
     res.json({ 
       success: true, 
-      sessionToken,
       customerId: customer.id,
       customerName: customer.name,
       customerEmail: customer.email,
+      customer: serializeCustomer(customer),
     });
   } catch (error: any) {
     if (error instanceof z.ZodError) {

@@ -4,7 +4,7 @@ import { insertCustomerSchema, type Product, type AffiliateSettings, type Affili
 import { checkoutLimiter, paymentLimiter } from "../../middleware/rate-limiter";
 import { affiliateCommissionService } from "../../services/affiliate-commission.service";
 import { normalizeEmail } from "../../services/customer-identity.service";
-import { verifySessionToken } from "../../middleware/customer-auth.middleware";
+import { getCustomerAuthContext } from "../../auth/customerBetterAuth";
 import { normalizeState } from "@shared/us-states";
 import { validateEmail, validatePhone, validateAddress, validateZip, normalizeAddress, type ValidationError } from "@shared/validation";
 import { stripeService } from "../../integrations/stripe/StripeService";
@@ -274,14 +274,8 @@ router.post("/create-payment-intent", paymentLimiter, async (req: any, res) => {
 
     const userId = req.user?.claims?.sub;
 
-    let loggedInCustomerId: string | null = null;
-    const authHeader = req.headers?.authorization;
-    if (authHeader && authHeader.startsWith("Bearer ")) {
-      const tokenResult = verifySessionToken(authHeader.slice(7));
-      if (tokenResult.valid && tokenResult.customerId) {
-        loggedInCustomerId = tokenResult.customerId;
-      }
-    }
+    const customerAuthContext = await getCustomerAuthContext(req).catch(() => null);
+    const loggedInCustomerId = customerAuthContext?.customer.id ?? null;
 
     if (affiliate && affiliate.status === "active") {
       const affiliateCustomer = await storage.getCustomer(affiliate.customerId);

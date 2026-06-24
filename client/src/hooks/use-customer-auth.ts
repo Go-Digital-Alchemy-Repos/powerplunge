@@ -19,8 +19,6 @@ interface CustomerAuthState {
   isAuthenticated: boolean;
 }
 
-const STORAGE_KEY = "customerSessionToken";
-
 export function useCustomerAuth() {
   const [state, setState] = useState<CustomerAuthState>({
     customer: null,
@@ -28,32 +26,11 @@ export function useCustomerAuth() {
     isAuthenticated: false,
   });
 
-  const getToken = useCallback(() => {
-    return localStorage.getItem(STORAGE_KEY);
-  }, []);
-
-  const setToken = useCallback((token: string) => {
-    localStorage.setItem(STORAGE_KEY, token);
-  }, []);
-
-  const clearToken = useCallback(() => {
-    localStorage.removeItem(STORAGE_KEY);
-  }, []);
-
   const verifySession = useCallback(async () => {
-    const token = getToken();
-    if (!token) {
-      setState({ customer: null, isLoading: false, isAuthenticated: false });
-      return;
-    }
-
     try {
       const response = await fetch("/api/customer/auth/verify-session", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        credentials: "include",
       });
 
       const data = await response.json();
@@ -65,14 +42,12 @@ export function useCustomerAuth() {
           isAuthenticated: true,
         });
       } else {
-        clearToken();
         setState({ customer: null, isLoading: false, isAuthenticated: false });
       }
     } catch (error) {
-      clearToken();
       setState({ customer: null, isLoading: false, isAuthenticated: false });
     }
-  }, [getToken, clearToken]);
+  }, []);
 
   useEffect(() => {
     verifySession();
@@ -93,7 +68,6 @@ export function useCustomerAuth() {
         throw new Error(data.message || "Login failed");
       }
 
-      setToken(data.sessionToken);
       setState({
         customer: data.customer,
         isLoading: false,
@@ -102,7 +76,7 @@ export function useCustomerAuth() {
 
       return data;
     },
-    [setToken]
+    []
   );
 
   const register = useCallback(
@@ -110,6 +84,7 @@ export function useCustomerAuth() {
       const response = await fetch("/api/customer/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ email, password, name }),
       });
 
@@ -119,7 +94,6 @@ export function useCustomerAuth() {
         throw new Error(data.message || "Registration failed");
       }
 
-      setToken(data.sessionToken);
       setState({
         customer: data.customer,
         isLoading: false,
@@ -128,13 +102,14 @@ export function useCustomerAuth() {
 
       return data;
     },
-    [setToken]
+    []
   );
 
   const requestMagicLink = useCallback(async (email: string) => {
     const response = await fetch("/api/customer/auth/magic-link", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ email }),
     });
 
@@ -152,6 +127,7 @@ export function useCustomerAuth() {
       const response = await fetch("/api/customer/auth/verify-magic-link", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ token }),
       });
 
@@ -161,7 +137,6 @@ export function useCustomerAuth() {
         throw new Error(data.message || "Invalid or expired link");
       }
 
-      setToken(data.sessionToken);
       setState({
         customer: data.customer,
         isLoading: false,
@@ -170,27 +145,26 @@ export function useCustomerAuth() {
 
       return data;
     },
-    [setToken]
+    []
   );
 
   const logout = useCallback(async () => {
-    // Best-effort clear any admin session cookie
     try {
-      await fetch("/api/admin/logout", {
+      await fetch("/api/customer/auth/logout", {
         method: "POST",
         credentials: "include",
       });
     } catch (_) {
-      // Ignore — admin logout is best-effort
+      // Ignore logout transport errors; local state still clears.
     }
-    clearToken();
     setState({ customer: null, isLoading: false, isAuthenticated: false });
-  }, [clearToken]);
+  }, []);
 
   const getAuthHeader = useCallback((): Record<string, string> => {
-    const token = getToken();
-    return token ? { Authorization: `Bearer ${token}` } : {};
-  }, [getToken]);
+    return {};
+  }, []);
+
+  const getToken = useCallback(() => null, []);
 
   return {
     ...state,

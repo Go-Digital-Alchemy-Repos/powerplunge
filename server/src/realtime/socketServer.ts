@@ -32,7 +32,6 @@ export function initializeSocketServer(httpServer: HttpServer): SocketIOServer {
     try {
       const auth = socket.handshake.auth;
       const role = auth?.role as string;
-      const token = auth?.token as string;
 
       if (role === "admin") {
         const sessionCookie = socket.handshake.headers.cookie;
@@ -47,13 +46,13 @@ export function initializeSocketServer(httpServer: HttpServer): SocketIOServer {
         return next();
       }
 
-      if (role === "customer" && token) {
-        const { verifySessionToken } = await import("../middleware/customer-auth.middleware");
-        const result = verifySessionToken(token);
-        if (!result.valid || !result.customerId) {
+      if (role === "customer") {
+        const { getCustomerAuthContext } = await import("../auth/customerBetterAuth");
+        const context = await getCustomerAuthContext({ headers: socket.handshake.headers } as any);
+        if (!context) {
           return next(new Error("Invalid customer session"));
         }
-        (socket as any).data = { userId: result.customerId, role: "customer" } satisfies SocketData;
+        (socket as any).data = { userId: context.customer.id, role: "customer" } satisfies SocketData;
         return next();
       }
 

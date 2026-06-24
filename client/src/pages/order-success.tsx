@@ -96,6 +96,7 @@ export default function OrderSuccess() {
             fetch("/api/customer/link", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
+              credentials: "include",
               body: JSON.stringify({ customerId, sessionId: storedSessionId }),
             })
               .then((res) => {
@@ -238,7 +239,7 @@ export default function OrderSuccess() {
               </div>
               <div className="flex flex-col sm:flex-row gap-3 pt-2">
                 <a 
-                  href="/api/login"
+                  href="/register"
                   className="flex-1"
                 >
                   <Button className="w-full gap-2" data-testid="button-create-account">
