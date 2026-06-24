@@ -128,6 +128,8 @@ class DocsGeneratorService {
       "MAILGUN_DOMAIN": { required: false, description: "Mailgun domain for email sending", category: "Email" },
       "SENDGRID_API_KEY": { required: false, description: "SendGrid API key (alternative email)", category: "Email" },
       "SESSION_SECRET": { required: false, description: "Session encryption secret", category: "Security" },
+      "BETTER_AUTH_SECRET": { required: true, description: "Better Auth session secret", category: "Auth" },
+      "BETTER_AUTH_BASE_URL": { required: false, description: "Canonical Better Auth origin", category: "Auth" },
       "REPLIT_DOMAINS": { required: false, description: "Replit deployment domains", category: "Replit" },
       "REPL_ID": { required: false, description: "Replit instance ID", category: "Replit" },
       "REPLIT_DB_URL": { required: false, description: "Replit database URL", category: "Replit" },
@@ -228,13 +230,13 @@ class DocsGeneratorService {
       });
     }
     
-    // Replit Auth
-    const replitAuthPath = path.join(process.cwd(), "server/src/integrations/replit/auth");
-    if (fs.existsSync(replitAuthPath)) {
+    // Better Auth
+    const betterAuthPath = path.join(process.cwd(), "server/src/auth/betterAuth.ts");
+    if (fs.existsSync(betterAuthPath)) {
       integrations.push({
-        name: "Replit Auth",
-        description: "Authentication integration using Replit OpenID Connect",
-        envVars: ["REPLIT_DOMAINS", "SESSION_SECRET"],
+        name: "Better Auth",
+        description: "Authentication integration for admin and customer sessions",
+        envVars: ["BETTER_AUTH_SECRET", "BETTER_AUTH_BASE_URL"],
       });
     }
     
@@ -312,7 +314,7 @@ Power Plunge is a comprehensive e-commerce platform designed specifically for se
 |---------|---------------------|
 | **Stripe** | Payment processing, webhooks |
 | **Mailgun** | Transactional email delivery |
-| **Replit Auth** | Customer authentication (OIDC) |
+| **Better Auth** | Admin and customer authentication |
 | **Replit Object Storage** | Product images, file uploads |
 
 ---
@@ -407,8 +409,8 @@ power-plunge/
 | Layer | Method | Scope |
 |-------|--------|-------|
 | **Public** | None | Product browsing, basic info |
-| **Customer** | Replit Auth (OIDC) | Order history, account management |
-| **Admin** | Email/Password + Session | Full system access |
+| **Customer** | Better Auth session | Order history, account management |
+| **Admin** | Better Auth session | Full system access |
 
 ### Security Measures
 
@@ -543,7 +545,7 @@ ${publicRoutes.map(formatRoute).join("\n")}
 
 ## Customer Endpoints
 
-*Requires authenticated customer session via Replit Auth.*
+*Requires authenticated customer session via Better Auth.*
 
 | Method | Endpoint |
 |--------|----------|
@@ -1089,36 +1091,34 @@ Email templates are managed in the admin panel at \`/admin/settings\` under the 
 
 ---
 
-## Replit Auth Integration
+## Better Auth Integration
 
 ### Purpose
-Provides customer authentication via OpenID Connect, supporting Google, Apple, and email login.
+Provides admin and customer authentication with email/password, password reset, and magic-link flows.
 
 ### Features
-- **Social Login**: Google and Apple sign-in buttons
 - **Session Management**: Secure cookie-based sessions
-- **Profile Sync**: Automatic profile creation on first login
-- **SSO**: Single sign-on across Replit ecosystem
+- **Profile Sync**: Automatic customer profile creation on first login
+- **Role Mapping**: Admin roles synchronized to Better Auth users
 
 ### Required Environment Variables
 
 | Variable | Description |
 |----------|-------------|
 | \`SESSION_SECRET\` | Random string for session encryption |
-
-Note: \`REPLIT_DOMAINS\` is auto-configured by Replit.
+| \`BETTER_AUTH_SECRET\` | Random string for Better Auth sessions |
 
 ### How It Works
 
-1. Customer clicks "Sign In" button
-2. Redirected to Replit auth page
-3. Customer authenticates with Google/Apple
-4. Callback returns with OIDC tokens
-5. Session created with customer profile
+1. User signs in through the admin or customer auth route
+2. Better Auth validates credentials or verification token
+3. Session cookie is created
+4. App resolves the linked admin or customer profile
 
 ### Code Location
-- Integration code: \`server/src/integrations/replit/auth/\`
-- Auth middleware: \`server/src/middleware/auth.ts\`
+- Better Auth config: \`server/src/auth/betterAuth.ts\`
+- Admin auth helpers: \`server/src/auth/adminBetterAuth.ts\`
+- Customer auth helpers: \`server/src/auth/customerBetterAuth.ts\`
 
 ### Troubleshooting
 
@@ -1248,7 +1248,7 @@ This document provides a comprehensive catalog of all features available in the 
 
 | Feature | Description |
 |---------|-------------|
-| **Authentication** | Login via Replit Auth (Google, Apple, email) |
+| **Authentication** | Login via Better Auth |
 | **Order History** | View all past orders with status tracking |
 | **Order Details** | Individual order view with line items |
 | **Profile Management** | Update name, email, phone |
@@ -1467,9 +1467,8 @@ This document provides a comprehensive catalog of all features available in the 
 - Recovery emails for abandoned carts
 - Affiliate approval/payout notifications
 
-### Authentication (Replit Auth)
+### Authentication (Better Auth)
 
-- Customer SSO with Google/Apple
 - Session management
 - Secure logout
 

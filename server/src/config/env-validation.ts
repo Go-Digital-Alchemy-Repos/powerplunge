@@ -94,24 +94,14 @@ const ENV_VARS: Record<string, EnvVarSpec> = {
     description: "Canonical public URL used for OpenGraph meta image URLs during build",
   },
   BETTER_AUTH_SECRET: {
-    level: "optional",
+    level: "required",
     feature: "Better Auth",
-    description: "Secret for Better Auth sessions (only if USE_BETTER_AUTH=true)",
+    description: "Secret for Better Auth sessions",
   },
   BETTER_AUTH_BASE_URL: {
     level: "optional",
     feature: "Better Auth",
     description: "Canonical origin for Better Auth callbacks, for example https://www.powerplunge.com",
-  },
-  USE_BETTER_AUTH: {
-    level: "optional",
-    feature: "Better Auth",
-    description: "Set to true to mount Better Auth API routes",
-  },
-  VITE_USE_BETTER_AUTH: {
-    level: "optional",
-    feature: "Better Auth",
-    description: "Client-side flag for Better Auth UI rollout",
   },
   IP_HASH_SALT: {
     level: "optional",
@@ -147,9 +137,6 @@ export function validateEnv(): ValidationResult {
     const hasValue = !!process.env[name] ||
       (FALLBACK_KEYS[name] || []).some((fb) => !!process.env[fb]);
     if (!hasValue) {
-      if (name === "BETTER_AUTH_SECRET" && process.env.USE_BETTER_AUTH === "true") {
-        continue;
-      }
       if (spec.level === "required") {
         missing.push({ name, spec });
       } else {
@@ -157,17 +144,6 @@ export function validateEnv(): ValidationResult {
         disabledFeaturesSet.add(spec.feature);
       }
     }
-  }
-
-  if (process.env.USE_BETTER_AUTH === "true" && !process.env.BETTER_AUTH_SECRET) {
-    missing.push({
-      name: "BETTER_AUTH_SECRET",
-      spec: {
-        level: "required",
-        feature: "Better Auth",
-        description: "Required when USE_BETTER_AUTH=true",
-      },
-    });
   }
 
   return {

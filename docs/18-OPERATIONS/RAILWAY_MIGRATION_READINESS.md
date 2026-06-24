@@ -49,7 +49,7 @@ Current service inventory:
 
 | Area | Status | Notes |
 |---|---|---|
-| Required env names | Present in Railway | `DATABASE_URL`, `SESSION_SECRET`, generic Stripe vars, `APP_SECRETS_ENCRYPTION_KEY`, R2 vars, `PUBLIC_SITE_URL`, and `BASE_URL` are configured by name. |
+| Required env names | Ready for final auth-var verification | `DATABASE_URL`, `SESSION_SECRET`, generic Stripe vars, `APP_SECRETS_ENCRYPTION_KEY`, R2 vars, `PUBLIC_SITE_URL`, and `BASE_URL` are configured by name. Better Auth vars below must be set and verified before cutover smoke. |
 | Railway health | Ready for dry-run smoke | Confirmed redeploy on 2026-06-23 picked up `railway.json`, Node 22, and the staged Neon `DATABASE_URL`; `/api/health` returns HTTP 200 with DB connected and smoke passes 22/22. |
 | Neon project | Ready | Project `powerplunge`, branch `main`, database `powerplunge`, Postgres 17. |
 | Neon schema/content | Ready for dry-run smoke | Schema verifier passes against the migration target. Storefront/CMS content was imported from Replit into Neon on 2026-06-23; source and target counts match for the selected content allowlist. |
@@ -58,7 +58,7 @@ Current service inventory:
 | Stripe primary webhook secret | Rotated | Historically exposed primary PowerPlunge signing secret was rotated in Stripe Workbench on 2026-06-22; Neon now has an encrypted DB-stored live webhook secret. |
 | Stripe primary webhook endpoint | Not ready | The primary `https://powerplunge.com/api/webhook/stripe` destination exists under the Nano-Shield Stripe account, but it is currently disabled. |
 | Public URL config | Staged in Railway | `PUBLIC_SITE_URL` and `BASE_URL` are set to the Railway dry-run URL with `--skip-deploys`; update to the canonical domain only during DNS cutover. |
-| Auth migration | Partially ready | Customer profile and affiliate routes no longer depend on mount-level Replit OIDC, and local smoke confirms unauthenticated `/api/customer/profile` returns HTTP 401 quickly. Full production auth remains a separate migration slice. |
+| Auth migration | Ready after Better Auth env verification | Better Auth is the app login surface for admin and customer sessions. Replit OIDC and customer token-auth routes have been removed, and local smoke confirms unauthenticated `/api/customer/profile` returns HTTP 401 quickly. |
 
 ## Variable Mapping
 
@@ -145,15 +145,13 @@ These are required for env-based media storage on Railway unless valid R2 creden
 
 ### Better Auth
 
-Keep these unset or false until the auth migration is intentionally planned:
+Set these for Better Auth runtime:
 
-- `USE_BETTER_AUTH`
-- `VITE_USE_BETTER_AUTH`
 - `BETTER_AUTH_SECRET`
 - `BETTER_AUTH_BASE_URL`
 - `APP_URL`
 
-Railway production auth is still a migration blocker because Replit OIDC does not apply outside Replit. Customer token-auth routes can run on Railway; any remaining Replit-only customer/admin flows need separate migration decisions.
+Railway production auth uses Better Auth after the cutover. Replit OIDC and customer token-auth routes are no longer the app login surface.
 
 ## Apply Order After Confirmation
 
@@ -233,6 +231,5 @@ Additional content checks:
 
 - Stripe primary webhook endpoint is disabled in Stripe Workbench.
 - Neon DB has Stripe test mode active, with live values staged but inactive.
-- Railway auth path needs a separate production decision.
 - Public R2 read redirects remain open for media display; R2 write/presign routes require admin full access and rate limiting.
-- Runtime logs still show optional integration warnings, MemoryStore warning, Better Auth default-secret warning, and a future `pg` SSL-mode warning.
+- Runtime logs still show optional integration warnings, MemoryStore warning, and a future `pg` SSL-mode warning.

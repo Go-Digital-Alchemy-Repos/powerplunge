@@ -6,26 +6,19 @@ class RealtimeClient {
   private socket: Socket | null = null;
   private handlers = new Map<string, Set<EventHandler>>();
   private role: "admin" | "customer" | null = null;
-  private token: string | null = null;
   private seenIds = new Set<string>();
 
-  connect(role: "admin" | "customer", token?: string) {
+  connect(role: "admin" | "customer") {
     if (this.socket?.connected && this.role === role) {
       return;
     }
 
     this.disconnect();
     this.role = role;
-    this.token = token || null;
-
-    const auth: Record<string, string> = { role };
-    if (role === "customer" && token) {
-      auth.token = token;
-    }
 
     this.socket = io({
       path: "/socket.io",
-      auth,
+      auth: { role },
       withCredentials: true,
       transports: ["websocket", "polling"],
       reconnection: true,
@@ -78,7 +71,6 @@ class RealtimeClient {
       this.socket = null;
     }
     this.role = null;
-    this.token = null;
   }
 
   on(event: string, handler: EventHandler): () => void {

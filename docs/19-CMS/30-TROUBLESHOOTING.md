@@ -175,7 +175,7 @@ grep -r "registerBlock" client/src/cms/blocks/entries.ts
 
 **Verification:**
 ```bash
-curl -H "Authorization: Bearer $TOKEN" \
+curl -b /tmp/admin.cookies \
   http://localhost:5000/api/admin/cms/pages/<id>
 ```
 
@@ -196,7 +196,7 @@ curl -H "Authorization: Bearer $TOKEN" \
 
 **Fix:** Create sections via `/admin/cms/sections`, or seed kits:
 ```bash
-curl -X POST -H "Authorization: Bearer $TOKEN" \
+curl -X POST -b /tmp/admin.cookies \
   http://localhost:5000/api/admin/cms/sections/seed-kits
 ```
 
@@ -344,7 +344,7 @@ SELECT active_theme_id FROM site_settings WHERE id = 'main';
 2. **Post is not published.** Draft and archived posts return 404 on public endpoints.
 **Verification:**
 ```bash
-curl -H "Authorization: Bearer $TOKEN" \
+curl -b /tmp/admin.cookies \
   http://localhost:5000/api/admin/cms/posts
 ```
 

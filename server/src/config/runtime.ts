@@ -44,14 +44,6 @@ const defaultBackendPort = process.env.PORT
 
 const shouldTrustProxy = isReplitDeployment || isProduction;
 
-const shouldEnableReplitOIDC =
-  isReplit && !!process.env.REPL_ID;
-
-const enableDevAuth =
-  !isReplit &&
-  isDevelopment &&
-  process.env.ENABLE_DEV_AUTH === "true";
-
 const publicSiteUrl = process.env.PUBLIC_SITE_URL || "";
 
 export const runtime = {
@@ -68,8 +60,6 @@ export const runtime = {
   shouldLoadDotenv,
   defaultBackendPort,
   shouldTrustProxy,
-  shouldEnableReplitOIDC,
-  enableDevAuth,
   publicSiteUrl,
 } as const;
 

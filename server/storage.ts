@@ -57,7 +57,7 @@ import { db } from "./db";
 import { eq, desc, and, or, sql, gte, lte, count, sum, inArray, ne, like, isNull } from "drizzle-orm";
 
 export interface IStorage {
-  // Users (Replit Auth)
+  // Legacy platform users
   getUser(id: string): Promise<User | undefined>;
   updateUser(id: string, user: Partial<UpsertUser>): Promise<User | undefined>;
 
@@ -398,7 +398,7 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  // Users (Replit Auth)
+  // Legacy platform users
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user || undefined;

@@ -3,7 +3,6 @@ import {
   assertBetterAuthReady,
   getBetterAuthBaseURL,
   getBetterAuthTrustedOrigins,
-  isBetterAuthEnabled,
 } from "../betterAuthConfig";
 
 const ORIGINAL_ENV = { ...process.env };
@@ -11,7 +10,6 @@ const ORIGINAL_ENV = { ...process.env };
 function resetEnv(overrides: NodeJS.ProcessEnv = {}) {
   process.env = { ...ORIGINAL_ENV, ...overrides };
   for (const key of [
-    "USE_BETTER_AUTH",
     "BETTER_AUTH_SECRET",
     "BETTER_AUTH_BASE_URL",
     "PUBLIC_SITE_URL",
@@ -67,10 +65,9 @@ describe("betterAuthConfig", () => {
     );
   });
 
-  it("fails explicitly when enabled without a secret", () => {
-    resetEnv({ USE_BETTER_AUTH: "true" });
+  it("fails explicitly without a secret", () => {
+    resetEnv();
 
-    expect(isBetterAuthEnabled()).toBe(true);
     expect(() => assertBetterAuthReady()).toThrow(/BETTER_AUTH_SECRET/);
   });
 });

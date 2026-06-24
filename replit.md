@@ -21,7 +21,7 @@ The Power Plunge e-commerce platform utilizes a modern full-stack architecture.
 - Core pages include product display, checkout, order success, and a customer dashboard with order history and an affiliate portal.
 - Admin interface pages provide comprehensive management tools.
 - Upsell components are integrated for enhancing sales.
-- Customer accounts use a custom authentication system with email/password and magic link login options. Session tokens are stored in localStorage and passed as Bearer tokens.
+- Customer accounts use Better Auth with email/password, magic link, and secure cookie sessions.
 - VIP customer program includes auto-promotion triggers, configurable benefits, and progress tracking.
 
 **Admin UI Design System:**
@@ -61,14 +61,13 @@ The Power Plunge e-commerce platform utilizes a modern full-stack architecture.
 - **Admin Settings & Branding:** Themes moved to main admin settings. Logo branding with upload, preview, and dynamic display from R2 storage.
 - **Site Presets Removed:** The Site Presets feature (pre-configured site personalities) was removed in favor of the simpler theme selector under System Settings. Related database tables (`site_presets`, `preset_apply_history`), schema fields (`activePresetId`, `navPreset`, `footerPreset`), routes, services, repositories, and UI components were all removed. Campaign generator was simplified to use pack defaults only.
 - **Stripe-Backed Refunds:** End-to-end refund system using Stripe as source of truth. Admin refund endpoint creates real Stripe refunds with idempotency keys. Webhook handlers sync `charge.refunded` and `refund.updated` events. Orders have a computed `paymentStatus` field (unpaid/paid/refund_pending/partially_refunded/refunded/refund_failed). Refund records track `stripeRefundId`, `source` (stripe/manual), `reasonCode`. Over-refund protection validates against refundable amount. Admin and public order APIs expose refund summary (paymentStatus, refundedAmount, refundCount). Service: `server/src/services/refund.service.ts`. Migration: `server/src/migrations/addRefundAndPaymentStatusColumns.ts`.
-- **Real-Time Notifications (Socket.IO):** Instant push updates for admin and customer notification bells and ticket changes. Server: `server/src/realtime/socketServer.ts` initializes Socket.IO attached to the HTTP server. Auth: admin sessions verified via cookie/pg-session lookup; customer tokens verified via HMAC signature. Per-user rooms (`admin:{id}`, `customer:{id}`) ensure secure delivery. Events: `notif:new` (new notification payload), `notif:unread_count` (updated count), `ticket:updated` (ticket change hint). Emits triggered from `notification.service.ts` after DB writes. Client: `client/src/lib/realtime/socketClient.ts` singleton manages connection lifecycle; `client/src/hooks/use-realtime-notifications.ts` hook integrates with React Query cache. Deduplication via seen-ID set prevents duplicates on reconnect. Existing REST polling (30s) kept as fallback. Single-instance mode; Redis adapter can be added by checking for `REDIS_URL`.
+- **Real-Time Notifications (Socket.IO):** Instant push updates for admin and customer notification bells and ticket changes. Server: `server/src/realtime/socketServer.ts` initializes Socket.IO attached to the HTTP server. Auth: admin and customer sockets resolve Better Auth sessions from cookies. Per-user rooms (`admin:{id}`, `customer:{id}`) ensure secure delivery. Events: `notif:new` (new notification payload), `notif:unread_count` (updated count), `ticket:updated` (ticket change hint). Emits triggered from `notification.service.ts` after DB writes. Client: `client/src/lib/realtime/socketClient.ts` singleton manages connection lifecycle; `client/src/hooks/use-realtime-notifications.ts` hook integrates with React Query cache. Deduplication via seen-ID set prevents duplicates on reconnect. Existing REST polling (30s) kept as fallback. Single-instance mode; Redis adapter can be added by checking for `REDIS_URL`.
 - **Inbound Email Replies (Mailgun):** Customers can reply directly to support emails without needing a portal login. When admin replies to a ticket, the outbound email includes a ticket-specific Reply-To address (`support+ticket-{id}@{mailgunDomain}`). Mailgun forwards inbound replies to `/api/webhooks/mailgun/inbound`, which verifies the signature using `MAILGUN_WEBHOOK_SIGNING_KEY`, extracts the ticket ID, strips quoted text, validates sender email against the ticket's customer, and appends the reply to `customerReplies`. Admin notifications are triggered. Feature is toggled via `supportInboundRepliesEnabled` in site_settings. Admin UI at `/admin/support/settings` includes setup instructions for Mailgun inbound route configuration.
 
 ## Runtime Environment Layer
 - Centralized environment detection in `server/src/config/runtime.ts` identifies five mutually exclusive environments: Replit Deployment, Replit Workspace, Codex Web, Codex Local, Local, and CI. Detection uses `CODEX_SANDBOX`/`CODEX_ENV` for Codex Web, `CODEX` for Codex Local. Tests in `server/src/config/__tests__/runtime.test.ts`.
 - `server/src/config/load-env.ts` loads `.env` files only when not on Replit (imported first in `server/index.ts`).
-- Auth is guarded at call sites: `setupAuth()` only runs when `REPL_ID` is present. Locally, auth routes return 503 (fail closed) unless `ENABLE_DEV_AUTH=true` enables a dev stub.
-- `server/src/config/local-auth-stub.ts` provides the local dev auth stub and disabled-auth routes.
+- Auth uses Better Auth across runtimes. Local/Codex auth testing uses seeded Better Auth accounts through `npm run with:local-auth-env -- <command>`, `npm run verify:seed-auth:local`, and `npm run test:e2e:local-auth`.
 - Local dev uses `make dev` (backend port 5001, frontend port 5002). Replit scripts are unchanged.
 - See `docs/RUNTIME.md`, `docs/QUICKSTART.md`, `docs/ENV.md` for full details.
 
@@ -76,7 +75,7 @@ The Power Plunge e-commerce platform utilizes a modern full-stack architecture.
 - **Google Analytics 4:** For product performance and customer behavior analytics.
 - **Stripe:** For payment processing.
 - **Mailgun:** For email services.
-- **Replit Auth:** For customer authentication.
+- **Better Auth:** For admin and customer authentication.
 - **Replit Object Storage:** For file uploads and storage.
 - **PostgreSQL:** Primary database.
 - **Drizzle ORM:** Used for database interaction.

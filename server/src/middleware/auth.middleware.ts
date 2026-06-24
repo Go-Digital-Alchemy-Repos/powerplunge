@@ -63,5 +63,3 @@ export function requireRole(...allowedRoles: string[]) {
 export const requireAdmin = requireRole(...BETTER_AUTH_FULL_ACCESS_ROLES);
 export const requireFullAccess = requireRole(...BETTER_AUTH_FULL_ACCESS_ROLES);
 export const requireOrderAccess = requireRole(...BETTER_AUTH_ORDER_ACCESS_ROLES);
-
-export { isAuthenticated } from "../integrations/replit/auth";

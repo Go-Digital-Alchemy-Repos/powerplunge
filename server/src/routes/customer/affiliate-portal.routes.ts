@@ -291,7 +291,7 @@ router.get("/commissions", async (req: any, res: Response) => {
   }
 });
 
-// Customer auth token-based routes for my-account page
+// Customer Better Auth routes for my-account page
 
 router.get("/", requireCustomerAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {

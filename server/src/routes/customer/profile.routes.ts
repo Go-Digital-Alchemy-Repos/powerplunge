@@ -96,18 +96,17 @@ router.get("/orders/:id", async (req: any, res) => {
 router.post("/link", async (req: any, res) => {
   try {
     const identityResult = await customerIdentityService.resolve(req);
-    const sessionCustomer = identityResult.ok ? identityResult.identity.customer : null;
-    const userId = req.user?.claims?.sub;
-    if (!userId && !sessionCustomer) {
-      return res.status(401).json({ message: "Authentication required" });
+    if (!identityResult.ok) {
+      return res.status(identityResult.error.httpStatus).json({ message: identityResult.error.message });
     }
+    const sessionCustomer = identityResult.identity.customer;
     const { customerId, sessionId } = req.body;
 
     if (!customerId) {
       return res.status(400).json({ message: "Customer ID required" });
     }
 
-    const userEmail = normalizeEmail(sessionCustomer?.email || req.user?.claims?.email || "");
+    const userEmail = normalizeEmail(sessionCustomer.email || "");
 
     if (sessionId) {
       const order = await storage.getOrderByStripeSession(sessionId);
@@ -129,58 +128,28 @@ router.post("/link", async (req: any, res) => {
       return res.status(404).json({ message: "Customer not found" });
     }
 
-    if (sessionCustomer) {
-      if (customer.id === sessionCustomer.id) {
-        return res.json({ success: true, customer: sessionCustomer, customerId: sessionCustomer.id });
+    if (customer.id === sessionCustomer.id) {
+      return res.json({ success: true, customer: sessionCustomer, customerId: sessionCustomer.id });
+    }
+
+    await db.transaction(async (tx) => {
+      const guestOrders = await storage.getOrdersByCustomerId(customer.id);
+      for (const order of guestOrders) {
+        await tx.update(ordersTable)
+          .set({ customerId: sessionCustomer.id })
+          .where(eq(ordersTable.id, order.id));
       }
+      await tx.update(customers)
+        .set({ mergedIntoCustomerId: sessionCustomer.id, userId: null })
+        .where(eq(customers.id, customer.id));
+      console.log(`[MERGE] Customer ${customer.id} merged into ${sessionCustomer.id}, ${guestOrders.length} orders moved`);
+    });
 
-      await db.transaction(async (tx) => {
-        const guestOrders = await storage.getOrdersByCustomerId(customer.id);
-        for (const order of guestOrders) {
-          await tx.update(ordersTable)
-            .set({ customerId: sessionCustomer.id })
-            .where(eq(ordersTable.id, order.id));
-        }
-        await tx.update(customers)
-          .set({ mergedIntoCustomerId: sessionCustomer.id, userId: null })
-          .where(eq(customers.id, customer.id));
-        console.log(`[MERGE] Customer ${customer.id} merged into ${sessionCustomer.id}, ${guestOrders.length} orders moved`);
-      });
-
-      return res.json({
-        success: true,
-        message: "Orders merged with existing account",
-        customerId: sessionCustomer.id,
-      });
-    }
-
-    if (customer.userId && customer.userId !== userId) {
-      return res.status(400).json({ message: "Customer already linked to another account" });
-    }
-
-    const existingCustomer = await storage.getCustomerByUserId(userId);
-    if (existingCustomer && existingCustomer.id !== customerId) {
-      await db.transaction(async (tx) => {
-        const guestOrders = await storage.getOrdersByCustomerId(customerId);
-        for (const order of guestOrders) {
-          await tx.update(ordersTable)
-            .set({ customerId: existingCustomer.id })
-            .where(eq(ordersTable.id, order.id));
-        }
-        await tx.update(customers)
-          .set({ mergedIntoCustomerId: existingCustomer.id, userId: null })
-          .where(eq(customers.id, customerId));
-        console.log(`[MERGE] Customer ${customerId} merged into ${existingCustomer.id}, ${guestOrders.length} orders moved`);
-      });
-      return res.json({ 
-        success: true, 
-        message: "Orders merged with existing account",
-        customerId: existingCustomer.id 
-      });
-    }
-
-    const updated = await storage.updateCustomer(customerId, { userId });
-    res.json({ success: true, customer: updated });
+    res.json({
+      success: true,
+      message: "Orders merged with existing account",
+      customerId: sessionCustomer.id,
+    });
   } catch (error: any) {
     console.error("Error linking customer:", error);
     res.status(500).json({ message: error.message || "Failed to link customer" });
@@ -194,13 +163,10 @@ router.get("/profile", async (req: any, res) => {
       return res.status(identityResult.error.httpStatus).json({ message: identityResult.error.message });
     }
 
-    const user = identityResult.identity.platformUserId
-      ? await storage.getUser(identityResult.identity.platformUserId)
-      : null;
     const customer = identityResult.identity.customer;
     
     res.json({
-      user: user || null,
+      user: null,
       customer: customer || null,
     });
   } catch (error) {
@@ -215,27 +181,17 @@ router.patch("/profile", async (req: any, res) => {
     if (!identityResult.ok) {
       return res.status(identityResult.error.httpStatus).json({ message: identityResult.error.message });
     }
-    const userId = identityResult.identity.platformUserId;
     const customerId = identityResult.identity.customerId;
     const { firstName, lastName, email, phone, address, city, state, zipCode, country } = req.body;
     
     const requestedEmail = email ? normalizeEmail(email) : undefined;
     if (
       requestedEmail &&
-      !userId &&
       requestedEmail !== normalizeEmail(identityResult.identity.customer.email || "")
     ) {
-      return res.status(400).json({ message: "Email changes require verified platform authentication" });
+      return res.status(400).json({ message: "Email changes require the customer auth email to match" });
     }
-    const normalizedProfileEmail = userId ? requestedEmail : undefined;
-    
-    const updatedUser = userId
-      ? await storage.updateUser(userId, {
-          firstName,
-          lastName,
-          email: normalizedProfileEmail,
-        })
-      : null;
+    const normalizedProfileEmail = requestedEmail;
     
     let customer = await storage.getCustomer(customerId);
     if (customer) {
@@ -251,9 +207,9 @@ router.patch("/profile", async (req: any, res) => {
       });
     } else {
       customer = await storage.createCustomer({
-        userId: userId || null,
+        userId: null,
         name: `${firstName || ''} ${lastName || ''}`.trim(),
-        email: normalizedProfileEmail || updatedUser?.email || identityResult.identity.customer.email || '',
+        email: normalizedProfileEmail || identityResult.identity.customer.email || '',
         phone,
         address,
         city,
@@ -264,7 +220,7 @@ router.patch("/profile", async (req: any, res) => {
     }
     
     res.json({
-      user: updatedUser,
+      user: null,
       customer,
       message: "Profile updated successfully",
     });
@@ -276,9 +232,9 @@ router.patch("/profile", async (req: any, res) => {
 
 router.post("/change-password", passwordResetLimiter, async (req: any, res) => {
   try {
-    const userId = req.user?.claims?.sub;
-    if (!userId) {
-      return res.status(401).json({ message: "Authentication required" });
+    const identityResult = await customerIdentityService.resolve(req);
+    if (!identityResult.ok) {
+      return res.status(identityResult.error.httpStatus).json({ message: identityResult.error.message });
     }
     const { currentPassword, newPassword } = req.body;
     

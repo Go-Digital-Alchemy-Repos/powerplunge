@@ -8,7 +8,6 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("../../auth/adminBetterAuth", () => mocks);
-vi.mock("../../integrations/replit/auth", () => ({ isAuthenticated: vi.fn() }));
 
 const { requireAdmin, requireFullAccess, requireOrderAccess } = await import("../auth.middleware");
 

@@ -161,7 +161,7 @@ app.use("/api/admin/shipments", requireAdmin, shipmentManagementRoutes);
 
 ## Key Conventions
 
-1. **Middleware is applied at mount level** — `requireAdmin`, `requireFullAccess`, or `isAuthenticated` is added in `routes.ts` when mounting, not inside the router file.
+1. **Middleware placement follows route scope** — Admin routers usually receive `requireAdmin`, `requireFullAccess`, or `requireOrderAccess` in `routes.ts`; customer routes use `requireCustomerAuth` or `customerIdentityService` where identity is required.
 2. **Storage is the data layer** — Routes call `storage.*` methods directly. Services are used only when business logic exceeds simple CRUD (e.g., commission calculations, email workflows).
 3. **Validation with Zod** — Define schemas at the top of the file using `z.object()`. Use `safeParse()` for user input.
 4. **Error handling** — Every handler wraps in try/catch. Return `{ message: string }` on errors.

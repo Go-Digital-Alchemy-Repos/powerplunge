@@ -69,7 +69,7 @@ The admin frontend uses the `useAdmin` hook to determine the current user's role
 1. Admin navigates to `/admin/login`
 2. Enters email and password
 3. Server validates credentials against `admin_users` table
-4. On success, creates a server-side session (`req.session.adminId`)
+4. On success, creates a Better Auth admin session cookie
 5. Frontend stores session state and redirects to dashboard
 6. All subsequent API calls include the session cookie
 
@@ -84,7 +84,7 @@ The team management page (`/admin/team`) allows `admin` role users to:
 
 ## Session Security
 
-- Admin sessions use server-side session storage (not JWT)
+- Admin sessions use Better Auth HTTP-only cookie sessions (not JWT)
 - Sessions expire after inactivity timeout
 - Session is destroyed on logout
 - Invalid sessions redirect to login page

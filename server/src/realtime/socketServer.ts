@@ -34,15 +34,12 @@ export function initializeSocketServer(httpServer: HttpServer): SocketIOServer {
       const role = auth?.role as string;
 
       if (role === "admin") {
-        const sessionCookie = socket.handshake.headers.cookie;
-        if (!sessionCookie) {
-          return next(new Error("Admin authentication required"));
-        }
-        const adminId = await resolveAdminFromCookie(sessionCookie);
-        if (!adminId) {
+        const { getAdminAuthContext } = await import("../auth/adminBetterAuth");
+        const context = await getAdminAuthContext({ headers: socket.handshake.headers } as any);
+        if (!context) {
           return next(new Error("Invalid admin session"));
         }
-        (socket as any).data = { userId: adminId, role: "admin" } satisfies SocketData;
+        (socket as any).data = { userId: context.admin.id, role: "admin" } satisfies SocketData;
         return next();
       }
 
@@ -86,51 +83,6 @@ export function initializeSocketServer(httpServer: HttpServer): SocketIOServer {
 
   console.log("[SOCKET] Socket.IO server initialized");
   return io;
-}
-
-async function resolveAdminFromCookie(cookieHeader: string): Promise<string | null> {
-  try {
-    const cookies = parseCookies(cookieHeader);
-    const sid = cookies["connect.sid"];
-    if (!sid) return null;
-
-    const unsignedSid = extractSessionId(sid);
-    if (!unsignedSid) return null;
-
-    const { pool } = await import("../../db");
-    const result = await pool.query(
-      `SELECT sess FROM "sessions" WHERE sid = $1 AND expire > NOW()`,
-      [unsignedSid]
-    );
-
-    if (!result.rows.length) return null;
-
-    const sess = result.rows[0].sess;
-    const adminId = typeof sess === "string" ? JSON.parse(sess).adminId : sess?.adminId;
-    return adminId || null;
-  } catch (err) {
-    console.error("[SOCKET] Cookie parse error:", err);
-    return null;
-  }
-}
-
-function parseCookies(cookieHeader: string): Record<string, string> {
-  const cookies: Record<string, string> = {};
-  cookieHeader.split(";").forEach((cookie) => {
-    const [key, ...rest] = cookie.trim().split("=");
-    if (key) {
-      cookies[key.trim()] = decodeURIComponent(rest.join("="));
-    }
-  });
-  return cookies;
-}
-
-function extractSessionId(signedCookie: string): string | null {
-  if (signedCookie.startsWith("s:")) {
-    const dotIndex = signedCookie.indexOf(".", 2);
-    return dotIndex > 0 ? signedCookie.slice(2, dotIndex) : signedCookie.slice(2);
-  }
-  return signedCookie;
 }
 
 export function emitToUser(role: "admin" | "customer", userId: string, event: string, payload: any): void {

@@ -14,7 +14,7 @@
 | Property | Value |
 |----------|-------|
 | Auth Required | No (public routes; no mount-level middleware) |
-| Roles Allowed | Public — some endpoints check for a Bearer token internally (see notes) |
+| Roles Allowed | Public — some endpoints optionally resolve a Better Auth customer session (see notes) |
 
 ## Current reality
 
@@ -22,8 +22,8 @@
 - **Effective base mount:** `/api/affiliate-signup` (see `server/routes.ts` line 88; no auth middleware at mount).
 - **Paths in the corrected table in the Notes section are fully qualified** (mount prefix + router path). The auto-generated table further below has incorrect paths — see the correction notice in Notes.
 - **Auth notes:**
-  - `GET /api/affiliate-signup/` and `POST /api/affiliate-signup/` — fully public; the GET optionally inspects a Bearer token to detect existing affiliates.
-  - `POST /api/affiliate-signup/join` — requires a valid Bearer session token (`Authorization: Bearer <token>`) checked internally.
+  - `GET /api/affiliate-signup/` and `POST /api/affiliate-signup/` — fully public; the GET may optionally resolve a Better Auth customer session to detect existing affiliates.
+  - `POST /api/affiliate-signup/join` — requires a valid Better Auth customer session checked internally.
   - `POST /api/affiliate-signup/send-verification` and `POST /api/affiliate-signup/verify-phone` — fully public.
 
 ## Notes

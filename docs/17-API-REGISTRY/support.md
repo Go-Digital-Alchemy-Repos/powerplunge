@@ -12,7 +12,7 @@
 
 | Scope | Auth Required | Roles Allowed |
 |-------|---------------|---------------|
-| Customer endpoints | Customer session token (Bearer) | Authenticated customers |
+| Customer endpoints | Better Auth customer session cookie | Authenticated customers |
 | Admin endpoints | Admin session cookie | `admin`, `store_manager`, `fulfillment` (via `requireAdmin`) |
 | Public endpoints | None (rate-limited) | Anyone |
 | Webhook endpoints | Mailgun HMAC signature | Mailgun service |
@@ -25,7 +25,7 @@ For the full functional specification including notification flows, email templa
 
 ## Endpoints
 
-### Customer Endpoints — Order Tracking (Auth: Customer Bearer Token via `requireCustomerAuth`)
+### Customer Endpoints — Order Tracking (Auth: Better Auth via `requireCustomerAuth`)
 
 | Method | Path | Description | Source File |
 |--------|------|-------------|-------------|
@@ -33,12 +33,12 @@ For the full functional specification including notification flows, email templa
 | `POST` | `/api/customer/orders/support` | Create a new support ticket | `server/src/routes/customer/order-tracking.routes.ts` |
 | `POST` | `/api/customer/orders/support/:id/reply` | Reply to an existing ticket | `server/src/routes/customer/order-tracking.routes.ts` |
 
-### Customer Endpoints — Legacy (Auth: Replit Auth via `isAuthenticated`)
+### Customer Endpoints — Minimal (Auth: Better Auth customer identity)
 
 | Method | Path | Description | Source File |
 |--------|------|-------------|-------------|
-| `POST` | `/api/customer/support` | Create ticket (legacy, no notifications) | `server/src/routes/admin/support.routes.ts` (default `router`) |
-| `GET` | `/api/customer/support` | List customer's tickets (legacy) | `server/src/routes/admin/support.routes.ts` (default `router`) |
+| `POST` | `/api/customer/support` | Create ticket (minimal route, no notifications) | `server/src/routes/admin/support.routes.ts` (default `router`) |
+| `GET` | `/api/customer/support` | List customer's tickets | `server/src/routes/admin/support.routes.ts` (default `router`) |
 
 ### Admin Endpoints (Auth: Admin Session)
 

@@ -200,10 +200,11 @@ Run these after any stabilization change to confirm nothing is broken.
 2. **Verify:** Returns 401 Unauthorized.
 
 ### R4. Multi-Mount Routers
-1. `curl -H "Authorization: Bearer $TOKEN" http://localhost:5000/api/admin/shipping/zones` — returns shipping zones
-2. `curl -H "Authorization: Bearer $TOKEN" http://localhost:5000/api/admin/orders/1/shipments` — returns shipments (or 404 for order)
-3. `curl -H "Authorization: Bearer $TOKEN" http://localhost:5000/api/admin/dashboard` — returns dashboard stats
-4. **Verify:** All return valid responses (not 404). This confirms multi-router exports are mounted correctly.
+1. Sign in with Better Auth and save cookies: `curl -c /tmp/admin.cookies -H "Content-Type: application/json" -d '{"email":"admin@test.com","password":"testpass123"}' http://localhost:5000/api/admin/login`
+2. `curl -b /tmp/admin.cookies http://localhost:5000/api/admin/shipping/zones` — returns shipping zones
+3. `curl -b /tmp/admin.cookies http://localhost:5000/api/admin/orders/1/shipments` — returns shipments (or 404 for order)
+4. `curl -b /tmp/admin.cookies http://localhost:5000/api/admin/dashboard` — returns dashboard stats
+5. **Verify:** All return valid responses (not 404). This confirms multi-router exports are mounted correctly.
 
 ### R5. Payment Rate Limiting
 1. Send 10 rapid requests to `POST /api/create-payment-intent`

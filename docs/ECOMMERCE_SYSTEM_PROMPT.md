@@ -796,30 +796,30 @@ All secret keys and webhook secrets are encrypted before DB storage using AES-25
 
 ## 3. CUSTOMER AUTHENTICATION {#3-customer-auth}
 
-### HMAC Session Tokens
-The system uses stateless HMAC-signed session tokens (not JWTs). Tokens are stored in `localStorage` on the client and passed as `Authorization: Bearer <token>` headers.
+### Better Auth Customer Sessions
+The system uses Better Auth customer sessions. Session state is stored in HTTP-only cookies and resolved on the server through `getCustomerAuthContext`, `requireCustomerAuth`, or `customerIdentityService`.
 
 ```typescript
-function createSessionToken(customerId: string, email: string): string {
-  const expiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days
-  const payload = JSON.stringify({ customerId, email, expiresAt });
-  const signature = crypto.createHmac("sha256", SESSION_SECRET).update(payload).digest("hex");
-  return Buffer.from(`${payload}.${signature}`).toString("base64");
-}
-
-function verifySessionToken(token: string): { valid: boolean; customerId?: string; email?: string } {
-  // Decode base64, split payload.signature, verify HMAC, check expiry
+async function requireCustomerAuth(req, res, next) {
+  const context = await getCustomerAuthContext(req);
+  if (!context) return res.status(401).json({ message: "Authentication required" });
+  req.customerSession = {
+    customerId: context.customer.id,
+    email: context.customer.email,
+  };
+  next();
 }
 ```
 
 ### Auth Middleware
 ```typescript
 async function requireCustomerAuth(req, res, next) {
-  const token = req.headers.authorization?.replace("Bearer ", "");
-  const result = verifySessionToken(token);
-  if (!result.valid) return res.status(401).json({ message: "Unauthorized" });
-  // Fetch customer from DB, check isDisabled and sessionInvalidatedAt
-  req.customerSession = { customerId: result.customerId, email: result.email };
+  const context = await getCustomerAuthContext(req);
+  if (!context) return res.status(401).json({ message: "Unauthorized" });
+  req.customerSession = {
+    customerId: context.customer.id,
+    email: context.customer.email,
+  };
   next();
 }
 ```
@@ -1416,7 +1416,7 @@ Add these pages to the existing admin layout/sidebar:
 - [ ] Self-referral blocking in affiliate commission calculation
 - [ ] Over-refund protection (refundable amount check)
 - [ ] Rate limiting on auth endpoints and affiliate tracking
-- [ ] Customer session tokens use HMAC-SHA256
+- [ ] Customer sessions use Better Auth HTTP-only cookies
 - [ ] Admin RBAC middleware on all admin routes
 - [ ] IP logging on orders for fraud detection
 - [ ] Audit logging on sensitive admin actions

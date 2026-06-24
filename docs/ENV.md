@@ -34,9 +34,7 @@ Missing optional vars disable the associated feature with a warning at startup.
 | `TWILIO_ACCOUNT_SID` | SMS | Twilio account SID for SMS verification | `AC...` |
 | `TWILIO_AUTH_TOKEN` | SMS | Twilio auth token | `...` |
 | `TWILIO_PHONE_NUMBER` | SMS | Twilio sender phone number | `+1234567890` |
-| `USE_BETTER_AUTH` | Better Auth | Set to `true` to mount Better Auth API routes. Requires `BETTER_AUTH_SECRET`. | `false` |
-| `VITE_USE_BETTER_AUTH` | Better Auth | Client-side rollout flag for Better Auth UI paths. Keep aligned with `USE_BETTER_AUTH` during local testing. | `false` |
-| `BETTER_AUTH_SECRET` | Better Auth | Secret for Better Auth sessions. Required when `USE_BETTER_AUTH=true`. | `a-random-32-byte-string` |
+| `BETTER_AUTH_SECRET` | Better Auth | Secret for Better Auth sessions. Required for auth routes. | `a-random-32-byte-string` |
 | `BETTER_AUTH_BASE_URL` | Better Auth | Canonical app origin for Better Auth callbacks. Use origin only, no `/api/auth` suffix. Falls back to `PUBLIC_SITE_URL`, `BASE_URL`, `APP_URL`, Replit domains, or local dev URL. | `https://www.powerplunge.com` |
 | `IP_HASH_SALT` | Security | Salt for hashing IP addresses in analytics and fraud detection | `random-salt-string` |
 | `CORS_ALLOWED_ORIGINS` | Security | Comma-separated additional allowed CORS origins in production | `https://admin.powerplunge.com,https://staging.powerplunge.com` |
@@ -72,19 +70,15 @@ Run `npm run seed:dev-users -- --confirm` to create deterministic test users. Th
 
 See `.agents/skills/playwright-testing/SKILL.md` for the full list of seeded accounts and Playwright usage instructions.
 
-## Local / Codex Development Variables
+## Local / Codex Development
 
-These variables are only relevant when running outside Replit (Local, Codex Web, or Codex Local). See [RUNTIME.md](./RUNTIME.md) for environment detection details.
-
-| Variable | Feature | Description | Example |
-|---|---|---|---|
-| `ENABLE_DEV_AUTH` | Local Auth | Set to `true` to enable a dev auth stub that auto-logs in. Default: disabled (fail closed). | `true` |
+Local and Codex auth testing uses Better Auth seed accounts, not `/api/login` dev stubs. Use `npm run with:local-auth-env -- <command>` to run commands with local Postgres, Better Auth, and email-outbox defaults. Use `npm run verify:seed-auth:local` for seed verification and `npm run test:e2e:local-auth -- <playwright args>` for Playwright flows.
 
 ## Better Auth Foundation
 
 Power Plunge currently uses `better-auth@1.4.18` from the lockfile. This migration keeps the locked version to avoid broad API churn during the foundation issue.
 
-Better Auth API routes mount under `/api/auth/*` only when `USE_BETTER_AUTH=true` and `BETTER_AUTH_SECRET` is set. The client helper points at the same origin and uses Better Auth's default `/api/auth` base path.
+Better Auth API routes mount under `/api/auth/*` when `BETTER_AUTH_SECRET` is set. The client helper points at the same origin and uses Better Auth's default `/api/auth` base path.
 
 Canonical Better Auth roles preserve existing app spelling: `customer`, `super_admin`, `admin`, `store_manager`, and `fulfillment`. Legacy `superadmin` is normalized to `super_admin` at Better Auth boundaries only for compatibility.
 
