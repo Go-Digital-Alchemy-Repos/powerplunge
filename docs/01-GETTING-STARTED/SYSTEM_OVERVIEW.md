@@ -8,7 +8,7 @@ Power Plunge is a full-stack e-commerce platform for selling cold plunge tanks. 
 |-------|-----------|-------|
 | Frontend | React 18 + Vite | Dark theme, Inter font, Tailwind CSS |
 | Backend | Express 4 | Layered architecture under `server/src/` |
-| Database | PostgreSQL (Neon) | 80 tables managed by Drizzle ORM |
+| Database | PostgreSQL (Neon) | Schema-derived tables managed by Drizzle ORM |
 | Payments | Stripe | Checkout, webhooks, Stripe Connect for affiliates |
 | Email | Mailgun | Transactional emails, recovery flows |
 | Auth | Custom + Replit Auth | Email/password, magic link, Google/Apple via Replit |
@@ -102,13 +102,13 @@ Performance analytics, affiliate overlap detection, stacking rules, auto-expirat
 
 ## Database
 
-80 tables in PostgreSQL, managed by Drizzle ORM. Schema defined in `shared/schema.ts`.
+PostgreSQL tables are managed by Drizzle ORM. Schema defined in `shared/schema.ts`.
 
 Key table groups:
 - **Products & Orders:** `products`, `orders`, `order_items`, `categories`
 - **Customers:** `customers`, `customer_tags`, `customer_notes`, `customer_magic_link_tokens`
 - **Affiliates:** `affiliates`, `affiliate_clicks`, `affiliate_referrals`, `affiliate_payouts`, `affiliate_agreements`, `affiliate_invites`, `affiliate_payout_accounts`, `affiliate_settings`
-- **CMS:** `pages`, `saved_sections`, `site_settings`, `cms_v2_posts`, `cms_v2_menus`
+- **CMS:** `pages`, `saved_sections`, `site_settings`, `posts`, `post_categories`, `post_tags`, `cms_v2_menus`
 - **Coupons:** `coupons`, `coupon_redemptions`, `coupon_stacking_rules`
 - **Email:** `email_templates`, `email_settings`, `email_events`
 - **Admin:** `admin_users`, `admin_audit_logs`, `admin_notification_prefs`

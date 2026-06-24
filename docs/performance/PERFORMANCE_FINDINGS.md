@@ -137,8 +137,8 @@ Added targeted indexes for high-traffic query patterns using `CREATE INDEX CONCU
 
 | Index | Table | Columns | Notes |
 |-------|-------|---------|-------|
-| `idx_cms_v2_posts_status_published` | `cms_v2_posts` | `status, published_at DESC` | Partial: WHERE status='published' |
-| `idx_cms_v2_posts_category` | `cms_v2_posts` | `category` | Partial: WHERE category IS NOT NULL |
+| `idx_cms_v2_posts_status_published` | `cms_v2_posts` | `status, published_at DESC` | Historical Stack B index; legacy table pending verification |
+| `idx_cms_v2_posts_category` | `cms_v2_posts` | `category` | Historical Stack B index; legacy table pending verification |
 | `idx_cms_v2_menus_location_active` | `cms_v2_menus` | `location, active` | Composite |
 | `idx_pages_status` | `pages` | `status` | Simple |
 | `idx_orders_status` | `orders` | `status` | Simple |

@@ -6,12 +6,12 @@ CMS is a block-based page builder system for Power Plunge. It provides a visual 
 
 CMS is always active. The `CMS_ENABLED` feature flag was previously used during initial development but has been removed. CMS functionality is now permanently enabled.
 
-CMS is fully non-destructive — it shares the same `pages` database table but stores block content in the `contentJson` JSONB column alongside the legacy `content` HTML field. Posts and menus use their own dedicated tables (`cms_v2_posts`, `cms_v2_menus`).
+CMS is fully non-destructive — it shares the same `pages` database table but stores block content in the `contentJson` JSONB column alongside the legacy `content` HTML field. Posts use the active `posts` data model; menus use `cms_v2_menus`. The older `cms_v2_posts` table is a legacy artifact pending DB verification.
 
 ## Architecture
 
 ```
-shared/schema.ts                              → Page, SavedSection, CmsPost, CmsMenu schemas + Zod validation
+shared/schema.ts                              → Page, SavedSection, Post, CmsMenu schemas + Zod validation
 
 server/src/
   routes/admin/cms.router.ts               → Pages, sections, themes, packs, settings API
@@ -65,7 +65,10 @@ client/src/
 | `pages` | CMS pages (shared with legacy CMS) — contentJson stores block data |
 | `saved_sections` | Reusable block groups |
 | `site_settings` | Active theme, nav, footer, SEO, CTA defaults |
-| `cms_v2_posts` | Blog posts with status workflow and SEO fields |
+| `posts` | Blog posts with status workflow and SEO fields |
+| `post_categories`, `post_tags` | Blog taxonomy |
+| `post_category_map`, `post_tag_map` | Blog post taxonomy joins |
+| `post_revisions`, `post_settings` | Blog revision history and settings |
 | `cms_v2_menus` | Navigation menus with nested items and location binding |
 
 ## Key Concepts
@@ -100,7 +103,7 @@ Theme packs bundle color themes, component variant selections, and block style d
 
 ### Blog Posts
 
-Posts provide a blog/content marketing subsystem with a full status workflow (draft → published → archived), scheduled publishing via `publishedAt`, tags, categories, SEO fields, and a rich text/block editor. See [Posts Overview](24-POSTS-OVERVIEW.md), [Posts Admin UI](25-POSTS-ADMIN-UI.md), [Public Blog APIs](26-PUBLIC-BLOG-APIS.md), and [Blog Page Template](27-BLOG-PAGE-TEMPLATE.md).
+Posts provide a blog/content marketing subsystem with a full status workflow (draft -> published -> archived), scheduled drafts via `scheduledAt`, tags, categories, SEO fields, and a rich text/block editor. See [Posts Overview](24-POSTS-OVERVIEW.md), [Posts Admin UI](25-POSTS-ADMIN-UI.md), [Public Blog APIs](26-PUBLIC-BLOG-APIS.md), and [Blog Page Template](27-BLOG-PAGE-TEMPLATE.md).
 
 ### Navigation Menus
 
@@ -145,8 +148,8 @@ Every page has full SEO controls: meta title/description, Open Graph, Twitter Ca
 | `/api/pages/:slug` | Returns page data by slug |
 | `/api/blog/posts` | Returns published posts (paginated) |
 | `/api/blog/posts/:slug` | Returns single post by slug |
-| `/api/blog/tags` | Returns unique tags array |
-| `/api/blog/categories` | Returns unique categories array |
+| `/api/blog/tags` | Returns reusable post tag rows |
+| `/api/blog/categories` | Returns reusable post category rows |
 | `/api/menus/:location` | Returns active menu by location (or `null`) |
 | `/api/theme/active` | Returns active theme tokens |
 | `/api/site-settings` | Returns public site settings |
@@ -162,7 +165,7 @@ Every page has full SEO controls: meta title/description, Open Graph, Twitter Ca
 Run all CMS health checks:
 
 ```bash
-npx tsx scripts/db/verifySchema.ts    # 80 tables including cms_v2_posts, cms_v2_menus
+npx tsx scripts/db/verifySchema.ts    # schema-derived table verification
 npx tsx scripts/smoke/apiSmoke.ts     # 22 endpoint checks
 npx tsx scripts/smoke/blogSmoke.ts    # post lifecycle smoke test
 npx tsx scripts/smoke/cmsContentSafety.ts  # 21 content validation tests

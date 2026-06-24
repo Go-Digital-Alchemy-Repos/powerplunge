@@ -41,7 +41,7 @@ Exit code: `0` if all required checks pass, `1` if any required check fails.
 
 ## scripts/db/verifySchema.ts
 
-Verifies that all 80 expected database tables exist in PostgreSQL and checks key data invariants.
+Verifies that all Drizzle schema-exported database tables exist in PostgreSQL and checks key data invariants.
 
 **Run:**
 ```bash
@@ -49,8 +49,8 @@ npx tsx scripts/db/verifySchema.ts
 ```
 
 **Checks performed:**
-1. Queries `information_schema.tables` for all public tables
-2. Compares against a hardcoded list of 80 expected table names (including `cms_v2_posts` and `cms_v2_menus`)
+1. Queries `pg_tables` for all public tables
+2. Compares against the table names exported from `shared/schema.ts`
 3. Reports missing tables and unexpected extra tables
 4. Checks data invariants:
    - `site_settings` "main" row exists
@@ -61,8 +61,8 @@ npx tsx scripts/db/verifySchema.ts
 **Expected output:**
 ```
 === DB Schema Verification ===
-Checked: 67 expected tables
-PASS:    67
+Checked: <schema-derived count> expected tables
+PASS:    <schema-derived count>
 FAIL:    0
 Extra tables (not in schema, may be from plugins/migrations):
   - better_auth_account

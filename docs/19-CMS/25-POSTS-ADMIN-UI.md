@@ -34,7 +34,7 @@ The library view shows all posts in a table with:
 
 1. Click **New Post** button.
 2. Fill in required fields: Title, Slug.
-3. Optionally fill: Body, Excerpt, Tags, Category, Featured Image.
+3. Optionally fill: content, excerpt, taxonomy selections, cover image ID, canonical URL, OG image ID, and robots settings.
 4. Click **Save** — creates as draft.
 
 ---
@@ -50,39 +50,35 @@ The editor form includes:
 - **Excerpt** — short summary for listings, social previews
 
 ### Media & Metadata
-- **Featured Image** — URL or upload via media library
-- **Tags** — comma-separated, stored as text array
-- **Category** — single category selector
+- **Cover Image ID** — media library image for listings and hero display
+- **Tags** — taxonomy selections stored through `post_tag_map`
+- **Categories** — taxonomy selections stored through `post_category_map`
 
 ### SEO Tab
-- **Meta Title** — overrides `<title>` tag
-- **Meta Description** — overrides `<meta name="description">`
-- **OG Image** — overrides Open Graph image
+- **Canonical URL** — overrides canonical link target
+- **OG Image ID** — overrides Open Graph image; falls back to cover image
+- **Allow Index / Allow Follow** — controls robots directives
 
 ### Publishing Controls
 - **Save as Draft** — saves without publishing
 - **Publish** — sets status to published, sets `publishedAt` to now
 - **Unpublish** — reverts to draft
-- **Schedule** — set `publishedAt` to a future date before publishing
+- **Schedule** — stores a future `scheduledAt` date with status `scheduled`; posts remain hidden until published
 
 ---
 
 ## Slug Validation
 
-The admin UI includes a slug uniqueness checker:
-
-- **Endpoint:** `GET /api/admin/cms/posts/check-slug?slug=my-post`
-- **Response:** `{ available: true }` or `{ available: false }`
-- The UI shows a green check or red warning next to the slug field.
+Post slugs are validated when a post is created or updated. A duplicate slug returns `409` from the save request.
 
 ---
 
 ## Tags & Categories
 
-- **Tags:** `/api/admin/cms/posts/tags` returns all unique tags across posts
-- **Categories:** `/api/admin/cms/posts/categories` returns all unique categories
+- **Tags:** `/api/admin/cms/post-tags` manages reusable post tags
+- **Categories:** `/api/admin/cms/post-categories` manages reusable post categories
 
-These are derived from existing post data (no separate management table).
+These are stored in `post_tags` and `post_categories`, with assignments stored in join tables.
 
 ---
 
