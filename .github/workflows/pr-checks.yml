@@ -1,0 +1,99 @@
+name: PR Checks
+
+on:
+  pull_request:
+    branches:
+      - main
+      - codex/admin-auth-cutover
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-checks-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Typecheck, Build, Unit, Auth E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: powerplunge_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d powerplunge_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/powerplunge_test
+      LOCAL_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/powerplunge_test
+      NODE_ENV: development
+      PORT: 5001
+      E2E_PORT: 5001
+      E2E_BASE_URL: http://localhost:5001
+      BETTER_AUTH_SECRET: dev-test-secret-dev-test-secret-dev-test-secret
+      SESSION_SECRET: dev-session-secret-dev-session-secret
+      BETTER_AUTH_BASE_URL: http://localhost:5001
+      PUBLIC_SITE_URL: http://localhost:5001
+      E2E_TEST_MODE: "true"
+      E2E_EMAIL_MODE: outbox
+      MAILGUN_API_KEY: ""
+      MAILGUN_DOMAIN: ""
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Create database schema
+        run: npm run db:push -- --force
+
+      - name: Seed auth fixtures
+        run: npm run seed:dev-users -- --confirm
+
+      - name: Verify schema
+        run: npx tsx scripts/db/verifySchema.ts
+
+      - name: Verify seed auth fixtures
+        run: npm run verify:seed-auth:local
+
+      - name: Unit tests
+        run: npm run with:local-auth-env -- npm run test:unit
+
+      - name: Auth e2e smoke
+        run: >-
+          npm run test:e2e:local-auth --
+          e2e/admin-auth.spec.ts
+          e2e/customer-auth.spec.ts
+          e2e/affiliate-portal.spec.ts
+          e2e/auth-verification.spec.ts
+          --project=chromium
+
