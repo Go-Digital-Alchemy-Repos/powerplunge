@@ -385,7 +385,10 @@ export default function AdminNav({ currentPage, role = "admin" }: AdminNavProps)
   const adminIconSrc = siteSettings?.adminIconUrl || defaultAdminIcon;
 
   const handleLogout = async () => {
-    await fetch("/api/admin/logout", { method: "POST" });
+    await fetch("/api/admin/logout", { method: "POST", credentials: "include" });
+    queryClient.setQueryData(["/api/admin/me"], null);
+    queryClient.setQueryData(["/api/admin/optional-me"], null);
+    await queryClient.invalidateQueries({ queryKey: ["/api/admin/me"] });
     navigate("/admin/login");
   };
 

@@ -3,10 +3,52 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { storage } from "../../../storage";
 import { authLimiter } from "../../middleware/rate-limiter";
+import {
+  BETTER_AUTH_LEGACY_PASSWORD_PLACEHOLDER,
+  applyBetterAuthHeaders,
+  attachAdminAuthContext,
+  changeAdminPassword,
+  deleteBetterAuthUserById,
+  getAdminAuthContext,
+  getBetterAuthUserByAdminId,
+  serializeAdmin,
+  signInAdminWithPassword,
+  signOutAdmin,
+  signUpAdminAndCreateSession,
+  syncBetterAuthAdminUser,
+  updateBetterAuthAdminUser,
+} from "../../auth/adminBetterAuth";
 
 const router = Router();
 
-router.get("/check-setup", async (req, res) => {
+type SerializedAdmin = ReturnType<typeof serializeAdmin>;
+
+function splitName(name: string) {
+  const parts = name.trim().split(/\s+/);
+  return {
+    firstName: parts[0] || "",
+    lastName: parts.slice(1).join(" "),
+  };
+}
+
+function handleAuthConfigError(res: any, error: unknown) {
+  const message = error instanceof Error ? error.message : "";
+  if (message.includes("Better Auth is not configured")) {
+    res.status(503).json({ message });
+    return true;
+  }
+  return false;
+}
+
+function attachSessionCompat(req: any, admin: SerializedAdmin) {
+  if (!req.session) return;
+  req.session.adminId = admin.id;
+  req.session.adminRole = admin.role;
+  req.session.adminEmail = admin.email;
+  req.session.adminUser = admin;
+}
+
+router.get("/check-setup", async (_req, res) => {
   try {
     const admins = await storage.getAdminUsers();
     res.json({ needsSetup: admins.length === 0 });
@@ -15,7 +57,10 @@ router.get("/check-setup", async (req, res) => {
   }
 });
 
-router.post("/setup", authLimiter, async (req: any, res) => {
+router.post("/setup", authLimiter, async (req, res) => {
+  let createdAdminId: string | null = null;
+  let createdBetterAuthUserId: string | null = null;
+
   try {
     const admins = await storage.getAdminUsers();
     if (admins.length > 0) {
@@ -32,28 +77,40 @@ router.post("/setup", authLimiter, async (req: any, res) => {
       return res.status(400).json({ message: "Password must be at least 8 characters" });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 12);
+    const { firstName, lastName } = splitName(name);
     const admin = await storage.createAdminUser({
-      email,
-      password: hashedPassword,
+      email: String(email).toLowerCase(),
+      password: BETTER_AUTH_LEGACY_PASSWORD_PLACEHOLDER,
+      firstName,
+      lastName,
       name,
       role: "super_admin",
     });
+    createdAdminId = admin.id;
 
-    req.session.adminId = admin.id;
+    const signUp = await signUpAdminAndCreateSession({ email, password, name });
+    createdBetterAuthUserId = signUp.response.user.id;
+    await updateBetterAuthAdminUser(createdBetterAuthUserId, admin);
+    applyBetterAuthHeaders(res, signUp.headers);
+    attachSessionCompat(req, serializeAdmin(admin));
 
-    // Admin setup only creates admin session — no customer session token issued.
-    // Storefront access requires separate customer login.
-    res.status(201).json({ 
-      success: true, 
-      admin: { id: admin.id, email: admin.email, name: admin.name } 
+    res.status(201).json({
+      success: true,
+      admin: serializeAdmin(admin),
     });
-  } catch (error) {
-    res.status(500).json({ message: "Failed to create admin account" });
+  } catch (error: any) {
+    if (createdAdminId) {
+      await storage.deleteAdminUser(createdAdminId).catch(() => {});
+    }
+    if (createdBetterAuthUserId) {
+      await deleteBetterAuthUserById(createdBetterAuthUserId).catch(() => {});
+    }
+    if (handleAuthConfigError(res, error)) return;
+    res.status(error?.statusCode || 500).json({ message: error?.message || "Failed to create admin account" });
   }
 });
 
-router.post("/login", authLimiter, async (req: any, res) => {
+router.post("/login", authLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -61,83 +118,115 @@ router.post("/login", authLimiter, async (req: any, res) => {
       return res.status(400).json({ message: "Email and password required" });
     }
 
-    const admin = await storage.getAdminUserByEmail(email);
+    let signIn: Awaited<ReturnType<typeof signInAdminWithPassword>>;
+    try {
+      signIn = await signInAdminWithPassword({ email, password });
+    } catch (error: any) {
+      const admin = await storage.getAdminUserByEmail(String(email).toLowerCase());
+      const validLegacyPassword = admin ? await bcrypt.compare(password, admin.password).catch(() => false) : false;
+      if (!admin || !validLegacyPassword) {
+        throw error;
+      }
+
+      await syncBetterAuthAdminUser(admin, password);
+      signIn = await signInAdminWithPassword({ email, password });
+    }
+
+    const admin = await storage.getAdminUserByEmail(String(signIn.response.user.email).toLowerCase());
+
     if (!admin) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    const validPassword = await bcrypt.compare(password, admin.password);
-    if (!validPassword) {
+    const linkedUser = await getBetterAuthUserByAdminId(admin.id);
+    if (!linkedUser || linkedUser.id !== signIn.response.user.id) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    req.session.adminId = admin.id;
+    await syncBetterAuthAdminUser(admin);
+    applyBetterAuthHeaders(res, signIn.headers);
+    attachSessionCompat(req, serializeAdmin(admin));
 
-    // Admin login only creates admin session — no customer session token issued.
-    // Storefront access requires separate customer login.
-    res.json({ 
-      success: true, 
-      admin: { id: admin.id, email: admin.email, name: admin.name, role: admin.role } 
+    res.json({
+      success: true,
+      admin: serializeAdmin(admin),
+    });
+  } catch (error: any) {
+    if (handleAuthConfigError(res, error)) return;
+    res.status(error?.statusCode === 401 ? 401 : 500).json({ message: error?.statusCode ? "Invalid credentials" : "Login failed" });
+  }
+});
+
+router.post("/logout", async (req, res) => {
+  try {
+    const signOut = await signOutAdmin(req);
+    applyBetterAuthHeaders(res, signOut.headers);
+
+    if (req.session) {
+      delete req.session.adminId;
+      delete req.session.adminRole;
+      delete req.session.adminEmail;
+      delete req.session.adminUser;
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    if (handleAuthConfigError(res, error)) return;
+    res.status(500).json({ message: "Logout failed" });
+  }
+});
+
+router.get("/me", async (req, res) => {
+  try {
+    const context = await getAdminAuthContext(req);
+    if (!context) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    attachAdminAuthContext(req, context);
+    res.json(serializeAdmin(context.admin));
+  } catch (error) {
+    if (handleAuthConfigError(res, error)) return;
+    res.status(500).json({ message: "Failed to load admin" });
+  }
+});
+
+router.get("/optional-me", async (req, res) => {
+  try {
+    const context = await getAdminAuthContext(req);
+    if (!context) return res.json(null);
+
+    attachAdminAuthContext(req, context);
+    res.json(serializeAdmin(context.admin));
+  } catch (error) {
+    if (handleAuthConfigError(res, error)) return;
+    res.json(null);
+  }
+});
+
+router.get("/me/profile", async (req, res) => {
+  try {
+    const context = await getAdminAuthContext(req);
+    if (!context) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    attachAdminAuthContext(req, context);
+    const admin = context.admin;
+    res.json({
+      id: admin.id,
+      email: admin.email,
+      firstName: admin.firstName,
+      lastName: admin.lastName,
+      name: admin.name,
+      phone: admin.phone,
+      avatarUrl: admin.avatarUrl || null,
+      role: admin.role,
     });
   } catch (error) {
-    res.status(500).json({ message: "Login failed" });
+    if (handleAuthConfigError(res, error)) return;
+    res.status(500).json({ message: "Failed to load profile" });
   }
-});
-
-router.post("/logout", (req: any, res) => {
-  req.session.destroy((err: any) => {
-    if (err) {
-      return res.status(500).json({ message: "Logout failed" });
-    }
-    res.json({ success: true });
-  });
-});
-
-router.get("/me", async (req: any, res) => {
-  if (!req.session.adminId) {
-    return res.status(401).json({ message: "Not authenticated" });
-  }
-
-  const admin = await storage.getAdminUser(req.session.adminId);
-  if (!admin) {
-    return res.status(401).json({ message: "Admin not found" });
-  }
-
-  res.json({ id: admin.id, email: admin.email, name: admin.name, role: admin.role, avatarUrl: admin.avatarUrl || null });
-});
-
-router.get("/optional-me", async (req: any, res) => {
-  if (!req.session.adminId) {
-    return res.json(null);
-  }
-
-  const admin = await storage.getAdminUser(req.session.adminId);
-  if (!admin) {
-    req.session.destroy(() => {});
-    return res.json(null);
-  }
-
-  res.json({ id: admin.id, email: admin.email, name: admin.name, role: admin.role, avatarUrl: admin.avatarUrl || null });
-});
-
-router.get("/me/profile", async (req: any, res) => {
-  if (!req.session.adminId) {
-    return res.status(401).json({ message: "Not authenticated" });
-  }
-  const admin = await storage.getAdminUser(req.session.adminId);
-  if (!admin) {
-    return res.status(401).json({ message: "Admin not found" });
-  }
-  res.json({
-    id: admin.id,
-    email: admin.email,
-    firstName: admin.firstName,
-    lastName: admin.lastName,
-    name: admin.name,
-    phone: admin.phone,
-    avatarUrl: admin.avatarUrl || null,
-    role: admin.role,
-  });
 });
 
 const adminProfileSchema = z.object({
@@ -147,30 +236,37 @@ const adminProfileSchema = z.object({
   avatarUrl: z.string().nullable().optional(),
 });
 
-router.patch("/me/profile", async (req: any, res) => {
-  if (!req.session.adminId) {
-    return res.status(401).json({ message: "Not authenticated" });
-  }
+router.patch("/me/profile", async (req, res) => {
   try {
+    const context = await getAdminAuthContext(req);
+    if (!context) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    attachAdminAuthContext(req, context);
     const data = adminProfileSchema.parse(req.body);
     const updateData: any = {};
     if (data.firstName !== undefined) updateData.firstName = data.firstName;
     if (data.lastName !== undefined) updateData.lastName = data.lastName;
     if (data.firstName !== undefined || data.lastName !== undefined) {
-      const admin = await storage.getAdminUser(req.session.adminId);
-      const fn = data.firstName ?? admin?.firstName ?? "";
-      const ln = data.lastName ?? admin?.lastName ?? "";
+      const fn = data.firstName ?? context.admin.firstName ?? "";
+      const ln = data.lastName ?? context.admin.lastName ?? "";
       updateData.name = [fn, ln].filter(Boolean).join(" ");
     }
     if (data.phone !== undefined) updateData.phone = data.phone;
     if (data.avatarUrl !== undefined) updateData.avatarUrl = data.avatarUrl;
 
-    await storage.updateAdminUser(req.session.adminId, updateData);
+    const admin = await storage.updateAdminUser(context.admin.id, updateData);
+    if (!admin) {
+      return res.status(404).json({ message: "Admin not found" });
+    }
+    await syncBetterAuthAdminUser(admin);
     res.json({ success: true, message: "Profile updated" });
   } catch (error: any) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ message: error.errors[0].message });
     }
+    if (handleAuthConfigError(res, error)) return;
     res.status(500).json({ message: "Failed to update profile" });
   }
 });
@@ -180,28 +276,26 @@ const adminChangePasswordSchema = z.object({
   newPassword: z.string().min(8, "New password must be at least 8 characters"),
 });
 
-router.post("/me/change-password", async (req: any, res) => {
-  if (!req.session.adminId) {
-    return res.status(401).json({ message: "Not authenticated" });
-  }
+router.post("/me/change-password", async (req, res) => {
   try {
+    const context = await getAdminAuthContext(req);
+    if (!context) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    attachAdminAuthContext(req, context);
     const { currentPassword, newPassword } = adminChangePasswordSchema.parse(req.body);
-    const admin = await storage.getAdminUser(req.session.adminId);
-    if (!admin) {
-      return res.status(404).json({ message: "Admin not found" });
-    }
-    const valid = await bcrypt.compare(currentPassword, admin.password);
-    if (!valid) {
-      return res.status(400).json({ message: "Current password is incorrect" });
-    }
-    const hashed = await bcrypt.hash(newPassword, 12);
-    await storage.updateAdminUser(admin.id, { password: hashed });
+    const result = await changeAdminPassword(req, { currentPassword, newPassword });
+    applyBetterAuthHeaders(res, result.headers);
     res.json({ success: true, message: "Password changed successfully" });
   } catch (error: any) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ message: error.errors[0].message });
     }
-    res.status(500).json({ message: "Failed to change password" });
+    if (handleAuthConfigError(res, error)) return;
+    res.status(error?.statusCode === 400 ? 400 : 500).json({
+      message: error?.statusCode === 400 ? "Current password is incorrect" : "Failed to change password",
+    });
   }
 });
 

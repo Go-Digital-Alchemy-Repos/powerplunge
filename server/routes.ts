@@ -234,11 +234,12 @@ export async function registerRoutes(
   // Admin auth routes (no middleware - handles own auth)
   app.use("/api/admin", adminAuthRoutes);
 
-  // Admin routes (requireAdmin - accessible by all admin roles)
-  app.use("/api/admin/orders", requireAdmin, adminOrdersRoutes);
-  app.use("/api/admin/orders", requireAdmin, shipmentRoutes);
-  app.use("/api/admin/dashboard", requireAdmin, dashboardRoutes);
-  app.use("/api/admin/shipments", requireAdmin, shipmentManagementRoutes);
+  // Order-related admin routes are accessible to fulfillment; general admin
+  // routes require full admin/store-manager access.
+  app.use("/api/admin/orders", requireOrderAccess, adminOrdersRoutes);
+  app.use("/api/admin/orders", requireOrderAccess, shipmentRoutes);
+  app.use("/api/admin/dashboard", requireFullAccess, dashboardRoutes);
+  app.use("/api/admin/shipments", requireOrderAccess, shipmentManagementRoutes);
 
   // Admin routes (requireFullAccess - blocks fulfillment role)
   app.use("/api/admin/settings", requireFullAccess, adminSettingsRoutes);
@@ -251,7 +252,7 @@ export async function registerRoutes(
   app.use("/api/admin/shipping", requireFullAccess, adminShippingRoutes);
   app.use("/api/admin", requireFullAccess, adminOperationsRoutes);
   app.use("/api/admin/orders", requireFullAccess, refundOrderRoutes);
-  app.use("/api/admin/customers", requireOrderAccess, adminCustomerMgmtRoutes);
+  app.use("/api/admin/customers", requireFullAccess, adminCustomerMgmtRoutes);
   app.use("/api/admin/reports", requireFullAccess, adminReportsRoutes);
   app.use("/api/admin/analytics", requireFullAccess, adminAnalyticsRoutes);
 

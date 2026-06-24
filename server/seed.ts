@@ -4,6 +4,10 @@ import { adminUsers, products, affiliates } from "@shared/schema";
 import { eq, asc, isNull } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { slugify } from "./src/utils/slugify";
+import {
+  BETTER_AUTH_LEGACY_PASSWORD_PLACEHOLDER,
+  syncBetterAuthAdminUser,
+} from "./src/auth/adminBetterAuth";
 
 export async function ensureSuperAdmin() {
   const allAdmins = await db.select().from(adminUsers).orderBy(asc(adminUsers.createdAt));
@@ -62,18 +66,19 @@ export async function seedTestAdminUsers() {
   for (const testUser of TEST_ADMIN_USERS) {
     const existing = await storage.getAdminUserByEmail(testUser.email);
     if (existing) {
+      await syncBetterAuthAdminUser(existing, testPassword);
       continue;
     }
 
-    const hashedPassword = await bcrypt.hash(testPassword, 12);
-    await storage.createAdminUser({
+    const admin = await storage.createAdminUser({
       email: testUser.email,
-      password: hashedPassword,
+      password: BETTER_AUTH_LEGACY_PASSWORD_PLACEHOLDER,
       firstName: testUser.firstName,
       lastName: testUser.lastName,
       name: testUser.name,
       role: testUser.role,
     });
+    await syncBetterAuthAdminUser(admin, testPassword);
     console.log(`  Created test user: ${testUser.email} (${testUser.role})`);
   }
 }
