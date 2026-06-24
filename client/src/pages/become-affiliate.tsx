@@ -93,7 +93,6 @@ export default function BecomeAffiliate() {
 
   const [currentStep, setCurrentStep] = useState<WizardStep>("welcome");
   const [accountCreated, setAccountCreated] = useState(false);
-  const [sessionToken, setSessionToken] = useState<string | null>(null);
   const [affiliateCode, setAffiliateCode] = useState("");
   const [affiliateId, setAffiliateId] = useState("");
   const [onboardingMeta, setOnboardingMeta] = useState<OnboardingMeta | null>(null);
@@ -215,10 +214,6 @@ export default function BecomeAffiliate() {
     },
     onSuccess: async (data) => {
       setExistingAccountError(false);
-      if (data.sessionToken) {
-        localStorage.setItem("customerSessionToken", data.sessionToken);
-        setSessionToken(data.sessionToken);
-      }
       setAffiliateCode(data.affiliate.code);
       setAffiliateId(data.affiliate.id);
       if (data.onboarding) {
@@ -251,13 +246,12 @@ export default function BecomeAffiliate() {
 
   const joinMutation = useMutation({
     mutationFn: async (data: { signatureName: string; inviteCode: string }) => {
-      const token = localStorage.getItem("customerSessionToken");
       const res = await fetch("/api/affiliate-signup/join", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
+        credentials: "include",
         body: JSON.stringify({
           signatureName: data.signatureName,
           inviteCode: data.inviteCode,

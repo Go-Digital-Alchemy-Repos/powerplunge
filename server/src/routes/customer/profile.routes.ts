@@ -95,9 +95,11 @@ router.get("/orders/:id", async (req: any, res) => {
 
 router.post("/link", async (req: any, res) => {
   try {
+    const identityResult = await customerIdentityService.resolve(req);
+    const sessionCustomer = identityResult.ok ? identityResult.identity.customer : null;
     const userId = req.user?.claims?.sub;
-    if (!userId) {
-      return res.status(401).json({ message: "Platform authentication required" });
+    if (!userId && !sessionCustomer) {
+      return res.status(401).json({ message: "Authentication required" });
     }
     const { customerId, sessionId } = req.body;
 
@@ -105,7 +107,7 @@ router.post("/link", async (req: any, res) => {
       return res.status(400).json({ message: "Customer ID required" });
     }
 
-    const userEmail = normalizeEmail(req.user.claims.email || "");
+    const userEmail = normalizeEmail(sessionCustomer?.email || req.user?.claims?.email || "");
 
     if (sessionId) {
       const order = await storage.getOrderByStripeSession(sessionId);
@@ -125,6 +127,31 @@ router.post("/link", async (req: any, res) => {
     const customer = await storage.getCustomer(customerId);
     if (!customer) {
       return res.status(404).json({ message: "Customer not found" });
+    }
+
+    if (sessionCustomer) {
+      if (customer.id === sessionCustomer.id) {
+        return res.json({ success: true, customer: sessionCustomer, customerId: sessionCustomer.id });
+      }
+
+      await db.transaction(async (tx) => {
+        const guestOrders = await storage.getOrdersByCustomerId(customer.id);
+        for (const order of guestOrders) {
+          await tx.update(ordersTable)
+            .set({ customerId: sessionCustomer.id })
+            .where(eq(ordersTable.id, order.id));
+        }
+        await tx.update(customers)
+          .set({ mergedIntoCustomerId: sessionCustomer.id, userId: null })
+          .where(eq(customers.id, customer.id));
+        console.log(`[MERGE] Customer ${customer.id} merged into ${sessionCustomer.id}, ${guestOrders.length} orders moved`);
+      });
+
+      return res.json({
+        success: true,
+        message: "Orders merged with existing account",
+        customerId: sessionCustomer.id,
+      });
     }
 
     if (customer.userId && customer.userId !== userId) {

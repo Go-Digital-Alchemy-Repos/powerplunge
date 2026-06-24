@@ -1,7 +1,8 @@
 import { Request } from "express";
 import { storage } from "../../storage";
-import { verifySessionToken, CustomerSession } from "../middleware/customer-auth.middleware";
+import type { CustomerSession } from "../middleware/customer-auth.middleware";
 import type { Customer } from "@shared/schema";
+import { getCustomerAuthContext } from "../auth/customerBetterAuth";
 
 export type IdentitySource = "platform" | "customer_token" | "both";
 
@@ -29,7 +30,7 @@ export function normalizeEmail(email: string): string {
 export class CustomerIdentityService {
   async resolve(req: any): Promise<IdentityResult> {
     const platformUserId = req.user?.claims?.sub as string | undefined;
-    const customerSession = this.extractCustomerSession(req);
+    const customerSession = await this.extractCustomerSession(req);
 
     if (!platformUserId && !customerSession) {
       return {
@@ -58,23 +59,23 @@ export class CustomerIdentityService {
     return result.ok ? result.identity : null;
   }
 
-  private extractCustomerSession(req: any): CustomerSession | null {
+  private async extractCustomerSession(req: any): Promise<CustomerSession | null> {
     if (req.customerSession) {
       return req.customerSession;
     }
 
-    const authHeader = req.headers?.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    try {
+      const context = await getCustomerAuthContext(req as Request);
+      if (!context) return null;
+      req.customerSession = {
+        customerId: context.customer.id,
+        email: context.customer.email,
+      };
+      req.betterAuthSession = context.betterAuthSession;
+      return req.customerSession;
+    } catch {
       return null;
     }
-
-    const token = authHeader.slice(7);
-    const result = verifySessionToken(token);
-    if (result.valid && result.customerId) {
-      return { customerId: result.customerId, email: result.email || "" };
-    }
-
-    return null;
   }
 
   private async resolveFromPlatform(userId: string): Promise<IdentityResult> {

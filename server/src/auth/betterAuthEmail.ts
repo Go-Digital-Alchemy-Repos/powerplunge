@@ -30,12 +30,13 @@ async function sendAuthLinkEmail({
   buttonLabel: string;
 }): Promise<void> {
   const safeName = escapeHtml(name?.trim() || "there");
-  const safeUrl = escapeHtml(url);
+  const normalizedUrl = normalizeAuthEmailUrl(url);
+  const safeUrl = escapeHtml(normalizedUrl);
 
   const result = await emailService.sendEmail({
     to: email,
     subject,
-    text: `${body}\n\n${url}`,
+    text: `${body}\n\n${normalizedUrl}`,
     html: `
 <!DOCTYPE html>
 <html>
@@ -65,6 +66,21 @@ async function sendAuthLinkEmail({
 
   if (!result.success) {
     throw new Error(result.error || "Failed to send auth email");
+  }
+}
+
+function normalizeAuthEmailUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    const resetMatch = parsed.pathname.match(/\/reset-password\/([^/]+)$/);
+    if (resetMatch) {
+      parsed.pathname = "/reset-password";
+      parsed.search = "";
+      parsed.searchParams.set("token", resetMatch[1]);
+    }
+    return parsed.toString();
+  } catch {
+    return url;
   }
 }
 

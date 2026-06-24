@@ -3,8 +3,15 @@ import { storage } from "../../../storage";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import { createSessionToken, verifySessionToken } from "../../middleware/customer-auth.middleware";
 import { affiliateSignupLimiter, smsVerificationLimiter, smsSendLimiter, smsPhoneLimiter } from "../../middleware/rate-limiter";
+import {
+  BETTER_AUTH_CUSTOMER_PASSWORD_PLACEHOLDER,
+  applyBetterAuthHeaders,
+  getCustomerAuthContext,
+  isBetterAuthEmailReservedForAdmin,
+  signInCustomerWithPassword,
+  syncBetterAuthCustomerUser,
+} from "../../auth/customerBetterAuth";
 
 const router = Router();
 
@@ -29,19 +36,14 @@ router.get("/", async (req: Request, res: Response) => {
     let inviteValid = false;
     let inviteError: string | null = null;
 
+    const customerAuthContext = await getCustomerAuthContext(req).catch(() => null);
+    const sessionCustomer = customerAuthContext?.customer ?? null;
     let isExistingAffiliate = false;
-    const authHeader = req.headers.authorization;
-    if (authHeader?.startsWith("Bearer ")) {
-      try {
-        const token = authHeader.substring(7);
-        const payload = verifySessionToken(token);
-        if (payload?.customerId) {
-          const existingAffiliate = await storage.getAffiliateByCustomerId(payload.customerId);
-          if (existingAffiliate) {
-            isExistingAffiliate = true;
-          }
-        }
-      } catch {}
+    if (sessionCustomer) {
+      const existingAffiliate = await storage.getAffiliateByCustomerId(sessionCustomer.id);
+      if (existingAffiliate) {
+        isExistingAffiliate = true;
+      }
     }
 
     if (!inviteCode) {
@@ -74,19 +76,8 @@ router.get("/", async (req: Request, res: Response) => {
 
     let sessionEmailMatch: boolean | null = null;
     if (invite?.targetEmail) {
-      const authHeader = req.headers.authorization;
-      if (authHeader?.startsWith("Bearer ")) {
-        try {
-          const token = authHeader.substring(7);
-          const payload = verifySessionToken(token);
-          if (payload?.customerId) {
-            const customers = await storage.getCustomersByIds([payload.customerId]);
-            const customer = customers[0];
-            if (customer?.email) {
-              sessionEmailMatch = customer.email.toLowerCase() === invite.targetEmail.toLowerCase();
-            }
-          }
-        } catch {}
+      if (sessionCustomer?.email) {
+        sessionEmailMatch = sessionCustomer.email.toLowerCase() === invite.targetEmail.toLowerCase();
       }
     }
 
@@ -202,6 +193,13 @@ router.post("/", affiliateSignupLimiter, async (req: Request, res: Response) => 
     const existingCustomer = await storage.getCustomerByEmail(email);
 
     if (existingCustomer) {
+      if (await isBetterAuthEmailReservedForAdmin(existingCustomer.email)) {
+        return res.status(400).json({
+          message: "An account with this email already exists. Please sign in to access your affiliate portal.",
+          existingCustomer: true
+        });
+      }
+
       const existingAffiliate = await storage.getAffiliateByCustomerId(existingCustomer.id);
       if (existingAffiliate) {
         return res.status(400).json({
@@ -212,7 +210,19 @@ router.post("/", affiliateSignupLimiter, async (req: Request, res: Response) => 
 
       const wasMagicLinkOnly = !existingCustomer.passwordHash;
 
-      if (existingCustomer.passwordHash) {
+      if (existingCustomer.passwordHash === BETTER_AUTH_CUSTOMER_PASSWORD_PLACEHOLDER) {
+        try {
+          await signInCustomerWithPassword({ email, password });
+        } catch {
+          return res.status(400).json({
+            message: "An account with this email already exists. Please enter your correct password to join the affiliate program.",
+            existingCustomer: true
+          });
+        }
+        if (name && name !== existingCustomer.name) {
+          await storage.updateCustomer(existingCustomer.id, { name });
+        }
+      } else if (existingCustomer.passwordHash) {
         const passwordMatch = await bcrypt.compare(password, existingCustomer.passwordHash);
         if (!passwordMatch) {
           return res.status(400).json({
@@ -223,9 +233,20 @@ router.post("/", affiliateSignupLimiter, async (req: Request, res: Response) => 
         if (name && name !== existingCustomer.name) {
           await storage.updateCustomer(existingCustomer.id, { name });
         }
+        await syncBetterAuthCustomerUser(existingCustomer, password);
+        const signIn = await signInCustomerWithPassword({ email, password });
+        applyBetterAuthHeaders(res, signIn.headers);
+        await storage.updateCustomer(existingCustomer.id, {
+          passwordHash: BETTER_AUTH_CUSTOMER_PASSWORD_PLACEHOLDER,
+        });
       } else {
-        const passwordHash = await bcrypt.hash(password, 10);
-        await storage.updateCustomer(existingCustomer.id, { passwordHash, name });
+        await syncBetterAuthCustomerUser(existingCustomer, password);
+        const signIn = await signInCustomerWithPassword({ email, password });
+        applyBetterAuthHeaders(res, signIn.headers);
+        await storage.updateCustomer(existingCustomer.id, {
+          passwordHash: BETTER_AUTH_CUSTOMER_PASSWORD_PLACEHOLDER,
+          name,
+        });
       }
 
       const code = `${name.replace(/\s+/g, '').substring(0, 6).toUpperCase() || 'REF'}${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
@@ -248,13 +269,15 @@ router.post("/", affiliateSignupLimiter, async (req: Request, res: Response) => 
         return res.status(409).json({ message: redemption.error || "This invite is no longer available" });
       }
 
-      const sessionToken = createSessionToken(existingCustomer.id, email);
+      if (existingCustomer.passwordHash === BETTER_AUTH_CUSTOMER_PASSWORD_PLACEHOLDER) {
+        const signIn = await signInCustomerWithPassword({ email, password });
+        applyBetterAuthHeaders(res, signIn.headers);
+      }
 
       const payoutAccount = await storage.getAffiliatePayoutAccountByAffiliateId(affiliate.id);
 
       return res.json({
         success: true,
-        sessionToken,
         passwordUpgraded: wasMagicLinkOnly,
         customer: {
           id: existingCustomer.id,
@@ -274,12 +297,29 @@ router.post("/", affiliateSignupLimiter, async (req: Request, res: Response) => 
       });
     }
 
-    const passwordHash = await bcrypt.hash(password, 10);
-    const customer = await storage.createCustomer({
+    if (await isBetterAuthEmailReservedForAdmin(email)) {
+      return res.status(400).json({
+        message: "An account with this email already exists. Please sign in to access your affiliate portal.",
+        existingCustomer: true
+      });
+    }
+
+    let customer = await storage.createCustomer({
       email,
       name,
-      passwordHash,
     });
+    try {
+      await syncBetterAuthCustomerUser(customer, password);
+      const signIn = await signInCustomerWithPassword({ email, password });
+      applyBetterAuthHeaders(res, signIn.headers);
+      const updatedCustomer = await storage.updateCustomer(customer.id, {
+        passwordHash: BETTER_AUTH_CUSTOMER_PASSWORD_PLACEHOLDER,
+      });
+      if (updatedCustomer) customer = updatedCustomer;
+    } catch (error) {
+      await storage.deleteCustomer(customer.id).catch(() => {});
+      throw error;
+    }
 
     const code = `${name.replace(/\s+/g, '').substring(0, 6).toUpperCase() || 'REF'}${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
@@ -301,11 +341,8 @@ router.post("/", affiliateSignupLimiter, async (req: Request, res: Response) => 
       return res.status(409).json({ message: redemption.error || "This invite is no longer available" });
     }
 
-    const sessionToken = createSessionToken(customer.id, email);
-
     res.json({
       success: true,
-      sessionToken,
       customer: {
         id: customer.id,
         email: customer.email,
@@ -336,15 +373,9 @@ const joinSchema = z.object({
 
 router.post("/join", affiliateSignupLimiter, async (req: Request, res: Response) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    const customerAuthContext = await getCustomerAuthContext(req).catch(() => null);
+    if (!customerAuthContext) {
       return res.status(401).json({ message: "Authentication required" });
-    }
-
-    const token = authHeader.slice(7);
-    const tokenResult = verifySessionToken(token);
-    if (!tokenResult.valid || !tokenResult.customerId) {
-      return res.status(401).json({ message: "Invalid or expired session" });
     }
 
     const settings = await storage.getAffiliateSettings();
@@ -359,7 +390,7 @@ router.post("/join", affiliateSignupLimiter, async (req: Request, res: Response)
 
     const { signatureName, inviteCode, verificationToken } = parseResult.data;
 
-    const customer = await storage.getCustomer(tokenResult.customerId);
+    const customer = customerAuthContext.customer;
     if (!customer) {
       return res.status(404).json({ message: GENERIC_ERROR });
     }
