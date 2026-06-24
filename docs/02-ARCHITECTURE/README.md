@@ -14,7 +14,7 @@ Power Plunge uses a modern full-stack architecture built on React, Express, and 
 
 - **Framework:** Express.js with TypeScript
 - **ORM:** Drizzle ORM
-- **Database:** PostgreSQL (Neon-backed via Replit)
+- **Database:** PostgreSQL (local Postgres for development; Neon Postgres for deployed and explicit ops environments)
 - **Architecture:** Layered modular design with dedicated routes, services, middleware, and integrations
 
 ## Key Modules

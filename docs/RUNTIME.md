@@ -37,11 +37,11 @@ Precedence: Replit > CI > Codex Web > Codex Local > Local. The flags are mutuall
 
 `server/src/config/load-env.ts` is imported as the **very first** import in `server/index.ts`. When `shouldLoadDotenv` is true (i.e., not on Replit), it loads:
 
-1. `.env.local` (highest priority, git-ignored)
-2. `.env.development`
-3. `.env` (lowest priority)
+1. `.env` (standard local/Codex runtime file, git-ignored)
+2. `.env.local` (legacy or personal fallback values)
+3. `.env.development` (development fallback values)
 
-Files are loaded with `override: false`, so earlier files take precedence. Dotenv loading applies to all non-Replit environments: Codex Web, Codex Local, Local, and CI.
+Files are loaded with `override: false`, so earlier files take precedence. Dotenv loading applies to all non-Replit environments: Codex Web, Codex Local, Local, and CI. This repo treats `.env` as the normal active local/Codex env file. Local development should point `DATABASE_URL` at local Postgres by default. 1Password is the backup/source store for secret values. Neon env files are for explicit ops/deploy commands.
 
 ## Runtime Flags
 
