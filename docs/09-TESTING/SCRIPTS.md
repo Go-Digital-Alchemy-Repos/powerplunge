@@ -7,6 +7,8 @@ All scripts are located in the `scripts/` directory and run with `npx tsx`. They
 | Script | Path | Purpose | Destructive |
 |--------|------|---------|-------------|
 | Doctor | `scripts/doctor.ts` | Environment health check | No |
+| Local Test Env Hydration | `scripts/dev/hydrateTestEnvFrom1Password.ts` | Writes ignored `.env.test.local` from 1Password refs | Writes local secret file |
+| Local DB Push Guard | `scripts/dev/runLocalDbPush.ts` | Verifies guarded local-test DB connection before Drizzle push | Schema mutation |
 | Verify Schema | `scripts/db/verifySchema.ts` | Database table verification | No |
 | CMS Parity Check | `scripts/cmsParityCheck.ts` | Legacy vs CMS data consistency | No |
 | Content Safety | `scripts/smoke/cmsContentSafety.ts` | Content validation regression tests | No |
@@ -24,8 +26,8 @@ npx tsx scripts/doctor.ts
 ```
 
 **Checks performed:**
-1. Required environment variables (`DATABASE_URL`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`)
-2. Optional environment variables with warnings (`MAILGUN_API_KEY`, etc.)
+1. Required environment variables (`DATABASE_URL`, `SESSION_SECRET`)
+2. Optional environment variables with warnings (`MAILGUN_API_KEY`, etc.); Stripe test/live aliases satisfy the Stripe checks
 3. Database connection (attempts a simple query)
 4. Integration configuration status (Stripe, Mailgun, Better Auth)
 
@@ -38,6 +40,30 @@ npx tsx scripts/doctor.ts
 ```
 
 Exit code: `0` if all required checks pass, `1` if any required check fails.
+
+## Local automated test env
+
+The local-test flow keeps real secret values and 1Password item refs out of committed files while allowing one-command verification against local Postgres or an isolated Neon test branch.
+
+Requires the 1Password CLI (`op`) signed in locally.
+
+**Setup:**
+```bash
+cp env.test.local.example .env.test.local.template
+# Replace placeholders with local-test 1Password refs and host pin.
+npm run env:test:hydrate
+```
+
+`scripts/dev/hydrateTestEnvFrom1Password.ts` runs `op inject`, writes only `.env.test.local`, and sets file mode `0600`. Re-run with `npm run env:test:hydrate:force` to replace the hydrated file.
+
+`scripts/dev/withLocalBetterAuthEnv.ts` loads `.env.test.local` automatically, sets Better Auth and email-outbox defaults, and refuses remote database URLs unless `LOCAL_TEST_DATABASE=true` and `LOCAL_TEST_DATABASE_HOST` exactly match the URL host. `scripts/dev/runLocalDbPush.ts` verifies the database connection before `drizzle-kit push` and fails if Drizzle stops at a create/rename prompt.
+
+**Full local check:**
+```bash
+npm run check:local
+```
+
+This runs guarded DB push, dev-user seeding, Better Auth seed verification, typecheck, local doctor, schema verification, unit tests, the CMS landing-page generator test, and Playwright e2e.
 
 ## scripts/db/verifySchema.ts
 

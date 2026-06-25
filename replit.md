@@ -67,7 +67,8 @@ The Power Plunge e-commerce platform utilizes a modern full-stack architecture.
 ## Runtime Environment Layer
 - Centralized environment detection in `server/src/config/runtime.ts` identifies five mutually exclusive environments: Replit Deployment, Replit Workspace, Codex Web, Codex Local, Local, and CI. Detection uses `CODEX_SANDBOX`/`CODEX_ENV` for Codex Web, `CODEX` for Codex Local. Tests in `server/src/config/__tests__/runtime.test.ts`.
 - `server/src/config/load-env.ts` loads `.env` files only when not on Replit (imported first in `server/index.ts`).
-- Auth uses Better Auth across runtimes. Local/Codex auth testing uses seeded Better Auth accounts through `npm run with:local-auth-env -- <command>`, `npm run verify:seed-auth:local`, and `npm run test:e2e:local-auth`.
+- Auth uses Better Auth across runtimes. Local/Codex auth testing uses seeded Better Auth accounts through `npm run with:local-auth-env -- <command>`, `npm run verify:seed-auth:local`, and `npm run test:e2e:local`.
+- Automated local checks use `env.test.local.example` -> ignored `.env.test.local.template` -> `npm run env:test:hydrate` to write ignored `.env.test.local`; `npm run check:local` runs guarded DB push, seeds, seed verification, typecheck, doctor, schema verification, unit tests, CMS generator test, and Playwright. Remote local-test DBs must set `LOCAL_TEST_DATABASE=true` and pin `LOCAL_TEST_DATABASE_HOST`.
 - Local dev uses `make dev` (backend port 5001, frontend port 5002). Replit scripts are unchanged.
 - See `docs/RUNTIME.md`, `docs/QUICKSTART.md`, `docs/ENV.md` for full details.
 

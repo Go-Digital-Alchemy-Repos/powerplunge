@@ -57,6 +57,9 @@ These variables are used only in development (`NODE_ENV=development`). They are 
 | Variable | Feature | Description | Example |
 |---|---|---|---|
 | `SEED_TEST_PASSWORD` | Dev Seed | Password used for all seeded test accounts (admin, customer, affiliate). Falls back to `testpass123` if unset. | `my-secret-test-pw` |
+| `LOCAL_TEST_DATABASE` | Local Test DB Guard | Must be `true` when local test commands use a non-localhost `DATABASE_URL`. | `true` |
+| `LOCAL_TEST_DATABASE_HOST` | Local Test DB Guard | Exact allowed remote test database host for guarded local commands. | `ep-local-test-abc.us-east-2.aws.neon.tech` |
+| `LOCAL_TEST_ENV_FILE` | Local Test Env | Optional override for the env file loaded by `with:local-auth-env`; defaults to `.env.test.local`. | `.env.test.local` |
 
 ### Test user seeding
 
@@ -72,7 +75,19 @@ See `.agents/skills/playwright-testing/SKILL.md` for the full list of seeded acc
 
 ## Local / Codex Development
 
-Local and Codex auth testing uses Better Auth seed accounts, not `/api/login` dev stubs. Use `npm run with:local-auth-env -- <command>` to run commands with local Postgres, Better Auth, and email-outbox defaults. Use `npm run verify:seed-auth:local` for seed verification and `npm run test:e2e:local-auth -- <playwright args>` for Playwright flows.
+Local and Codex auth testing uses Better Auth seed accounts, not `/api/login` dev stubs. Use `npm run with:local-auth-env -- <command>` or `npm run with:test-env -- <command>` to run commands with local Postgres or hydrated local-test database values, Better Auth, and email-outbox defaults. Use `npm run verify:seed-auth:local` for seed verification and `npm run test:e2e:local -- <playwright args>` for Playwright flows.
+
+### Local Test Env Hydration
+
+Use `env.test.local.example` as the committed shape for automated local testing. Copy it to ignored `.env.test.local.template`, replace placeholders with local-test 1Password item references, then run:
+
+```bash
+npm run env:test:hydrate
+```
+
+The hydrate script writes ignored `.env.test.local` with mode `0600` and refuses to write any other default output path. Use `npm run env:test:hydrate:force` to replace an existing hydrated file. `with:local-auth-env`, `with:test-env`, `db:push:local`, `doctor:local`, `test:unit:local`, and `test:e2e:local` load `.env.test.local` automatically when it exists.
+
+When `.env.test.local` points at a remote isolated Neon test branch, set `LOCAL_TEST_DATABASE=true` and pin `LOCAL_TEST_DATABASE_HOST` to the exact database host. Guarded local commands ignore ambient `DATABASE_URL` for command execution and refuse remote mutation unless the flag and host pin match.
 
 ## Better Auth Foundation
 
@@ -101,6 +116,8 @@ Copy `.env.example` to `.env` to get started: `cp .env.example .env`
 Local and Codex development use local Postgres by default through `DATABASE_URL` in `.env`, for example `postgres://thomascarney@localhost:5432/powerplunge`. Neon connection strings are for deployed environments, migration checks, or intentional ops work. Keep Neon values in 1Password-backed files such as `.env.neon.local` and run those commands explicitly with `op run --env-file=.env.neon.local -- ...`.
 
 Do not store the old Replit production database URL in `.env`; keep it archived in 1Password only if it is needed for future migration or audit work.
+
+Local automated tests may use an isolated Neon branch only through the guarded `.env.test.local` flow above. Do not put production, staging, or shared ops database URLs in `.env.test.local`.
 
 ## Informational Variables (set automatically)
 
