@@ -2,7 +2,17 @@ import { storage } from "../../storage";
 import crypto from "crypto";
 import type { AffiliateClick, InsertAffiliateClick } from "@shared/schema";
 
-const IP_HASH_SALT = process.env.IP_HASH_SALT || "power-plunge-affiliate-salt";
+function resolveIpHashSalt(): string {
+  if (process.env.IP_HASH_SALT) return process.env.IP_HASH_SALT;
+
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("IP_HASH_SALT is required in production");
+  }
+
+  return "power-plunge-affiliate-salt";
+}
+
+const IP_HASH_SALT = resolveIpHashSalt();
 
 interface TrackClickInput {
   affiliateCode: string;

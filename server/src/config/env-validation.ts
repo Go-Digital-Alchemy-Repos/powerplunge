@@ -1,10 +1,15 @@
 type EnvVarLevel = "required" | "optional";
+type EnvVarSource = "environment" | "database-or-environment";
 
 interface EnvVarSpec {
   level: EnvVarLevel;
+  requiredInProduction?: boolean;
   feature: string;
   description: string;
+  source?: EnvVarSource;
 }
+
+type FallbackSpec = string | string[];
 
 const ENV_VARS: Record<string, EnvVarSpec> = {
   DATABASE_URL: {
@@ -35,6 +40,7 @@ const ENV_VARS: Record<string, EnvVarSpec> = {
 
   APP_SECRETS_ENCRYPTION_KEY: {
     level: "optional",
+    requiredInProduction: true,
     feature: "Admin Settings",
     description: "AES-256 key for encrypting stored secrets (e.g. Twilio auth token)",
   },
@@ -42,51 +48,61 @@ const ENV_VARS: Record<string, EnvVarSpec> = {
     level: "optional",
     feature: "Email",
     description: "Mailgun API key for transactional emails",
+    source: "database-or-environment",
   },
   MAILGUN_DOMAIN: {
     level: "optional",
     feature: "Email",
     description: "Mailgun sending domain",
+    source: "database-or-environment",
   },
   CLOUDFLARE_R2_ACCESS_KEY_ID: {
     level: "optional",
     feature: "Media Storage (R2)",
     description: "Cloudflare R2 access key ID",
+    source: "database-or-environment",
   },
   CLOUDFLARE_R2_SECRET_ACCESS_KEY: {
     level: "optional",
     feature: "Media Storage (R2)",
     description: "Cloudflare R2 secret access key",
+    source: "database-or-environment",
   },
   CLOUDFLARE_R2_BUCKET_NAME: {
     level: "optional",
     feature: "Media Storage (R2)",
     description: "Cloudflare R2 bucket name",
+    source: "database-or-environment",
   },
   CLOUDFLARE_ACCOUNT_ID: {
     level: "optional",
     feature: "Media Storage (R2)",
     description: "Cloudflare account ID for R2 endpoint",
+    source: "database-or-environment",
   },
   STRIPE_CONNECT_WEBHOOK_SECRET: {
     level: "optional",
     feature: "Affiliate Payouts",
     description: "Stripe Connect webhook signing secret",
+    source: "database-or-environment",
   },
   TWILIO_ACCOUNT_SID: {
     level: "optional",
     feature: "SMS",
     description: "Twilio account SID for SMS verification",
+    source: "database-or-environment",
   },
   TWILIO_AUTH_TOKEN: {
     level: "optional",
     feature: "SMS",
     description: "Twilio auth token",
+    source: "database-or-environment",
   },
   TWILIO_PHONE_NUMBER: {
     level: "optional",
     feature: "SMS",
     description: "Twilio sender phone number",
+    source: "database-or-environment",
   },
   PUBLIC_SITE_URL: {
     level: "optional",
@@ -105,6 +121,7 @@ const ENV_VARS: Record<string, EnvVarSpec> = {
   },
   IP_HASH_SALT: {
     level: "optional",
+    requiredInProduction: true,
     feature: "Security",
     description: "Salt for hashing IP addresses in analytics and fraud detection",
   },
@@ -119,26 +136,42 @@ export interface ValidationResult {
   ok: boolean;
   missing: { name: string; spec: EnvVarSpec }[];
   warnings: { name: string; spec: EnvVarSpec }[];
+  databaseBackedFallbacks: { name: string; spec: EnvVarSpec }[];
   disabledFeatures: string[];
 }
 
 export function validateEnv(): ValidationResult {
   const missing: ValidationResult["missing"] = [];
   const warnings: ValidationResult["warnings"] = [];
+  const databaseBackedFallbacks: ValidationResult["databaseBackedFallbacks"] = [];
   const disabledFeaturesSet = new Set<string>();
 
-  const FALLBACK_KEYS: Record<string, string[]> = {
+  const FALLBACK_KEYS: Record<string, FallbackSpec[]> = {
     STRIPE_SECRET_KEY: ["STRIPE_SECRET_KEY_LIVE", "STRIPE_SECRET_KEY_TEST"],
     STRIPE_PUBLISHABLE_KEY: ["STRIPE_PUBLISHABLE_KEY_LIVE", "STRIPE_PUBLISHABLE_KEY_TEST"],
     STRIPE_WEBHOOK_SECRET: ["STRIPE_LIVE_WEBHOOK_SECRET", "STRIPE_DEV_WEBHOOK_SECRET", "STRIPE_WEBHOOK_SECRET_LIVE"],
+    BETTER_AUTH_BASE_URL: [
+      "PUBLIC_SITE_URL",
+      "BASE_URL",
+      "APP_URL",
+      "E2E_BASE_URL",
+      "REPLIT_DOMAINS",
+      "REPLIT_DEV_DOMAIN",
+      ["REPL_SLUG", "REPL_OWNER"],
+    ],
+    CORS_ALLOWED_ORIGINS: ["PUBLIC_SITE_URL", "REPLIT_DEV_DOMAIN", "REPLIT_DEPLOYMENT_URL"],
   };
 
   for (const [name, spec] of Object.entries(ENV_VARS)) {
     const hasValue = !!process.env[name] ||
-      (FALLBACK_KEYS[name] || []).some((fb) => !!process.env[fb]);
+      (FALLBACK_KEYS[name] || []).some((fb) =>
+        Array.isArray(fb) ? fb.every((key) => !!process.env[key]) : !!process.env[fb]
+      );
     if (!hasValue) {
-      if (spec.level === "required") {
+      if (spec.level === "required" || (spec.requiredInProduction && process.env.NODE_ENV === "production")) {
         missing.push({ name, spec });
+      } else if (spec.source === "database-or-environment") {
+        databaseBackedFallbacks.push({ name, spec });
       } else {
         warnings.push({ name, spec });
         disabledFeaturesSet.add(spec.feature);
@@ -150,6 +183,7 @@ export function validateEnv(): ValidationResult {
     ok: missing.length === 0,
     missing,
     warnings,
+    databaseBackedFallbacks,
     disabledFeatures: [...disabledFeaturesSet],
   };
 }
