@@ -30,12 +30,12 @@ async function checkEnvVars() {
   ];
   
   const optional = [
-    { name: "STRIPE_SECRET_KEY", desc: "Stripe API secret key" },
-    { name: "STRIPE_PUBLISHABLE_KEY", desc: "Stripe publishable key" },
-    { name: "STRIPE_WEBHOOK_SECRET", desc: "Stripe webhook signing secret" },
-    { name: "SENDGRID_API_KEY", desc: "SendGrid API key (legacy)" },
-    { name: "MAILGUN_API_KEY", desc: "Mailgun API key" },
-    { name: "MAILGUN_DOMAIN", desc: "Mailgun domain" },
+    { name: "STRIPE_SECRET_KEY", aliases: ["STRIPE_SECRET_KEY_TEST", "STRIPE_SECRET_KEY_LIVE"], desc: "Stripe API secret key" },
+    { name: "STRIPE_PUBLISHABLE_KEY", aliases: ["STRIPE_PUBLISHABLE_KEY_TEST", "STRIPE_PUBLISHABLE_KEY_LIVE"], desc: "Stripe publishable key" },
+    { name: "STRIPE_WEBHOOK_SECRET", aliases: ["STRIPE_WEBHOOK_SECRET_TEST", "STRIPE_WEBHOOK_SECRET_LIVE"], desc: "Stripe webhook signing secret" },
+    { name: "SENDGRID_API_KEY", aliases: [], desc: "SendGrid API key (legacy)" },
+    { name: "MAILGUN_API_KEY", aliases: [], desc: "Mailgun API key" },
+    { name: "MAILGUN_DOMAIN", aliases: [], desc: "Mailgun domain" },
   ];
   
   for (const envVar of required) {
@@ -56,11 +56,12 @@ async function checkEnvVars() {
   }
   
   for (const envVar of optional) {
-    if (process.env[envVar.name]) {
+    const setName = [envVar.name, ...envVar.aliases].find((name) => process.env[name]);
+    if (setName) {
       log({
         name: envVar.name,
         status: "ok",
-        message: `Set (${envVar.desc})`,
+        message: `Set via ${setName} (${envVar.desc})`,
       });
     } else {
       log({
@@ -91,7 +92,12 @@ async function checkDatabase() {
       ORDER BY table_name
     `);
     
-    const tableCount = (tables as any).length || 0;
+    const tableRows = Array.isArray(tables)
+      ? tables
+      : Array.isArray((tables as any).rows)
+        ? (tables as any).rows
+        : [];
+    const tableCount = tableRows.length;
     log({
       name: "Database Tables",
       status: tableCount > 0 ? "ok" : "warning",
@@ -112,10 +118,15 @@ async function checkDatabase() {
 async function checkIntegrations() {
   console.log("\n🔌 Integrations\n");
   
-  const stripeConfigured = !!(
-    process.env.STRIPE_SECRET_KEY || 
-    process.env.STRIPE_PUBLISHABLE_KEY
-  );
+  const stripeSecretKey =
+    process.env.STRIPE_SECRET_KEY ||
+    process.env.STRIPE_SECRET_KEY_TEST ||
+    process.env.STRIPE_SECRET_KEY_LIVE;
+  const stripePublishableKey =
+    process.env.STRIPE_PUBLISHABLE_KEY ||
+    process.env.STRIPE_PUBLISHABLE_KEY_TEST ||
+    process.env.STRIPE_PUBLISHABLE_KEY_LIVE;
+  const stripeConfigured = !!(stripeSecretKey || stripePublishableKey);
   
   log({
     name: "Stripe",
@@ -124,8 +135,8 @@ async function checkIntegrations() {
     action: stripeConfigured ? undefined : "Configure in Admin > Settings > Integrations or set STRIPE_SECRET_KEY",
   });
   
-  if (stripeConfigured && process.env.STRIPE_SECRET_KEY) {
-    const isLive = process.env.STRIPE_SECRET_KEY.startsWith("sk_live_");
+  if (stripeConfigured && stripeSecretKey) {
+    const isLive = stripeSecretKey.startsWith("sk_live_");
     log({
       name: "Stripe Mode",
       status: "ok",
