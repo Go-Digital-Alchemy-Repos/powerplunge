@@ -16,7 +16,7 @@
     "test": "vitest run",
     "qa": "npm run typecheck && npm run build",
     "db:push": "drizzle-kit push",
-    "db:push:local": "tsx scripts/dev/withLocalBetterAuthEnv.ts npm run db:push",
+    "db:push:local": "tsx scripts/dev/withLocalBetterAuthEnv.ts npx tsx scripts/dev/runLocalDbPush.ts",
     "seed:dev-users": "NODE_ENV=development tsx scripts/seed-dev-users.ts",
     "seed:dev-users:local": "tsx scripts/dev/withLocalBetterAuthEnv.ts npm run seed:dev-users -- --confirm",
     "verify:seed-auth": "tsx scripts/db/verifySeedAuthFixtures.ts",
