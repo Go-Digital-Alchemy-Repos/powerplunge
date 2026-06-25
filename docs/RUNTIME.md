@@ -31,7 +31,7 @@ Precedence: Replit > CI > Codex Web > Codex Local > Local. The flags are mutuall
 
 Better Auth is the login surface in every runtime after the auth cutover. Admin routes use `/api/admin/auth/*`, customer routes use `/api/customer/auth/*`, and Better Auth core routes mount under `/api/auth/*` when `BETTER_AUTH_SECRET` is configured.
 
-Local and Codex testing should use seeded Better Auth accounts. Run commands through `npm run with:local-auth-env -- <command>` or use the local scripts `verify:seed-auth:local` and `test:e2e:local-auth`.
+Local and Codex testing should use seeded Better Auth accounts. Run commands through `npm run with:local-auth-env -- <command>` / `npm run with:test-env -- <command>`, or use the local scripts `verify:seed-auth:local` and `test:e2e:local`.
 
 ## Dotenv Loading
 
@@ -42,6 +42,8 @@ Local and Codex testing should use seeded Better Auth accounts. Run commands thr
 3. `.env.development` (development fallback values)
 
 Files are loaded with `override: false`, so earlier files take precedence. Dotenv loading applies to all non-Replit environments: Codex Web, Codex Local, Local, and CI. This repo treats `.env` as the normal active local/Codex env file. Local development should point `DATABASE_URL` at local Postgres by default. 1Password is the backup/source store for secret values. Neon env files are for explicit ops/deploy commands.
+
+The local test command wrapper additionally loads ignored `.env.test.local` when present. Generate it from an ignored `.env.test.local.template` with `npm run env:test:hydrate`; the committed `env.test.local.example` documents the required keys. Remote local-test databases must opt in with `LOCAL_TEST_DATABASE=true` and an exact `LOCAL_TEST_DATABASE_HOST` pin before guarded mutating commands run.
 
 ## Runtime Flags
 

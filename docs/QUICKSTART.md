@@ -7,6 +7,7 @@ This guide covers running Power Plunge outside Replit (Local, Codex Web, or Code
 - Node.js 20+
 - Local PostgreSQL database
 - npm
+- 1Password CLI (`op`) if hydrating `.env.test.local`
 
 ## 1. Clone and install
 
@@ -87,17 +88,27 @@ Local auth uses Better Auth seed accounts. For local Postgres defaults, run auth
 npm run with:local-auth-env -- <command>
 ```
 
+For automated local checks against an isolated Neon test branch, create an ignored 1Password template and hydrate the local test env:
+
+```bash
+cp env.test.local.example .env.test.local.template
+# Replace placeholders with local-test 1Password refs and host pin.
+npm run env:test:hydrate
+```
+
+The hydrated `.env.test.local` is git-ignored, written with mode `0600`, and is loaded by `with:local-auth-env` / `with:test-env` before command defaults are applied. Remote test databases must set `LOCAL_TEST_DATABASE=true` and `LOCAL_TEST_DATABASE_HOST` to the exact expected host; otherwise local mutating commands refuse to run.
+
 ## Seed test users (optional)
 
 ```bash
-npm run with:local-auth-env -- npm run seed:dev-users -- --confirm
+npm run seed:dev-users:local
 npm run verify:seed-auth:local
 ```
 
 ## Run Playwright E2E (optional)
 
 ```bash
-npm run test:e2e:local-auth
+npm run test:e2e:local
 ```
 
 Playwright base URL defaults:
@@ -116,11 +127,16 @@ You can override with `E2E_PORT` or `E2E_BASE_URL`.
 | `npm run dev:all` | Both together via concurrently |
 | `npm run setup:local` | Ensure placeholder assets exist |
 | `npm run db:push` | Push database schema |
+| `npm run db:push:local` | Push schema through local-test env guard |
 | `npm run seed:dev-users` | Seed test users |
+| `npm run seed:dev-users:local` | Seed test users through local-test env guard |
+| `npm run env:test:hydrate` | Hydrate ignored `.env.test.local` from `.env.test.local.template` |
+| `npm run check:local` | Run local DB push, seed checks, typecheck, doctor, schema verification, unit tests, CMS generator test, and Playwright |
 
 ## Troubleshooting
 
 - **Vite crashes on missing assets**: Run `npm run setup:local`
 - **Database connection fails**: Check your `DATABASE_URL` in `.env`
+- **Local test DB guard fails**: Hydrate `.env.test.local` and confirm `LOCAL_TEST_DATABASE_HOST` matches the database host exactly
 - **Port already in use**: Change `PORT` in `.env` or use different ports
 - **Auth errors**: Make sure `SESSION_SECRET` and `BETTER_AUTH_SECRET` are set, or run through `npm run with:local-auth-env -- <command>`.

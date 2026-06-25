@@ -128,7 +128,7 @@ Seed logic is idempotent: `ensureCmsDefaults()`, `seedDatabase()`, and section k
 | `SESSION_SECRET` | Secret used to sign session cookies |
 | `STRIPE_SECRET_KEY` | Stripe API secret key (also accepts `STRIPE_SECRET_KEY_LIVE` / `STRIPE_SECRET_KEY_TEST` as fallbacks) |
 | `STRIPE_PUBLISHABLE_KEY` | Stripe publishable key (also accepts `STRIPE_PUBLISHABLE_KEY_LIVE` / `STRIPE_PUBLISHABLE_KEY_TEST` as fallbacks) |
-| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signature verification |
+| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signature verification (doctor also accepts `STRIPE_WEBHOOK_SECRET_LIVE` / `STRIPE_WEBHOOK_SECRET_TEST`) |
 
 ### Optional
 
