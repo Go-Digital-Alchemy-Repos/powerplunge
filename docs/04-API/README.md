@@ -13,7 +13,7 @@ All API endpoints are prefixed with `/api/` and organized by access level:
 ## Authentication
 
 - **Customer Auth:** Better Auth session cookie
-- **Admin Auth:** Session-based with role checks (super_admin, admin, store_manager, fulfillment)
+- **Admin Auth:** Better Auth session cookie with route-specific role checks. `super_admin`, `admin`, and `store_manager` pass full-access routes; `fulfillment` is limited to `requireOrderAccess` routes.
 
 ## Admin Role Middleware
 
@@ -21,9 +21,9 @@ The following middleware functions control admin access levels. All are applied 
 
 | Middleware | Roles Granted Access | Purpose |
 |------------|---------------------|---------|
-| `requireAdmin` | super_admin, admin, store_manager, fulfillment | Basic admin authentication — verifies the session belongs to a valid admin user. All admin roles pass. |
-| `requireFullAccess` | super_admin, admin, store_manager | Full management access — excludes fulfillment. Used for settings, products, reports, etc. |
-| `requireOrderAccess` | super_admin, admin, store_manager, fulfillment | Order-related access — same as `requireFullAccess` but also includes fulfillment role. |
+| `requireAdmin` | super_admin, admin, store_manager | Full-access authentication — verifies the session belongs to a valid admin user and excludes fulfillment. |
+| `requireFullAccess` | super_admin, admin, store_manager | Alias for full management access. Used for settings, products, reports, etc. |
+| `requireOrderAccess` | super_admin, admin, store_manager, fulfillment | Order-related access — includes fulfillment role. |
 
 **Note:** `super_admin` and `admin` roles implicitly pass all role checks regardless of the allowed-roles list.
 

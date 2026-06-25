@@ -17,9 +17,10 @@ The admin panel uses a role-based access control system to restrict functionalit
 Defined in `server/src/middleware/auth.middleware.ts`:
 
 ### `requireAdmin`
-- Base authentication check
+- Full-access authentication check
 - Verifies admin session exists and admin user is in the database
-- Used for read-only endpoints accessible to all admin roles
+- Requires `super_admin`, `admin`, or `store_manager`
+- Fulfillment-safe order and shipment routes use `requireOrderAccess`
 
 ### `requireRole(...allowedRoles)`
 - Parameterized role check
@@ -40,7 +41,7 @@ Defined in `server/src/middleware/auth.middleware.ts`:
 
 | Feature | admin | store_manager | fulfillment |
 |---------|-------|--------------|-------------|
-| Dashboard | Yes | Yes | Yes |
+| Dashboard | Yes | Yes | No |
 | View Orders | Yes | Yes | Yes |
 | Update Order Status | Yes | Yes | Yes |
 | Create Manual Orders | Yes | Yes | No |

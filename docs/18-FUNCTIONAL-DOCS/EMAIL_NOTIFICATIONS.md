@@ -24,9 +24,9 @@ Required environment variables:
 
 - `sendOrderConfirmation(order)` - Sent after successful payment
 - `sendShippingNotification(order, trackingInfo)` - Sent when order ships
-- `sendMagicLinkEmail(email)` - Passwordless login link
-- `sendPasswordResetEmail(email, token)` - Password reset flow
 - `sendWelcomeEmail(customer)` - New account registration
+
+Customer and admin auth emails are sent by Better Auth through `server/src/auth/betterAuthEmail.ts`; customer-facing magic links and password resets no longer use custom `customer_magic_link_tokens` service methods.
 
 ## Email Types
 
@@ -38,8 +38,8 @@ Required environment variables:
 | Shipping Update | Order status changed to `shipped` | Tracking number, carrier link |
 | Delivery Confirmation | Order status changed to `delivered` | Delivery confirmation |
 | Welcome Email | New customer registration | Account details, getting started |
-| Magic Link | Customer requests passwordless login | One-time login URL |
-| Password Reset | Customer requests password reset | Reset URL with token |
+| Magic Link | Customer requests passwordless login | Better Auth one-time login URL |
+| Password Reset | Customer or admin requests password reset | Better Auth reset URL with token |
 
 ### Recovery Emails
 

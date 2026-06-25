@@ -13,11 +13,14 @@ const mocks = vi.hoisted(() => ({
   adminBetterAuth: {
     BETTER_AUTH_LEGACY_PASSWORD_PLACEHOLDER: "better-auth-managed",
     applyBetterAuthHeaders: vi.fn((res: any) => res.set("x-auth-headers-applied", "true")),
+    assertAdminBetterAuthReady: vi.fn(),
     attachAdminAuthContext: vi.fn(),
     changeAdminPassword: vi.fn(),
     deleteBetterAuthUserById: vi.fn(),
     getAdminAuthContext: vi.fn(),
     getBetterAuthUserByAdminId: vi.fn(),
+    requestAdminPasswordReset: vi.fn(),
+    resetAdminPasswordAndCreateSession: vi.fn(),
     serializeAdmin: vi.fn((admin: any) => ({
       id: admin.id,
       email: admin.email,
@@ -33,11 +36,16 @@ const mocks = vi.hoisted(() => ({
     signUpAdminAndCreateSession: vi.fn(),
     syncBetterAuthAdminUser: vi.fn(),
     updateBetterAuthAdminUser: vi.fn(),
+    validateAdminPasswordResetToken: vi.fn(),
   },
 }));
 
 vi.mock("../../../../storage", () => ({ storage: mocks.storage }));
 vi.mock("../../../auth/adminBetterAuth", () => mocks.adminBetterAuth);
+vi.mock("../../../middleware/rate-limiter", () => ({
+  authLimiter: (_req: any, _res: any, next: any) => next(),
+  passwordResetLimiter: (_req: any, _res: any, next: any) => next(),
+}));
 
 const router = (await import("../auth.routes")).default;
 
@@ -68,8 +76,11 @@ describe("admin auth routes", () => {
     }
     mocks.storage.deleteAdminUser.mockResolvedValue(undefined);
     mocks.adminBetterAuth.deleteBetterAuthUserById.mockResolvedValue(undefined);
+    mocks.adminBetterAuth.requestAdminPasswordReset.mockResolvedValue(undefined);
+    mocks.adminBetterAuth.resetAdminPasswordAndCreateSession.mockResolvedValue(undefined);
     mocks.adminBetterAuth.syncBetterAuthAdminUser.mockResolvedValue(undefined);
     mocks.adminBetterAuth.updateBetterAuthAdminUser.mockResolvedValue(undefined);
+    mocks.adminBetterAuth.validateAdminPasswordResetToken.mockResolvedValue(false);
     mocks.adminBetterAuth.applyBetterAuthHeaders.mockImplementation((res: any) => res.set("x-auth-headers-applied", "true"));
     mocks.adminBetterAuth.serializeAdmin.mockImplementation((admin: any) => ({
       id: admin.id,
@@ -197,5 +208,147 @@ describe("admin auth routes", () => {
     expect(response.status).toBe(201);
     expect(mocks.adminBetterAuth.updateBetterAuthAdminUser).toHaveBeenCalledWith("ba-1", admin);
     expect(mocks.adminBetterAuth.syncBetterAuthAdminUser).not.toHaveBeenCalled();
+  });
+
+  it("returns a generic forgot-password response without sending when no admin exists", async () => {
+    const app = await startApp();
+    server = app.server;
+    mocks.storage.getAdminUserByEmail.mockResolvedValue(null);
+
+    const response = await app.request("/api/admin/forgot-password", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "missing@example.com" }),
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body).toMatchObject({ success: true });
+    expect(mocks.adminBetterAuth.requestAdminPasswordReset).not.toHaveBeenCalled();
+  });
+
+  it("does not fail forgot-password for legacy-only admins without a linked Better Auth user", async () => {
+    const app = await startApp();
+    server = app.server;
+    mocks.storage.getAdminUserByEmail.mockResolvedValue({
+      id: "admin-legacy",
+      email: "legacy@example.com",
+      name: "Legacy Admin",
+      role: "admin",
+    });
+    mocks.adminBetterAuth.getBetterAuthUserByAdminId.mockResolvedValue(null);
+
+    const response = await app.request("/api/admin/forgot-password", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "legacy@example.com" }),
+    });
+
+    expect(response.status).toBe(200);
+    expect(mocks.adminBetterAuth.syncBetterAuthAdminUser).not.toHaveBeenCalled();
+    expect(mocks.adminBetterAuth.requestAdminPasswordReset).not.toHaveBeenCalled();
+  });
+
+  it("requests a Better Auth reset for linked admins", async () => {
+    const app = await startApp();
+    server = app.server;
+    const admin = {
+      id: "admin-1",
+      email: "admin@example.com",
+      name: "Admin",
+      role: "admin",
+    };
+    mocks.storage.getAdminUserByEmail.mockResolvedValue(admin);
+    mocks.adminBetterAuth.getBetterAuthUserByAdminId.mockResolvedValue({ id: "ba-1", adminUserId: "admin-1" });
+
+    const response = await app.request("/api/admin/forgot-password", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "ADMIN@example.com" }),
+    });
+
+    expect(response.status).toBe(200);
+    expect(mocks.adminBetterAuth.syncBetterAuthAdminUser).toHaveBeenCalledWith(admin);
+    expect(mocks.adminBetterAuth.requestAdminPasswordReset).toHaveBeenCalledWith("admin@example.com");
+  });
+
+  it("keeps forgot-password response generic when linked admin reset delivery fails", async () => {
+    const app = await startApp();
+    server = app.server;
+    const admin = {
+      id: "admin-1",
+      email: "admin@example.com",
+      name: "Admin",
+      role: "admin",
+    };
+    mocks.storage.getAdminUserByEmail.mockResolvedValue(admin);
+    mocks.adminBetterAuth.getBetterAuthUserByAdminId.mockResolvedValue({ id: "ba-1", adminUserId: "admin-1" });
+    mocks.adminBetterAuth.requestAdminPasswordReset.mockRejectedValue(new Error("email down"));
+
+    const response = await app.request("/api/admin/forgot-password", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "admin@example.com" }),
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body).toMatchObject({ success: true });
+  });
+
+  it("validates admin reset tokens through the admin Better Auth guard", async () => {
+    const app = await startApp();
+    server = app.server;
+    mocks.adminBetterAuth.validateAdminPasswordResetToken.mockResolvedValue(true);
+
+    const response = await app.request("/api/admin/validate-reset-token?token=reset-token");
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body).toEqual({ valid: true });
+    expect(mocks.adminBetterAuth.validateAdminPasswordResetToken).toHaveBeenCalledWith("reset-token");
+  });
+
+  it("resets an admin password and returns the serialized admin", async () => {
+    const app = await startApp();
+    server = app.server;
+    const admin = {
+      id: "admin-1",
+      email: "admin@example.com",
+      name: "Admin",
+      role: "admin",
+    };
+    mocks.adminBetterAuth.resetAdminPasswordAndCreateSession.mockResolvedValue({
+      admin,
+      signIn: { response: { user: { id: "ba-1" } }, headers: new Headers() },
+    });
+
+    const response = await app.request("/api/admin/reset-password", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ token: "reset-token", password: "newpass123" }),
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(mocks.adminBetterAuth.resetAdminPasswordAndCreateSession).toHaveBeenCalledWith(expect.anything(), {
+      token: "reset-token",
+      newPassword: "newpass123",
+    });
+    expect(body).toMatchObject({ success: true, admin: { id: "admin-1", email: "admin@example.com" } });
+  });
+
+  it("rejects invalid admin reset payloads", async () => {
+    const app = await startApp();
+    server = app.server;
+
+    const response = await app.request("/api/admin/reset-password", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ token: "reset-token", password: "short" }),
+    });
+
+    expect(response.status).toBe(400);
+    expect(mocks.adminBetterAuth.resetAdminPasswordAndCreateSession).not.toHaveBeenCalled();
   });
 });

@@ -106,7 +106,7 @@ Performance analytics, affiliate overlap detection, stacking rules, auto-expirat
 
 Key table groups:
 - **Products & Orders:** `products`, `orders`, `order_items`, `categories`
-- **Customers:** `customers`, `customer_tags`, `customer_notes`, `customer_magic_link_tokens`
+- **Customers:** `customers`, `customer_tags`, `customer_notes`
 - **Affiliates:** `affiliates`, `affiliate_clicks`, `affiliate_referrals`, `affiliate_payouts`, `affiliate_agreements`, `affiliate_invites`, `affiliate_payout_accounts`, `affiliate_settings`
 - **CMS:** `pages`, `saved_sections`, `site_settings`, `cms_v2_posts`, `cms_v2_menus`
 - **Coupons:** `coupons`, `coupon_redemptions`, `coupon_stacking_rules`
@@ -129,13 +129,12 @@ Seed logic is idempotent: `ensureCmsDefaults()`, `seedDatabase()`, and section k
 | `STRIPE_SECRET_KEY` | Stripe API secret key (also accepts `STRIPE_SECRET_KEY_LIVE` / `STRIPE_SECRET_KEY_TEST` as fallbacks) |
 | `STRIPE_PUBLISHABLE_KEY` | Stripe publishable key (also accepts `STRIPE_PUBLISHABLE_KEY_LIVE` / `STRIPE_PUBLISHABLE_KEY_TEST` as fallbacks) |
 | `STRIPE_WEBHOOK_SECRET` | Stripe webhook signature verification (doctor also accepts `STRIPE_WEBHOOK_SECRET_LIVE` / `STRIPE_WEBHOOK_SECRET_TEST`) |
+| `BETTER_AUTH_SECRET` | Better Auth session secret |
 
 ### Optional
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `BETTER_AUTH_SECRET` | required | Better Auth session secret |
-| `BETTER_AUTH_SECRET` | — | Session encryption for Better Auth |
 | `MAILGUN_API_KEY` | — | Mailgun API key for transactional emails |
 | `MAILGUN_DOMAIN` | — | Mailgun sending domain |
 | `CLOUDFLARE_R2_*` | — | R2 object storage credentials |

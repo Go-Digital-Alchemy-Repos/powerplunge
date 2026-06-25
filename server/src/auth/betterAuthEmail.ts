@@ -69,14 +69,26 @@ async function sendAuthLinkEmail({
   }
 }
 
+function getCallbackPath(parsed: URL): string | null {
+  const callbackURL = parsed.searchParams.get("callbackURL");
+  if (!callbackURL) return null;
+
+  try {
+    return new URL(callbackURL, parsed.origin).pathname;
+  } catch {
+    return null;
+  }
+}
+
 function normalizeAuthEmailUrl(url: string): string {
   try {
     const parsed = new URL(url);
-    const resetMatch = parsed.pathname.match(/\/reset-password\/([^/]+)$/);
+    const resetMatch = parsed.pathname.match(/(\/(?:admin\/)?reset-password)\/([^/]+)$/);
     if (resetMatch) {
-      parsed.pathname = "/reset-password";
+      const callbackPath = getCallbackPath(parsed);
+      parsed.pathname = callbackPath === "/admin/reset-password" ? callbackPath : resetMatch[1];
       parsed.search = "";
-      parsed.searchParams.set("token", resetMatch[1]);
+      parsed.searchParams.set("token", resetMatch[2]);
     }
     return parsed.toString();
   } catch {

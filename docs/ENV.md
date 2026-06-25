@@ -16,6 +16,7 @@ These must be set for the application to function. Production will not start wit
 | `STRIPE_SECRET_KEY` | Payments | Stripe API secret key | `sk_live_...` or `sk_test_...` |
 | `STRIPE_PUBLISHABLE_KEY` | Payments | Stripe publishable key (exposed to client) | `pk_live_...` or `pk_test_...` |
 | `STRIPE_WEBHOOK_SECRET` | Payments | Stripe webhook signing secret | `whsec_...` |
+| `BETTER_AUTH_SECRET` | Better Auth | Secret for Better Auth sessions. Required before auth routes register. | `a-random-32-byte-string` |
 
 ## Optional Variables
 
@@ -34,7 +35,6 @@ Missing optional vars disable the associated feature with a warning at startup.
 | `TWILIO_ACCOUNT_SID` | SMS | Twilio account SID for SMS verification | `AC...` |
 | `TWILIO_AUTH_TOKEN` | SMS | Twilio auth token | `...` |
 | `TWILIO_PHONE_NUMBER` | SMS | Twilio sender phone number | `+1234567890` |
-| `BETTER_AUTH_SECRET` | Better Auth | Secret for Better Auth sessions. Required for auth routes. | `a-random-32-byte-string` |
 | `BETTER_AUTH_BASE_URL` | Better Auth | Canonical app origin for Better Auth callbacks. Use origin only, no `/api/auth` suffix. Falls back to `PUBLIC_SITE_URL`, `BASE_URL`, `APP_URL`, Replit domains, or local dev URL. | `https://www.powerplunge.com` |
 | `IP_HASH_SALT` | Security | Salt for hashing IP addresses in analytics and fraud detection | `random-salt-string` |
 | `CORS_ALLOWED_ORIGINS` | Security | Comma-separated additional allowed CORS origins in production | `https://admin.powerplunge.com,https://staging.powerplunge.com` |
@@ -93,7 +93,7 @@ When `.env.test.local` points at a remote isolated Neon test branch, set `LOCAL_
 
 Power Plunge currently uses `better-auth@1.4.18` from the lockfile. This migration keeps the locked version to avoid broad API churn during the foundation issue.
 
-Better Auth API routes mount under `/api/auth/*` when `BETTER_AUTH_SECRET` is set. The client helper points at the same origin and uses Better Auth's default `/api/auth` base path.
+Better Auth API routes mount under `/api/auth/*`; startup asserts that `BETTER_AUTH_SECRET` is present before those routes register. The client helper points at the same origin and uses Better Auth's default `/api/auth` base path.
 
 Canonical Better Auth roles preserve existing app spelling: `customer`, `super_admin`, `admin`, `store_manager`, and `fulfillment`. Legacy `superadmin` is normalized to `super_admin` at Better Auth boundaries only for compatibility.
 

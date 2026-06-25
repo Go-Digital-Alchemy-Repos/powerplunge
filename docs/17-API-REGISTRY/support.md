@@ -13,7 +13,7 @@
 | Scope | Auth Required | Roles Allowed |
 |-------|---------------|---------------|
 | Customer endpoints | Better Auth customer session cookie | Authenticated customers |
-| Admin endpoints | Admin session cookie | `admin`, `store_manager`, `fulfillment` (via `requireAdmin`) |
+| Admin endpoints | Admin session cookie | `super_admin`, `admin`, `store_manager` (via `requireAdmin`) |
 | Public endpoints | None (rate-limited) | Anyone |
 | Webhook endpoints | Mailgun HMAC signature | Mailgun service |
 

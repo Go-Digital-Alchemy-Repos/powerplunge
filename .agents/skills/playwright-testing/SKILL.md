@@ -81,15 +81,15 @@ The Playwright config has `webServer.reuseExistingServer: true`, so it will use 
 
 ### 3. Local/Codex auth mode
 
-For local/Codex E2E runs, enable dev auth so admin session routes are available:
+For local/Codex E2E runs, use seeded Better Auth accounts and run through the local auth env wrapper when an ignored `.env.test.local` is available:
 
 ```bash
-ENABLE_DEV_AUTH=true npx playwright test
+npm run test:e2e:local -- <playwright args>
 ```
 
 ## Auth Architecture
 
-Three login flows exist, each producing a different session mechanism. For the specific selectors used in each flow, see **Key data-testid Selectors** below.
+Three login flows exist, all backed by Better Auth cookie sessions. For the specific selectors used in each flow, see **Key data-testid Selectors** below.
 
 ### Admin login (cookie-based)
 
@@ -98,11 +98,11 @@ Three login flows exist, each producing a different session mechanism. For the s
 - Session cookie is set automatically
 - Redirects to `/admin/dashboard`
 
-### Customer login (token-based)
+### Customer login (cookie-based)
 
 - Page: `/login`
 - POST `/api/customer/auth/login` with `{ email, password }`
-- Returns a Bearer token stored in localStorage
+- Better Auth session cookie is set automatically
 
 ### Affiliate login
 
@@ -116,8 +116,8 @@ The fixture-based `test` in `e2e/fixtures.ts` creates new browser contexts with 
 
 Files saved:
 - `e2e/.auth/admin.json` — admin session cookie
-- `e2e/.auth/customer.json` — customer Bearer token in localStorage
-- `e2e/.auth/affiliate.json` — affiliate Bearer token in localStorage
+- `e2e/.auth/customer.json` — customer session cookie
+- `e2e/.auth/affiliate.json` — affiliate customer session cookie
 
 ## Using Fixtures
 

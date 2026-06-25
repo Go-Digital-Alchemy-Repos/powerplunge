@@ -5,7 +5,7 @@ import { and, eq } from "drizzle-orm";
 import { db } from "../../db";
 import { storage } from "../../storage";
 import { adminUsers, type AdminUser } from "@shared/schema";
-import { betterAuthAccount, betterAuthUser } from "@shared/models/better-auth";
+import { betterAuthAccount, betterAuthUser, betterAuthVerification } from "@shared/models/better-auth";
 import { normalizeBetterAuthRole, isBetterAuthAdminRole, type BetterAuthRole } from "@shared/auth/roles";
 import { auth } from "./betterAuth";
 
@@ -161,6 +161,82 @@ export async function changeAdminPassword(req: Request, input: {
     },
     returnHeaders: true,
   })) as BetterAuthEndpointResult<{ token: string | null; user: unknown }>;
+}
+
+export async function requestAdminPasswordReset(email: string) {
+  assertAdminBetterAuthReady();
+
+  return auth.api.requestPasswordReset({
+    body: {
+      email: email.trim().toLowerCase(),
+      redirectTo: "/admin/reset-password",
+    },
+  });
+}
+
+async function getAdminForPasswordResetToken(token: string) {
+  const [verification] = await db
+    .select()
+    .from(betterAuthVerification)
+    .where(eq(betterAuthVerification.identifier, `reset-password:${token}`))
+    .limit(1);
+
+  if (!verification || verification.expiresAt < new Date()) return null;
+
+  const [user] = await db
+    .select()
+    .from(betterAuthUser)
+    .where(eq(betterAuthUser.id, verification.value))
+    .limit(1);
+
+  if (!user?.adminUserId) return null;
+
+  const admin = await storage.getAdminUser(user.adminUserId);
+  if (!admin) return null;
+
+  const role = normalizeBetterAuthRole(admin.role);
+  if (!isBetterAuthAdminRole(role)) return null;
+
+  return { user, admin };
+}
+
+export async function validateAdminPasswordResetToken(token: string) {
+  assertAdminBetterAuthReady();
+  return !!(await getAdminForPasswordResetToken(token));
+}
+
+export async function resetAdminPasswordAndCreateSession(res: Response, input: {
+  token: string;
+  newPassword: string;
+}) {
+  assertAdminBetterAuthReady();
+
+  const context = await getAdminForPasswordResetToken(input.token);
+  if (!context) {
+    throw Object.assign(new Error("Invalid or expired reset link"), { statusCode: 400 });
+  }
+
+  await auth.api.resetPassword({
+    body: {
+      token: input.token,
+      newPassword: input.newPassword,
+    },
+  });
+
+  await storage.updateAdminUser(context.admin.id, {
+    password: BETTER_AUTH_LEGACY_PASSWORD_PLACEHOLDER,
+  });
+
+  const signIn = await signInAdminWithPassword({
+    email: context.user.email,
+    password: input.newPassword,
+  });
+  applyBetterAuthHeaders(res, signIn.headers);
+
+  return {
+    admin: context.admin,
+    signIn,
+  };
 }
 
 export async function syncBetterAuthAdminUser(admin: AdminUser, password?: string) {

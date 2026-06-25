@@ -1680,7 +1680,8 @@ export const insertEmailLogSchema = createInsertSchema(emailLogs).omit({ id: tru
 export type InsertEmailLog = z.infer<typeof insertEmailLogSchema>;
 export type EmailLog = typeof emailLogs.$inferSelect;
 
-// Customer Magic Link Tokens (for passwordless order tracking login)
+// Legacy customer magic-link tokens retained until an explicit database cleanup
+// migration drops the table. Current auth flows use Better Auth verification rows.
 export const customerMagicLinkTokens = pgTable("customer_magic_link_tokens", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   customerId: varchar("customer_id").notNull().references(() => customers.id),

@@ -1,6 +1,10 @@
 import { Router } from "express";
 import { storage } from "../../../storage";
-import bcrypt from "bcryptjs";
+import {
+  BETTER_AUTH_CUSTOMER_PASSWORD_PLACEHOLDER,
+  requestCustomerPasswordReset,
+  syncBetterAuthCustomerUser,
+} from "../../auth/customerBetterAuth";
 
 const router = Router();
 
@@ -15,11 +19,10 @@ router.get("/:customerId/notes", async (req, res) => {
 
 router.post("/:customerId/notes", async (req: any, res) => {
   try {
-    const admin = await storage.getAdminUser(req.session.adminId!);
     const note = await storage.createCustomerNote({
       customerId: req.params.customerId,
       note: req.body.note,
-      createdBy: req.session.adminId,
+      createdBy: req.adminId,
     });
     res.json(note);
   } catch (error) {
@@ -63,7 +66,7 @@ router.put("/:customerId/tags", async (req: any, res) => {
     if (!Array.isArray(tags)) {
       return res.status(400).json({ message: "Tags must be an array" });
     }
-    const adminId = req.session?.adminId;
+    const adminId = req.adminId;
     const updatedTags = await storage.setCustomerTags(req.params.customerId, tags, adminId);
     
     await storage.createAdminAuditLog({
@@ -119,7 +122,7 @@ router.patch("/:customerId", async (req: any, res) => {
 
     const updated = await storage.updateCustomer(req.params.customerId, updateData);
 
-    const adminId = req.session?.adminId;
+    const adminId = req.adminId;
     await storage.createAdminAuditLog({
       adminId,
       action: "update_customer_profile",
@@ -165,7 +168,7 @@ router.post("/:customerId/disable", async (req: any, res) => {
       return res.status(404).json({ message: "Customer not found" });
     }
     
-    const adminId = req.session?.adminId;
+    const adminId = req.adminId;
     await storage.updateCustomer(req.params.customerId, { 
       isDisabled: true 
     } as any);
@@ -192,7 +195,7 @@ router.post("/:customerId/enable", async (req: any, res) => {
       return res.status(404).json({ message: "Customer not found" });
     }
     
-    const adminId = req.session?.adminId;
+    const adminId = req.adminId;
     await storage.updateCustomer(req.params.customerId, { 
       isDisabled: false 
     } as any);
@@ -219,7 +222,9 @@ router.post("/:customerId/send-password-reset", async (req: any, res) => {
       return res.status(404).json({ message: "Customer not found" });
     }
     
-    const adminId = req.session?.adminId;
+    const adminId = req.adminId;
+    await syncBetterAuthCustomerUser(customer);
+    await requestCustomerPasswordReset(customer.email);
     
     await storage.createAdminAuditLog({
       adminId,
@@ -248,12 +253,12 @@ router.post("/:customerId/reset-password", async (req: any, res) => {
       return res.status(404).json({ message: "Customer not found" });
     }
     
-    const adminId = req.session?.adminId;
+    const adminId = req.adminId;
     
-    const hashedPassword = await bcrypt.hash(password, 10);
-    
+    await syncBetterAuthCustomerUser(customer, password);
+
     await storage.updateCustomer(req.params.customerId, {
-      passwordHash: hashedPassword,
+      passwordHash: BETTER_AUTH_CUSTOMER_PASSWORD_PLACEHOLDER,
     });
     
     if (adminId) {
@@ -285,7 +290,7 @@ router.post("/:customerId/force-logout", async (req: any, res) => {
       return res.status(404).json({ message: "Customer not found" });
     }
     
-    const adminId = req.session?.adminId;
+    const adminId = req.adminId;
     
     await storage.updateCustomer(req.params.customerId, {
       sessionInvalidatedAt: new Date(),

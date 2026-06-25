@@ -168,7 +168,7 @@ router.patch("/:id", async (req: Request, res: Response) => {
 
 router.delete("/:id", async (req: any, res: Response) => {
   try {
-    if (req.params.id === req.adminUser?.id || req.params.id === req.session?.adminId) {
+    if (req.params.id === req.adminUser?.id || req.params.id === req.adminId) {
       return res.status(400).json({ message: "Cannot delete your own account" });
     }
 
