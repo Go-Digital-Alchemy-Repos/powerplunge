@@ -7,10 +7,10 @@ import {
   BETTER_AUTH_LEGACY_PASSWORD_PLACEHOLDER,
   applyBetterAuthHeaders,
   assertAdminBetterAuthReady,
-  attachAdminAuthContext,
+  attachAdminRequestAuth,
   changeAdminPassword,
   deleteBetterAuthUserById,
-  getAdminAuthContext,
+  getAttachedAdminAuthContext,
   getBetterAuthUserByAdminId,
   requestAdminPasswordReset,
   resetAdminPasswordAndCreateSession,
@@ -24,8 +24,6 @@ import {
 } from "../../auth/adminBetterAuth";
 
 const router = Router();
-
-type SerializedAdmin = ReturnType<typeof serializeAdmin>;
 
 function splitName(name: string) {
   const parts = name.trim().split(/\s+/);
@@ -42,14 +40,6 @@ function handleAuthConfigError(res: any, error: unknown) {
     return true;
   }
   return false;
-}
-
-function attachSessionCompat(req: any, admin: SerializedAdmin) {
-  if (!req.session) return;
-  req.session.adminId = admin.id;
-  req.session.adminRole = admin.role;
-  req.session.adminEmail = admin.email;
-  req.session.adminUser = admin;
 }
 
 router.get("/check-setup", async (_req, res) => {
@@ -96,7 +86,7 @@ router.post("/setup", authLimiter, async (req, res) => {
     createdBetterAuthUserId = signUp.response.user.id;
     await updateBetterAuthAdminUser(createdBetterAuthUserId, admin);
     applyBetterAuthHeaders(res, signUp.headers);
-    attachSessionCompat(req, serializeAdmin(admin));
+    attachAdminRequestAuth(req, serializeAdmin(admin));
 
     res.status(201).json({
       success: true,
@@ -149,7 +139,7 @@ router.post("/login", authLimiter, async (req, res) => {
 
     await syncBetterAuthAdminUser(admin);
     applyBetterAuthHeaders(res, signIn.headers);
-    attachSessionCompat(req, serializeAdmin(admin));
+    attachAdminRequestAuth(req, serializeAdmin(admin));
 
     res.json({
       success: true,
@@ -182,12 +172,11 @@ router.post("/logout", async (req, res) => {
 
 router.get("/me", async (req, res) => {
   try {
-    const context = await getAdminAuthContext(req);
+    const context = await getAttachedAdminAuthContext(req);
     if (!context) {
       return res.status(401).json({ message: "Not authenticated" });
     }
 
-    attachAdminAuthContext(req, context);
     res.json(serializeAdmin(context.admin));
   } catch (error) {
     if (handleAuthConfigError(res, error)) return;
@@ -197,10 +186,9 @@ router.get("/me", async (req, res) => {
 
 router.get("/optional-me", async (req, res) => {
   try {
-    const context = await getAdminAuthContext(req);
+    const context = await getAttachedAdminAuthContext(req);
     if (!context) return res.json(null);
 
-    attachAdminAuthContext(req, context);
     res.json(serializeAdmin(context.admin));
   } catch (error) {
     if (handleAuthConfigError(res, error)) return;
@@ -210,12 +198,11 @@ router.get("/optional-me", async (req, res) => {
 
 router.get("/me/profile", async (req, res) => {
   try {
-    const context = await getAdminAuthContext(req);
+    const context = await getAttachedAdminAuthContext(req);
     if (!context) {
       return res.status(401).json({ message: "Not authenticated" });
     }
 
-    attachAdminAuthContext(req, context);
     const admin = context.admin;
     res.json({
       id: admin.id,
@@ -242,12 +229,11 @@ const adminProfileSchema = z.object({
 
 router.patch("/me/profile", async (req, res) => {
   try {
-    const context = await getAdminAuthContext(req);
+    const context = await getAttachedAdminAuthContext(req);
     if (!context) {
       return res.status(401).json({ message: "Not authenticated" });
     }
 
-    attachAdminAuthContext(req, context);
     const data = adminProfileSchema.parse(req.body);
     const updateData: any = {};
     if (data.firstName !== undefined) updateData.firstName = data.firstName;
@@ -328,12 +314,11 @@ async function deliverAdminPasswordReset(email: string) {
 
 router.post("/me/change-password", async (req, res) => {
   try {
-    const context = await getAdminAuthContext(req);
+    const context = await getAttachedAdminAuthContext(req);
     if (!context) {
       return res.status(401).json({ message: "Not authenticated" });
     }
 
-    attachAdminAuthContext(req, context);
     const { currentPassword, newPassword } = adminChangePasswordSchema.parse(req.body);
     const result = await changeAdminPassword(req, { currentPassword, newPassword });
     applyBetterAuthHeaders(res, result.headers);

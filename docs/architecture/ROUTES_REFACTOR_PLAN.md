@@ -139,7 +139,6 @@ server/src/middleware/
 ├── index.ts                   (barrel exports)
 ├── rate-limiter.ts            (per-endpoint rate limiting)
 ├── request-logger.middleware.ts (correlation IDs, request logging)
-├── requireBetterAuth.ts       (Better Auth RBAC)
 └── server-timing.middleware.ts (dev-only slow endpoint detection)
 ```
 

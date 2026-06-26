@@ -11,15 +11,43 @@ import { auth } from "./betterAuth";
 
 export const BETTER_AUTH_LEGACY_PASSWORD_PLACEHOLDER = "better-auth-managed";
 
+type AdminBetterAuthSession = NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>;
+type SerializedAdminUser = ReturnType<typeof serializeAdmin>;
+
 export interface AdminAuthContext {
-  betterAuthSession: Awaited<ReturnType<typeof auth.api.getSession>>;
+  betterAuthSession: AdminBetterAuthSession;
   admin: AdminUser;
   role: BetterAuthRole;
+}
+
+export interface AdminRequestAuth {
+  adminId: string;
+  adminUser: SerializedAdminUser;
+  role: BetterAuthRole;
+  betterAuthSession?: AdminBetterAuthSession;
 }
 
 interface BetterAuthEndpointResult<T> {
   response: T;
   headers: Headers;
+}
+
+declare module "express-session" {
+  interface SessionData {
+    adminId?: string;
+    adminRole?: string;
+    adminEmail?: string;
+    adminUser?: SerializedAdminUser;
+  }
+}
+
+declare module "express-serve-static-core" {
+  interface Request {
+    adminAuth?: AdminRequestAuth;
+    adminId?: string;
+    adminUser?: SerializedAdminUser;
+    betterAuthSession?: AdminBetterAuthSession;
+  }
 }
 
 export function serializeAdmin(admin: AdminUser) {
@@ -80,20 +108,46 @@ export async function getAdminAuthContext(req: Request): Promise<AdminAuthContex
   };
 }
 
-export function attachAdminAuthContext(req: Request, context: AdminAuthContext) {
-  const admin = serializeAdmin(context.admin);
-  req.betterAuthSession = context.betterAuthSession!;
-  req.adminId = admin.id;
-  req.adminUser = admin;
+export function attachAdminRequestAuth(
+  req: Request,
+  admin: SerializedAdminUser,
+  options: { betterAuthSession?: AdminBetterAuthSession } = {},
+) {
+  const requestAuth: AdminRequestAuth = {
+    adminId: admin.id,
+    adminUser: admin,
+    role: admin.role,
+    betterAuthSession: options.betterAuthSession,
+  };
+
+  req.adminAuth = requestAuth;
+  req.adminId = requestAuth.adminId;
+  req.adminUser = requestAuth.adminUser;
+  if (options.betterAuthSession) {
+    req.betterAuthSession = options.betterAuthSession;
+  }
 
   // Temporary compatibility for older admin route modules that still read
   // express-session fields for audit IDs/emails after auth has passed.
   if (req.session) {
-    req.session.adminId = admin.id;
-    req.session.adminRole = admin.role;
-    req.session.adminEmail = admin.email;
-    req.session.adminUser = admin;
+    req.session.adminId = requestAuth.adminId;
+    req.session.adminRole = requestAuth.role;
+    req.session.adminEmail = requestAuth.adminUser.email;
+    req.session.adminUser = requestAuth.adminUser;
   }
+}
+
+export function attachAdminAuthContext(req: Request, context: AdminAuthContext) {
+  attachAdminRequestAuth(req, serializeAdmin(context.admin), {
+    betterAuthSession: context.betterAuthSession,
+  });
+}
+
+export async function getAttachedAdminAuthContext(req: Request): Promise<AdminAuthContext | null> {
+  const context = await getAdminAuthContext(req);
+  if (!context) return null;
+  attachAdminAuthContext(req, context);
+  return context;
 }
 
 export async function signUpAdminAndCreateSession(input: {
