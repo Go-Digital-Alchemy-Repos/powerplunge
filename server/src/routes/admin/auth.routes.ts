@@ -2,21 +2,25 @@ import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { storage } from "../../../storage";
-import { authLimiter } from "../../middleware/rate-limiter";
+import { authLimiter, passwordResetLimiter } from "../../middleware/rate-limiter";
 import {
   BETTER_AUTH_LEGACY_PASSWORD_PLACEHOLDER,
   applyBetterAuthHeaders,
+  assertAdminBetterAuthReady,
   attachAdminAuthContext,
   changeAdminPassword,
   deleteBetterAuthUserById,
   getAdminAuthContext,
   getBetterAuthUserByAdminId,
+  requestAdminPasswordReset,
+  resetAdminPasswordAndCreateSession,
   serializeAdmin,
   signInAdminWithPassword,
   signOutAdmin,
   signUpAdminAndCreateSession,
   syncBetterAuthAdminUser,
   updateBetterAuthAdminUser,
+  validateAdminPasswordResetToken,
 } from "../../auth/adminBetterAuth";
 
 const router = Router();
@@ -276,6 +280,52 @@ const adminChangePasswordSchema = z.object({
   newPassword: z.string().min(8, "New password must be at least 8 characters"),
 });
 
+const adminForgotPasswordSchema = z.object({
+  email: z.string().trim().email(),
+});
+
+const adminResetPasswordSchema = z.object({
+  token: z.string().min(1),
+  password: z.string().min(8, "Password must be at least 8 characters").optional(),
+  newPassword: z.string().min(8, "Password must be at least 8 characters").optional(),
+}).refine((data) => data.password || data.newPassword, {
+  message: "Password must be at least 8 characters",
+  path: ["password"],
+});
+
+const adminValidateResetTokenSchema = z.object({
+  token: z.string().min(1),
+});
+
+const ADMIN_FORGOT_PASSWORD_RESPONSE_FLOOR_MS = 250;
+const ADMIN_FORGOT_PASSWORD_RESPONSE_JITTER_MS = 100;
+
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function waitForAdminForgotPasswordResponseFloor(startedAt: number) {
+  const targetMs = ADMIN_FORGOT_PASSWORD_RESPONSE_FLOOR_MS +
+    Math.floor(Math.random() * ADMIN_FORGOT_PASSWORD_RESPONSE_JITTER_MS);
+  const elapsedMs = Date.now() - startedAt;
+  if (elapsedMs < targetMs) {
+    await delay(targetMs - elapsedMs);
+  }
+}
+
+async function deliverAdminPasswordReset(email: string) {
+  try {
+    const admin = await storage.getAdminUserByEmail(email.toLowerCase());
+    const linkedUser = admin ? await getBetterAuthUserByAdminId(admin.id) : null;
+    if (!admin || !linkedUser) return;
+
+    await syncBetterAuthAdminUser(admin);
+    await requestAdminPasswordReset(admin.email);
+  } catch (error) {
+    console.error("Admin forgot password delivery failed:", error);
+  }
+}
+
 router.post("/me/change-password", async (req, res) => {
   try {
     const context = await getAdminAuthContext(req);
@@ -296,6 +346,63 @@ router.post("/me/change-password", async (req, res) => {
     res.status(error?.statusCode === 400 ? 400 : 500).json({
       message: error?.statusCode === 400 ? "Current password is incorrect" : "Failed to change password",
     });
+  }
+});
+
+router.post("/forgot-password", passwordResetLimiter, async (req, res) => {
+  const startedAt = Date.now();
+
+  try {
+    const { email } = adminForgotPasswordSchema.parse(req.body);
+    assertAdminBetterAuthReady();
+    void deliverAdminPasswordReset(email);
+    await waitForAdminForgotPasswordResponseFloor(startedAt);
+
+    res.json({
+      success: true,
+      message: "If an admin account exists with this email, you will receive a password reset link shortly.",
+    });
+  } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ message: "Invalid email address" });
+    }
+    if (handleAuthConfigError(res, error)) return;
+    res.status(500).json({ message: "Failed to process password reset request" });
+  }
+});
+
+router.get("/validate-reset-token", async (req, res) => {
+  try {
+    const { token } = adminValidateResetTokenSchema.parse(req.query);
+    res.json({ valid: await validateAdminPasswordResetToken(token) });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.json({ valid: false });
+    }
+    if (handleAuthConfigError(res, error)) return;
+    res.json({ valid: false });
+  }
+});
+
+router.post("/reset-password", passwordResetLimiter, async (req, res) => {
+  try {
+    const parsed = adminResetPasswordSchema.parse(req.body);
+    const { admin } = await resetAdminPasswordAndCreateSession(res, {
+      token: parsed.token,
+      newPassword: parsed.newPassword || parsed.password!,
+    });
+
+    res.json({
+      success: true,
+      message: "Password has been reset successfully",
+      admin: serializeAdmin(admin),
+    });
+  } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ message: error.errors[0].message });
+    }
+    if (handleAuthConfigError(res, error)) return;
+    res.status(error?.statusCode || 500).json({ message: error?.message || "Failed to reset password" });
   }
 });
 

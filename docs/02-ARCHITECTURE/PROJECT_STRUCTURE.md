@@ -224,7 +224,7 @@ Routes are grouped by access level into subdirectories under `server/src/routes/
 | Middleware | Purpose | Example |
 |------------|---------|---------|
 | `requireFullAccess` | super_admin, admin, store_manager (excludes fulfillment) | Settings, products, reports |
-| `requireAdmin` | All admin roles (super_admin, admin, store_manager, fulfillment) | Orders, shipments, dashboard |
+| `requireAdmin` | Full-access roles (super_admin, admin, store_manager) | Full-access admin routes |
 | `requireOrderAccess` | super_admin, admin, store_manager, fulfillment | Order-specific operations |
 | `requireCustomerAuth` | Logged-in customer via Better Auth | Profile, support, order tracking |
 | _(none)_ | Public access | Products, CMS pages, webhooks |

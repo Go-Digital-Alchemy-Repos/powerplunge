@@ -13,7 +13,7 @@
 ## Notes
 
 RBAC team member management. Supports three roles: admin, store_manager, fulfillment.
-Passwords are hashed with bcrypt before storage.
+Admin credentials are managed by Better Auth. `admin_users.password` stores the `better-auth-managed` compatibility placeholder after setup, team creation, updates, and password reset flows.
 
 <!-- === AUTO-GENERATED SECTION (do not edit below this line) === -->
 

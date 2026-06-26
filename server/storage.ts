@@ -50,7 +50,6 @@ import {
   vipSettings, type VipSettings, type InsertVipSettings,
   vipCustomers, type VipCustomer, type InsertVipCustomer,
   vipActivityLog, type VipActivityLog, type InsertVipActivityLog,
-  customerMagicLinkTokens, type CustomerMagicLinkToken, type InsertCustomerMagicLinkToken,
 } from "@shared/schema";
 import { users, type User, type UpsertUser } from "@shared/models/auth";
 import { db } from "./db";
@@ -390,11 +389,6 @@ export interface IStorage {
   getIntegrationSettings(): Promise<IntegrationSettings | undefined>;
   updateIntegrationSettings(settings: Partial<InsertIntegrationSettings>): Promise<IntegrationSettings>;
 
-  // Customer Magic Link Tokens
-  createMagicLinkToken(data: InsertCustomerMagicLinkToken): Promise<CustomerMagicLinkToken>;
-  getMagicLinkToken(token: string): Promise<CustomerMagicLinkToken | undefined>;
-  markMagicLinkTokenUsed(token: string): Promise<void>;
-  deleteExpiredMagicLinkTokens(): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2053,28 +2047,6 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(vipActivityLog.createdAt));
   }
 
-  // ==================== CUSTOMER MAGIC LINK TOKENS ====================
-  async createMagicLinkToken(data: InsertCustomerMagicLinkToken): Promise<CustomerMagicLinkToken> {
-    const [token] = await db.insert(customerMagicLinkTokens).values(data).returning();
-    return token;
-  }
-
-  async getMagicLinkToken(token: string): Promise<CustomerMagicLinkToken | undefined> {
-    const [result] = await db.select().from(customerMagicLinkTokens)
-      .where(eq(customerMagicLinkTokens.token, token));
-    return result;
-  }
-
-  async markMagicLinkTokenUsed(token: string): Promise<void> {
-    await db.update(customerMagicLinkTokens)
-      .set({ used: true })
-      .where(eq(customerMagicLinkTokens.token, token));
-  }
-
-  async deleteExpiredMagicLinkTokens(): Promise<void> {
-    await db.delete(customerMagicLinkTokens)
-      .where(lte(customerMagicLinkTokens.expiresAt, new Date()));
-  }
 }
 
 export const storage = new DatabaseStorage();
