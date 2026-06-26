@@ -1762,31 +1762,6 @@ export const insertThemePackSchema = createInsertSchema(themePacks, {
 export type InsertThemePack = z.infer<typeof insertThemePackSchema>;
 export type ThemePack = typeof themePacks.$inferSelect;
 
-// ==================== CMS: Blog Posts ====================
-export const cmsPosts = pgTable("cms_v2_posts", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  title: text("title").notNull(),
-  slug: text("slug").notNull().unique(),
-  body: text("body").notNull().default(""),
-  excerpt: text("excerpt"),
-  featuredImage: text("featured_image"),
-  authorName: text("author_name"),
-  authorId: varchar("author_id").references(() => adminUsers.id),
-  tags: text("tags").array().notNull().default(sql`ARRAY[]::text[]`),
-  category: text("category"),
-  status: text("status").notNull().default("draft"),
-  publishedAt: timestamp("published_at"),
-  metaTitle: text("meta_title"),
-  metaDescription: text("meta_description"),
-  ogImage: text("og_image"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
-
-export const insertCmsPostSchema = createInsertSchema(cmsPosts).omit({ id: true, createdAt: true, updatedAt: true });
-export type InsertCmsPost = z.infer<typeof insertCmsPostSchema>;
-export type CmsPost = typeof cmsPosts.$inferSelect;
-
 // ==================== CMS: Navigation Menus ====================
 export const menuItemSchema: z.ZodType<any> = z.object({
   id: z.string(),

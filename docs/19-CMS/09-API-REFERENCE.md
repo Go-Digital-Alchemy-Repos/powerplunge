@@ -315,7 +315,7 @@ Admin post endpoints are mounted under `/api/admin/cms/posts` via `server/src/ro
 
 List all blog posts (admin view, includes drafts and archived).
 
-**Query params:** `?page=1&pageSize=10&status=published&tag=wellness&category=guides&search=cold`
+**Query params:** `?page=1&pageSize=10&status=published&tag=wellness&category=guides&q=cold`
 
 **Response:** `200 OK`
 ```json
@@ -327,8 +327,6 @@ List all blog posts (admin view, includes drafts and archived).
       "slug": "cold-plunge-benefits",
       "excerpt": "Learn about...",
       "status": "published",
-      "tags": ["health"],
-      "category": "guides",
       "publishedAt": "2026-01-15T10:00:00.000Z",
       "createdAt": "2026-01-10T08:00:00.000Z"
     }
@@ -354,14 +352,16 @@ Create a new blog post.
 {
   "title": "My Post Title",
   "slug": "my-post-title",
-  "body": "<p>Post content...</p>",
+  "legacyHtml": "<p>Post content...</p>",
+  "contentJson": [],
   "excerpt": "Short summary",
-  "featuredImage": "/uploads/hero.jpg",
-  "tags": ["wellness", "recovery"],
-  "category": "guides",
-  "authorName": "Admin",
-  "metaTitle": "My Post | Power Plunge",
-  "metaDescription": "Learn about..."
+  "coverImageId": "media-123",
+  "ogImageId": "media-456",
+  "categoryIds": ["cat-1"],
+  "tagIds": ["tag-1"],
+  "canonicalUrl": "https://powerplunge.com/blog/my-post-title",
+  "allowIndex": true,
+  "allowFollow": true
 }
 ```
 
@@ -391,28 +391,19 @@ Delete a post.
 
 **Response:** `{ success: true }` or `404`.
 
-### GET /posts/check-slug
+Post slugs are validated on create/update. A duplicate slug returns `409`.
 
-Check whether a post slug is available.
+### GET /post-tags
 
-**Query params:** `?slug=my-post-slug`
+List reusable post tags.
 
-**Response:**
-```json
-{ "available": true }
-```
+**Response:** Array of post tag objects.
 
-### GET /posts/tags
+### GET /post-categories
 
-List all unique tags across all posts.
+List reusable post categories.
 
-**Response:** `["health", "wellness", "recovery"]`
-
-### GET /posts/categories
-
-List all unique categories across all posts.
-
-**Response:** `["guides", "news", "research"]`
+**Response:** Array of post category objects.
 
 ### Public Blog Endpoints
 
@@ -422,8 +413,8 @@ Public endpoints are mounted at `/api/blog/` via `server/src/routes/public/blog-
 |--------|----------|---------|
 | GET | `/api/blog/posts` | List published posts (paginated, `publishedAt <= now()`) |
 | GET | `/api/blog/posts/:slug` | Get published post by slug (404 for drafts) |
-| GET | `/api/blog/tags` | List unique tags from published posts |
-| GET | `/api/blog/categories` | List unique categories from published posts |
+| GET | `/api/blog/tags` | List reusable post tag rows |
+| GET | `/api/blog/categories` | List reusable post category rows |
 
 **Blog list response format:**
 ```json
@@ -597,9 +588,16 @@ All CMS admin endpoints (prefix `/api/admin/cms`):
 | POST | `/posts/:id/publish` | Publish post |
 | POST | `/posts/:id/unpublish` | Unpublish post |
 | DELETE | `/posts/:id` | Delete post |
-| GET | `/posts/check-slug` | Check post slug availability |
-| GET | `/posts/tags` | List all tags |
-| GET | `/posts/categories` | List all categories |
+| GET | `/post-tags` | List post tags |
+| POST | `/post-tags` | Create post tag |
+| GET | `/post-tags/:id` | Get post tag |
+| PUT | `/post-tags/:id` | Update post tag |
+| DELETE | `/post-tags/:id` | Delete post tag |
+| GET | `/post-categories` | List post categories |
+| POST | `/post-categories` | Create post category |
+| GET | `/post-categories/:id` | Get post category |
+| PUT | `/post-categories/:id` | Update post category |
+| DELETE | `/post-categories/:id` | Delete post category |
 | GET | `/menus` | List all menus |
 | POST | `/menus` | Create menu |
 | GET | `/menus/by-location/:loc` | Get menu by location |
@@ -614,6 +612,6 @@ All CMS admin endpoints (prefix `/api/admin/cms`):
 |--------|------|---------|
 | GET | `/api/blog/posts` | Published posts (paginated) |
 | GET | `/api/blog/posts/:slug` | Published post by slug |
-| GET | `/api/blog/tags` | Unique tags |
-| GET | `/api/blog/categories` | Unique categories |
+| GET | `/api/blog/tags` | Reusable post tag rows |
+| GET | `/api/blog/categories` | Reusable post category rows |
 | GET | `/api/menus/:location` | Active menu by location |

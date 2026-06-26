@@ -6,20 +6,22 @@ Guide to SEO configuration for blog posts, including meta tags, Open Graph, cano
 
 ## Per-Post SEO Fields
 
-Each post in `cms_v2_posts` has dedicated SEO fields:
+Each post in the active `posts` table has dedicated SEO fields:
 
 | Field | HTML Output | Fallback |
 |-------|-------------|----------|
-| `metaTitle` | `<title>` and `og:title` | Post `title` |
-| `metaDescription` | `<meta name="description">` and `og:description` | Post `excerpt` |
-| `ogImage` | `og:image` and `twitter:image` | Post `featuredImage` |
+| `title` / `canonicalUrl` | `<title>`, canonical URL | Post `title`, `/blog/{slug}` |
+| `excerpt` | `<meta name="description">` and `og:description` | Post excerpt |
+| `ogImageId` / `coverImageId` | `og:image` and `twitter:image` | Cover image |
 
 ### Setting SEO Fields
 
 In the admin post editor, expand the **SEO** section:
-1. **Meta Title** — if blank, falls back to the post title.
-2. **Meta Description** — if blank, falls back to the excerpt.
-3. **OG Image** — if blank, falls back to the featured image.
+1. **Canonical URL** — if blank, falls back to `/blog/{slug}`.
+2. **OG Image ID** — if blank, falls back to the cover image.
+3. **Allow Index / Allow Follow** — controls robots directives.
+
+The post title and excerpt provide the title and description fallbacks.
 
 ---
 
@@ -76,7 +78,7 @@ The frontend blog post page should set:
 
 ### Custom Robots
 
-CMS pages support a `robots` field. For posts, the default is to allow indexing. If you need to block a specific post from search engines, set the page-level robots field to `noindex, nofollow`.
+For posts, the default is to allow indexing. To block a specific post from search engines, turn off **Allow Index** and/or **Allow Follow** in the post editor.
 
 ---
 

@@ -21,7 +21,7 @@ curl http://localhost:5000/api/admin/cms/health
 npx tsx scripts/db/verifySchema.ts
 ```
 
-**Expected:** 80/80 tables pass (including `cms_v2_posts`, `cms_v2_menus`).
+**Expected:** all schema-exported tables pass.
 
 ### 3. Are All Endpoints Responding?
 
@@ -353,8 +353,8 @@ curl -b /tmp/admin.cookies \
 **Symptom:** `GET /api/blog/tags` or `/categories` returns `[]`.
 
 **Causes:**
-1. No published posts exist with tags/categories set
-2. Tags/categories are stored as arrays/strings on post records — if none are set, endpoints return empty
+1. No reusable post tags or categories exist yet
+2. `post_tags` or `post_categories` rows have not been seeded or created in admin
 
 ---
 
@@ -441,15 +441,17 @@ Validates contentJson schema enforcement and HTML sanitization. (21 checks)
 npx tsx scripts/db/verifySchema.ts
 ```
 
-Verifies all 80 tables including `cms_v2_posts` and `cms_v2_menus`.
+Verifies all tables exported by `shared/schema.ts`.
 
 ### Manual Table Check
 
 ```sql
 SELECT tablename FROM pg_tables
 WHERE schemaname = 'public'
-AND tablename IN ('pages', 'saved_sections', 'site_settings', 'cms_v2_posts', 'cms_v2_menus');
+AND tablename IN ('pages', 'saved_sections', 'site_settings', 'posts', 'cms_v2_menus');
 ```
+
+`cms_v2_posts` belonged to the removed Stack B posts implementation. It is no longer exported from `shared/schema.ts` and should not be present in active target databases after the cleanup recorded in `docs/architecture/CMS_POSTS_CONVERGENCE.md`.
 
 ### Check Page Data
 
@@ -463,7 +465,7 @@ FROM pages ORDER BY created_at DESC LIMIT 10;
 
 ```sql
 SELECT id, title, slug, status, published_at
-FROM cms_v2_posts
+FROM posts
 ORDER BY created_at DESC LIMIT 10;
 ```
 
@@ -551,9 +553,8 @@ FROM site_settings WHERE id = 'main';
 | `POST` | `/posts/:id/publish` | Publish post |
 | `POST` | `/posts/:id/unpublish` | Unpublish post |
 | `DELETE` | `/posts/:id` | Delete post |
-| `GET` | `/posts/check-slug` | Check slug availability |
-| `GET` | `/posts/tags` | List all tags |
-| `GET` | `/posts/categories` | List all categories |
+| `GET` | `/post-tags` | List post tags |
+| `GET` | `/post-categories` | List post categories |
 
 ### Menus (Admin — `/api/admin/cms`)
 
@@ -573,8 +574,8 @@ FROM site_settings WHERE id = 'main';
 |--------|------|-------------|
 | `GET` | `/api/blog/posts` | Published posts (paginated) |
 | `GET` | `/api/blog/posts/:slug` | Published post by slug |
-| `GET` | `/api/blog/tags` | Unique tags |
-| `GET` | `/api/blog/categories` | Unique categories |
+| `GET` | `/api/blog/tags` | Reusable post tag rows |
+| `GET` | `/api/blog/categories` | Reusable post category rows |
 | `GET` | `/api/menus/:location` | Active menu by location |
 | `GET` | `/api/pages/home` | Published home page |
 | `GET` | `/api/pages/shop` | Published shop page |

@@ -6,43 +6,47 @@ The CMS Posts system provides blog/article management with a full publishing wor
 
 ## Data Model
 
-Posts are stored in the `cms_v2_posts` table.
+Posts are stored in the active `posts` table. The older `cms_v2_posts` table belonged to the removed Stack B implementation; it was verified empty and removed from the active schema/database cleanup path.
 
 | Column | Type | Description |
 |--------|------|-------------|
 | `id` | varchar (UUID) | Primary key, auto-generated |
 | `title` | text | Post title (required) |
 | `slug` | text (unique) | URL-friendly identifier (required) |
-| `body` | text | Rich text / markdown content |
+| `content_json` | jsonb | Block editor content |
+| `legacy_html` | text | Optional fallback HTML content |
 | `excerpt` | text | Short summary for listings and SEO |
-| `featuredImage` | text | URL to hero/thumbnail image |
-| `authorName` | text | Display name of the author |
-| `authorId` | varchar | FK to `admin_users.id` (optional) |
-| `tags` | text[] | Array of tag strings |
-| `category` | text | Single category string |
-| `status` | text | `draft` / `published` / `archived` |
-| `publishedAt` | timestamp | Date/time the post went live |
-| `metaTitle` | text | SEO title override |
-| `metaDescription` | text | SEO description override |
-| `ogImage` | text | Open Graph image override |
-| `createdAt` | timestamp | Row creation time |
-| `updatedAt` | timestamp | Last modification time |
+| `status` | text | `draft` / `published` / `scheduled` / `archived` |
+| `published_at` | timestamp | Date/time the post went live |
+| `scheduled_at` | timestamp | Future publish date |
+| `author_id` | varchar | FK to `admin_users.id` (optional) |
+| `cover_image_id` | varchar | FK to `media_library.id` |
+| `og_image_id` | varchar | FK to `media_library.id` |
+| `reading_time_minutes` | integer | Estimated reading time |
+| `canonical_url` | text | Canonical URL override |
+| `featured` | boolean | Featured post flag |
+| `allow_index` | boolean | Robots index flag |
+| `allow_follow` | boolean | Robots follow flag |
+| `sidebar_id` | varchar | FK to `sidebars.id` |
+| `custom_css` | text | Post-specific CSS |
+| `created_at` | timestamp | Row creation time |
+| `updated_at` | timestamp | Last modification time |
 
 ### Drizzle Schema Location
 
-`shared/schema.ts` — search for `cmsPosts`.
+`shared/schema.ts` — search for `posts`.
 
 ### Insert Schema
 
 ```ts
-import { insertCmsPostSchema } from "@shared/schema";
+import { insertPostSchema } from "@shared/schema";
 // Omits: id, createdAt, updatedAt
 ```
 
 ### TypeScript Types
 
 ```ts
-import type { CmsPost, InsertCmsPost } from "@shared/schema";
+import type { Post, InsertPost } from "@shared/schema";
 ```
 
 ---
@@ -77,13 +81,13 @@ import type { CmsPost, InsertCmsPost } from "@shared/schema";
 
 ### Scheduling (Future Publish)
 
-Set `publishedAt` to a future date and `status = 'published'`. The public listing query filters:
+Set `scheduledAt` to a future date and `status = 'scheduled'`. Scheduled posts remain hidden from public endpoints until an admin publishes them; there is currently no scheduler that automatically flips `scheduled` posts to `published`.
+
+Public listing queries filter:
 
 ```sql
 WHERE status = 'published' AND published_at <= NOW()
 ```
-
-This means the post becomes visible only when the scheduled time arrives, with no cron needed.
 
 ---
 
