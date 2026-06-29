@@ -26,6 +26,7 @@ Missing optional vars disable the associated feature with a warning at startup.
 | `APP_SECRETS_ENCRYPTION_KEY` | Admin Settings | AES-256 key for encrypting stored secrets (e.g. Twilio auth token) | `base64-encoded-32-byte-key` |
 | `MAILGUN_API_KEY` | Email | Mailgun API key for transactional emails | `key-...` |
 | `MAILGUN_DOMAIN` | Email | Mailgun sending domain | `mg.powerplunge.com` |
+| `MAILGUN_WEBHOOK_SIGNING_KEY` | Email | Backup Mailgun inbound webhook signing key when encrypted DB settings are unavailable | `...` |
 | `CLOUDFLARE_R2_ACCESS_KEY_ID` | Media Storage (R2) | Cloudflare R2 access key ID | `...` |
 | `CLOUDFLARE_R2_SECRET_ACCESS_KEY` | Media Storage (R2) | Cloudflare R2 secret access key | `...` |
 | `CLOUDFLARE_R2_BUCKET_NAME` | Media Storage (R2) | Cloudflare R2 bucket name | `powerplunge-media` |
@@ -59,6 +60,9 @@ These variables are used only in development (`NODE_ENV=development`). They are 
 | `LOCAL_TEST_DATABASE` | Local Test DB Guard | Must be `true` when local test commands use a non-localhost `DATABASE_URL`. | `true` |
 | `LOCAL_TEST_DATABASE_HOST` | Local Test DB Guard | Exact allowed remote test database host for guarded local commands. | `ep-local-test-abc.us-east-2.aws.neon.tech` |
 | `LOCAL_TEST_ENV_FILE` | Local Test Env | Optional override for the env file loaded by `with:local-auth-env`; defaults to `.env.test.local`. | `.env.test.local` |
+| `EMAIL_PREVIEW_SKIP_ARTIFACTS` | Email QA | Set to `1` to run `email:preview:audit` without writing `tmp/email-preview-audit` artifacts. | `1` |
+| `EMAIL_PREVIEW_SKIP_LINK_AUDIT` | Email QA | Set to `1` to render preview audit output without HTTP-checking internal links. | `1` |
+| `EMAIL_PREVIEW_SEND_TO` | Email QA | Optional review inbox for real preview sends from `email:preview:audit`. Omit for offline/static mode. | `review@example.com` |
 
 ### Test user seeding
 

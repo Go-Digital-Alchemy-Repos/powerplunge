@@ -10,7 +10,7 @@ if (runtime.shouldLoadDotenv) {
   for (const file of files) {
     const filePath = resolve(root, file);
     if (existsSync(filePath)) {
-      dotenvConfig({ path: filePath, override: false });
+      dotenvConfig({ path: filePath, override: false, quiet: true });
     }
   }
 }

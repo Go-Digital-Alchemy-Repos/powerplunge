@@ -1,8 +1,9 @@
 import { Router, Request, Response } from "express";
 import crypto from "crypto";
 import { db } from "../../../db";
-import { supportTickets, customers, siteSettings, emailSettings } from "@shared/schema";
+import { supportTickets, customers, siteSettings } from "@shared/schema";
 import { eq } from "drizzle-orm";
+import { storage } from "../../../storage";
 import { notificationService } from "../../services/notification.service";
 import { sendNewTicketAdminNotification, sendTicketConfirmationToCustomer, logEmail } from "../../services/support-email.service";
 
@@ -110,7 +111,7 @@ async function getMailgunSigningKey(): Promise<string | null> {
 
   try {
     const { decrypt } = await import("../../utils/encryption");
-    const settings = await db.query.emailSettings.findFirst();
+    const settings = await storage.getEmailSettings();
     if (settings?.mailgunWebhookSigningKeyEncrypted) {
       return decrypt(settings.mailgunWebhookSigningKeyEncrypted);
     }

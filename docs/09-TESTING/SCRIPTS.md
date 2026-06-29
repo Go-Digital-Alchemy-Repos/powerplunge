@@ -15,6 +15,8 @@ All scripts are located in the `scripts/` directory and run with `npx tsx`. They
 | API Smoke | `scripts/smoke/apiSmoke.ts` | HTTP endpoint smoke tests | No |
 | Blog Smoke | `scripts/smoke/blogSmoke.ts` | Blog post lifecycle tests | Creates/deletes test data |
 | Seed Email Templates | `scripts/seed-email-templates.ts` | Seed default email templates | Idempotent writes |
+| Mailgun Live Check | `scripts/mailgun-live-check.ts` | DB-backed Mailgun/operator smoke check | Optional real send with `--send-to` |
+| Email Preview Audit | `scripts/email-preview-audit.ts` | Static email preview/link audit artifacts | Optional real sends with `EMAIL_PREVIEW_SEND_TO` |
 
 ## scripts/doctor.ts
 
@@ -40,6 +42,42 @@ npx tsx scripts/doctor.ts
 ```
 
 Exit code: `0` if all required checks pass, `1` if any required check fails.
+
+## scripts/mailgun-live-check.ts
+
+DB-backed Mailgun smoke check for deployed or ops environments. It verifies the active email provider, Mailgun outbound configuration, domain state, inbound signing-key presence, and support inbound-reply setting. It does not send email unless `--send-to` is supplied.
+
+**Run:**
+```bash
+npm run mailgun:live:check
+npm run mailgun:live:check -- --require-inbound
+npm run mailgun:live:check -- --json
+```
+
+**Optional real send:**
+```bash
+npm run mailgun:live:check -- --send-to review@example.com
+```
+
+`--require-inbound` turns missing inbound replies/signing-key checks from warnings into failures. Output never prints API keys or webhook signing keys.
+
+## scripts/email-preview-audit.ts
+
+Static first-pass email QA script. It renders the seeded email-template matrix with sample merge data, audits internal links when `PUBLIC_SITE_URL` is explicitly set, scans known runtime email sender files for `emailService.sendEmail` call sites, and writes artifacts under `tmp/email-preview-audit/<YYYY-MM-DD>/`.
+
+**Run:**
+```bash
+npm run email:preview:audit
+```
+
+**Useful environment:**
+```bash
+PUBLIC_SITE_URL=https://powerplunge.com npm run email:preview:audit
+EMAIL_PREVIEW_SKIP_ARTIFACTS=1 npm run email:preview:audit
+EMAIL_PREVIEW_SKIP_LINK_AUDIT=1 npm run email:preview:audit
+```
+
+Set `EMAIL_PREVIEW_SEND_TO=review@example.com` only when you intentionally want each preview sent as a real email through the configured provider. The default run is offline/static and performs no DB writes, provider calls, or real sends.
 
 ## Local automated test env
 

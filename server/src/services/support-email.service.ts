@@ -1,6 +1,7 @@
 import { emailService, type EmailOptions, type EmailResult } from "../integrations/mailgun/EmailService";
 import { db } from "../../db";
-import { siteSettings, emailSettings, customers, emailLogs } from "@shared/schema";
+import { storage } from "../../storage";
+import { siteSettings, customers, emailLogs } from "@shared/schema";
 import { eq } from "drizzle-orm";
 
 export async function logEmail(params: {
@@ -74,7 +75,7 @@ async function getSupportSettings() {
 }
 
 async function getMailgunDomain(): Promise<string | null> {
-  const settings = await db.query.emailSettings.findFirst();
+  const settings = await storage.getEmailSettings();
   return settings?.mailgunDomain || null;
 }
 
@@ -437,6 +438,14 @@ export async function sendTicketConfirmationToCustomer(ticket: TicketData): Prom
       ? `If you have additional details, simply reply to this email or view your ticket in your account dashboard.`
       : `If you have additional details, simply reply to this email.`;
 
+    let replyTo: string | undefined;
+    if (settings.inboundRepliesEnabled) {
+      const domain = await getMailgunDomain();
+      if (domain) {
+        replyTo = buildTicketReplyToAddress(ticket.ticketId, domain);
+      }
+    }
+
     const confirmSubject = `Re: ${ticket.subject} - We've received your message`;
     const confirmHtml = `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; background: #0a0a0a; color: #e5e5e5; border-radius: 8px; overflow: hidden;">
@@ -458,6 +467,7 @@ export async function sendTicketConfirmationToCustomer(ticket: TicketData): Prom
       to: ticket.customerEmail,
       subject: confirmSubject,
       ...(settings.fromEmail ? { from: settings.fromEmail } : {}),
+      ...(replyTo ? { replyTo } : {}),
       html: confirmHtml,
     });
     await logEmail({

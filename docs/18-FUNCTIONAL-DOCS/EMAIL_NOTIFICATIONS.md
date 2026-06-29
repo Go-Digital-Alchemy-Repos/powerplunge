@@ -106,6 +106,12 @@ Global email settings are managed in admin settings:
 - Company branding (logo, colors)
 - Unsubscribe handling
 
+## QA and Operator Checks
+
+Use `npm run mailgun:live:check` for a DB-backed Mailgun smoke check in the target runtime. It verifies the configured provider, outbound Mailgun domain state, inbound webhook signing-key presence, and support inbound replies. It does not send email unless `--send-to <email>` is supplied.
+
+Use `npm run email:preview:audit` for a static first-pass preview audit of the seeded email-template matrix. Internal link audits run when `PUBLIC_SITE_URL` is explicitly set. Artifacts are written to `tmp/email-preview-audit/<YYYY-MM-DD>/`. Real preview sends are opt-in only through `EMAIL_PREVIEW_SEND_TO`.
+
 ## Background Job Integration
 
 The `recovery_emails` background job handles scheduled email delivery:
@@ -130,6 +136,8 @@ For affiliate invite flows, SMS notifications use the Twilio Verify API:
 - `server/src/services/support-email.service.ts` - Support ticket email functions
 - `server/src/routes/admin/settings.routes.ts` - Email configuration
 - `server/src/routes/webhooks/mailgun-inbound.routes.ts` - Inbound email webhook
+- `scripts/mailgun-live-check.ts` - Mailgun live/operator smoke check
+- `scripts/email-preview-audit.ts` - Static email preview and link audit
 
 ## Related Documentation
 

@@ -3,6 +3,10 @@ import formData from "form-data";
 import { storage } from "../../../storage";
 import { decrypt } from "../../utils/encryption";
 import { addEmailToOutbox, isEmailOutboxEnabled } from "../../testing/email-outbox";
+import {
+  getMailgunDomainVerificationError,
+  type MailgunDomainVerificationDetails,
+} from "./mailgun-domain-verification";
 
 export interface EmailOptions {
   to: string | string[];
@@ -167,7 +171,11 @@ class EmailService {
 
     try {
       const client = this.getMailgunClient(config.apiKey, config.region);
-      await client.domains.get(config.domain);
+      const domainDetails = await client.domains.get(config.domain) as MailgunDomainVerificationDetails;
+      const verificationError = getMailgunDomainVerificationError(domainDetails, config.domain);
+      if (verificationError) {
+        return { valid: false, error: verificationError };
+      }
       return { valid: true };
     } catch (error: any) {
       if (error.status === 401) {
