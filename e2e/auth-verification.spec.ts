@@ -1,10 +1,17 @@
 import { test, expect } from "./fixtures";
+import { createE2EProductTracker } from "./helpers/api";
 import { uniqueEmail, uniqueName } from "./helpers/test-data";
 
 const CUSTOMER_EMAIL = "customer@test.com";
 const CUSTOMER_PHONE = "(555) 123-4567";
 
 test.describe("Better Auth verification flows @customer @affiliate", () => {
+  const products = createE2EProductTracker();
+
+  test.afterEach(async ({ request }) => {
+    await products.cleanup(request);
+  });
+
   test("seeded customer can access account, support, and logout", async ({ customerPage }) => {
     await customerPage.goto("/my-account?tab=account");
     await expect(customerPage.locator('[data-testid="text-account-title"]')).toBeVisible({ timeout: 15000 });
@@ -24,11 +31,8 @@ test.describe("Better Auth verification flows @customer @affiliate", () => {
     await expect(affiliatePage.locator('[data-testid="text-ff-code"]')).toContainText("FFTESTFF");
   });
 
-  test("authenticated checkout prefills seeded customer identity", async ({ customerPage }) => {
-    const productsResp = await customerPage.request.get("/api/products");
-    const products = await productsResp.json();
-    const product = products.find((p: { id: string; urlSlug?: string }) => p.urlSlug);
-    test.skip(!product, "No products with a URL slug available");
+  test("authenticated checkout prefills seeded customer identity", async ({ customerPage, request }) => {
+    const product = await products.create(request);
 
     await customerPage.goto("/");
     await customerPage.evaluate((p) => {

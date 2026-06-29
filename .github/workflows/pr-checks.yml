@@ -18,7 +18,7 @@ jobs:
   test:
     name: Typecheck, Build, Unit, Auth E2E
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
 
     services:
       postgres:
@@ -88,12 +88,5 @@ jobs:
       - name: Unit tests
         run: npm run with:local-auth-env -- npm run test:unit
 
-      - name: Auth e2e smoke
-        run: >-
-          npm run test:e2e:local-auth --
-          e2e/admin-auth.spec.ts
-          e2e/customer-auth.spec.ts
-          e2e/affiliate-portal.spec.ts
-          e2e/auth-verification.spec.ts
-          --project=chromium
-
+      - name: Critical E2E
+        run: npm run test:e2e:critical:local-auth

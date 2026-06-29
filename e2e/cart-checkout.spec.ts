@@ -1,13 +1,18 @@
 import { test, expect } from "@playwright/test";
+import { createE2EProductTracker } from "./helpers/api";
 
 test.describe("Cart & Checkout @customer", () => {
+  const products = createE2EProductTracker();
+
+  test.afterEach(async ({ request }) => {
+    await products.cleanup(request);
+  });
+
   test("can add product to cart from detail page and reach checkout", async ({
     page,
+    request,
   }) => {
-    const productsResp = await page.request.get("/api/products");
-    const products = await productsResp.json();
-    const product = products.find((p: { urlSlug: string }) => p.urlSlug);
-    test.skip(!product, "No products with a URL slug available");
+    const product = await products.create(request);
 
     await page.goto(`/products/${product.urlSlug}`);
     await expect(
@@ -23,11 +28,9 @@ test.describe("Cart & Checkout @customer", () => {
 
   test("checkout shows cart items with quantity controls", async ({
     page,
+    request,
   }) => {
-    const productsResp = await page.request.get("/api/products");
-    const products = await productsResp.json();
-    const product = products.find((p: { urlSlug: string }) => p.urlSlug);
-    test.skip(!product, "No products with a URL slug available");
+    const product = await products.create(request);
 
     await page.goto("/");
     await page.evaluate(
@@ -62,11 +65,9 @@ test.describe("Cart & Checkout @customer", () => {
 
   test("checkout page renders with email and phone inputs", async ({
     page,
+    request,
   }) => {
-    const productsResp = await page.request.get("/api/products");
-    const products = await productsResp.json();
-    const product = products.find((p: { urlSlug: string }) => p.urlSlug);
-    test.skip(!product, "No products with a URL slug available");
+    const product = await products.create(request);
 
     await page.goto("/");
     await page.evaluate(
