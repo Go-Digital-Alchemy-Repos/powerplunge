@@ -25,7 +25,6 @@ const TEST_KEYS = [
   "REPLIT_DOMAINS",
   "REPL_OWNER",
   "REPL_SLUG",
-  "SESSION_SECRET",
   "STRIPE_CONNECT_WEBHOOK_SECRET",
   "STRIPE_PUBLISHABLE_KEY",
   "STRIPE_SECRET_KEY",
@@ -45,7 +44,6 @@ function resetEnv(overrides: NodeJS.ProcessEnv = {}) {
 function baseRequiredEnv(): NodeJS.ProcessEnv {
   return {
     DATABASE_URL: "postgres://user:pass@example.test/db",
-    SESSION_SECRET: "session-secret",
     STRIPE_SECRET_KEY: "sk_test_example",
     STRIPE_PUBLISHABLE_KEY: "pk_test_example",
     STRIPE_WEBHOOK_SECRET: "whsec_example",

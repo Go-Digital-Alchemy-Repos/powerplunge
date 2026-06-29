@@ -32,15 +32,6 @@ interface BetterAuthEndpointResult<T> {
   headers: Headers;
 }
 
-declare module "express-session" {
-  interface SessionData {
-    adminId?: string;
-    adminRole?: string;
-    adminEmail?: string;
-    adminUser?: SerializedAdminUser;
-  }
-}
-
 declare module "express-serve-static-core" {
   interface Request {
     adminAuth?: AdminRequestAuth;
@@ -125,15 +116,6 @@ export function attachAdminRequestAuth(
   req.adminUser = requestAuth.adminUser;
   if (options.betterAuthSession) {
     req.betterAuthSession = options.betterAuthSession;
-  }
-
-  // Temporary compatibility for older admin route modules that still read
-  // express-session fields for audit IDs/emails after auth has passed.
-  if (req.session) {
-    req.session.adminId = requestAuth.adminId;
-    req.session.adminRole = requestAuth.role;
-    req.session.adminEmail = requestAuth.adminUser.email;
-    req.session.adminUser = requestAuth.adminUser;
   }
 }
 

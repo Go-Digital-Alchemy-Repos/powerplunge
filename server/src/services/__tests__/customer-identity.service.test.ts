@@ -26,10 +26,6 @@ describe("customerIdentityService", () => {
         customer: context.customer,
         betterAuthSession: context.betterAuthSession,
       };
-      req.customerSession = {
-        customerId: context.customer.id,
-        email: context.customer.email,
-      };
       req.betterAuthSession = context.betterAuthSession;
     });
   });

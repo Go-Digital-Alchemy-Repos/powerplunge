@@ -10,7 +10,6 @@ const mocks = vi.hoisted(() => ({
       customer: { id: "cust-1", email: "customer@example.com" },
       betterAuthSession: {},
     };
-    req.customerSession = { customerId: "cust-1", email: "customer@example.com" };
     return Promise.resolve({
       customer: { id: "cust-1", email: "customer@example.com" },
       betterAuthSession: {},
@@ -63,7 +62,6 @@ describe("customer notification routes", () => {
         customer: { id: "cust-1", email: "customer@example.com" },
         betterAuthSession: {},
       };
-      req.customerSession = { customerId: "cust-1", email: "customer@example.com" };
       return Promise.resolve({
         customer: { id: "cust-1", email: "customer@example.com" },
         betterAuthSession: {},

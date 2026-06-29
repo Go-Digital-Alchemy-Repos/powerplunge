@@ -26,7 +26,7 @@ npx tsx scripts/doctor.ts
 ```
 
 **Checks performed:**
-1. Required doctor environment variables (`DATABASE_URL`, `SESSION_SECRET`)
+1. Required doctor environment variables (`DATABASE_URL`)
 2. Optional environment variables with warnings (`MAILGUN_API_KEY`, etc.); Stripe test/live aliases satisfy the Stripe checks
 3. Database connection (attempts a simple query)
 4. Integration configuration status (Stripe, Mailgun)

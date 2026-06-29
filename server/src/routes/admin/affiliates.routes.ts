@@ -206,7 +206,7 @@ router.patch("/affiliates/:id", async (req: any, res) => {
       return res.status(404).json({ message: "Affiliate not found" });
     }
 
-    const adminEmail = req.adminUser?.email || req.session?.adminEmail || "admin";
+    const adminEmail = req.adminUser?.email || "admin";
     await storage.createAuditLog({
       actor: adminEmail,
       action: ffEnabled !== undefined && status === undefined ? "affiliate.ff_toggled" : "affiliate.status_changed",
@@ -287,7 +287,7 @@ router.post("/affiliate-invites", async (req: any, res) => {
       notes: notes || null,
     });
     
-    const adminEmail = req.adminUser?.email || req.session?.adminEmail || "admin";
+    const adminEmail = req.adminUser?.email || "admin";
     await storage.createAuditLog({
       actor: adminEmail,
       action: "affiliate_invite.created",
@@ -360,7 +360,7 @@ ${expirationDate ? `<p style="color: #666; font-size: 13px;">This link expires o
       emailResult = { success: false, error: emailError.message || "Failed to send email" };
     }
 
-    const adminEmail = req.adminUser?.email || req.session?.adminEmail || "admin";
+    const adminEmail = req.adminUser?.email || "admin";
     await storage.createAuditLog({
       actor: adminEmail,
       action: "affiliate_invite.resent",
@@ -396,7 +396,7 @@ router.delete("/affiliate-invites/:id", async (req: any, res) => {
     
     await storage.deleteAffiliateInvite(req.params.id);
     
-    const adminEmail = req.adminUser?.email || req.session?.adminEmail || "admin";
+    const adminEmail = req.adminUser?.email || "admin";
     await storage.createAuditLog({
       actor: adminEmail,
       action: "affiliate_invite.deleted",
@@ -542,7 +542,7 @@ ${expirationDate ? `<p style="color: #666; font-size: 13px;">This link expires o
       }
     }
 
-    const adminEmail = req.adminUser?.email || req.session?.adminEmail || "admin";
+    const adminEmail = req.adminUser?.email || "admin";
     await storage.createAuditLog({
       actor: adminEmail,
       action: "affiliate_invite.sent",
@@ -623,7 +623,7 @@ router.patch("/payouts/:id", async (req: any, res) => {
     
     if (status === "paid" || status === "approved" || status === "rejected") {
       updateData.processedAt = new Date();
-      updateData.processedBy = req.session?.adminId;
+      updateData.processedBy = req.adminId;
     }
 
     const payout = await storage.updateAffiliatePayout(req.params.id, updateData);
@@ -641,7 +641,7 @@ router.patch("/payouts/:id", async (req: any, res) => {
       }
     }
 
-    const adminEmail = req.adminUser?.email || req.session?.adminEmail || "admin";
+    const adminEmail = req.adminUser?.email || "admin";
     await storage.createAuditLog({
       actor: adminEmail,
       action: "payout.processed",
@@ -674,7 +674,7 @@ router.post("/affiliate-payouts/run", async (req: any, res) => {
     }
 
     const dryRun = req.body.dryRun === true || req.query.dryRun === "true";
-    const adminUserId = req.session?.adminId;
+    const adminUserId = req.adminId;
 
     const summary = await affiliatePayoutService.runPayoutBatch({
       dryRun,

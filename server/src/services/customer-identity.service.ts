@@ -4,7 +4,6 @@ import type { Customer } from "@shared/schema";
 import {
   attachCustomerAuthContext,
   getCustomerAuthContext,
-  type CustomerSession,
 } from "../auth/customerBetterAuth";
 
 export type IdentitySource = "better_auth";
@@ -25,15 +24,20 @@ export type IdentityResult =
   | { ok: true; identity: ResolvedIdentity }
   | { ok: false; error: IdentityError };
 
+interface CustomerIdentityAuth {
+  customerId: string;
+  email: string;
+}
+
 export function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
 
 export class CustomerIdentityService {
   async resolve(req: any): Promise<IdentityResult> {
-    let customerSession: CustomerSession | null;
+    let customerAuth: CustomerIdentityAuth | null;
     try {
-      customerSession = await this.extractCustomerSession(req);
+      customerAuth = await this.extractCustomerAuth(req);
     } catch (error) {
       return {
         ok: false,
@@ -41,7 +45,7 @@ export class CustomerIdentityService {
       };
     }
 
-    if (!customerSession) {
+    if (!customerAuth) {
       return {
         ok: false,
         error: {
@@ -52,7 +56,7 @@ export class CustomerIdentityService {
       };
     }
 
-    return this.resolveFromBetterAuthSession(customerSession);
+    return this.resolveFromBetterAuth(customerAuth);
   }
 
   async resolveOrNull(req: any): Promise<ResolvedIdentity | null> {
@@ -60,16 +64,12 @@ export class CustomerIdentityService {
     return result.ok ? result.identity : null;
   }
 
-  private async extractCustomerSession(req: any): Promise<CustomerSession | null> {
+  private async extractCustomerAuth(req: any): Promise<CustomerIdentityAuth | null> {
     if (req.customerAuth) {
       return {
         customerId: req.customerAuth.customerId,
         email: req.customerAuth.email,
       };
-    }
-
-    if (req.customerSession) {
-      return req.customerSession;
     }
 
     const context = await getCustomerAuthContext(req as Request);
@@ -81,8 +81,8 @@ export class CustomerIdentityService {
     };
   }
 
-  private async resolveFromBetterAuthSession(session: CustomerSession): Promise<IdentityResult> {
-    const customer = await storage.getCustomer(session.customerId);
+  private async resolveFromBetterAuth(auth: CustomerIdentityAuth): Promise<IdentityResult> {
+    const customer = await storage.getCustomer(auth.customerId);
     if (!customer) {
       return {
         ok: false,

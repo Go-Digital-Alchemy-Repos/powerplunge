@@ -80,7 +80,6 @@ const env = {
   NODE_ENV: process.env.NODE_ENV ?? "development",
   BETTER_AUTH_SECRET:
     process.env.BETTER_AUTH_SECRET ?? "dev-test-secret-dev-test-secret-dev-test-secret",
-  SESSION_SECRET: process.env.SESSION_SECRET ?? "dev-session-secret-dev-session-secret",
   BETTER_AUTH_BASE_URL: process.env.BETTER_AUTH_BASE_URL ?? baseUrl,
   PUBLIC_SITE_URL: process.env.PUBLIC_SITE_URL ?? baseUrl,
   E2E_TEST_MODE: process.env.E2E_TEST_MODE ?? "true",

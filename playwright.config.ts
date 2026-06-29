@@ -5,11 +5,8 @@ const e2ePort = Number(process.env.E2E_PORT ?? defaultPort);
 const baseURL = process.env.E2E_BASE_URL ?? `http://localhost:${e2ePort}`;
 const betterAuthSecret =
   process.env.BETTER_AUTH_SECRET ?? "dev-test-secret-dev-test-secret-dev-test-secret";
-const sessionSecret =
-  process.env.SESSION_SECRET ?? "dev-session-secret-dev-session-secret";
 
 process.env.BETTER_AUTH_SECRET ??= betterAuthSecret;
-process.env.SESSION_SECRET ??= sessionSecret;
 process.env.BETTER_AUTH_BASE_URL ??= baseURL;
 process.env.PUBLIC_SITE_URL ??= baseURL;
 process.env.E2E_TEST_MODE ??= "true";

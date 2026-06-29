@@ -35,7 +35,7 @@ describe("admin Better Auth request seam", () => {
     process.env.BETTER_AUTH_SECRET = "test-secret";
   });
 
-  it("attaches canonical admin auth and legacy compatibility fields", () => {
+  it("attaches canonical admin auth fields", () => {
     const admin = serializeAdmin({
       id: "admin-1",
       email: "admin@example.com",
@@ -46,7 +46,7 @@ describe("admin Better Auth request seam", () => {
       role: "superadmin",
       avatarUrl: "",
     } as any);
-    const req = { session: {} } as Request;
+    const req = {} as Request;
     const betterAuthSession = {
       session: { id: "session-1", userId: "ba-1", token: "token", expiresAt: new Date() },
       user: { id: "ba-1", email: "admin@example.com", name: "Admin", adminUserId: "admin-1" },
@@ -63,16 +63,10 @@ describe("admin Better Auth request seam", () => {
     expect(req.adminId).toBe("admin-1");
     expect(req.adminUser).toBe(admin);
     expect(req.betterAuthSession).toBe(betterAuthSession);
-    expect(req.session).toMatchObject({
-      adminId: "admin-1",
-      adminRole: "super_admin",
-      adminEmail: "admin@example.com",
-      adminUser: admin,
-    });
   });
 
   it("attaches an authenticated context through the same request seam", () => {
-    const req = { session: {} } as Request;
+    const req = {} as Request;
     const betterAuthSession = {
       session: { id: "session-1", userId: "ba-1", token: "token", expiresAt: new Date() },
       user: { id: "ba-1", email: "admin@example.com", name: "Admin", adminUserId: "admin-1" },
@@ -98,7 +92,7 @@ describe("admin Better Auth request seam", () => {
       role: "store_manager",
       betterAuthSession,
     });
-    expect(req.session?.adminUser?.email).toBe("admin@example.com");
+    expect(req.adminUser?.email).toBe("admin@example.com");
   });
 
   it("resolves a Better Auth session to the linked admin profile", async () => {

@@ -77,7 +77,7 @@ router.patch("/admin/thresholds/:id", async (req: Request, res: Response) => {
 router.post("/admin/:id/acknowledge", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const adminId = (req.session as any)?.adminId;
+    const adminId = req.adminId;
     if (!adminId) {
       return res.status(401).json({ error: "Not authenticated" });
     }

@@ -100,7 +100,7 @@ shipmentRoutes.post("/:orderId/shipments", async (req: Request, res: Response) =
       return res.status(404).json({ message: "Order not found" });
     }
     
-    const adminId = (req.session as any).adminUser?.id;
+    const adminId = req.adminUser?.id;
     
     const shipment = await storage.createShipment({
       orderId: req.params.orderId,
@@ -162,7 +162,7 @@ shipmentManagementRoutes.post("/:id/resend-email", async (req: Request, res: Res
     }
     
     const items = await storage.getOrderItems(order.id);
-    const adminId = (req.session as any).adminUser?.id;
+    const adminId = req.adminUser?.id;
     
     await storage.updateShipment(shipment.id, { shippedEmailSentAt: null });
     

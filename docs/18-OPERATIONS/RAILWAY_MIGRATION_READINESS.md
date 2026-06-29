@@ -49,7 +49,7 @@ Current service inventory:
 
 | Area | Status | Notes |
 |---|---|---|
-| Required env names | Ready for final auth-var verification | `DATABASE_URL`, `SESSION_SECRET`, generic Stripe vars, `APP_SECRETS_ENCRYPTION_KEY`, R2 vars, `PUBLIC_SITE_URL`, and `BASE_URL` are configured by name. Better Auth vars below must be set and verified before cutover smoke. |
+| Required env names | Ready for final auth-var verification | `DATABASE_URL`, generic Stripe vars, `APP_SECRETS_ENCRYPTION_KEY`, R2 vars, `PUBLIC_SITE_URL`, and `BASE_URL` are configured by name. Better Auth vars below must be set and verified before cutover smoke. |
 | Railway health | Ready for dry-run smoke | Confirmed redeploy on 2026-06-23 picked up `railway.json`, Node 22, and the staged Neon `DATABASE_URL`; `/api/health` returns HTTP 200 with DB connected and smoke passes 22/22. |
 | Neon project | Ready | Project `powerplunge`, branch `main`, database `powerplunge`, Postgres 17. |
 | Neon schema/content | Ready for dry-run smoke | Schema verifier passes against the migration target. Storefront/CMS content was imported from Replit into Neon on 2026-06-23; source and target counts match for the selected content allowlist. |
@@ -58,7 +58,7 @@ Current service inventory:
 | Stripe primary webhook secret | Rotated | Historically exposed primary PowerPlunge signing secret was rotated in Stripe Workbench on 2026-06-22; Neon now has an encrypted DB-stored live webhook secret. |
 | Stripe primary webhook endpoint | Not ready | The primary `https://powerplunge.com/api/webhook/stripe` destination exists under the Nano-Shield Stripe account, but it is currently disabled. |
 | Public URL config | Staged in Railway | `PUBLIC_SITE_URL` and `BASE_URL` are set to the Railway dry-run URL with `--skip-deploys`; update to the canonical domain only during DNS cutover. |
-| Auth migration | Ready after Better Auth env verification | Better Auth is the app login surface for admin and customer sessions. Replit OIDC and customer token-auth routes have been removed, and local smoke confirms unauthenticated `/api/customer/profile` returns HTTP 401 quickly. One-time bcrypt password upgrade and request-field backfills remain as compatibility paths after Better Auth boundaries. |
+| Auth migration | Ready after Better Auth env verification | Better Auth is the app login surface for admin and customer sessions. Replit OIDC and customer token-auth routes have been removed, canonical Better Auth request fields are used server-side, and local smoke confirms unauthenticated `/api/customer/profile` returns HTTP 401 quickly. A one-time bcrypt password upgrade path remains for existing stored hashes. |
 
 ## Variable Mapping
 
@@ -81,7 +81,6 @@ Notes:
 
 | Railway var | Source | Action |
 |---|---|---|
-| `SESSION_SECRET` | Current Railway or existing secret manager source | Preserve unless intentionally invalidating all sessions. |
 | `APP_SECRETS_ENCRYPTION_KEY` | Current Railway or existing secret manager source | Preserve if production DB contains encrypted integration settings. |
 | `PUBLIC_SITE_URL` | Railway dry-run URL first, final custom domain after DNS cutover | Required for canonical URLs, CORS allowlist, email links, and build-time meta images. |
 | `BASE_URL` | Same as `PUBLIC_SITE_URL` | Required by one Stripe checkout path. |

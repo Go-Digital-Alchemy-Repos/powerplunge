@@ -36,7 +36,11 @@ const mocks = vi.hoisted(() => ({
     verifyCustomerMagicLink: vi.fn(),
   },
   requireCustomerAuth: vi.fn((req: any, _res: any, next: any) => {
-    req.customerSession = { customerId: "cust-1", email: "customer@example.com" };
+    req.customerAuth = {
+      customerId: "cust-1",
+      email: "customer@example.com",
+      customer: { id: "cust-1", email: "customer@example.com" },
+    };
     next();
   }),
   claimOrdersByEmail: vi.fn(),
