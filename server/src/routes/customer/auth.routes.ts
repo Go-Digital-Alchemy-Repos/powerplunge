@@ -8,10 +8,9 @@ import { claimOrdersByEmail } from "../../services/order-claim.service";
 import {
   BETTER_AUTH_CUSTOMER_PASSWORD_PLACEHOLDER,
   applyBetterAuthHeaders,
-  attachCustomerAuthContext,
   changeCustomerPassword,
   getBetterAuthUserByCustomerId,
-  getCustomerAuthContext,
+  getAttachedCustomerAuthContext,
   isBetterAuthEmailReservedForAdmin,
   normalizeCustomerEmail,
   requestCustomerMagicLink,
@@ -401,11 +400,10 @@ router.post("/reset-password", passwordResetLimiter, async (req, res) => {
 
 router.post("/verify-session", async (req, res) => {
   try {
-    const context = await getCustomerAuthContext(req);
+    const context = await getAttachedCustomerAuthContext(req);
     if (!context) {
       return res.json({ valid: false });
     }
-    attachCustomerAuthContext(req, context);
     claimOrdersByEmail(context.customer.id, context.customer.email, "session").catch(
       (err) => console.error("[ORDER-CLAIM] session failed:", err),
     );

@@ -2,7 +2,7 @@
 
 ## Overview
 
-Power Plunge customer accounts use Better Auth. Customer sessions are stored in secure HTTP-only cookies and resolved on the server through `getCustomerAuthContext` / `requireCustomerAuth`.
+Power Plunge customer accounts use Better Auth. Customer sessions are stored in secure HTTP-only cookies and resolved on the server through `getCustomerAuthContext`, `getAttachedCustomerAuthContext`, `requireCustomerAuth`, or `customerIdentityService`.
 
 ## Authentication Methods
 
@@ -45,14 +45,14 @@ Power Plunge customer accounts use Better Auth. Customer sessions are stored in 
 
 ## Session Management
 
-Customer routes authenticate by resolving Better Auth cookies. `server/src/middleware/customer-auth.middleware.ts` calls `getCustomerAuthContext`, attaches `req.customerSession`, and preserves Better Auth error semantics:
+Customer routes authenticate by resolving Better Auth cookies. `server/src/middleware/customer-auth.middleware.ts` calls `getAttachedCustomerAuthContext`, which attaches canonical `req.customerAuth` plus compatibility `req.customerSession`, and preserves Better Auth error semantics:
 
 - `401` for missing or invalid sessions.
 - `403` for disabled accounts.
 - `409` for merged accounts.
 - `503` when Better Auth is not configured.
 
-`customerIdentityService` is used by routes that need customer identity without mount-level middleware. It resolves the same Better Auth session and returns the linked customer profile.
+`customerIdentityService` is used by routes that need customer identity without mount-level middleware. It uses preattached `req.customerAuth` when present, otherwise resolves the same Better Auth session and returns the linked customer profile.
 
 ## Account Management
 

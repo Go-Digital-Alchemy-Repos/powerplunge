@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
     attachCustomerAuthContext: vi.fn(),
     changeCustomerPassword: vi.fn(),
     getBetterAuthUserByCustomerId: vi.fn(),
+    getAttachedCustomerAuthContext: vi.fn(),
     getCustomerAuthContext: vi.fn(),
     isBetterAuthEmailReservedForAdmin: vi.fn(),
     normalizeCustomerEmail: vi.fn((email: string) => email.trim().toLowerCase()),
@@ -173,7 +174,7 @@ describe("customer auth routes", () => {
   it("returns cookie-session validity without requiring a bearer token", async () => {
     const app = await startApp();
     server = app.server;
-    mocks.customerBetterAuth.getCustomerAuthContext.mockResolvedValue({
+    mocks.customerBetterAuth.getAttachedCustomerAuthContext.mockResolvedValue({
       customer: { id: "cust-1", email: "customer@example.com", name: "Customer One" },
     });
 
@@ -185,6 +186,19 @@ describe("customer auth routes", () => {
       valid: true,
       customer: { id: "cust-1", email: "customer@example.com" },
     });
+    expect(mocks.customerBetterAuth.getCustomerAuthContext).not.toHaveBeenCalled();
+  });
+
+  it("returns invalid when cookie-session verification has no attached auth context", async () => {
+    const app = await startApp();
+    server = app.server;
+    mocks.customerBetterAuth.getAttachedCustomerAuthContext.mockResolvedValue(null);
+
+    const response = await app.request("/api/customer/auth/verify-session", { method: "POST" });
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body).toEqual({ valid: false });
   });
 
   it("does not request Better Auth password reset when no customer profile exists", async () => {
