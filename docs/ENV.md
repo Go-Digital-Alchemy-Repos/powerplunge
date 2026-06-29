@@ -97,7 +97,9 @@ Better Auth API routes mount under `/api/auth/*`; startup asserts that `BETTER_A
 
 Canonical Better Auth roles preserve existing app spelling: `customer`, `super_admin`, `admin`, `store_manager`, and `fulfillment`. Legacy `superadmin` is normalized to `super_admin` at Better Auth boundaries only for compatibility.
 
-Email/password is enabled with Better Auth's own password hashing. Legacy bcrypt password hashes are not treated as compatible; migrated users should reset passwords instead. Password reset and magic-link emails use the existing Mailgun/email-outbox integration, so local link-flow tests should enable the email outbox or configure Mailgun.
+Email/password is enabled with Better Auth's own password hashing. Admin and customer login routes include a one-time legacy bcrypt upgrade path for existing stored password hashes: after a successful legacy password check, the account is synced into Better Auth and the app stores the Better Auth-managed compatibility placeholder. Password reset and magic-link emails use the existing Mailgun/email-outbox integration, so local link-flow tests should enable the email outbox or configure Mailgun.
+
+The current app auth surface is Better Auth cookie sessions. Some compatibility fields remain after Better Auth has resolved the request, including admin `req.session.admin*` backfills and customer `req.customerSession`, while older route modules finish moving to `req.adminAuth` and `req.customerAuth`. These fields are not standalone login surfaces.
 
 ### Dotenv Loading
 

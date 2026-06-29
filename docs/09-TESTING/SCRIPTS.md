@@ -18,7 +18,7 @@ All scripts are located in the `scripts/` directory and run with `npx tsx`. They
 
 ## scripts/doctor.ts
 
-Environment validation script that checks whether the application is correctly configured.
+Environment validation script that checks core runtime configuration. Full app and auth startup also require `BETTER_AUTH_SECRET`.
 
 **Run:**
 ```bash
@@ -26,10 +26,10 @@ npx tsx scripts/doctor.ts
 ```
 
 **Checks performed:**
-1. Required environment variables (`DATABASE_URL`, `SESSION_SECRET`)
+1. Required doctor environment variables (`DATABASE_URL`, `SESSION_SECRET`)
 2. Optional environment variables with warnings (`MAILGUN_API_KEY`, etc.); Stripe test/live aliases satisfy the Stripe checks
 3. Database connection (attempts a simple query)
-4. Integration configuration status (Stripe, Mailgun, Better Auth)
+4. Integration configuration status (Stripe, Mailgun)
 
 **Output format:**
 ```

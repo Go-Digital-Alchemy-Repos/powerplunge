@@ -90,7 +90,7 @@ General-purpose notification table used across the platform, including for suppo
 
 ## Entry Points (Ticket Creation)
 
-There are five entry points for creating tickets, spread across four route files. Two are customer-facing (using different auth mechanisms), one is public, one is admin, and one is a webhook.
+There are five entry points for creating tickets, spread across four route files. Two are customer-facing (using different Better Auth resolution paths), one is public, one is admin, and one is a webhook.
 
 ### 1. Public Contact Form
 
