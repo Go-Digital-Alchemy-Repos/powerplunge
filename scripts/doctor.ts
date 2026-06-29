@@ -26,7 +26,6 @@ async function checkEnvVars() {
   
   const required = [
     { name: "DATABASE_URL", desc: "PostgreSQL connection string" },
-    { name: "SESSION_SECRET", desc: "Session encryption key" },
   ];
   
   const optional = [

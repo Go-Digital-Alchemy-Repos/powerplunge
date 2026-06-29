@@ -28,10 +28,10 @@ cp .env.example .env
 Edit `.env` with your values. At minimum you need:
 
 - `DATABASE_URL` — local PostgreSQL connection string, for example `postgres://thomascarney@localhost:5432/powerplunge`
-- `SESSION_SECRET` — any random string (32+ chars)
 - `STRIPE_SECRET_KEY` — Stripe test key
 - `STRIPE_PUBLISHABLE_KEY` — Stripe test publishable key
 - `STRIPE_WEBHOOK_SECRET` — Stripe webhook secret
+- `BETTER_AUTH_SECRET` — random secret for Better Auth sessions
 
 Use `.env` as the active local/Codex runtime file. Local development should point at local Postgres by default. Keep backup copies of secrets in 1Password. Do not put Neon production, Railway production, or legacy Replit production database credentials in `.env`.
 
@@ -139,4 +139,4 @@ You can override with `E2E_PORT` or `E2E_BASE_URL`.
 - **Database connection fails**: Check your `DATABASE_URL` in `.env`
 - **Local test DB guard fails**: Hydrate `.env.test.local` and confirm `LOCAL_TEST_DATABASE_HOST` matches the database host exactly
 - **Port already in use**: Change `PORT` in `.env` or use different ports
-- **Auth errors**: Make sure `SESSION_SECRET` and `BETTER_AUTH_SECRET` are set, or run through `npm run with:local-auth-env -- <command>`.
+- **Auth errors**: Make sure `BETTER_AUTH_SECRET` is set, or run through `npm run with:local-auth-env -- <command>`.

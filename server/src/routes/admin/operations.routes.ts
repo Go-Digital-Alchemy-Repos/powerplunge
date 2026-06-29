@@ -108,7 +108,7 @@ router.patch("/refunds/:id", async (req: any, res) => {
       return res.status(404).json({ message: "Refund not found" });
     }
 
-    const adminEmail = req.adminUser?.email || req.session?.adminEmail || "admin";
+    const adminEmail = req.adminUser?.email || "admin";
     await storage.createAuditLog({
       actor: adminEmail,
       action: "refund.updated",
@@ -241,7 +241,7 @@ router.post("/jobs/:jobName/run", async (req: any, res) => {
 
     if (result.success) {
       await storage.createAuditLog({
-        actor: req.session?.adminEmail || "admin",
+        actor: req.adminUser?.email || "admin",
         action: "job.manual_run",
         entityType: "job",
         entityId: req.params.jobName,
@@ -262,7 +262,7 @@ export const refundOrderRoutes = Router();
 refundOrderRoutes.post("/:orderId/refunds", async (req: any, res) => {
   try {
     const { amount, reason, reasonCode, type, source } = req.body;
-    const adminEmail = req.adminUser?.email || req.session?.adminEmail || "admin";
+    const adminEmail = req.adminUser?.email || "admin";
 
     if (!amount || typeof amount !== "number" || amount <= 0) {
       return res.status(400).json({ message: "Amount must be a positive number (in cents)", code: "INVALID_AMOUNT" });

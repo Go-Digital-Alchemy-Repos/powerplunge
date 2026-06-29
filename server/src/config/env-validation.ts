@@ -17,11 +17,6 @@ const ENV_VARS: Record<string, EnvVarSpec> = {
     feature: "Database",
     description: "PostgreSQL connection string",
   },
-  SESSION_SECRET: {
-    level: "required",
-    feature: "Auth",
-    description: "Secret used to sign session cookies",
-  },
   STRIPE_SECRET_KEY: {
     level: "required",
     feature: "Payments",

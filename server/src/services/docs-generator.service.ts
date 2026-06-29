@@ -127,7 +127,6 @@ class DocsGeneratorService {
       "MAILGUN_API_KEY": { required: false, description: "Mailgun API key for email sending", category: "Email" },
       "MAILGUN_DOMAIN": { required: false, description: "Mailgun domain for email sending", category: "Email" },
       "SENDGRID_API_KEY": { required: false, description: "SendGrid API key (alternative email)", category: "Email" },
-      "SESSION_SECRET": { required: false, description: "Session encryption secret", category: "Security" },
       "BETTER_AUTH_SECRET": { required: true, description: "Better Auth session secret", category: "Auth" },
       "BETTER_AUTH_BASE_URL": { required: false, description: "Canonical Better Auth origin", category: "Auth" },
       "REPLIT_DOMAINS": { required: false, description: "Replit deployment domains", category: "Replit" },
@@ -1105,7 +1104,6 @@ Provides admin and customer authentication with email/password, password reset, 
 
 | Variable | Description |
 |----------|-------------|
-| \`SESSION_SECRET\` | Random string for session encryption |
 | \`BETTER_AUTH_SECRET\` | Random string for Better Auth sessions |
 
 ### How It Works
@@ -1125,7 +1123,7 @@ Provides admin and customer authentication with email/password, password reset, 
 | Issue | Solution |
 |-------|----------|
 | Login redirect fails | Verify deployment URL matches Replit configuration |
-| Session expires quickly | Check SESSION_SECRET is set |
+| Session expires quickly | Check BETTER_AUTH_SECRET is set |
 | Profile not created | Check customer table schema matches expected fields |
 
 ---

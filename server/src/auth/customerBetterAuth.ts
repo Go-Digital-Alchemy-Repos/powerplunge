@@ -20,11 +20,6 @@ interface BetterAuthEndpointResult<T> {
 type CustomerBetterAuthSession = NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>;
 type SerializedCustomer = ReturnType<typeof serializeCustomer>;
 
-export interface CustomerSession {
-  customerId: string;
-  email: string;
-}
-
 export interface CustomerAuthContext {
   betterAuthSession: CustomerBetterAuthSession;
   customer: Customer;
@@ -40,7 +35,6 @@ export interface CustomerRequestAuth {
 declare module "express-serve-static-core" {
   interface Request {
     customerAuth?: CustomerRequestAuth;
-    customerSession?: CustomerSession;
   }
 }
 
@@ -268,10 +262,6 @@ export function attachCustomerRequestAuth(
   };
 
   req.customerAuth = requestAuth;
-  req.customerSession = {
-    customerId: requestAuth.customerId,
-    email: requestAuth.email,
-  };
   if (options.betterAuthSession) {
     req.betterAuthSession = options.betterAuthSession;
   }

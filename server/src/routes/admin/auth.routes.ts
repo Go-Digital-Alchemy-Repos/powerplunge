@@ -156,13 +156,6 @@ router.post("/logout", async (req, res) => {
     const signOut = await signOutAdmin(req);
     applyBetterAuthHeaders(res, signOut.headers);
 
-    if (req.session) {
-      delete req.session.adminId;
-      delete req.session.adminRole;
-      delete req.session.adminEmail;
-      delete req.session.adminUser;
-    }
-
     res.json({ success: true });
   } catch (error) {
     if (handleAuthConfigError(res, error)) return;

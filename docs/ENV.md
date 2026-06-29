@@ -12,7 +12,6 @@ These must be set for the application to function. Production will not start wit
 | Variable | Feature | Description | Example |
 |---|---|---|---|
 | `DATABASE_URL` | Database | PostgreSQL connection string | `postgresql://user:pass@host:5432/db` |
-| `SESSION_SECRET` | Auth | Secret used to sign session cookies | `a-random-64-char-string` |
 | `STRIPE_SECRET_KEY` | Payments | Stripe API secret key | `sk_live_...` or `sk_test_...` |
 | `STRIPE_PUBLISHABLE_KEY` | Payments | Stripe publishable key (exposed to client) | `pk_live_...` or `pk_test_...` |
 | `STRIPE_WEBHOOK_SECRET` | Payments | Stripe webhook signing secret | `whsec_...` |
@@ -99,7 +98,7 @@ Canonical Better Auth roles preserve existing app spelling: `customer`, `super_a
 
 Email/password is enabled with Better Auth's own password hashing. Admin and customer login routes include a one-time legacy bcrypt upgrade path for existing stored password hashes: after a successful legacy password check, the account is synced into Better Auth and the app stores the Better Auth-managed compatibility placeholder. Password reset and magic-link emails use the existing Mailgun/email-outbox integration, so local link-flow tests should enable the email outbox or configure Mailgun.
 
-The current app auth surface is Better Auth cookie sessions. Some compatibility fields remain after Better Auth has resolved the request, including admin `req.session.admin*` backfills and customer `req.customerSession`, while older route modules finish moving to `req.adminAuth` and `req.customerAuth`. These fields are not standalone login surfaces.
+The current app auth surface is Better Auth cookie sessions. Server routes read canonical Better Auth request context via `req.adminAuth` / `req.adminId` / `req.adminUser` and `req.customerAuth`; legacy Express-session admin backfills and the old customer session request field are no longer attached.
 
 ### Dotenv Loading
 

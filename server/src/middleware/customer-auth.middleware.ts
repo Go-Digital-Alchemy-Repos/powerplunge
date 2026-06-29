@@ -2,10 +2,10 @@ import type { Request, Response, NextFunction } from "express";
 import {
   getAttachedCustomerAuthContext,
 } from "../auth/customerBetterAuth";
-import type { CustomerSession } from "../auth/customerBetterAuth";
+import type { CustomerRequestAuth } from "../auth/customerBetterAuth";
 
 export interface AuthenticatedRequest extends Request {
-  customerSession?: CustomerSession;
+  customerAuth?: CustomerRequestAuth;
 }
 
 export async function requireCustomerAuth(req: AuthenticatedRequest, res: Response, next: NextFunction) {

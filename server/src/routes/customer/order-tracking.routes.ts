@@ -66,7 +66,7 @@ router.post("/verify-token", async (req, res) => {
 
 router.get("/", requireCustomerAuth, async (req: AuthenticatedRequest, res) => {
   try {
-    const customerId = req.customerSession!.customerId;
+    const customerId = req.customerAuth!.customerId;
 
     const customerIds = new Set<string>([customerId]);
 
@@ -107,7 +107,7 @@ router.get("/", requireCustomerAuth, async (req: AuthenticatedRequest, res) => {
 router.get("/order/:orderId", requireCustomerAuth, async (req: AuthenticatedRequest, res) => {
   try {
     const { orderId } = req.params;
-    const customerId = req.customerSession!.customerId;
+    const customerId = req.customerAuth!.customerId;
     
     const order = await storage.getOrder(orderId);
     if (!order) {
@@ -131,7 +131,7 @@ router.get("/order/:orderId", requireCustomerAuth, async (req: AuthenticatedRequ
 
 router.get("/support", requireCustomerAuth, async (req: AuthenticatedRequest, res) => {
   try {
-    const customerId = req.customerSession!.customerId;
+    const customerId = req.customerAuth!.customerId;
 
     const tickets = await db.select({
       id: supportTickets.id,
@@ -167,7 +167,7 @@ const createTicketSchema = z.object({
 
 router.post("/support", requireCustomerAuth, async (req: AuthenticatedRequest, res) => {
   try {
-    const customerId = req.customerSession!.customerId;
+    const customerId = req.customerAuth!.customerId;
     const data = createTicketSchema.parse(req.body);
 
     if (data.orderId) {
@@ -231,7 +231,7 @@ const replySchema = z.object({
 
 router.post("/support/:id/reply", requireCustomerAuth, async (req: AuthenticatedRequest, res) => {
   try {
-    const customerId = req.customerSession!.customerId;
+    const customerId = req.customerAuth!.customerId;
     const { id } = req.params;
     const data = replySchema.parse(req.body);
 
@@ -298,7 +298,7 @@ router.post("/support/:id/reply", requireCustomerAuth, async (req: Authenticated
 
 router.delete("/support/:id", requireCustomerAuth, async (req: AuthenticatedRequest, res) => {
   try {
-    const customerId = req.customerSession!.customerId;
+    const customerId = req.customerAuth!.customerId;
     const { id } = req.params;
 
     const ticket = await db.query.supportTickets.findFirst({
@@ -324,7 +324,7 @@ router.delete("/support/:id", requireCustomerAuth, async (req: AuthenticatedRequ
 
 router.get("/vip-status", requireCustomerAuth, async (req: AuthenticatedRequest, res) => {
   try {
-    const customerId = req.customerSession!.customerId;
+    const customerId = req.customerAuth!.customerId;
     
     const customer = await storage.getCustomer(customerId);
     if (!customer) {

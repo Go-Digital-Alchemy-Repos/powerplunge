@@ -149,7 +149,7 @@ router.get("/:affiliateId/profile", validateParams(affiliateIdSchema), async (re
 router.put("/:affiliateId/custom-rates", validateParams(affiliateIdSchema), async (req: Request, res: Response) => {
   try {
     const { affiliateId } = req.params;
-    const adminId = (req.session as any)?.adminId || "system";
+    const adminId = req.adminId || "system";
 
     const schema = z.object({
       useCustomRates: z.boolean(),
@@ -221,7 +221,7 @@ router.post(
   async (req: Request, res: Response) => {
     try {
       const { commissionId } = req.params;
-      const adminId = (req.session as any)?.adminId || "system";
+      const adminId = req.adminId || "system";
 
       const result = await affiliateCommissionService.approveCommission(commissionId);
 
@@ -255,7 +255,7 @@ router.post(
     try {
       const { commissionId } = req.params;
       const { reason } = req.body;
-      const adminId = (req.session as any)?.adminId || "system";
+      const adminId = req.adminId || "system";
 
       const result = await affiliateCommissionService.voidCommission(commissionId, reason);
 
@@ -300,7 +300,7 @@ router.post(
     try {
       const { commissionId } = req.params;
       const { notes } = req.body;
-      const adminId = (req.session as any)?.adminId || "system";
+      const adminId = req.adminId || "system";
 
       const result = await affiliateCommissionService.approveCommission(commissionId, adminId, notes);
 
@@ -333,7 +333,7 @@ router.post(
     try {
       const { commissionId } = req.params;
       const { notes } = req.body;
-      const adminId = (req.session as any)?.adminId || "system";
+      const adminId = req.adminId || "system";
 
       const result = await affiliateCommissionService.voidCommission(commissionId, notes, adminId);
 
@@ -364,7 +364,7 @@ router.post(
   async (req: Request, res: Response) => {
     try {
       const { commissionIds } = req.body;
-      const adminId = (req.session as any)?.adminId || "system";
+      const adminId = req.adminId || "system";
 
       const results = await Promise.all(
         commissionIds.map((id: string) => affiliateCommissionService.approveCommission(id))
@@ -437,7 +437,7 @@ router.post(
     try {
       const { payoutId } = req.params;
 
-      const adminId = (req.session as any)?.adminId || "system";
+      const adminId = req.adminId || "system";
 
       const payout = await storage.getAffiliatePayout(payoutId);
       if (!payout) {
@@ -476,7 +476,7 @@ router.post(
     try {
       const { payoutId } = req.params;
       const { reason } = req.body;
-      const adminId = (req.session as any)?.adminId || "system";
+      const adminId = req.adminId || "system";
 
       const payout = await storage.getAffiliatePayout(payoutId);
       if (!payout) {
@@ -515,7 +515,7 @@ router.post(
   async (req: Request, res: Response) => {
     try {
       const { payoutId } = req.params;
-      const adminId = (req.session as any)?.adminId || "system";
+      const adminId = req.adminId || "system";
 
       const payout = await storage.getAffiliatePayout(payoutId);
       if (!payout) {
@@ -616,7 +616,7 @@ router.post(
     try {
       const { affiliateId } = req.params;
       const { amount, paymentMethod, paymentDetails, notes } = req.body;
-      const adminId = (req.session as any)?.adminId || "system";
+      const adminId = req.adminId || "system";
 
       const affiliate = await storage.getAffiliate(affiliateId);
       if (!affiliate) {
@@ -723,7 +723,7 @@ router.post(
   async (req: Request, res: Response) => {
     try {
       const { dryRun } = req.body;
-      const adminId = (req.session as any)?.adminId || "system";
+      const adminId = req.adminId || "system";
 
       const result = await affiliatePayoutService.runPayoutBatch({
         dryRun,
@@ -745,7 +745,7 @@ router.delete(
   async (req: Request, res: Response) => {
     try {
       const { affiliateId } = req.params;
-      const adminId = (req.session as any)?.adminId || "system";
+      const adminId = req.adminId || "system";
 
       const affiliate = await storage.getAffiliate(affiliateId);
       if (!affiliate) {

@@ -14,7 +14,7 @@
 
 Admin authentication endpoints for setup wizard, Better Auth login/logout, profile management, and password recovery.
 First-time setup creates the initial admin account. Subsequent requests use Better Auth session cookies. Password reset links are scoped to Better Auth users linked to `admin_users`.
-`server/src/auth/adminBetterAuth.ts` still backfills `req.session.adminId`, `adminRole`, `adminEmail`, and `adminUser` after Better Auth succeeds because some older admin audit/activity routes still read those fields; new route code should prefer `req.adminId` and `req.adminUser`.
+`server/src/auth/adminBetterAuth.ts` attaches canonical Better Auth request fields (`req.adminAuth`, `req.adminId`, and `req.adminUser`) after Better Auth succeeds; admin routes should use those fields for audit IDs and profile data.
 
 <!-- === AUTO-GENERATED SECTION (do not edit below this line) === -->
 

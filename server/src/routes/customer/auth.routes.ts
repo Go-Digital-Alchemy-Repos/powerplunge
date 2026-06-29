@@ -266,7 +266,7 @@ router.post("/verify-magic-link", passwordResetLimiter, async (req, res) => {
 
 router.get("/check-admin-eligible", requireCustomerAuth, async (req: AuthenticatedRequest, res) => {
   try {
-    const customer = await storage.getCustomer(req.customerSession!.customerId);
+    const customer = await storage.getCustomer(req.customerAuth!.customerId);
     if (!customer) {
       return res.json({ eligible: false });
     }
@@ -280,7 +280,7 @@ router.get("/check-admin-eligible", requireCustomerAuth, async (req: Authenticat
 
 router.get("/me", requireCustomerAuth, async (req: AuthenticatedRequest, res) => {
   try {
-    const customer = await storage.getCustomer(req.customerSession!.customerId);
+    const customer = await storage.getCustomer(req.customerAuth!.customerId);
     if (!customer) {
       return res.status(404).json({ message: "Customer not found" });
     }
@@ -293,7 +293,7 @@ router.get("/me", requireCustomerAuth, async (req: AuthenticatedRequest, res) =>
 
 router.patch("/update-profile", requireCustomerAuth, async (req: AuthenticatedRequest, res) => {
   try {
-    const customerId = req.customerSession!.customerId;
+    const customerId = req.customerAuth!.customerId;
     const data = updateProfileSchema.parse(req.body);
 
     const updateData: any = {};
@@ -330,7 +330,7 @@ router.post("/change-password", requireCustomerAuth, async (req: AuthenticatedRe
     const { currentPassword, newPassword } = changePasswordSchema.parse(req.body);
     const result = await changeCustomerPassword(req, { currentPassword, newPassword });
     applyBetterAuthHeaders(res, result.headers);
-    await storage.updateCustomer(req.customerSession!.customerId, {
+    await storage.updateCustomer(req.customerAuth!.customerId, {
       passwordHash: BETTER_AUTH_CUSTOMER_PASSWORD_PLACEHOLDER,
     });
     res.json({ success: true, message: "Password changed successfully" });

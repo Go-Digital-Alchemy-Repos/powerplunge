@@ -1149,7 +1149,6 @@ Admin users authenticate via email/password with session-based auth.
 Set these in Replit Secrets:
 - \`STRIPE_SECRET_KEY\`
 - \`STRIPE_PUBLISHABLE_KEY\`
-- \`SESSION_SECRET\`
 
 ## Database
 

@@ -295,7 +295,7 @@ router.get("/commissions", async (req: any, res: Response) => {
 
 router.get("/", requireCustomerAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const customerId = req.customerSession!.customerId;
+    const customerId = req.customerAuth!.customerId;
     
     // Always fetch settings for non-affiliates too (they need agreementText to join)
     const settings = await storage.getAffiliateSettings();
@@ -428,7 +428,7 @@ const joinAffiliateSchema = z.object({
 
 router.post("/join", requireCustomerAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const customerId = req.customerSession!.customerId;
+    const customerId = req.customerAuth!.customerId;
     const { signatureName } = joinAffiliateSchema.safeParse(req.body).data || { signatureName: "" };
     
     if (!signatureName) {
@@ -475,7 +475,7 @@ router.post("/join", requireCustomerAuth, async (req: AuthenticatedRequest, res:
 
 router.get("/connect/status", requireCustomerAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const customerId = req.customerSession!.customerId;
+    const customerId = req.customerAuth!.customerId;
     
     const affiliate = await storage.getAffiliateByCustomerId(customerId);
     if (!affiliate) {
@@ -542,7 +542,7 @@ router.get("/connect/status", requireCustomerAuth, async (req: AuthenticatedRequ
 
 router.post("/connect/start", requireCustomerAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const customerId = req.customerSession!.customerId;
+    const customerId = req.customerAuth!.customerId;
     
     const affiliate = await storage.getAffiliateByCustomerId(customerId);
     if (!affiliate) {
@@ -629,7 +629,7 @@ router.post("/connect/start", requireCustomerAuth, async (req: AuthenticatedRequ
 // Handle refresh when user returns from incomplete onboarding
 router.post("/connect/refresh", requireCustomerAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const customerId = req.customerSession!.customerId;
+    const customerId = req.customerAuth!.customerId;
     
     const affiliate = await storage.getAffiliateByCustomerId(customerId);
     if (!affiliate) {
@@ -672,7 +672,7 @@ const updateCodeSchema = z.object({
 
 router.put("/code", requireCustomerAuth, validateBody(updateCodeSchema), async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const customerId = req.customerSession!.customerId;
+    const customerId = req.customerAuth!.customerId;
 
     const affiliate = await storage.getAffiliateByCustomerId(customerId);
     if (!affiliate) {

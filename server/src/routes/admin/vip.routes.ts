@@ -96,7 +96,7 @@ router.get("/admin/customers/:customerId", requireAdmin, asyncHandler(async (req
 router.post("/admin/promote/:customerId", requireAdmin, asyncHandler(async (req: any, res) => {
   const { customerId } = req.params;
   const { notes } = req.body;
-  const adminId = req.session?.adminUser?.id;
+  const adminId = req.adminUser?.id;
 
   const customer = await storage.getCustomer(customerId);
   if (!customer) {
@@ -121,7 +121,7 @@ router.post("/admin/promote/:customerId", requireAdmin, asyncHandler(async (req:
 router.post("/admin/revoke/:customerId", requireAdmin, asyncHandler(async (req: any, res) => {
   const { customerId } = req.params;
   const { reason } = req.body;
-  const adminId = req.session?.adminUser?.id;
+  const adminId = req.adminUser?.id;
 
   if (!reason) {
     return res.status(400).json({ message: "Reason required for revocation" });

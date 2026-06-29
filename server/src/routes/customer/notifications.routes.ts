@@ -6,7 +6,7 @@ const router = Router();
 
 router.get("/", requireCustomerAuth, async (req: AuthenticatedRequest, res) => {
   try {
-    const customerId = req.customerSession!.customerId;
+    const customerId = req.customerAuth!.customerId;
     const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
     const offset = parseInt(req.query.offset as string) || 0;
 
@@ -20,7 +20,7 @@ router.get("/", requireCustomerAuth, async (req: AuthenticatedRequest, res) => {
 
 router.get("/unread-count", requireCustomerAuth, async (req: AuthenticatedRequest, res) => {
   try {
-    const customerId = req.customerSession!.customerId;
+    const customerId = req.customerAuth!.customerId;
     const count = await notificationService.getUnreadCount("customer", customerId);
     res.json({ count });
   } catch (error) {
@@ -31,7 +31,7 @@ router.get("/unread-count", requireCustomerAuth, async (req: AuthenticatedReques
 
 router.patch("/:id/read", requireCustomerAuth, async (req: AuthenticatedRequest, res) => {
   try {
-    const customerId = req.customerSession!.customerId;
+    const customerId = req.customerAuth!.customerId;
     const success = await notificationService.markRead(req.params.id, "customer", customerId);
     if (!success) {
       return res.status(404).json({ message: "Notification not found" });
@@ -45,7 +45,7 @@ router.patch("/:id/read", requireCustomerAuth, async (req: AuthenticatedRequest,
 
 router.patch("/mark-all-read", requireCustomerAuth, async (req: AuthenticatedRequest, res) => {
   try {
-    const customerId = req.customerSession!.customerId;
+    const customerId = req.customerAuth!.customerId;
     const count = await notificationService.markAllRead("customer", customerId);
     res.json({ success: true, count });
   } catch (error) {

@@ -37,7 +37,7 @@ describe("customer Better Auth request seam", () => {
     process.env.BETTER_AUTH_SECRET = "test-secret";
   });
 
-  it("attaches canonical customer auth and legacy compatibility fields", () => {
+  it("attaches canonical customer auth fields", () => {
     const customer = serializeCustomer({
       id: "cust-1",
       email: "customer@example.com",
@@ -63,10 +63,6 @@ describe("customer Better Auth request seam", () => {
       email: "customer@example.com",
       customer,
       betterAuthSession,
-    });
-    expect(req.customerSession).toEqual({
-      customerId: "cust-1",
-      email: "customer@example.com",
     });
     expect(req.betterAuthSession).toBe(betterAuthSession);
   });
@@ -104,7 +100,7 @@ describe("customer Better Auth request seam", () => {
       email: "customer@example.com",
       avatarUrl: null,
     });
-    expect(req.customerSession?.customerId).toBe("cust-1");
+    expect(req.customerAuth?.customerId).toBe("cust-1");
   });
 
   it("resolves a Better Auth session to the linked customer profile", async () => {

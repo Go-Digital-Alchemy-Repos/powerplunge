@@ -2,7 +2,6 @@ export const env = {
   NODE_ENV: process.env.NODE_ENV || "development",
   PORT: parseInt(process.env.PORT || "5000", 10),
   DATABASE_URL: process.env.DATABASE_URL,
-  SESSION_SECRET: process.env.SESSION_SECRET,
   APP_SECRETS_ENCRYPTION_KEY: process.env.APP_SECRETS_ENCRYPTION_KEY,
   
   stripe: {
@@ -19,4 +18,3 @@ export const env = {
 
 export const isDevelopment = env.NODE_ENV === "development";
 export const isProduction = env.NODE_ENV === "production";
-
