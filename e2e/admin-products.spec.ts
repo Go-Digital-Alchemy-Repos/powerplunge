@@ -1,8 +1,12 @@
 import { test, expect } from "./fixtures";
+import { createE2EProductTracker } from "./helpers/api";
 
 test.describe("Admin Product Management @admin", () => {
-  const uid = Date.now().toString(36);
-  const productName = `E2E Admin Product ${uid}`;
+  const products = createE2EProductTracker();
+
+  test.afterEach(async ({ request }) => {
+    await products.cleanup(request);
+  });
 
   test("admin can view product list", async ({ adminPage }) => {
     await adminPage.goto("/admin/products");
@@ -10,6 +14,9 @@ test.describe("Admin Product Management @admin", () => {
   });
 
   test("admin can create a new product", async ({ adminPage }) => {
+    const uid = Date.now().toString(36);
+    const productName = `E2E Admin Product ${uid}`;
+
     await adminPage.goto("/admin/products");
     await adminPage.locator('[data-testid="button-add-product"]').click();
 
@@ -18,43 +25,58 @@ test.describe("Admin Product Management @admin", () => {
     await adminPage.locator('[data-testid="input-product-tagline"]').fill("E2E test tagline");
     await adminPage.locator('[data-testid="input-product-description"]').fill("Created by E2E test");
 
+    products.trackName(productName);
     await adminPage.locator('[data-testid="button-save-close"]').click();
 
-    await adminPage.waitForTimeout(2000);
-    await expect(adminPage.locator(`text=${productName}`)).toBeVisible({ timeout: 10000 });
+    const productCard = adminPage
+      .locator('[data-testid^="product-card-"]')
+      .filter({ hasText: productName })
+      .first();
+    await expect(productCard).toBeVisible({ timeout: 10000 });
+
+    const testId = await productCard.getAttribute("data-testid");
+    if (!testId) {
+      throw new Error(`Could not identify created product card for ${productName}`);
+    }
+    products.track(testId.replace("product-card-", ""));
   });
 
-  test("admin can edit a product", async ({ adminPage }) => {
-    await adminPage.goto("/admin/products");
-    await adminPage.waitForTimeout(1000);
+  test("admin can edit a product", async ({ adminPage, request }) => {
+    const product = await products.create(request, {
+      name: `E2E Admin Editable ${Date.now().toString(36)}`,
+    });
+    const updatedName = `${product.name} Updated`;
 
-    const productCard = adminPage.locator(`text=${productName}`).first();
+    await adminPage.goto("/admin/products");
+
+    const productCard = adminPage.locator(`[data-testid="product-card-${product.id}"]`);
     await expect(productCard).toBeVisible({ timeout: 10000 });
-    await productCard.click();
+    await productCard.locator(`[data-testid="button-edit-${product.id}"]`).click();
 
     const nameInput = adminPage.locator('[data-testid="input-product-name"]');
     await expect(nameInput).toBeVisible({ timeout: 5000 });
-    await nameInput.fill(`${productName} Updated`);
+    await nameInput.fill(updatedName);
     await adminPage.locator('[data-testid="button-save-close"]').click();
 
-    await adminPage.waitForTimeout(2000);
-    await expect(adminPage.locator(`text=${productName} Updated`)).toBeVisible({ timeout: 10000 });
+    await expect(adminPage.locator(`text=${updatedName}`)).toBeVisible({ timeout: 10000 });
   });
 
-  test("admin can delete a product", async ({ adminPage }) => {
-    await adminPage.goto("/admin/products");
-    await adminPage.waitForTimeout(1000);
+  test("admin can delete a product", async ({ adminPage, request }) => {
+    const product = await products.create(request, {
+      name: `E2E Admin Deletable ${Date.now().toString(36)}`,
+    });
 
-    const productCard = adminPage.locator(`text=${productName} Updated`).first();
+    await adminPage.goto("/admin/products");
+
+    const productCard = adminPage.locator(`[data-testid="product-card-${product.id}"]`);
     await expect(productCard).toBeVisible({ timeout: 10000 });
 
-    const card = adminPage.locator('[data-testid^="product-card-"]').filter({ hasText: `${productName} Updated` });
-    const deleteButton = card.locator('[data-testid^="button-delete-"]');
+    const deleteButton = productCard.locator(`[data-testid="button-delete-${product.id}"]`);
 
     adminPage.on("dialog", (dialog) => dialog.accept());
     await deleteButton.click();
 
-    await adminPage.waitForTimeout(2000);
-    await expect(adminPage.locator(`text=${productName} Updated`)).not.toBeVisible({ timeout: 10000 });
+    await expect(productCard).not.toBeVisible({ timeout: 10000 });
+    await products.cleanup(request);
   });
 });

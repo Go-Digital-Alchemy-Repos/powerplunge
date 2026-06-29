@@ -3,7 +3,8 @@ import { test, expect } from "@playwright/test";
 test.describe("Smoke Tests @smoke", () => {
   test("homepage loads", async ({ page }) => {
     await page.goto("/");
-    await expect(page).toHaveTitle(/Power Plunge/i);
+    await expect(page.locator('[data-testid="img-logo"]')).toBeVisible();
+    await expect(page.locator('[data-testid="button-cart"]')).toBeVisible();
   });
 
   test("admin login page loads", async ({ page }) => {
