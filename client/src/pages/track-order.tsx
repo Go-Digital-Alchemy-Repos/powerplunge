@@ -25,11 +25,13 @@ interface Order {
   stripePaymentIntentId?: string | null;
 }
 
-interface CustomerSession {
+interface BrowserOrderTrackingSession {
   customerId: string;
   customerName: string;
   customerEmail: string;
 }
+
+const BROWSER_ORDER_TRACKING_SESSION_STORAGE_KEY = "customerSession";
 
 function formatCurrency(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
@@ -67,7 +69,7 @@ export default function TrackOrder() {
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
-  const [customerSession, setCustomerSession] = useState<CustomerSession | null>(null);
+  const [browserOrderTrackingSession, setBrowserOrderTrackingSession] = useState<BrowserOrderTrackingSession | null>(null);
   const [verifyingToken, setVerifyingToken] = useState(false);
 
   useEffect(() => {
@@ -79,12 +81,12 @@ export default function TrackOrder() {
       verifyToken(token);
     }
 
-    const savedSession = sessionStorage.getItem("customerSession");
-    if (savedSession) {
+    const savedBrowserOrderTrackingSession = sessionStorage.getItem(BROWSER_ORDER_TRACKING_SESSION_STORAGE_KEY);
+    if (savedBrowserOrderTrackingSession) {
       try {
-        setCustomerSession(JSON.parse(savedSession));
+        setBrowserOrderTrackingSession(JSON.parse(savedBrowserOrderTrackingSession));
       } catch (e) {
-        sessionStorage.removeItem("customerSession");
+        sessionStorage.removeItem(BROWSER_ORDER_TRACKING_SESSION_STORAGE_KEY);
       }
     }
   }, []);
@@ -121,9 +123,9 @@ export default function TrackOrder() {
   };
 
   const { data: ordersData, isLoading: ordersLoading, error: ordersError } = useQuery<{ orders: Order[] }>({
-    queryKey: ["/api/customer/orders", customerSession?.customerId],
+    queryKey: ["/api/customer/orders", browserOrderTrackingSession?.customerId],
     queryFn: async () => {
-      if (!customerSession?.customerId) return { orders: [] };
+      if (!browserOrderTrackingSession?.customerId) return { orders: [] };
       const response = await fetch("/api/customer/orders", {
         credentials: "include",
       });
@@ -134,7 +136,7 @@ export default function TrackOrder() {
       if (!response.ok) throw new Error("Failed to fetch orders");
       return response.json();
     },
-    enabled: !!customerSession?.customerId,
+    enabled: !!browserOrderTrackingSession?.customerId,
   });
   const orders = ordersData?.orders || [];
 
@@ -175,8 +177,8 @@ export default function TrackOrder() {
   };
 
   const handleLogout = () => {
-    setCustomerSession(null);
-    sessionStorage.removeItem("customerSession");
+    setBrowserOrderTrackingSession(null);
+    sessionStorage.removeItem(BROWSER_ORDER_TRACKING_SESSION_STORAGE_KEY);
     setEmailSent(false);
     setEmail("");
   };
@@ -192,7 +194,7 @@ export default function TrackOrder() {
     );
   }
 
-  if (customerSession) {
+  if (browserOrderTrackingSession) {
     return (
       <div className="min-h-screen bg-background">
         <nav className="sticky top-0 z-50 bg-card border-b border-border">
@@ -204,7 +206,7 @@ export default function TrackOrder() {
               </Button>
             </Link>
             <div className="flex items-center gap-4">
-              <span className="text-sm text-muted-foreground">{customerSession.customerEmail}</span>
+              <span className="text-sm text-muted-foreground">{browserOrderTrackingSession.customerEmail}</span>
               <Button variant="outline" size="sm" onClick={handleLogout} data-testid="button-logout">
                 Sign Out
               </Button>
@@ -215,7 +217,7 @@ export default function TrackOrder() {
         <main className="max-w-4xl mx-auto px-6 py-12">
           <div className="mb-8">
             <h1 className="font-display text-3xl font-bold mb-2" data-testid="text-welcome">
-              Welcome, {customerSession.customerName}
+              Welcome, {browserOrderTrackingSession.customerName}
             </h1>
             <p className="text-muted-foreground">Here's a summary of your orders with us.</p>
           </div>

@@ -8,7 +8,7 @@
 | Source Files | server/src/routes/customer/profile.routes.ts |
 | Endpoint Count | 6 |
 | Mount Point | `/api/customer` |
-| Auth Middleware | Per-route/customer identity resolution; no Replit OIDC mount gate |
+| Auth Middleware | Per-route Better Auth customer identity resolution |
 
 ## Notes
 

@@ -161,12 +161,12 @@ export function useCustomerAuth() {
   }, []);
 
   const getAuthHeader = useCallback((): Record<string, string> => {
-    // Customer auth is cookie-based. Several account flows still spread this
-    // helper while shared fetch code is migrated away from bearer tokens.
+    // Customer auth is cookie-based. Keep this empty helper for callers that
+    // still share request-building code with auth-header-aware flows.
     return {};
   }, []);
 
-  // Compatibility shim for older callers that checked for a bearer token.
+  // Compatibility shim for older callers that check for a token-shaped value.
   const getToken = useCallback(() => null, []);
 
   return {

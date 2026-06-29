@@ -80,7 +80,7 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  // Better Auth is the app login surface after the auth cutover.
+  // Better Auth is the app login surface.
   registerBetterAuthRoutes(app);
   
   // Register file storage routes

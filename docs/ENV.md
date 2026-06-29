@@ -90,7 +90,7 @@ When `.env.test.local` points at a remote isolated Neon test branch, set `LOCAL_
 
 ## Better Auth Foundation
 
-Power Plunge currently uses `better-auth@1.4.18` from the lockfile. This migration keeps the locked version to avoid broad API churn during the foundation issue.
+Power Plunge currently uses `better-auth@1.4.18` from the lockfile. Keep version changes deliberate so auth API churn is reviewed separately from routine env updates.
 
 Better Auth API routes mount under `/api/auth/*`; startup asserts that `BETTER_AUTH_SECRET` is present before those routes register. The client helper points at the same origin and uses Better Auth's default `/api/auth` base path.
 

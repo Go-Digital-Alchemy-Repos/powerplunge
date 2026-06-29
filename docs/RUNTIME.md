@@ -29,7 +29,7 @@ Precedence: Replit > CI > Codex Web > Codex Local > Local. The flags are mutuall
 
 ## Auth Behavior
 
-Better Auth is the login surface in every runtime after the auth cutover. Admin app routes use `/api/admin/login`, `/api/admin/logout`, `/api/admin/me`, `/api/admin/forgot-password`, and `/api/admin/reset-password`; customer routes use `/api/customer/auth/*`; Better Auth core routes mount under `/api/auth/*` after `BETTER_AUTH_SECRET` passes startup validation.
+Better Auth is the login surface in every runtime. Admin app routes use `/api/admin/login`, `/api/admin/logout`, `/api/admin/me`, `/api/admin/forgot-password`, and `/api/admin/reset-password`; customer routes use `/api/customer/auth/*`; Better Auth core routes mount under `/api/auth/*` after `BETTER_AUTH_SECRET` passes startup validation.
 
 Local and Codex testing should use seeded Better Auth accounts. Run commands through `npm run with:local-auth-env -- <command>` / `npm run with:test-env -- <command>`, or use the local scripts `verify:seed-auth:local` and `test:e2e:local`.
 
