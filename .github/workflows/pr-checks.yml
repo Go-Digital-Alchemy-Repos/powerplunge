@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   test:
-    name: Typecheck, Build, Unit, Critical E2E
+    name: Typecheck, Build, Unit, Auth E2E
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
