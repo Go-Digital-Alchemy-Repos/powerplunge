@@ -58,7 +58,7 @@ Current service inventory:
 | Stripe primary webhook secret | Rotated | Historically exposed primary PowerPlunge signing secret was rotated in Stripe Workbench on 2026-06-22; Neon now has an encrypted DB-stored live webhook secret. |
 | Stripe primary webhook endpoint | Not ready | The primary `https://powerplunge.com/api/webhook/stripe` destination exists under the Nano-Shield Stripe account, but it is currently disabled. |
 | Public URL config | Staged in Railway | `PUBLIC_SITE_URL` and `BASE_URL` are set to the Railway dry-run URL with `--skip-deploys`; update to the canonical domain only during DNS cutover. |
-| Auth migration | Ready after Better Auth env verification | Better Auth is the app login surface for admin and customer sessions. Replit OIDC and customer token-auth routes have been removed, and local smoke confirms unauthenticated `/api/customer/profile` returns HTTP 401 quickly. |
+| Auth migration | Ready after Better Auth env verification | Better Auth is the app login surface for admin and customer sessions. Replit OIDC and customer token-auth routes have been removed, and local smoke confirms unauthenticated `/api/customer/profile` returns HTTP 401 quickly. One-time bcrypt password upgrade and request-field backfills remain as compatibility paths after Better Auth boundaries. |
 
 ## Variable Mapping
 
@@ -151,7 +151,7 @@ Set these for Better Auth runtime:
 - `BETTER_AUTH_BASE_URL`
 - `APP_URL`
 
-Railway production auth uses Better Auth after the cutover. Replit OIDC and customer token-auth routes are no longer the app login surface.
+Railway production auth uses Better Auth after the cutover. Replit OIDC and customer token-auth routes are no longer the app login surface. Existing admin/customer bcrypt password hashes may still be upgraded on successful login, after which the account uses Better Auth-managed credentials.
 
 ## Apply Order After Confirmation
 
