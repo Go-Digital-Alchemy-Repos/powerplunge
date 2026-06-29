@@ -4,11 +4,13 @@ const mocks = vi.hoisted(() => ({
   storage: {
     getCustomer: vi.fn(),
   },
+  attachCustomerAuthContext: vi.fn(),
   getCustomerAuthContext: vi.fn(),
 }));
 
 vi.mock("../../../storage", () => ({ storage: mocks.storage }));
 vi.mock("../../auth/customerBetterAuth", () => ({
+  attachCustomerAuthContext: mocks.attachCustomerAuthContext,
   getCustomerAuthContext: mocks.getCustomerAuthContext,
 }));
 
@@ -17,6 +19,19 @@ const { customerIdentityService } = await import("../customer-identity.service")
 describe("customerIdentityService", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.attachCustomerAuthContext.mockImplementation((req: any, context: any) => {
+      req.customerAuth = {
+        customerId: context.customer.id,
+        email: context.customer.email,
+        customer: context.customer,
+        betterAuthSession: context.betterAuthSession,
+      };
+      req.customerSession = {
+        customerId: context.customer.id,
+        email: context.customer.email,
+      };
+      req.betterAuthSession = context.betterAuthSession;
+    });
   });
 
   it("returns 401 when there is no Better Auth session", async () => {
@@ -99,6 +114,56 @@ describe("customerIdentityService", () => {
         customerId: "cust-1",
         customer,
         source: "better_auth",
+      },
+    });
+    expect(mocks.attachCustomerAuthContext).toHaveBeenCalledWith(expect.any(Object), {
+      customer,
+      betterAuthSession: { id: "session-1" },
+    });
+  });
+
+  it("uses preattached customer auth without loading a Better Auth session again", async () => {
+    const customer = { id: "cust-1", email: "customer@example.com", name: "Customer" };
+    mocks.storage.getCustomer.mockResolvedValue(customer);
+
+    const result = await customerIdentityService.resolve({
+      customerAuth: {
+        customerId: "cust-1",
+        email: "customer@example.com",
+        customer,
+        betterAuthSession: { id: "session-1" },
+      },
+    });
+
+    expect(mocks.getCustomerAuthContext).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      ok: true,
+      identity: {
+        customerId: "cust-1",
+        customer,
+        source: "better_auth",
+      },
+    });
+  });
+
+  it("returns 404 when a preattached customer profile no longer exists", async () => {
+    mocks.storage.getCustomer.mockResolvedValue(null);
+
+    const result = await customerIdentityService.resolve({
+      customerAuth: {
+        customerId: "cust-missing",
+        email: "missing@example.com",
+        customer: { id: "cust-missing", email: "missing@example.com" },
+      },
+    });
+
+    expect(mocks.getCustomerAuthContext).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      ok: false,
+      error: {
+        code: "CUSTOMER_NOT_FOUND",
+        message: "Customer not found",
+        httpStatus: 404,
       },
     });
   });

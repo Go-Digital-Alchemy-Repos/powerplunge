@@ -17,17 +17,30 @@ interface BetterAuthEndpointResult<T> {
   headers: Headers;
 }
 
+type CustomerBetterAuthSession = NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>;
+type SerializedCustomer = ReturnType<typeof serializeCustomer>;
+
+export interface CustomerSession {
+  customerId: string;
+  email: string;
+}
+
 export interface CustomerAuthContext {
-  betterAuthSession: Awaited<ReturnType<typeof auth.api.getSession>>;
+  betterAuthSession: CustomerBetterAuthSession;
   customer: Customer;
+}
+
+export interface CustomerRequestAuth {
+  customerId: string;
+  email: string;
+  customer: SerializedCustomer;
+  betterAuthSession?: CustomerBetterAuthSession;
 }
 
 declare module "express-serve-static-core" {
   interface Request {
-    customerSession?: {
-      customerId: string;
-      email: string;
-    };
+    customerAuth?: CustomerRequestAuth;
+    customerSession?: CustomerSession;
   }
 }
 
@@ -242,12 +255,39 @@ export async function getCustomerAuthContext(req: Request): Promise<CustomerAuth
   return { betterAuthSession: session, customer };
 }
 
-export function attachCustomerAuthContext(req: Request, context: CustomerAuthContext) {
-  req.betterAuthSession = context.betterAuthSession!;
-  req.customerSession = {
-    customerId: context.customer.id,
-    email: context.customer.email,
+export function attachCustomerRequestAuth(
+  req: Request,
+  customer: SerializedCustomer,
+  options: { betterAuthSession?: CustomerBetterAuthSession } = {},
+) {
+  const requestAuth: CustomerRequestAuth = {
+    customerId: customer.id,
+    email: customer.email,
+    customer,
+    betterAuthSession: options.betterAuthSession,
   };
+
+  req.customerAuth = requestAuth;
+  req.customerSession = {
+    customerId: requestAuth.customerId,
+    email: requestAuth.email,
+  };
+  if (options.betterAuthSession) {
+    req.betterAuthSession = options.betterAuthSession;
+  }
+}
+
+export function attachCustomerAuthContext(req: Request, context: CustomerAuthContext) {
+  attachCustomerRequestAuth(req, serializeCustomer(context.customer), {
+    betterAuthSession: context.betterAuthSession,
+  });
+}
+
+export async function getAttachedCustomerAuthContext(req: Request): Promise<CustomerAuthContext | null> {
+  const context = await getCustomerAuthContext(req);
+  if (!context) return null;
+  attachCustomerAuthContext(req, context);
+  return context;
 }
 
 export async function signUpCustomerAndCreateSession(input: {

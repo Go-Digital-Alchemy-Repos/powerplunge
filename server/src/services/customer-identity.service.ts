@@ -1,8 +1,11 @@
 import { Request } from "express";
 import { storage } from "../../storage";
-import type { CustomerSession } from "../middleware/customer-auth.middleware";
 import type { Customer } from "@shared/schema";
-import { getCustomerAuthContext } from "../auth/customerBetterAuth";
+import {
+  attachCustomerAuthContext,
+  getCustomerAuthContext,
+  type CustomerSession,
+} from "../auth/customerBetterAuth";
 
 export type IdentitySource = "better_auth";
 
@@ -58,18 +61,24 @@ export class CustomerIdentityService {
   }
 
   private async extractCustomerSession(req: any): Promise<CustomerSession | null> {
+    if (req.customerAuth) {
+      return {
+        customerId: req.customerAuth.customerId,
+        email: req.customerAuth.email,
+      };
+    }
+
     if (req.customerSession) {
       return req.customerSession;
     }
 
     const context = await getCustomerAuthContext(req as Request);
     if (!context) return null;
-    req.customerSession = {
+    attachCustomerAuthContext(req as Request, context);
+    return {
       customerId: context.customer.id,
       email: context.customer.email,
     };
-    req.betterAuthSession = context.betterAuthSession;
-    return req.customerSession;
   }
 
   private async resolveFromBetterAuthSession(session: CustomerSession): Promise<IdentityResult> {

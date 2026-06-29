@@ -1,13 +1,8 @@
 import type { Request, Response, NextFunction } from "express";
 import {
-  attachCustomerAuthContext,
-  getCustomerAuthContext,
+  getAttachedCustomerAuthContext,
 } from "../auth/customerBetterAuth";
-
-export interface CustomerSession {
-  customerId: string;
-  email: string;
-}
+import type { CustomerSession } from "../auth/customerBetterAuth";
 
 export interface AuthenticatedRequest extends Request {
   customerSession?: CustomerSession;
@@ -15,12 +10,11 @@ export interface AuthenticatedRequest extends Request {
 
 export async function requireCustomerAuth(req: AuthenticatedRequest, res: Response, next: NextFunction) {
   try {
-    const context = await getCustomerAuthContext(req);
+    const context = await getAttachedCustomerAuthContext(req);
     if (!context) {
       return res.status(401).json({ message: "Authentication required" });
     }
 
-    attachCustomerAuthContext(req, context);
     next();
   } catch (error: any) {
     const message = error instanceof Error ? error.message : "Authentication failed";

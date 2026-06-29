@@ -797,16 +797,12 @@ All secret keys and webhook secrets are encrypted before DB storage using AES-25
 ## 3. CUSTOMER AUTHENTICATION {#3-customer-auth}
 
 ### Better Auth Customer Sessions
-The system uses Better Auth customer sessions. Session state is stored in HTTP-only cookies and resolved on the server through `getCustomerAuthContext`, `requireCustomerAuth`, or `customerIdentityService`.
+The system uses Better Auth customer sessions. Session state is stored in HTTP-only cookies and resolved on the server through `getCustomerAuthContext`, `getAttachedCustomerAuthContext`, `requireCustomerAuth`, or `customerIdentityService`.
 
 ```typescript
 async function requireCustomerAuth(req, res, next) {
-  const context = await getCustomerAuthContext(req);
+  const context = await getAttachedCustomerAuthContext(req);
   if (!context) return res.status(401).json({ message: "Authentication required" });
-  req.customerSession = {
-    customerId: context.customer.id,
-    email: context.customer.email,
-  };
   next();
 }
 ```
@@ -814,12 +810,8 @@ async function requireCustomerAuth(req, res, next) {
 ### Auth Middleware
 ```typescript
 async function requireCustomerAuth(req, res, next) {
-  const context = await getCustomerAuthContext(req);
+  const context = await getAttachedCustomerAuthContext(req);
   if (!context) return res.status(401).json({ message: "Unauthorized" });
-  req.customerSession = {
-    customerId: context.customer.id,
-    email: context.customer.email,
-  };
   next();
 }
 ```
