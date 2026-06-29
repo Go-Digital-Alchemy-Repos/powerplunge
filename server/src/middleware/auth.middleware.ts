@@ -1,39 +1,20 @@
 import type { Request, Response, NextFunction } from "express";
-import type { AdminUser } from "@shared/schema";
 import {
   BETTER_AUTH_FULL_ACCESS_ROLES,
   BETTER_AUTH_ORDER_ACCESS_ROLES,
+  type BetterAuthRole,
 } from "@shared/auth/roles";
 import {
   attachAdminAuthContext,
   getAdminAuthContext,
-  serializeAdmin,
 } from "../auth/adminBetterAuth";
 
-type SerializedAdminUser = ReturnType<typeof serializeAdmin>;
-
-declare module "express-session" {
-  interface SessionData {
-    adminId?: string;
-    adminRole?: string;
-    adminEmail?: string;
-    adminUser?: SerializedAdminUser;
-  }
-}
-
-declare module "express-serve-static-core" {
-  interface Request {
-    adminId?: string;
-    adminUser?: SerializedAdminUser;
-  }
-}
-
-function isAllowedRole(admin: AdminUser, allowedRoles: readonly string[]) {
-  if (admin.role === "admin" || admin.role === "super_admin") {
+function isAllowedRole(role: BetterAuthRole, allowedRoles: readonly string[]) {
+  if (role === "admin" || role === "super_admin") {
     return true;
   }
 
-  return allowedRoles.includes(admin.role);
+  return allowedRoles.includes(role);
 }
 
 export function requireRole(...allowedRoles: string[]) {
@@ -44,7 +25,7 @@ export function requireRole(...allowedRoles: string[]) {
         return res.status(401).json({ message: "Unauthorized" });
       }
 
-      if (!isAllowedRole(context.admin, allowedRoles)) {
+      if (!isAllowedRole(context.role, allowedRoles)) {
         return res.status(403).json({ message: "Forbidden: Insufficient permissions" });
       }
 

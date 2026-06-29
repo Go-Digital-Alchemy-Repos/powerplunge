@@ -15,8 +15,10 @@ const mocks = vi.hoisted(() => ({
     applyBetterAuthHeaders: vi.fn((res: any) => res.set("x-auth-headers-applied", "true")),
     assertAdminBetterAuthReady: vi.fn(),
     attachAdminAuthContext: vi.fn(),
+    attachAdminRequestAuth: vi.fn(),
     changeAdminPassword: vi.fn(),
     deleteBetterAuthUserById: vi.fn(),
+    getAttachedAdminAuthContext: vi.fn(),
     getAdminAuthContext: vi.fn(),
     getBetterAuthUserByAdminId: vi.fn(),
     requestAdminPasswordReset: vi.fn(),
@@ -130,7 +132,7 @@ describe("admin auth routes", () => {
   it("returns current admin profile from Better Auth context", async () => {
     const app = await startApp();
     server = app.server;
-    mocks.adminBetterAuth.getAdminAuthContext.mockResolvedValue({
+    mocks.adminBetterAuth.getAttachedAdminAuthContext.mockResolvedValue({
       admin: {
         id: "admin-1",
         email: "admin@example.com",
@@ -149,7 +151,7 @@ describe("admin auth routes", () => {
   it("returns 401 from /me without Better Auth admin context", async () => {
     const app = await startApp();
     server = app.server;
-    mocks.adminBetterAuth.getAdminAuthContext.mockResolvedValue(null);
+    mocks.adminBetterAuth.getAttachedAdminAuthContext.mockResolvedValue(null);
 
     const response = await app.request("/api/admin/me");
 

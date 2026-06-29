@@ -38,7 +38,7 @@ describe("admin auth middleware", () => {
   });
 
   it("allows full access for admin roles", async () => {
-    const context = { admin: { id: "admin-1", role: "admin" } };
+    const context = { admin: { id: "admin-1", role: "admin" }, role: "admin" };
     mocks.getAdminAuthContext.mockResolvedValue(context);
     const { req, res, next } = createReqRes();
 
@@ -50,7 +50,7 @@ describe("admin auth middleware", () => {
   });
 
   it("blocks fulfillment from full-access routes", async () => {
-    mocks.getAdminAuthContext.mockResolvedValue({ admin: { id: "admin-1", role: "fulfillment" } });
+    mocks.getAdminAuthContext.mockResolvedValue({ admin: { id: "admin-1", role: "fulfillment" }, role: "fulfillment" });
     const { req, res, next } = createReqRes();
 
     await requireFullAccess(req, res, next);
@@ -61,7 +61,7 @@ describe("admin auth middleware", () => {
   });
 
   it("blocks fulfillment from generic admin routes", async () => {
-    mocks.getAdminAuthContext.mockResolvedValue({ admin: { id: "admin-1", role: "fulfillment" } });
+    mocks.getAdminAuthContext.mockResolvedValue({ admin: { id: "admin-1", role: "fulfillment" }, role: "fulfillment" });
     const { req, res, next } = createReqRes();
 
     await requireAdmin(req, res, next);
@@ -71,7 +71,7 @@ describe("admin auth middleware", () => {
   });
 
   it("allows fulfillment for order-access routes", async () => {
-    const context = { admin: { id: "admin-1", role: "fulfillment" } };
+    const context = { admin: { id: "admin-1", role: "fulfillment" }, role: "fulfillment" };
     mocks.getAdminAuthContext.mockResolvedValue(context);
     const { req, res, next } = createReqRes();
 
@@ -79,6 +79,18 @@ describe("admin auth middleware", () => {
 
     expect(mocks.attachAdminAuthContext).toHaveBeenCalledWith(req, context);
     expect(next).toHaveBeenCalled();
+  });
+
+  it("uses normalized context role for access decisions", async () => {
+    const context = { admin: { id: "admin-1", role: "superadmin" }, role: "super_admin" };
+    mocks.getAdminAuthContext.mockResolvedValue(context);
+    const { req, res, next } = createReqRes();
+
+    await requireFullAccess(req, res, next);
+
+    expect(mocks.attachAdminAuthContext).toHaveBeenCalledWith(req, context);
+    expect(next).toHaveBeenCalled();
+    expect(res.status).not.toHaveBeenCalled();
   });
 
   it("returns 503 when Better Auth is not configured", async () => {
