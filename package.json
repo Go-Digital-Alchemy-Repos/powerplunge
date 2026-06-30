@@ -30,6 +30,7 @@
     "ci:check": "npm run typecheck && npx tsx scripts/doctor.ts && npx tsx scripts/db/verifySchema.ts && npm run test",
     "mailgun:live:check": "npx tsx scripts/mailgun-live-check.ts",
     "email:preview:audit": "npx tsx scripts/email-preview-audit.ts",
+    "staging:smoke": "npx tsx scripts/smoke/stagingSmoke.ts",
     "test:e2e": "npx playwright test",
     "test:e2e:full": "npx playwright test",
     "test:e2e:critical": "npx playwright test e2e/smoke.spec.ts e2e/admin-auth.spec.ts e2e/customer-auth.spec.ts e2e/affiliate-portal.spec.ts e2e/auth-verification.spec.ts e2e/shop.spec.ts e2e/cart-checkout.spec.ts e2e/admin-products.spec.ts e2e/customer-password-reset.spec.ts --project=chromium",

@@ -14,6 +14,7 @@ All scripts are located in the `scripts/` directory and run with `npx tsx` from 
 | Content Safety | `scripts/smoke/cmsContentSafety.ts` | Content validation regression tests | No |
 | API Smoke | `scripts/smoke/apiSmoke.ts` | HTTP endpoint smoke tests | No |
 | Blog Smoke | `scripts/smoke/blogSmoke.ts` | Blog post lifecycle tests | Creates/deletes test data |
+| Staging Smoke | `scripts/smoke/stagingSmoke.ts` | Composed staging health/schema/Mailgun smoke command | Mailgun test-mode provider call; optional local E2E mutations |
 | Seed Email Templates | `scripts/seed-email-templates.ts` | Seed default email templates | Idempotent writes |
 | Mailgun Live Check | `scripts/mailgun-live-check.ts` | DB-backed Mailgun/operator smoke check | Optional provider probe with `--send-to`; add `--test-mode` to suppress delivery |
 | Email Preview Audit | `scripts/email-preview-audit.ts` | Static email preview/link audit artifacts | Optional real sends with `EMAIL_PREVIEW_SEND_TO` |
@@ -77,6 +78,36 @@ npm run mailgun:live:check -- --send-to review@example.com --poll-events
 ```
 
 Omit `--test-mode` only when you intentionally want a real inbox delivery check. `--require-inbound` turns missing inbound replies/signing-key checks from warnings into failures. Output never prints API keys or webhook signing keys.
+
+## scripts/smoke/stagingSmoke.ts
+
+Composed smoke command for pre/post-deploy checks. It runs HTTP API smoke checks, DB schema/invariant checks, and a Mailgun `o:testmode=yes` provider probe that suppresses delivery. It can also run the local/internal Stripe webhook E2E order/email assertions, but only with explicit mutation approval flags.
+
+**Run against staging:**
+```bash
+STAGING_SMOKE_MAILGUN_SEND_TO=qa@example.com npm run staging:smoke
+```
+
+**Run in the Railway staging service:**
+```bash
+railway run --environment staging --service powerplunge -- npm run staging:smoke -- --mailgun-send-to qa@example.com
+```
+
+**Run local/internal Stripe webhook E2E path:**
+```bash
+npm run staging:smoke -- --base-url http://powerplunge.localhost --mailgun-send-to qa@example.com --stripe-webhook-e2e --allow-e2e-mutation
+```
+
+Default checks:
+1. `scripts/smoke/apiSmoke.ts` with `SMOKE_BASE_URL` set to the target URL
+2. `scripts/db/verifySchema.ts`
+3. `npm run mailgun:live:check -- --require-inbound --send-to <email> --test-mode --poll-events`
+
+Safety:
+- The Mailgun check always uses `--test-mode`; it calls Mailgun but does not deliver a real email.
+- The Stripe webhook E2E path is limited to localhost/internal targets and requires `--allow-e2e-mutation`.
+- The Stripe webhook E2E path expects the target server to run with `E2E_TEST_MODE=true` and `E2E_EMAIL_MODE=outbox`; remote production-like staging should not expose those routes.
+- Use `--skip-http`, `--skip-db`, or `--skip-mailgun` only when isolating a known failure.
 
 ## scripts/email-preview-audit.ts
 
