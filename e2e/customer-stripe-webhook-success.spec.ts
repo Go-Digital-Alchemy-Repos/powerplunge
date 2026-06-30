@@ -7,6 +7,12 @@ import {
 } from "./helpers/email-outbox";
 import { uniqueEmail, uniqueName } from "./helpers/test-data";
 
+interface SignedStripeWebhookPayload {
+  eventId: string;
+  payload: string;
+  signature: string;
+}
+
 async function registerCustomer(request: APIRequestContext) {
   const email = uniqueEmail();
   const password = "WebhookFlow123!";
@@ -299,5 +305,107 @@ test.describe("Stripe Webhook Success @customer @webhooks", () => {
       subjectContains: `New Order #${order.orderId.slice(0, 8).toUpperCase()}`,
       pathIncludes: "/admin/orders",
     });
+  });
+
+  test("real webhook route accepts a signed payment_intent.succeeded event once", async ({
+    request,
+  }) => {
+    await adminLogin(request);
+    const customer = await registerCustomer(request);
+    const product = await createProduct(request, {
+      price: 15999,
+      active: true,
+      status: "published",
+    });
+    const order = await createPendingStripeOrder(request, {
+      productId: product.id,
+      customerName: customer.name,
+      customerEmail: customer.email,
+    });
+
+    await clearEmailOutbox(request);
+
+    const signedPayloadResponse = await request.post(
+      "/api/test/stripe-webhook/signed-payment-intent-succeeded-payload",
+      {
+        data: {
+          orderId: order.orderId,
+          paymentIntentId: order.paymentIntentId,
+          amount: order.total,
+        },
+      },
+    );
+    if (signedPayloadResponse.status() === 412) {
+      const body = await signedPayloadResponse.json();
+      test.skip(
+        true,
+        `Skipping signed webhook route test because no DB webhook secret is configured: ${body.message}`,
+      );
+    }
+    expect(signedPayloadResponse.ok()).toBeTruthy();
+    const signedPayload =
+      (await signedPayloadResponse.json()) as SignedStripeWebhookPayload;
+    expect(signedPayload.eventId).toBeTruthy();
+    expect(signedPayload.payload).toBeTruthy();
+    expect(signedPayload.signature).toBeTruthy();
+
+    const firstResponse = await request.post("/api/webhook/stripe", {
+      data: signedPayload.payload,
+      headers: {
+        "content-type": "application/json",
+        "stripe-signature": signedPayload.signature,
+      },
+    });
+    expect(firstResponse.ok()).toBeTruthy();
+    expect(await firstResponse.json()).toEqual({ received: true });
+
+    const afterResponse = await request.get(`/api/admin/orders/${order.orderId}`);
+    expect(afterResponse.ok()).toBeTruthy();
+    const orderAfter = await afterResponse.json();
+    expect(orderAfter.status).toBe("paid");
+    expect(orderAfter.paymentStatus).toBe("paid");
+
+    await waitForEmailLink(request, {
+      to: customer.email,
+      subjectContains: `Order Confirmed - #${order.orderId.slice(0, 8).toUpperCase()}`,
+      pathIncludes: "/my-account?tab=orders",
+    });
+    await waitForEmailLink(request, {
+      to: "fulfillment@test.com",
+      subjectContains: `New Order #${order.orderId.slice(0, 8).toUpperCase()}`,
+      pathIncludes: "/admin/orders",
+    });
+    const customerCountBefore = await getEmailOutboxCount(request, {
+      to: customer.email,
+      subjectContains: `Order Confirmed - #${order.orderId.slice(0, 8).toUpperCase()}`,
+    });
+    const fulfillmentCountBefore = await getEmailOutboxCount(request, {
+      to: "fulfillment@test.com",
+      subjectContains: `New Order #${order.orderId.slice(0, 8).toUpperCase()}`,
+    });
+
+    const duplicateResponse = await request.post("/api/webhook/stripe", {
+      data: signedPayload.payload,
+      headers: {
+        "content-type": "application/json",
+        "stripe-signature": signedPayload.signature,
+      },
+    });
+    expect(duplicateResponse.ok()).toBeTruthy();
+    expect(await duplicateResponse.json()).toEqual({
+      received: true,
+      duplicate: true,
+    });
+
+    const customerCountAfter = await getEmailOutboxCount(request, {
+      to: customer.email,
+      subjectContains: `Order Confirmed - #${order.orderId.slice(0, 8).toUpperCase()}`,
+    });
+    const fulfillmentCountAfter = await getEmailOutboxCount(request, {
+      to: "fulfillment@test.com",
+      subjectContains: `New Order #${order.orderId.slice(0, 8).toUpperCase()}`,
+    });
+    expect(customerCountAfter).toBe(customerCountBefore);
+    expect(fulfillmentCountAfter).toBe(fulfillmentCountBefore);
   });
 });
