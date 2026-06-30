@@ -108,7 +108,7 @@ Global email settings are managed in admin settings:
 
 ## QA and Operator Checks
 
-Use `npm run mailgun:live:check` for a DB-backed Mailgun smoke check in the target runtime. It verifies the configured provider, outbound Mailgun domain state, inbound webhook signing-key presence, and support inbound replies. It does not send email unless `--send-to <email>` is supplied.
+Use `npm run mailgun:live:check` from a source checkout, local shell, or `railway run` for a DB-backed Mailgun smoke check in the target environment. It verifies the configured provider, outbound Mailgun domain state, inbound webhook signing-key presence, and support inbound replies. It does not call Mailgun's send API unless `--send-to <email>` is supplied. Add `--test-mode` to send the probe with Mailgun `o:testmode=yes`, which validates provider acceptance while suppressing delivery. Mailgun may still bill for test-mode messages. Add `--poll-events` to tag the probe and wait for Mailgun events; test-mode probes pass on accepted or delivered events, while real-send probes require delivered or failure events.
 
 Use `npm run email:preview:audit` for a static first-pass preview audit of the seeded email-template matrix. Internal link audits run when `PUBLIC_SITE_URL` is explicitly set. Artifacts are written to `tmp/email-preview-audit/<YYYY-MM-DD>/`. Real preview sends are opt-in only through `EMAIL_PREVIEW_SEND_TO`.
 

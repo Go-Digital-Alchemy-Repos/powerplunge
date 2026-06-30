@@ -15,6 +15,9 @@ export interface EmailOptions {
   text?: string;
   replyTo?: string;
   from?: string;
+  mailgunTestMode?: boolean;
+  mailgunTags?: string[];
+  bypassOutbox?: boolean;
 }
 
 export interface EmailResult {
@@ -71,7 +74,7 @@ class EmailService {
   }
 
   async sendEmail(options: EmailOptions): Promise<EmailResult> {
-    if (isEmailOutboxEnabled()) {
+    if (isEmailOutboxEnabled() && !options.bypassOutbox) {
       return this.sendOutboxEmail(options);
     }
 
@@ -127,6 +130,12 @@ class EmailService {
       if (options.text) messageData.text = options.text;
       if (options.replyTo || config.replyTo) {
         messageData["h:Reply-To"] = options.replyTo || config.replyTo;
+      }
+      if (options.mailgunTestMode) {
+        messageData["o:testmode"] = "yes";
+      }
+      if (options.mailgunTags?.length) {
+        messageData["o:tag"] = options.mailgunTags;
       }
 
       const result = await client.messages.create(config.domain, messageData);
@@ -188,7 +197,7 @@ class EmailService {
     }
   }
 
-  async sendTestEmail(to: string): Promise<EmailResult> {
+  async sendTestEmail(to: string, options: Pick<EmailOptions, "mailgunTestMode" | "mailgunTags" | "bypassOutbox"> = {}): Promise<EmailResult> {
     const config = await this.getConfig();
     
     if (config.provider === "none") {
@@ -210,6 +219,9 @@ class EmailService {
         </div>
       `,
       text: "This is a test email from your Power Plunge store. If you received this email, your email configuration is working correctly!",
+      mailgunTestMode: options.mailgunTestMode,
+      mailgunTags: options.mailgunTags,
+      bypassOutbox: options.bypassOutbox,
     });
   }
 }

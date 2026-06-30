@@ -1,6 +1,6 @@
 # Scripts Reference
 
-All scripts are located in the `scripts/` directory and run with `npx tsx`. They connect to the live PostgreSQL database and perform read-only checks unless otherwise noted.
+All scripts are located in the `scripts/` directory and run with `npx tsx` from a source checkout, local shell, or `railway run` command. They connect to the live PostgreSQL database and perform read-only checks unless otherwise noted.
 
 ## Overview
 
@@ -15,7 +15,7 @@ All scripts are located in the `scripts/` directory and run with `npx tsx`. They
 | API Smoke | `scripts/smoke/apiSmoke.ts` | HTTP endpoint smoke tests | No |
 | Blog Smoke | `scripts/smoke/blogSmoke.ts` | Blog post lifecycle tests | Creates/deletes test data |
 | Seed Email Templates | `scripts/seed-email-templates.ts` | Seed default email templates | Idempotent writes |
-| Mailgun Live Check | `scripts/mailgun-live-check.ts` | DB-backed Mailgun/operator smoke check | Optional real send with `--send-to` |
+| Mailgun Live Check | `scripts/mailgun-live-check.ts` | DB-backed Mailgun/operator smoke check | Optional provider probe with `--send-to`; add `--test-mode` to suppress delivery |
 | Email Preview Audit | `scripts/email-preview-audit.ts` | Static email preview/link audit artifacts | Optional real sends with `EMAIL_PREVIEW_SEND_TO` |
 
 ## scripts/doctor.ts
@@ -45,7 +45,7 @@ Exit code: `0` if all required checks pass, `1` if any required check fails.
 
 ## scripts/mailgun-live-check.ts
 
-DB-backed Mailgun smoke check for deployed or ops environments. It verifies the active email provider, Mailgun outbound configuration, domain state, inbound signing-key presence, and support inbound-reply setting. It does not send email unless `--send-to` is supplied.
+DB-backed Mailgun smoke check for deployed or ops environments. It verifies the active email provider, Mailgun outbound configuration, domain state, inbound signing-key presence, and support inbound-reply setting. It does not call Mailgun's send API unless `--send-to` is supplied.
 
 **Run:**
 ```bash
@@ -54,12 +54,29 @@ npm run mailgun:live:check -- --require-inbound
 npm run mailgun:live:check -- --json
 ```
 
+**Optional no-delivery provider probe:**
+```bash
+npm run mailgun:live:check -- --send-to review@example.com --test-mode
+```
+
+`--test-mode` passes Mailgun `o:testmode=yes`, so Mailgun accepts/processes the message but suppresses delivery. Mailgun may still bill for test-mode messages.
+
+**Optional Mailgun event polling:**
+
+```bash
+npm run mailgun:live:check -- --send-to review@example.com --test-mode --poll-events --poll-timeout-ms 90000 --poll-interval-ms 5000
+npm run mailgun:live:check -- --send-to review@example.com --poll-events --poll-timeout-ms 90000 --poll-interval-ms 5000
+```
+
+`--poll-events` tags the probe and polls Mailgun events. Test-mode probes pass on Mailgun `accepted` or `delivered` events because delivery is suppressed. Real-send probes wait for `delivered` or failure events; an `accepted` event alone is not treated as delivery. A test-mode event timeout is a warning because Mailgun's accepted API response is the no-delivery signal; a real-send event timeout is a failure.
+
 **Optional real send:**
 ```bash
 npm run mailgun:live:check -- --send-to review@example.com
+npm run mailgun:live:check -- --send-to review@example.com --poll-events
 ```
 
-`--require-inbound` turns missing inbound replies/signing-key checks from warnings into failures. Output never prints API keys or webhook signing keys.
+Omit `--test-mode` only when you intentionally want a real inbox delivery check. `--require-inbound` turns missing inbound replies/signing-key checks from warnings into failures. Output never prints API keys or webhook signing keys.
 
 ## scripts/email-preview-audit.ts
 
