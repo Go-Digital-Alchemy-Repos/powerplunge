@@ -102,6 +102,7 @@ export interface IStorage {
   getOrderByStripeSession(sessionId: string): Promise<Order | undefined>;
   createOrder(order: InsertOrder): Promise<Order>;
   updateOrder(id: string, order: Partial<InsertOrder>): Promise<Order | undefined>;
+  markOrderPaidIfPending(id: string, order: Partial<InsertOrder>): Promise<Order | undefined>;
   deleteOrder(id: string): Promise<boolean>;
   deleteOrders(ids: string[]): Promise<number>;
 
@@ -564,6 +565,20 @@ export class DatabaseStorage implements IStorage {
 
   async updateOrder(id: string, order: Partial<InsertOrder>): Promise<Order | undefined> {
     const [updated] = await db.update(orders).set({ ...order, updatedAt: new Date() }).where(eq(orders.id, id)).returning();
+    return updated || undefined;
+  }
+
+  async markOrderPaidIfPending(id: string, order: Partial<InsertOrder>): Promise<Order | undefined> {
+    const [updated] = await db
+      .update(orders)
+      .set({
+        ...order,
+        status: "paid",
+        paymentStatus: "paid",
+        updatedAt: new Date(),
+      })
+      .where(and(eq(orders.id, id), eq(orders.status, "pending")))
+      .returning();
     return updated || undefined;
   }
 

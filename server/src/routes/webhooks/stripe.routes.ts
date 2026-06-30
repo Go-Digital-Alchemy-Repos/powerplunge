@@ -2,76 +2,14 @@ import { Router } from "express";
 import { storage } from "../../../storage";
 import { affiliateCommissionService } from "../../services/affiliate-commission.service";
 import { errorAlertingService } from "../../services/error-alerting.service";
+import { createOrderFinalizationService } from "../../services/order-finalization.service";
 import { sendOrderNotification } from "../public/payments.routes";
 
 const router = Router();
 
 export async function handlePaymentIntentSucceededWebhook(paymentIntent: any): Promise<void> {
-  const orderId = paymentIntent.metadata?.orderId;
-  if (!orderId) return;
-
-  const order = await storage.getOrder(orderId);
-  if (!order || order.status !== "pending") return;
-
-  if (paymentIntent.amount !== order.totalAmount) {
-    console.error("Webhook: Amount mismatch for order", orderId, {
-      paymentAmount: paymentIntent.amount,
-      orderAmount: order.totalAmount,
-    });
-    return;
-  }
-
-  await storage.updateOrder(orderId, {
-    status: "paid",
-    paymentStatus: "paid",
-    stripePaymentIntentId: paymentIntent.id,
-  });
-
-  if (order.affiliateCode) {
-    const sessionId = paymentIntent.metadata?.affiliateSessionId;
-    const attributionType = paymentIntent.metadata?.attributionType;
-    const metaIsFriendsFamily = paymentIntent.metadata?.isFriendsFamily === "true";
-    const commissionResult = await affiliateCommissionService.recordCommission(orderId, {
-      sessionId: sessionId || undefined,
-      attributionType: attributionType || undefined,
-      isFriendsFamily: metaIsFriendsFamily,
-    });
-    if (commissionResult.success && commissionResult.commissionAmount) {
-      console.log(`[WEBHOOK] Recorded commission for order ${orderId}`);
-    }
-  }
-
-  try {
-    const { metaConversionsService } = await import("../../integrations/meta/MetaConversionsService");
-    await metaConversionsService.enqueuePurchase(orderId);
-  } catch (metaErr: any) {
-    console.error("[META] Failed to enqueue purchase from payment_intent.succeeded:", metaErr.message || metaErr);
-  }
-
-  const couponId = paymentIntent.metadata?.couponId;
-  const couponDiscountAmountStr = paymentIntent.metadata?.couponDiscountAmount;
-  if (couponId && couponDiscountAmountStr && parseInt(couponDiscountAmountStr) > 0) {
-    try {
-      const couponDiscountAmt = parseInt(couponDiscountAmountStr);
-      await storage.createCouponRedemption({
-        couponId,
-        orderId,
-        customerId: order.customerId,
-        discountAmount: couponDiscountAmt,
-        orderSubtotal: order.subtotalAmount || order.totalAmount,
-        orderTotal: order.totalAmount,
-        netRevenue: order.totalAmount - couponDiscountAmt,
-        affiliateCode: order.affiliateCode || null,
-        affiliateCommissionBlocked: paymentIntent.metadata?.couponBlocksAffiliate === "true",
-      });
-      await storage.incrementCouponUsage(couponId);
-      console.log(`[WEBHOOK] Recorded coupon redemption for order ${orderId}, coupon ${couponId}`);
-    } catch (couponErr: any) {
-      console.error("[WEBHOOK] Failed to record coupon redemption:", couponErr.message);
-    }
-  }
-
-  await sendOrderNotification(orderId);
+  const finalizationService = createOrderFinalizationService({ sendOrderNotification });
+  await finalizationService.finalizeStripePaymentIntent({ paymentIntent });
 }
 
 router.post("/stripe", async (req, res) => {

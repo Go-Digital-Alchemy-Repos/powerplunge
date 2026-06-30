@@ -57,8 +57,12 @@ async function buildSignedPaymentIntentSucceededPayload(req: any) {
         id: paymentIntentId,
         object: "payment_intent",
         amount,
+        currency: "usd",
         metadata: {
           orderId,
+          ...(req.body?.metadata && typeof req.body.metadata === "object"
+            ? req.body.metadata
+            : {}),
         },
       },
     },
@@ -116,6 +120,7 @@ router.post("/payment-intent-succeeded", async (req, res) => {
         order.stripePaymentIntentId ||
         `pi_e2e_${Date.now()}`,
       amount,
+      currency: "usd",
       metadata: {
         orderId,
         ...(req.body?.metadata && typeof req.body.metadata === "object"
