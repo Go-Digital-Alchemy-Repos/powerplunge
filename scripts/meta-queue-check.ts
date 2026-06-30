@@ -1,4 +1,5 @@
 import pg from "pg";
+import { normalizePostgresConnectionString } from "../server/src/db/connectionString";
 
 async function main() {
   const connectionString = process.env.DATABASE_URL;
@@ -6,7 +7,9 @@ async function main() {
     throw new Error("DATABASE_URL is missing");
   }
 
-  const pool = new pg.Pool({ connectionString });
+  const pool = new pg.Pool({
+    connectionString: normalizePostgresConnectionString(connectionString),
+  });
   try {
     const latestOrder = (
       await pool.query(

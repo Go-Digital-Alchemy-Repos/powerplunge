@@ -1,8 +1,11 @@
 #!/usr/bin/env npx tsx
 import { spawnSync } from "node:child_process";
 import pg from "pg";
+import { normalizePostgresConnectionString } from "../../server/src/db/connectionString";
 
-const databaseUrl = process.env.DATABASE_URL;
+const databaseUrl = process.env.DATABASE_URL
+  ? normalizePostgresConnectionString(process.env.DATABASE_URL)
+  : undefined;
 
 if (!databaseUrl) {
   console.error("DATABASE_URL is required for local DB push.");
