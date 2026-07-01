@@ -1,6 +1,5 @@
 import { Router } from "express";
 import { storage } from "../../../storage";
-import { affiliateCommissionService } from "../../services/affiliate-commission.service";
 import { errorAlertingService } from "../../services/error-alerting.service";
 import { createOrderFinalizationService } from "../../services/order-finalization.service";
 import { sendOrderNotification } from "../public/payments.routes";
@@ -10,6 +9,34 @@ const router = Router();
 export async function handlePaymentIntentSucceededWebhook(paymentIntent: any): Promise<void> {
   const finalizationService = createOrderFinalizationService({ sendOrderNotification });
   await finalizationService.finalizeStripePaymentIntent({ paymentIntent });
+}
+
+export async function handleCheckoutSessionCompletedWebhook(session: any): Promise<void> {
+  const order = await storage.getOrderByStripeSession(session.id);
+  if (!order) return;
+
+  const paymentIntentId = typeof session.payment_intent === "string"
+    ? session.payment_intent
+    : session.payment_intent?.id;
+  if (!paymentIntentId) {
+    console.warn(`[WEBHOOK] checkout.session.completed missing payment_intent for order ${order.id}`);
+    return;
+  }
+
+  const finalizationService = createOrderFinalizationService({ sendOrderNotification });
+  const paymentIntent = typeof session.payment_intent === "object" ? session.payment_intent : undefined;
+  await finalizationService.finalizeStripePaymentIntent({
+    paymentIntent: {
+      id: paymentIntentId,
+      amount: order.totalAmount,
+      currency: session.currency ?? paymentIntent?.currency,
+      metadata: {
+        ...(session.metadata || {}),
+        ...(paymentIntent?.metadata || {}),
+        orderId: order.id,
+      },
+    },
+  });
 }
 
 router.post("/stripe", async (req, res) => {
@@ -73,38 +100,7 @@ router.post("/stripe", async (req, res) => {
 
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as any;
-
-    const order = await storage.getOrderByStripeSession(session.id);
-    if (order) {
-      await storage.updateOrder(order.id, {
-        status: "paid",
-        paymentStatus: "paid",
-        stripePaymentIntentId: session.payment_intent,
-      });
-
-      if (order.affiliateCode) {
-        const sessionId = session.metadata?.affiliateSessionId;
-        const attributionType = session.metadata?.attributionType;
-        const metaIsFriendsFamily = session.metadata?.isFriendsFamily === "true";
-        const commissionResult = await affiliateCommissionService.recordCommission(order.id, {
-          sessionId: sessionId || undefined,
-          attributionType: attributionType || undefined,
-          isFriendsFamily: metaIsFriendsFamily,
-        });
-        if (commissionResult.success && commissionResult.commissionAmount) {
-          console.log(`[CHECKOUT] Recorded commission for order ${order.id}`);
-        }
-      }
-
-      try {
-        const { metaConversionsService } = await import("../../integrations/meta/MetaConversionsService");
-        await metaConversionsService.enqueuePurchase(order.id);
-      } catch (metaErr: any) {
-        console.error("[META] Failed to enqueue purchase from checkout.session.completed:", metaErr.message || metaErr);
-      }
-
-      await sendOrderNotification(order.id);
-    }
+    await handleCheckoutSessionCompletedWebhook(session);
   }
 
   if (event.type === "payment_intent.succeeded") {
