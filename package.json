@@ -47,7 +47,7 @@
     "dev:client:local": "vite dev --host 127.0.0.1 --port 5012 --strictPort",
     "setup:local": "tsx scripts/ensure-assets.ts",
     "local:urls": "printf 'App: http://powerplunge.localhost\\nDirect: http://localhost:5011\\nStart: npm run local:start\\nCaddy: /opt/homebrew/etc/Caddyfile\\n'",
-    "local:start": "BETTER_AUTH_BASE_URL=http://powerplunge.localhost PUBLIC_SITE_URL=http://powerplunge.localhost BASE_URL=http://powerplunge.localhost APP_URL=http://powerplunge.localhost CORS_ALLOWED_ORIGINS=http://powerplunge.localhost PORT=5011 NODE_ENV=development tsx server/index.ts",
+    "local:start": "BETTER_AUTH_BASE_URL=${BETTER_AUTH_BASE_URL:-http://powerplunge.localhost} PUBLIC_SITE_URL=${PUBLIC_SITE_URL:-http://powerplunge.localhost} BASE_URL=${BASE_URL:-http://powerplunge.localhost} APP_URL=${APP_URL:-http://powerplunge.localhost} CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://powerplunge.localhost} PORT=${PORT:-5011} NODE_ENV=${NODE_ENV:-development} tsx server/index.ts",
     "dev:all": "concurrently --names server,client \"npm run local:start\" \"npm run dev:client:local\""
   },
   "dependencies": {
