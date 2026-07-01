@@ -12,31 +12,8 @@ export async function handlePaymentIntentSucceededWebhook(paymentIntent: any): P
 }
 
 export async function handleCheckoutSessionCompletedWebhook(session: any): Promise<void> {
-  const order = await storage.getOrderByStripeSession(session.id);
-  if (!order) return;
-
-  const paymentIntentId = typeof session.payment_intent === "string"
-    ? session.payment_intent
-    : session.payment_intent?.id;
-  if (!paymentIntentId) {
-    console.warn(`[WEBHOOK] checkout.session.completed missing payment_intent for order ${order.id}`);
-    return;
-  }
-
   const finalizationService = createOrderFinalizationService({ sendOrderNotification });
-  const paymentIntent = typeof session.payment_intent === "object" ? session.payment_intent : undefined;
-  await finalizationService.finalizeStripePaymentIntent({
-    paymentIntent: {
-      id: paymentIntentId,
-      amount: order.totalAmount,
-      currency: session.currency ?? paymentIntent?.currency,
-      metadata: {
-        ...(session.metadata || {}),
-        ...(paymentIntent?.metadata || {}),
-        orderId: order.id,
-      },
-    },
-  });
+  await finalizationService.finalizeStripeCheckoutSession({ session });
 }
 
 router.post("/stripe", async (req, res) => {

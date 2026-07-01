@@ -80,6 +80,76 @@ function computeAffiliateDiscount(
   }
 }
 
+type CheckoutOrderItem = {
+  productName: string;
+  quantity: number;
+  unitPrice: number;
+  discountAmount?: number;
+};
+
+function allocateDiscountAcrossUnits(unitPrices: number[], discountAmount: number): number[] {
+  const subtotal = unitPrices.reduce((sum, unitPrice) => sum + unitPrice, 0);
+  const cappedDiscount = Math.min(Math.max(0, discountAmount), subtotal);
+  const allocations = unitPrices.map((unitPrice, index) => {
+    const exactShare = subtotal > 0 ? (cappedDiscount * unitPrice) / subtotal : 0;
+    const floorShare = Math.floor(exactShare);
+    return {
+      index,
+      floorShare,
+      remainder: exactShare - floorShare,
+      unitPrice,
+    };
+  });
+
+  let remaining = cappedDiscount - allocations.reduce((sum, allocation) => sum + allocation.floorShare, 0);
+  for (const allocation of [...allocations].sort((a, b) => {
+    if (b.remainder !== a.remainder) return b.remainder - a.remainder;
+    if (b.unitPrice !== a.unitPrice) return b.unitPrice - a.unitPrice;
+    return a.index - b.index;
+  })) {
+    if (remaining <= 0) break;
+    allocation.floorShare += 1;
+    remaining -= 1;
+  }
+
+  return allocations.map((allocation) => allocation.floorShare);
+}
+
+function buildCheckoutLineItems(orderItems: CheckoutOrderItem[]) {
+  const units = orderItems.flatMap((item) => {
+    const unitPrices = Array.from({ length: item.quantity }, () => item.unitPrice);
+    const unitDiscounts = allocateDiscountAcrossUnits(unitPrices, item.discountAmount ?? 0);
+    return unitPrices.map((unitPrice, index) => ({
+      productName: item.productName,
+      unitAmount: Math.max(0, unitPrice - (unitDiscounts[index] ?? 0)),
+    }));
+  });
+
+  const grouped = new Map<string, { productName: string; unitAmount: number; quantity: number }>();
+  for (const unit of units) {
+    if (unit.unitAmount === 0) continue;
+    const key = `${unit.productName}\0${unit.unitAmount}`;
+    const existing = grouped.get(key);
+    if (existing) {
+      existing.quantity += 1;
+    } else {
+      grouped.set(key, { productName: unit.productName, unitAmount: unit.unitAmount, quantity: 1 });
+    }
+  }
+
+  return [...grouped.values()].map((item) => ({
+    price_data: {
+      currency: "usd",
+      product_data: {
+        name: item.productName,
+      },
+      unit_amount: item.unitAmount,
+      tax_behavior: "exclusive" as const,
+    },
+    quantity: item.quantity,
+  }));
+}
+
 async function resolveAffiliateCode(code: string): Promise<{ baseCode: string; isFriendsFamily: boolean }> {
   const upper = code.toUpperCase();
   const exactAffiliate = await storage.getAffiliateByCode(upper);
@@ -1036,6 +1106,7 @@ router.post("/checkout", checkoutLimiter, async (req: any, res) => {
       productName: string;
       quantity: number;
       unitPrice: number;
+      discountAmount?: number;
     }> = [];
     const resolvedCheckoutProducts: Product[] = [];
 
@@ -1059,12 +1130,18 @@ router.post("/checkout", checkoutLimiter, async (req: any, res) => {
     if (affiliate && affiliate.status === "active") {
       for (let i = 0; i < orderItems.length; i++) {
         const lineTotal = orderItems[i].unitPrice * orderItems[i].quantity;
-        affiliateDiscountAmount += computeAffiliateDiscount(resolvedCheckoutProducts[i], lineTotal, affSettings, isFriendsFamily, affiliate, orderItems[i].quantity);
+        const discountAmount = computeAffiliateDiscount(resolvedCheckoutProducts[i], lineTotal, affSettings, isFriendsFamily, affiliate, orderItems[i].quantity);
+        affiliateDiscountAmount += discountAmount;
+        orderItems[i].discountAmount = discountAmount;
       }
     }
 
     const discountedSubtotal = Math.max(0, subtotalAmount - affiliateDiscountAmount);
     const totalAmount = discountedSubtotal;
+    const lineItems = buildCheckoutLineItems(orderItems);
+    if (lineItems.length === 0) {
+      return res.status(400).json({ message: "Checkout total must be greater than zero" });
+    }
 
     const checkoutStripeClient = await stripeService.getClient();
     if (!checkoutStripeClient) {
@@ -1079,7 +1156,7 @@ router.post("/checkout", checkoutLimiter, async (req: any, res) => {
         affiliateDiscountAmount: affiliateDiscountAmount > 0 ? affiliateDiscountAmount : null,
       });
 
-      for (const item of orderItems) {
+      for (const { discountAmount: _discountAmount, ...item } of orderItems) {
         await storage.createOrderItem({
           orderId: order.id,
           ...item,
@@ -1118,19 +1195,37 @@ router.post("/checkout", checkoutLimiter, async (req: any, res) => {
       });
     }
 
-    const lineItems = orderItems.map((item) => ({
-      price_data: {
-        currency: "usd",
-        product_data: {
-          name: item.productName,
-        },
-        unit_amount: item.unitPrice,
-        tax_behavior: "exclusive" as const,
-      },
-      quantity: item.quantity,
-    }));
-
     const baseUrl = process.env.BASE_URL || `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`;
+
+    const order = await storage.createOrder({
+      customerId: existingCustomer.id,
+      status: "pending",
+      subtotalAmount,
+      totalAmount,
+      stripeSessionId: null,
+      affiliateCode: affiliate?.affiliateCode,
+      affiliateIsFriendsFamily: isFriendsFamily,
+      affiliateDiscountAmount: affiliateDiscountAmount > 0 ? affiliateDiscountAmount : null,
+    });
+
+    for (const { discountAmount: _discountAmount, ...item } of orderItems) {
+      await storage.createOrderItem({
+        orderId: order.id,
+        ...item,
+      });
+    }
+
+    const checkoutMetadata = {
+      orderId: order.id,
+      customerId: existingCustomer.id,
+      affiliateCode: affiliate?.affiliateCode || "",
+      affiliateId: affiliate?.id || "",
+      affiliateSessionId: affiliateSessionId || "",
+      attributionType: affiliateCode ? "coupon" : (affiliateSessionId ? "cookie" : "direct"),
+      isFriendsFamily: isFriendsFamily ? "true" : "false",
+      affiliateDiscountAmount: affiliateDiscountAmount.toString(),
+      paymentFlow: "checkout_session",
+    };
 
     const stripeSession = await checkoutStripeClient.checkout.sessions.create({
       line_items: lineItems,
@@ -1138,37 +1233,20 @@ router.post("/checkout", checkoutLimiter, async (req: any, res) => {
       success_url: `${baseUrl}/order-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}?cancelled=true`,
       customer_email: customerData.email,
+      client_reference_id: order.id,
       automatic_tax: { enabled: true },
       shipping_address_collection: {
         allowed_countries: ["US"],
       },
-      metadata: {
-        customerId: existingCustomer.id,
-        affiliateCode: affiliate?.affiliateCode || "",
-        affiliateId: affiliate?.id || "",
-        affiliateSessionId: affiliateSessionId || "",
-        attributionType: affiliateCode ? "coupon" : (affiliateSessionId ? "cookie" : "direct"),
-        isFriendsFamily: isFriendsFamily ? "true" : "false",
+      metadata: checkoutMetadata,
+      payment_intent_data: {
+        metadata: checkoutMetadata,
       },
     });
 
-    const order = await storage.createOrder({
-      customerId: existingCustomer.id,
-      status: "pending",
-      subtotalAmount,
-      totalAmount,
+    await storage.updateOrder(order.id, {
       stripeSessionId: stripeSession.id,
-      affiliateCode: affiliate?.affiliateCode,
-      affiliateIsFriendsFamily: isFriendsFamily,
-      affiliateDiscountAmount: affiliateDiscountAmount > 0 ? affiliateDiscountAmount : null,
     });
-
-    for (const item of orderItems) {
-      await storage.createOrderItem({
-        orderId: order.id,
-        ...item,
-      });
-    }
 
     res.json({
       success: true,

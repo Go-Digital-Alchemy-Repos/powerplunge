@@ -15,12 +15,36 @@ export interface FinalizeStripePaymentIntentInput {
   orderUpdate?: Partial<InsertOrder>;
 }
 
+export interface StripeCheckoutSessionForFinalization {
+  id: string;
+  status?: string | null;
+  payment_status?: string | null;
+  client_reference_id?: string | null;
+  amount_subtotal?: number | null;
+  amount_total?: number | null;
+  currency?: string | null;
+  total_details?: {
+    amount_tax?: number | null;
+  } | null;
+  automatic_tax?: {
+    enabled?: boolean | null;
+    status?: string | null;
+  } | null;
+  metadata?: PaymentIntentMetadata | null;
+  payment_intent?: string | StripePaymentIntentForFinalization | null;
+}
+
+export interface FinalizeStripeCheckoutSessionInput {
+  session: StripeCheckoutSessionForFinalization;
+  orderUpdate?: Partial<InsertOrder>;
+}
+
 export type OrderFinalizationResult =
   | { status: "finalized"; orderId: string; order: Order }
   | { status: "skipped"; orderId?: string; reason: string; order?: Order };
 
 export interface OrderFinalizationDependencies {
-  storage: Pick<IStorage, "getOrder" | "markOrderPaidIfPending" | "createCouponRedemption" | "incrementCouponUsage">;
+  storage: Pick<IStorage, "getOrder" | "getOrderByStripeSession" | "markOrderPaidIfPending" | "createCouponRedemption" | "incrementCouponUsage">;
   createTaxTransaction: (calculationId: string, reference: string) => Promise<void>;
   recordAffiliateCommission: (
     orderId: string,
@@ -52,6 +76,10 @@ export class OrderFinalizationService {
       return { status: "skipped", orderId, reason: "order_not_found" };
     }
 
+    if (paymentIntent.metadata?.paymentFlow === "checkout_session") {
+      return { status: "skipped", orderId, reason: "checkout_session_payment_intent", order: existingOrder };
+    }
+
     if (paymentIntent.amount !== existingOrder.totalAmount) {
       this.deps.log.error("PaymentIntent amount mismatch for order finalization", {
         orderId,
@@ -78,13 +106,103 @@ export class OrderFinalizationService {
       return { status: "skipped", orderId, reason: "claim_not_won", order: existingOrder };
     }
 
-    await this.createStripeTaxTransaction(paidOrder);
-    await this.recordCouponRedemption(paidOrder, paymentIntent.metadata || {});
-    await this.recordAffiliateCommission(paidOrder, paymentIntent.metadata || {});
-    await this.enqueueMetaPurchase(paidOrder.id);
-    await this.deps.sendOrderNotification(paidOrder.id);
+    await this.runPaidObligations(paidOrder, paymentIntent.metadata || {});
 
-    return { status: "finalized", orderId, order: paidOrder };
+    return { status: "finalized", orderId: existingOrder.id, order: paidOrder };
+  }
+
+  async finalizeStripeCheckoutSession(input: FinalizeStripeCheckoutSessionInput): Promise<OrderFinalizationResult> {
+    const { session } = input;
+    if (session.payment_status !== "paid" || session.status !== "complete") {
+      return { status: "skipped", reason: "checkout_session_not_paid" };
+    }
+
+    const existingOrder = await this.deps.storage.getOrderByStripeSession(session.id);
+    if (!existingOrder) {
+      return { status: "skipped", reason: "order_not_found" };
+    }
+
+    const paymentIntent = typeof session.payment_intent === "object" ? session.payment_intent : undefined;
+    const paymentIntentId = typeof session.payment_intent === "string"
+      ? session.payment_intent
+      : paymentIntent?.id;
+    if (!paymentIntentId) {
+      return { status: "skipped", orderId: existingOrder.id, reason: "missing_payment_intent", order: existingOrder };
+    }
+
+    const sessionOrderId = session.metadata?.orderId;
+    const paymentIntentOrderId = paymentIntent?.metadata?.orderId;
+    if (
+      (session.client_reference_id && session.client_reference_id !== existingOrder.id) ||
+      (sessionOrderId && sessionOrderId !== existingOrder.id) ||
+      (paymentIntentOrderId && paymentIntentOrderId !== existingOrder.id)
+    ) {
+      this.deps.log.error("Checkout Session order identity mismatch for order finalization", {
+        orderId: existingOrder.id,
+        clientReferenceId: session.client_reference_id,
+        sessionOrderId,
+        paymentIntentOrderId,
+      });
+      return { status: "skipped", orderId: existingOrder.id, reason: "order_identity_mismatch", order: existingOrder };
+    }
+
+    if (session.amount_subtotal !== existingOrder.totalAmount) {
+      this.deps.log.error("Checkout Session subtotal mismatch for order finalization", {
+        orderId: existingOrder.id,
+        sessionAmountSubtotal: session.amount_subtotal,
+        orderAmount: existingOrder.totalAmount,
+      });
+      return { status: "skipped", orderId: existingOrder.id, reason: "amount_mismatch", order: existingOrder };
+    }
+
+    if (typeof session.amount_total !== "number") {
+      return { status: "skipped", orderId: existingOrder.id, reason: "missing_amount_total", order: existingOrder };
+    }
+
+    if (session.currency?.toLowerCase() !== "usd") {
+      this.deps.log.error("Checkout Session currency mismatch for order finalization", {
+        orderId: existingOrder.id,
+        sessionCurrency: session.currency,
+      });
+      return { status: "skipped", orderId: existingOrder.id, reason: "currency_mismatch", order: existingOrder };
+    }
+
+    if (session.automatic_tax?.enabled && session.automatic_tax.status !== "complete") {
+      this.deps.log.error("Checkout Session automatic tax incomplete for order finalization", {
+        orderId: existingOrder.id,
+        automaticTaxStatus: session.automatic_tax.status,
+      });
+      return { status: "skipped", orderId: existingOrder.id, reason: "automatic_tax_incomplete", order: existingOrder };
+    }
+
+    const metadata = {
+      ...(session.metadata || {}),
+      ...(paymentIntent?.metadata || {}),
+      orderId: existingOrder.id,
+    };
+    const paidOrder = await this.deps.storage.markOrderPaidIfPending(existingOrder.id, {
+      ...input.orderUpdate,
+      stripePaymentIntentId: paymentIntentId,
+      stripeSessionId: session.id,
+      totalAmount: session.amount_total,
+      taxAmount: session.total_details?.amount_tax ?? null,
+    });
+
+    if (!paidOrder) {
+      return { status: "skipped", orderId: existingOrder.id, reason: "claim_not_won", order: existingOrder };
+    }
+
+    await this.runPaidObligations(paidOrder, metadata);
+
+    return { status: "finalized", orderId: existingOrder.id, order: paidOrder };
+  }
+
+  private async runPaidObligations(order: Order, metadata: PaymentIntentMetadata): Promise<void> {
+    await this.createStripeTaxTransaction(order);
+    await this.recordCouponRedemption(order, metadata);
+    await this.recordAffiliateCommission(order, metadata);
+    await this.enqueueMetaPurchase(order.id);
+    await this.deps.sendOrderNotification(order.id);
   }
 
   private async createStripeTaxTransaction(order: Order): Promise<void> {
@@ -150,6 +268,7 @@ export function createOrderFinalizationService(params: {
 }): OrderFinalizationService {
   const storageDependency: OrderFinalizationDependencies["storage"] = {
     getOrder: async (...args) => (await import("../../storage")).storage.getOrder(...args),
+    getOrderByStripeSession: async (...args) => (await import("../../storage")).storage.getOrderByStripeSession(...args),
     markOrderPaidIfPending: async (...args) => (await import("../../storage")).storage.markOrderPaidIfPending(...args),
     createCouponRedemption: async (...args) => (await import("../../storage")).storage.createCouponRedemption(...args),
     incrementCouponUsage: async (...args) => (await import("../../storage")).storage.incrementCouponUsage(...args),

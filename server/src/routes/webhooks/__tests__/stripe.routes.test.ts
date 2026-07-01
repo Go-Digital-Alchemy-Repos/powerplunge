@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
   },
   finalizationService: {
     finalizeStripePaymentIntent: vi.fn(),
+    finalizeStripeCheckoutSession: vi.fn(),
   },
   recordCommission: vi.fn(),
   enqueuePurchase: vi.fn(),
@@ -91,6 +92,11 @@ describe("Stripe webhook routes", () => {
       orderId: "order-1",
       order: { id: "order-1", status: "paid", paymentStatus: "paid" },
     });
+    mocks.finalizationService.finalizeStripeCheckoutSession.mockResolvedValue({
+      status: "finalized",
+      orderId: "order-1",
+      order: { id: "order-1", status: "paid", paymentStatus: "paid" },
+    });
   });
 
   afterEach(async () => {
@@ -102,14 +108,6 @@ describe("Stripe webhook routes", () => {
   });
 
   it("finalizes checkout.session.completed orders through the order finalization service", async () => {
-    const order = {
-      id: "order-1",
-      status: "pending",
-      paymentStatus: "unpaid",
-      totalAmount: 10000,
-      affiliateCode: "AFFILIATE",
-    };
-    mocks.storage.getOrderByStripeSession.mockResolvedValue(order);
     mocks.currentEvent = {
       id: "evt_checkout_completed",
       type: "checkout.session.completed",
@@ -139,20 +137,11 @@ describe("Stripe webhook routes", () => {
 
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ received: true });
-    expect(mocks.storage.getOrderByStripeSession).toHaveBeenCalledWith("cs_test_123");
-    expect(mocks.finalizationService.finalizeStripePaymentIntent).toHaveBeenCalledWith({
-      paymentIntent: {
-        id: "pi_123",
-        amount: 10000,
-        currency: "usd",
-        metadata: {
-          affiliateSessionId: "session-1",
-          attributionType: "coupon",
-          isFriendsFamily: "true",
-          orderId: "order-1",
-        },
-      },
+    expect(mocks.storage.getOrderByStripeSession).not.toHaveBeenCalled();
+    expect(mocks.finalizationService.finalizeStripeCheckoutSession).toHaveBeenCalledWith({
+      session: mocks.currentEvent.data.object,
     });
+    expect(mocks.finalizationService.finalizeStripePaymentIntent).not.toHaveBeenCalled();
     expect(mocks.storage.updateOrder).not.toHaveBeenCalled();
     expect(mocks.recordCommission).not.toHaveBeenCalled();
     expect(mocks.enqueuePurchase).not.toHaveBeenCalled();
@@ -167,8 +156,7 @@ describe("Stripe webhook routes", () => {
       totalAmount: 10000,
       affiliateCode: "AFFILIATE",
     };
-    mocks.storage.getOrderByStripeSession.mockResolvedValue(paidOrder);
-    mocks.finalizationService.finalizeStripePaymentIntent.mockResolvedValue({
+    mocks.finalizationService.finalizeStripeCheckoutSession.mockResolvedValue({
       status: "skipped",
       orderId: "order-1",
       reason: "claim_not_won",
@@ -202,22 +190,15 @@ describe("Stripe webhook routes", () => {
     });
 
     expect(response.status).toBe(200);
-    expect(mocks.finalizationService.finalizeStripePaymentIntent).toHaveBeenCalledOnce();
+    expect(mocks.finalizationService.finalizeStripeCheckoutSession).toHaveBeenCalledOnce();
+    expect(mocks.finalizationService.finalizeStripePaymentIntent).not.toHaveBeenCalled();
     expect(mocks.storage.updateOrder).not.toHaveBeenCalled();
     expect(mocks.recordCommission).not.toHaveBeenCalled();
     expect(mocks.enqueuePurchase).not.toHaveBeenCalled();
     expect(mocks.sendOrderNotification).not.toHaveBeenCalled();
   });
 
-  it("uses the stored order total for legacy Checkout Sessions with Stripe-added tax", async () => {
-    const order = {
-      id: "order-1",
-      status: "pending",
-      paymentStatus: "unpaid",
-      totalAmount: 10000,
-      affiliateCode: null,
-    };
-    mocks.storage.getOrderByStripeSession.mockResolvedValue(order);
+  it("passes Stripe-added tax Checkout Sessions to Checkout Session finalization", async () => {
     mocks.currentEvent = {
       id: "evt_checkout_completed_taxed",
       type: "checkout.session.completed",
@@ -245,16 +226,9 @@ describe("Stripe webhook routes", () => {
     });
 
     expect(response.status).toBe(200);
-    expect(mocks.finalizationService.finalizeStripePaymentIntent).toHaveBeenCalledWith({
-      paymentIntent: {
-        id: "pi_taxed",
-        amount: 10000,
-        currency: "usd",
-        metadata: {
-          attributionType: "direct",
-          orderId: "order-1",
-        },
-      },
+    expect(mocks.finalizationService.finalizeStripeCheckoutSession).toHaveBeenCalledWith({
+      session: mocks.currentEvent.data.object,
     });
+    expect(mocks.finalizationService.finalizeStripePaymentIntent).not.toHaveBeenCalled();
   });
 });
