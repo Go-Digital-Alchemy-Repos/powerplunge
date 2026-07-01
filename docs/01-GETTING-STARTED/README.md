@@ -15,8 +15,9 @@ Welcome to the Power Plunge documentation. This guide will help you get the deve
 3. Run the dev server: `npm run dev`
 4. Access the app:
    - Replit: `http://localhost:5000`
-   - Local/Codex backend: `http://localhost:5001`
-   - Local/Codex frontend (with `npm run dev:all`): `http://localhost:5002`
+   - Local/Codex app: `http://localhost:5011`
+   - Caddy local domain: `http://powerplunge.localhost`
+   - Current local URLs: `npm run local:urls`
 
 ## Project Structure
 

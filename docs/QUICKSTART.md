@@ -49,16 +49,23 @@ npm run db:push
 
 ## 4. Run the app
 
+Use the repo script as the source of truth for local URLs:
+
+```bash
+npm run local:urls
+```
+
 ### Option A: npm scripts (most portable)
 
 ```bash
-# Backend + frontend together
-npm run dev:all
+# App server with Vite middleware on port 5011 by default
+npm run dev
 
-# Or separately:
-npm run dev:local      # backend on port 5001
-npm run dev:client:local  # frontend on port 5002
+# Optional separate Vite client server
+npm run dev:client:local  # client on port 5012
 ```
+
+`npm run dev` respects existing `PORT`, `BETTER_AUTH_BASE_URL`, and `PUBLIC_SITE_URL` values. Without overrides, it uses `http://powerplunge.localhost` and direct URL `http://localhost:5011`.
 
 ### Option B: Makefile
 
@@ -78,7 +85,7 @@ npm run setup:local   # ensure assets exist
 
 ## 5. Open the app
 
-Visit `http://localhost:5002` for the frontend (proxied to backend on 5001).
+Visit `http://powerplunge.localhost` when Caddy is running, or `http://localhost:5011` directly. Do not pick fallback ports for local app testing; if `5011` is busy, identify the listener and stop it or report the conflict.
 
 ## Auth in local dev
 
@@ -116,15 +123,15 @@ Playwright base URL defaults:
 - Replit (`REPL_ID` set): `http://localhost:5000`
 - Local/Codex: `http://localhost:5001`
 
-You can override with `E2E_PORT` or `E2E_BASE_URL`.
+You can override with `E2E_PORT` or `E2E_BASE_URL`. Playwright starts its own test-mode server when needed, so payment/webhook E2E specs should be run through the local test scripts instead of against an already-running normal `npm run dev` server.
 
 ## Available local scripts
 
 | Script | Description |
 |---|---|
-| `npm run dev:local` | Backend on port 5001 |
-| `npm run dev:client:local` | Frontend on port 5002 |
-| `npm run dev:all` | Both together via concurrently |
+| `npm run dev` / `npm run dev:local` | App server with Vite middleware on port 5011 by default |
+| `npm run dev:client:local` | Optional standalone Vite client on port 5012 |
+| `npm run local:urls` | Print canonical local app URLs and Caddy file path |
 | `npm run setup:local` | Ensure placeholder assets exist |
 | `npm run db:push` | Push database schema |
 | `npm run db:push:local` | Push schema through local-test env guard |
@@ -138,5 +145,5 @@ You can override with `E2E_PORT` or `E2E_BASE_URL`.
 - **Vite crashes on missing assets**: Run `npm run setup:local`
 - **Database connection fails**: Check your `DATABASE_URL` in `.env`
 - **Local test DB guard fails**: Hydrate `.env.test.local` and confirm `LOCAL_TEST_DATABASE_HOST` matches the database host exactly
-- **Port already in use**: Change `PORT` in `.env` or use different ports
+- **Port already in use**: Local app testing expects `5011`; identify the existing listener and stop it or report the conflict
 - **Auth errors**: Make sure `BETTER_AUTH_SECRET` is set, or run through `npm run with:local-auth-env -- <command>`.
