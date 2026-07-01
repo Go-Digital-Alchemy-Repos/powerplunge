@@ -151,6 +151,19 @@ npm run check:local
 
 This runs guarded DB push, dev-user seeding, Better Auth seed verification, typecheck, local doctor, schema verification, unit tests, the CMS landing-page generator test, and Playwright e2e.
 
+## Payment and webhook E2E runs
+
+Payment/webhook Playwright specs depend on test-only routes and the email outbox. Run them through the local test wrapper so the server starts with `E2E_TEST_MODE=true` and `E2E_EMAIL_MODE=outbox`:
+
+```bash
+npm run with:test-env -- npx playwright test e2e/customer-stripe-webhook-success.spec.ts --project=chromium
+npm run with:test-env -- npx playwright test e2e/cart-checkout.spec.ts e2e/customer-stripe-webhook-success.spec.ts --project=chromium
+```
+
+Do not run these specs against an already-running normal `npm run dev` server unless that server was explicitly started with matching `E2E_PORT`, `E2E_BASE_URL`, `E2E_TEST_MODE=true`, and `E2E_EMAIL_MODE=outbox`. A JSON parse error that starts with `<!DOCTYPE` usually means the request hit the normal Vite fallback HTML instead of a test-only JSON endpoint.
+
+Local app browsing uses `npm run dev` / `npm run local:urls` and defaults to `http://localhost:5011`. Playwright's local/Codex default remains `http://localhost:5001` unless `E2E_PORT` or `E2E_BASE_URL` is set; the app server script respects `PORT` so CI and Playwright can bind `5001`.
+
 ## scripts/db/verifySchema.ts
 
 Verifies that all Drizzle schema-exported database tables exist in PostgreSQL and checks key data invariants.
