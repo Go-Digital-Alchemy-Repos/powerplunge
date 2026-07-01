@@ -17,6 +17,7 @@ process.env.MAILGUN_DOMAIN ??= "";
 const webServerCommand =
   process.env.PLAYWRIGHT_WEB_SERVER_COMMAND ??
   "npm run dev";
+const webServerTimeout = Number(process.env.PLAYWRIGHT_WEB_SERVER_TIMEOUT ?? 120000);
 
 export default defineConfig({
   testDir: "e2e",
@@ -50,6 +51,6 @@ export default defineConfig({
     command: webServerCommand,
     port: e2ePort,
     reuseExistingServer: true,
-    timeout: 30000,
+    timeout: webServerTimeout,
   },
 });

@@ -2,12 +2,12 @@ import { Router } from "express";
 import { storage } from "../../../storage";
 import { insertCustomerSchema, type Product, type AffiliateSettings, type Affiliate, orders } from "@shared/schema";
 import { checkoutLimiter, paymentLimiter } from "../../middleware/rate-limiter";
-import { affiliateCommissionService } from "../../services/affiliate-commission.service";
 import { normalizeEmail } from "../../services/customer-identity.service";
 import { getCustomerAuthContext } from "../../auth/customerBetterAuth";
 import { normalizeState } from "@shared/us-states";
 import { validateEmail, validatePhone, validateAddress, validateZip, normalizeAddress, type ValidationError } from "@shared/validation";
 import { stripeService } from "../../integrations/stripe/StripeService";
+import { createOrderFinalizationService } from "../../services/order-finalization.service";
 import { db } from "../../../db";
 import { eq, and, sql } from "drizzle-orm";
 import { isEmailOutboxEnabled } from "../../testing/email-outbox";
@@ -894,57 +894,36 @@ router.post("/confirm-payment", paymentLimiter, async (req: any, res) => {
       return res.status(400).json({ message: "Invalid currency" });
     }
 
-    const startedPending = order.status === "pending";
-
-    if (startedPending) {
-      const confirmUpdate: Record<string, any> = {
-        status: "paid",
-        paymentStatus: "paid",
-        stripePaymentIntentId: paymentIntentId,
-      };
-      if (hasMetaTracking) {
-        confirmUpdate.marketingConsentGranted = normalizedMetaTracking.marketingConsentGranted === true;
-        if (normalizedMetaTracking.fbp) confirmUpdate.metaFbp = normalizedMetaTracking.fbp;
-        if (normalizedMetaTracking.fbc) confirmUpdate.metaFbc = normalizedMetaTracking.fbc;
-        if (normalizedMetaTracking.eventSourceUrl) confirmUpdate.metaEventSourceUrl = normalizedMetaTracking.eventSourceUrl;
-        confirmUpdate.customerUserAgent = normalizedMetaTracking.userAgent || req.get("user-agent") || null;
-      }
-
-      const updatedOrder = await storage.updateOrder(orderId, confirmUpdate);
-      if (updatedOrder) {
-        order = updatedOrder;
-      }
-
-      if (order.stripeTaxCalculationId) {
-        try {
-          await stripeClient.tax.transactions.createFromCalculation({
-            calculation: order.stripeTaxCalculationId,
-            reference: orderId,
-          });
-          console.log(`[TAX] Created tax transaction for order ${orderId}`);
-        } catch (taxError: any) {
-          console.error(`[TAX] Failed to create tax transaction for order ${orderId}:`, taxError.message);
-        }
-      }
-
-      if (order.affiliateCode) {
-        const sessionId = paymentIntent.metadata?.affiliateSessionId;
-        const attributionType = paymentIntent.metadata?.attributionType;
-        const metaIsFriendsFamily = paymentIntent.metadata?.isFriendsFamily === "true";
-        const commissionResult = await affiliateCommissionService.recordCommission(orderId, {
-          sessionId: sessionId || undefined,
-          attributionType: attributionType || undefined,
-          isFriendsFamily: metaIsFriendsFamily,
-        });
-        if (commissionResult.success && commissionResult.commissionAmount) {
-          console.log(`[PAYMENT] Recorded commission for order ${orderId}`);
-        }
-      }
-
-      await sendOrderNotification(orderId);
+    const finalizationUpdate: Record<string, any> = {};
+    if (hasMetaTracking) {
+      finalizationUpdate.marketingConsentGranted = normalizedMetaTracking.marketingConsentGranted === true;
+      if (normalizedMetaTracking.fbp) finalizationUpdate.metaFbp = normalizedMetaTracking.fbp;
+      if (normalizedMetaTracking.fbc) finalizationUpdate.metaFbc = normalizedMetaTracking.fbc;
+      if (normalizedMetaTracking.eventSourceUrl) finalizationUpdate.metaEventSourceUrl = normalizedMetaTracking.eventSourceUrl;
+      finalizationUpdate.customerUserAgent = normalizedMetaTracking.userAgent || req.get("user-agent") || null;
     }
 
-    if (!startedPending && order.status === "paid" && hasMetaTracking) {
+    const finalizationService = createOrderFinalizationService({
+      sendOrderNotification,
+      createTaxTransaction: async (calculation, reference) => {
+        await stripeClient.tax.transactions.createFromCalculation({ calculation, reference });
+      },
+    });
+    const finalizationResult = await finalizationService.finalizeStripePaymentIntent({
+      paymentIntent: {
+        id: paymentIntent.id,
+        amount: paymentIntent.amount,
+        currency: paymentIntent.currency,
+        metadata: paymentIntent.metadata,
+      },
+      orderUpdate: finalizationUpdate,
+    });
+
+    if (finalizationResult.status === "finalized") {
+      order = finalizationResult.order;
+    }
+
+    if (finalizationResult.status !== "finalized" && order.status === "paid" && hasMetaTracking) {
       const trackingOnlyUpdate: Record<string, any> = {
         marketingConsentGranted: normalizedMetaTracking.marketingConsentGranted === true,
       };
@@ -958,8 +937,9 @@ router.post("/confirm-payment", paymentLimiter, async (req: any, res) => {
       }
     }
 
-    // Idempotent enqueue: allows late consent capture on already-paid orders.
-    if (order.status === "paid") {
+    // Already-finalized orders can still receive browser tracking context.
+    // Re-enqueue is idempotent and lets Meta capture late consent without re-running finalization.
+    if (finalizationResult.status !== "finalized" && order.status === "paid") {
       try {
         const { metaConversionsService } = await import("../../integrations/meta/MetaConversionsService");
         await metaConversionsService.enqueuePurchase(orderId);
