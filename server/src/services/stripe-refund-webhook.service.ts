@@ -148,6 +148,13 @@ export class StripeRefundWebhookService {
       );
       if (existingRefund.status === normalizedStatus) return;
 
+      await this.deps.storage.updateRefund(existingRefund.id, {
+        status: normalizedStatus,
+        processedAt: normalizedStatus === "processed"
+          ? new Date()
+          : existingRefund.processedAt,
+      });
+
       if (normalizedStatus === "processed") {
         await this.enqueueProcessedRefund(
           existingRefund.id,
@@ -170,13 +177,6 @@ export class StripeRefundWebhookService {
           stripeStatus: stripeRefund.status,
           eventId,
         },
-      });
-
-      await this.deps.storage.updateRefund(existingRefund.id, {
-        status: normalizedStatus,
-        processedAt: normalizedStatus === "processed"
-          ? new Date()
-          : existingRefund.processedAt,
       });
 
       this.deps.log.log(

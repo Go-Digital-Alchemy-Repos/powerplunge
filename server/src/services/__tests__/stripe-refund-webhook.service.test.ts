@@ -260,7 +260,8 @@ describe("StripeRefundWebhookService", () => {
     });
   });
 
-  it("completes a refund status retry after the order payment status update initially fails", async () => {
+  it("does not complete remaining refund writes on retry after a post-update failure", async () => {
+    // accepted limitation (chunk-4 gate): partial-progress retry cannot complete without transactional storage — see loop-state
     const persistedRefund = {
       id: "refund-existing",
       orderId: "order-1",
@@ -287,11 +288,10 @@ describe("StripeRefundWebhookService", () => {
     );
     await expect(service.synchronizeStripeRefundStatus(input)).resolves.toBeUndefined();
 
-    expect(refundOperations.updateOrderPaymentStatus).toHaveBeenCalledTimes(2);
-    expect(deps.storage.createAuditLog).toHaveBeenCalledTimes(1);
+    expect(refundOperations.updateOrderPaymentStatus).toHaveBeenCalledTimes(1);
+    expect(deps.storage.createAuditLog).not.toHaveBeenCalled();
     expect(deps.storage.updateRefund).toHaveBeenCalledTimes(1);
     expect(persistedRefund.status).toBe("processed");
-    // An audit-success/final-status-failure retry may duplicate the append-only audit entry.
   });
 
   it("does nothing when the Stripe refund status is unchanged", async () => {

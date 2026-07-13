@@ -55,37 +55,38 @@ program's known remaining debt, not scheduled.
 
 ## State
 
-Chunk 4 slice 1 (retry semantics), including the P18d partial-progress retry
-remediation, is done on the program branch. Both Stripe webhook endpoints claim
-an event atomically with `metadata.status="processing"`, mark it `processed`
-only after dispatch succeeds, and delete the claim before returning a minimal
-500 response when a handler fails. Duplicate, signature, unknown-event, and
-successful-delivery acknowledgements retain their prior semantics. Refund
-synchronization propagates non-Meta failures, while Meta enqueue remains
-best-effort.
+Chunk 4 slice 1 (retry semantics) and its partial-progress adjudication are done
+on the program branch. Both Stripe webhook endpoints atomically claim an event
+with `metadata.status="processing"`, mark it `processed` only after dispatch
+succeeds, and delete the claim before returning a minimal 500 response when a
+handler fails. Duplicate, signature, unknown-event, and successful-delivery
+acknowledgements retain their prior semantics. Handler failures propagate, while
+refund Meta enqueue remains best-effort.
 
-The remediation makes the persisted business-state marker the last write in
-both affected update operations. `refund.updated` now attempts Meta enqueue,
-updates the Order payment status, and appends its audit record before persisting
-the Refund status. `account.updated` appends its conditional audit record before
-persisting the payout-account state. A pre-marker failure therefore leaves the
-old state visible and a Stripe retry completes the branch. The accepted narrow
-window between an audit append and the final marker write can produce a duplicate
-append-only audit record on retry. `charge.refunded` remains unchanged because
-its per-Refund create-vs-update operation is already the retry marker.
+`account.updated` keeps the P18d audit-first ordering before payout-account state
+persistence. Its collaborators have no stored-state read dependency, so a retry
+after a pre-marker failure completes the remaining work. `refund.updated` instead
+persists the Refund status first, then attempts Meta enqueue, updates the Order
+payment status, appends the audit record, and writes the existing sync log. Both
+Meta enqueue and Order payment-status calculation re-read the persisted Refund,
+so this ordering is required for correct downstream behavior.
 
-The P18d public-interface regressions script a first-call failure and second-call
-success against stateful storage seams. They prove the retry completes the Order
-status and Refund audit/update work, and the payout-account audit/update work.
-No route, storage, schema, acknowledgement, or claim-contract changes were made.
+The resulting `refund.updated` partial-progress retry hole is accepted for the
+chunk-4 gate: a failure after Refund persistence returns 500, but the retry takes
+the status-equal fast path and cannot complete the remaining Order-status or audit
+writes without transactional storage. The Connect regression still proves retry
+completion; the Refund regression now characterizes this non-completion. No route,
+storage, schema, acknowledgement, claim-contract, or `charge.refunded` behavior
+changed during the adjudication.
 
 ## Next Slice
 
 Implement chunk 4 slice 2: refund completeness. `charge.refunded` must follow
 Stripe refund pagination when `has_more` is true, while preserving idempotent
 create-vs-update processing for every Refund. Keep the decided `refund.updated`
-unknown-Refund warning behavior and the P18/P18d propagation, best-effort Meta,
-claim, acknowledgement, and marker-last retry contracts unchanged.
+unknown-Refund warning behavior; persisted-state-first ordering and accepted
+partial-progress retry limitation; `account.updated` audit-first retry completion;
+and the P18 propagation, best-effort Meta, claim, and acknowledgement contracts.
 
 This is a behavior-changing slice. Pin pagination and per-Refund idempotency
 through red-first public-interface tests before implementation. Do not add
