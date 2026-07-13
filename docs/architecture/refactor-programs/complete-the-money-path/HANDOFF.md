@@ -16,36 +16,52 @@ to the director. Branch: `refactor/complete-the-money-path`.
 ## Chunks
 
 1. Small unlocks (A: extract order-notification service; C: dedupe paid-state
-   gate at confirm-payment; D: split "claim" vocabulary) — done
+   gate at confirm-payment; D: split "claim" vocabulary) — DONE, merged to
+   main via PR #25 (511b0b3, approved by Tommy 2026-07-13)
 2. Checkout service (B: extract create-payment-intent pricing/discount/order
-   creation behind a deep interface) — pending
+   creation behind a deep interface; /checkout shares it via a distinct
+   operation; W1 shim cleanup) — all slices complete; chunk gate pending
 3. Webhook service (F: extract refund-sync + Connect handling from
    stripe.routes.ts; route becomes pure dispatch) — pending
 
-## Current Chunk Slices
+## Current Chunk Slices (chunk 2; from R1 survey, director-adopted)
 
-1. Extract `sendOrderNotification` into `order-notification.service.ts`;
-   factory defaults the dep — behavior-preserving — done (P1)
-2. Delete duplicated paid-state guards at confirm-payment call site
-   (payments.routes.ts:936-965), trust service `skipped` reasons —
-   behavior-preserving — done (P2)
-3. Separate account-linking vocabulary from the Finalization claim; update
-   CONTEXT.md — behavior-preserving — done (P3)
+1. Characterization baseline: public-interface tests for
+   POST /create-payment-intent (happy path, validation errors,
+   affiliate/F&F branches, coupon math, tax, customer identity, order/item
+   writes) — test-only — done (P5)
+2. Pure quote nucleus: new `checkout.service.ts` owns product resolution,
+   affiliate/coupon pricing, tax-line construction behind a public quote
+   result; route consumes it — behavior-preserving — done (P6)
+3. PaymentIntent orchestration: move customer/attribution resolution,
+   draft order/items, PaymentIntent creation+linking into the service,
+   preserving call order and HTTP mapping — behavior-preserving,
+   riskiest slice (non-atomic writes, payments.routes.ts:494-561) — done (P7)
+4. /checkout migration: shared quote/customer/order-draft primitives via a
+   distinct `createCheckoutSession` operation, preserving no-coupon,
+   automatic-tax, zero-total-reject, manual-order-fallback policies —
+   behavior-preserving — done (P8)
+5. W1 cleanup: simplify the confirm-payment uppercase-USD/checkout-session
+   shim once both creation operations own amount/currency truths;
+   re-ground its characterization tests - BEHAVIOR-CHANGING - done (P9)
+6. Zero-total guard: reject empty carts and non-positive quantities at
+   create-payment-intent — BEHAVIOR-CHANGING, red test first (replaces the
+   two candidate-bug characterizations from P5) — done (P10; director
+   decision 2026-07-13 under delegated grilling authority)
 
 ## State
 
-P3 complete on `refactor/complete-the-money-path`: the account-linking service,
-exports, result type, log prefix, customer auth call sites, and test mock use
-account-linking vocabulary. `CONTEXT.md` distinguishes account linking from the
-Finalization claim. All chunk 1 slices are complete.
-Chunk 1 review remediation has landed, and the chunk is ready for PR.
+Chunk 2 review remediation (P11) landed: create-payment-intent now rejects
+empty, missing, and malformed carts plus invalid quantities at the route entry,
+before Stripe access or customer persistence, while preserving the service
+guard as defense in depth. Uppercase-USD finalization is grounded at the service
+boundary. Chunk 2 is PR-ready. P11 checkpoint: this commit.
 
 ## Next Slice
 
-- Chunk 1 gate: adversarial review packet, branch push, and PR.
-- Owner: director. This is not a Codex implementation packet.
-- Review: inspect the full chunk diff for architectural regressions and verify
-  all chunk checks before publishing the branch.
+- Chunk 2 gate, owned by the director.
+- Review the full chunk diff for route/service regressions and run the fixed
+  chunk-gate floor plus selected risk-based checks before calling chunk 2 done.
 
 ## Risks / Constraints
 

@@ -134,6 +134,31 @@ describe("OrderFinalizationService", () => {
     expect(metaOrder).toBeLessThan(notificationOrder);
   });
 
+  it("finalizes a Stripe PaymentIntent with uppercase USD currency", async () => {
+    const pendingOrder = makePendingOrder();
+    const paidOrder = makePendingOrder({
+      status: "paid",
+      paymentStatus: "paid",
+      stripePaymentIntentId: "pi_123",
+    });
+    vi.mocked(deps.storage.getOrder).mockResolvedValue(pendingOrder as any);
+    vi.mocked(deps.storage.markOrderPaidIfPending).mockResolvedValue(paidOrder as any);
+
+    const result = await service.finalizeStripePaymentIntent({
+      paymentIntent: {
+        id: "pi_123",
+        amount: 10000,
+        currency: "USD",
+        metadata: { orderId: "order-1" },
+      },
+    });
+
+    expect(result).toEqual({ status: "finalized", orderId: "order-1", order: paidOrder });
+    expect(deps.storage.markOrderPaidIfPending).toHaveBeenCalledWith("order-1", {
+      stripePaymentIntentId: "pi_123",
+    });
+  });
+
   it("does not run paid obligations when the pending-to-paid claim is not won", async () => {
     const alreadyPaidOrder = makePendingOrder({
       status: "paid",
