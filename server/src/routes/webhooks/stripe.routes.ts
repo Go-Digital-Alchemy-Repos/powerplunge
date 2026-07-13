@@ -2,6 +2,7 @@ import { Router } from "express";
 import { storage } from "../../../storage";
 import { errorAlertingService } from "../../services/error-alerting.service";
 import { createOrderFinalizationService } from "../../services/order-finalization.service";
+import { createStripeRefundWebhookService } from "../../services/stripe-refund-webhook.service";
 
 const router = Router();
 
@@ -13,6 +14,11 @@ export async function handlePaymentIntentSucceededWebhook(paymentIntent: any): P
 export async function handleCheckoutSessionCompletedWebhook(session: any): Promise<void> {
   const finalizationService = createOrderFinalizationService();
   await finalizationService.finalizeStripeCheckoutSession({ session });
+}
+
+export async function handleChargeRefundedWebhook(charge: any): Promise<void> {
+  const refundWebhookService = createStripeRefundWebhookService();
+  await refundWebhookService.synchronizeStripeChargeRefunds({ charge });
 }
 
 router.post("/stripe", async (req, res) => {
@@ -86,69 +92,7 @@ router.post("/stripe", async (req, res) => {
 
   if (event.type === "charge.refunded") {
     const charge = event.data.object as any;
-    const paymentIntentId = charge.payment_intent;
-
-    if (paymentIntentId) {
-      try {
-        const { normalizeStripeRefundStatus, updateOrderPaymentStatus } = await import("../../services/refund.service");
-
-        const order = await storage.getOrderByPaymentIntentId(paymentIntentId);
-        if (order) {
-          const stripeClient = await stripeService.getClient();
-          if (stripeClient && charge.refunds?.data) {
-            for (const stripeRefund of charge.refunds.data) {
-              const existingRefund = await storage.getRefundByStripeRefundId(stripeRefund.id);
-              const normalizedStatus = normalizeStripeRefundStatus(stripeRefund.status || "pending");
-
-              if (existingRefund) {
-                if (existingRefund.status !== normalizedStatus) {
-                  await storage.updateRefund(existingRefund.id, {
-                    status: normalizedStatus,
-                    processedAt: normalizedStatus === "processed" ? new Date() : existingRefund.processedAt,
-                  });
-                  console.log(`[WEBHOOK] Updated refund ${existingRefund.id} status to ${normalizedStatus} (charge.refunded)`);
-                  if (normalizedStatus === "processed") {
-                    try {
-                      const { metaConversionsService } = await import("../../integrations/meta/MetaConversionsService");
-                      await metaConversionsService.enqueueRefundProcessed(existingRefund.id);
-                    } catch (metaErr: any) {
-                      console.error("[META] Failed to enqueue processed refund (charge.refunded/update):", metaErr.message || metaErr);
-                    }
-                  }
-                }
-              } else {
-                const createdRefund = await storage.createRefund({
-                  orderId: order.id,
-                  amount: stripeRefund.amount,
-                  reason: stripeRefund.reason || "Refund via Stripe",
-                  reasonCode: stripeRefund.reason || "other",
-                  type: stripeRefund.amount >= order.totalAmount ? "full" : "partial",
-                  source: "stripe",
-                  stripeRefundId: stripeRefund.id,
-                  status: normalizedStatus,
-                  processedAt: normalizedStatus === "processed" ? new Date() : undefined,
-                });
-                console.log(`[WEBHOOK] Created refund record for Stripe refund ${stripeRefund.id} on order ${order.id}`);
-                if (normalizedStatus === "processed") {
-                  try {
-                    const { metaConversionsService } = await import("../../integrations/meta/MetaConversionsService");
-                    await metaConversionsService.enqueueRefundProcessed(createdRefund.id);
-                  } catch (metaErr: any) {
-                    console.error("[META] Failed to enqueue processed refund (charge.refunded/create):", metaErr.message || metaErr);
-                  }
-                }
-              }
-            }
-
-            await updateOrderPaymentStatus(order.id);
-          }
-        } else {
-          console.warn(`[WEBHOOK] charge.refunded: No order found for payment_intent ${paymentIntentId}`);
-        }
-      } catch (refundErr: any) {
-        console.error("[WEBHOOK] Error processing charge.refunded:", refundErr.message);
-      }
-    }
+    await handleChargeRefundedWebhook(charge);
   }
 
   if (event.type === "refund.updated") {
