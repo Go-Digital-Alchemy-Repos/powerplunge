@@ -1,5 +1,6 @@
 import type { Order, InsertOrder, InsertCouponRedemption } from "@shared/schema";
 import type { IStorage } from "../../storage";
+import { sendOrderNotification as defaultSendOrderNotification } from "./order-notification.service";
 
 type PaymentIntentMetadata = Record<string, string | undefined>;
 
@@ -263,9 +264,9 @@ export class OrderFinalizationService {
 }
 
 export function createOrderFinalizationService(params: {
-  sendOrderNotification: (orderId: string) => Promise<void>;
+  sendOrderNotification?: (orderId: string) => Promise<void>;
   createTaxTransaction?: (calculationId: string, reference: string) => Promise<void>;
-}): OrderFinalizationService {
+} = {}): OrderFinalizationService {
   const storageDependency: OrderFinalizationDependencies["storage"] = {
     getOrder: async (...args) => (await import("../../storage")).storage.getOrder(...args),
     getOrderByStripeSession: async (...args) => (await import("../../storage")).storage.getOrderByStripeSession(...args),
@@ -293,7 +294,7 @@ export function createOrderFinalizationService(params: {
       const { metaConversionsService } = await import("../integrations/meta/MetaConversionsService");
       return metaConversionsService.enqueuePurchase(orderId);
     },
-    sendOrderNotification: params.sendOrderNotification,
+    sendOrderNotification: params.sendOrderNotification ?? defaultSendOrderNotification,
     log: console,
   });
 }

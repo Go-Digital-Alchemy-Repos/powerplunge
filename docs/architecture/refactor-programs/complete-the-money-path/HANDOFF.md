@@ -25,19 +25,19 @@ to the director. Branch: `refactor/complete-the-money-path`.
 ## Current Chunk Slices
 
 1. Extract `sendOrderNotification` into `order-notification.service.ts`;
-   factory defaults the dep — behavior-preserving — in progress (P1)
+   factory defaults the dep — behavior-preserving — done (P1)
 2. Delete duplicated paid-state guards at confirm-payment call site
    (payments.routes.ts:936-965), trust service `skipped` reasons —
-   behavior-preserving — pending
+   behavior-preserving — next
 3. Rename `order-claim.service` to account-linking vocabulary; update
    CONTEXT.md; note the finalization claim's home — behavior-preserving —
    pending
 
 ## State
 
-Last verified: baseline on main @ 7621f7d — `npm run with:local-auth-env --
-npm run test:unit` exit 0 (2026-07-13). Program branch created. No slices
-landed yet.
+P1 complete on `refactor/complete-the-money-path`: order notification now
+lives in `order-notification.service.ts`, and finalization defaults the
+dependency. Next slice: deduplicate the confirm-payment paid-state guards.
 
 ## Next Slice
 

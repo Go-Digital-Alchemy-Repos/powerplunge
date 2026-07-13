@@ -2,17 +2,16 @@ import { Router } from "express";
 import { storage } from "../../../storage";
 import { errorAlertingService } from "../../services/error-alerting.service";
 import { createOrderFinalizationService } from "../../services/order-finalization.service";
-import { sendOrderNotification } from "../public/payments.routes";
 
 const router = Router();
 
 export async function handlePaymentIntentSucceededWebhook(paymentIntent: any): Promise<void> {
-  const finalizationService = createOrderFinalizationService({ sendOrderNotification });
+  const finalizationService = createOrderFinalizationService();
   await finalizationService.finalizeStripePaymentIntent({ paymentIntent });
 }
 
 export async function handleCheckoutSessionCompletedWebhook(session: any): Promise<void> {
-  const finalizationService = createOrderFinalizationService({ sendOrderNotification });
+  const finalizationService = createOrderFinalizationService();
   await finalizationService.finalizeStripeCheckoutSession({ session });
 }
 
