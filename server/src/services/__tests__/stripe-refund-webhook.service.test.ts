@@ -121,12 +121,12 @@ describe("StripeRefundWebhookService", () => {
     expect(deps.storage.createRefund).not.toHaveBeenCalled();
   });
 
-  it("swallows synchronization seam errors", async () => {
+  it("propagates synchronization seam errors", async () => {
     vi.mocked(deps.storage.getOrderByPaymentIntentId).mockRejectedValue(new Error("refund storage unavailable"));
 
     await expect(
       createStripeRefundWebhookService(deps).synchronizeStripeChargeRefunds({ charge: makeCharge() }),
-    ).resolves.toBeUndefined();
+    ).rejects.toThrow("refund storage unavailable");
     expect(deps.log.error).toHaveBeenCalledWith(
       "[WEBHOOK] Error processing charge.refunded:",
       "refund storage unavailable",
@@ -195,7 +195,7 @@ describe("StripeRefundWebhookService", () => {
     );
   });
 
-  it("keeps earlier charge refund writes when a later write fails", async () => {
+  it("keeps earlier charge refund writes and rejects when a later write fails", async () => {
     vi.mocked(deps.storage.createRefund)
       .mockResolvedValueOnce({ id: "refund-first" } as any)
       .mockRejectedValueOnce(new Error("refund write unavailable"));
@@ -212,7 +212,7 @@ describe("StripeRefundWebhookService", () => {
           },
         }),
       }),
-    ).resolves.toBeUndefined();
+    ).rejects.toThrow("refund write unavailable");
 
     expect(deps.storage.createRefund).toHaveBeenCalledTimes(2);
     expect(deps.storage.createRefund).toHaveBeenCalledWith(expect.objectContaining({
@@ -223,10 +223,6 @@ describe("StripeRefundWebhookService", () => {
     }));
     const refundOperations = await deps.loadRefundOperations();
     expect(refundOperations.updateOrderPaymentStatus).not.toHaveBeenCalled();
-    expect(deps.log.error).toHaveBeenCalledWith(
-      "[WEBHOOK] Error processing charge.refunded:",
-      "refund write unavailable",
-    );
   });
 
   it("synchronizes a changed Stripe refund status", async () => {
@@ -340,7 +336,7 @@ describe("StripeRefundWebhookService", () => {
     expect(deps.storage.updateRefund).not.toHaveBeenCalled();
   });
 
-  it("swallows refund status synchronization seam errors", async () => {
+  it("propagates refund status synchronization seam errors", async () => {
     vi.mocked(deps.storage.getRefundByStripeRefundId).mockRejectedValue(
       new Error("refund storage unavailable"),
     );
@@ -350,7 +346,7 @@ describe("StripeRefundWebhookService", () => {
         refund: makeRefundUpdate(),
         eventId: "evt_123",
       }),
-    ).resolves.toBeUndefined();
+    ).rejects.toThrow("refund storage unavailable");
     expect(deps.log.error).toHaveBeenCalledWith(
       "[WEBHOOK] Error processing refund.updated:",
       "refund storage unavailable",

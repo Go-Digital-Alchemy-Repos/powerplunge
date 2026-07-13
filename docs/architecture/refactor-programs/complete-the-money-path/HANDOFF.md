@@ -55,22 +55,36 @@ program's known remaining debt, not scheduled.
 
 ## State
 
-Chunk 3 merged to main (PR #27, 7b9e1ea, Tommy-approved 2026-07-13, CI
-green). Branch rebased onto the merge commit. Baseline at chunk-4 start:
-typecheck 0; unit 42 files / 335 tests green. Webhook routes are thin
-transport adapters; all per-event domain logic sits in deps-injected
-services tested at public interfaces.
+Chunk 4 slice 1 (retry semantics) is done on the program branch. Both Stripe
+webhook endpoints now claim an event atomically by inserting its unique event
+ID with `metadata.status="processing"`, then mark the claim `processed` only
+after dispatch succeeds. A handler failure deletes the claim and returns a
+minimal 500 response so Stripe can redeliver it; duplicate, signature,
+unknown-event, and successful-delivery acknowledgements retain their prior
+semantics. Refund synchronization now propagates non-Meta failures to the route,
+while the existing Meta enqueue catches remain best-effort. The storage boundary
+grew only by metadata-update-by-event-ID and delete-by-event-ID operations; no
+schema change was needed.
+
+The slice was developed against the chunk-start baseline of typecheck 0 and 42
+unit files / 335 tests. Five pre-existing cases were explicitly unpinned to move
+from swallowed-success assertions to retryable-failure assertions; all other
+existing cases remained frozen. New route coverage exercises refund and Connect
+handler failure/reclaim, successful processed-state transition, and the
+concurrent unique-violation duplicate path.
 
 ## Next Slice
 
-Slice 1 (retry semantics). Region: server/src/routes/webhooks/
-stripe.routes.ts (delivery-claim + ack mapping on both endpoints),
-storage processed-webhook-event seam, and the three webhook services'
-call boundaries. Red tests first at the route public interface: failed
-handler -> non-2xx + delivery NOT marked processed (retry-able); concurrent
-duplicate -> exactly one dispatch; successful duplicate -> deduped ack.
-The P12 cases carrying `candidate bug` comments are unpinned BY NAME in the
-packet; all other characterizations stay frozen.
+Run the required mid-chunk mini-review of slice 1 before starting more webhook
+hardening. Reconcile its findings without widening the slice's decided claim or
+failure contracts.
+
+After that review clears, implement chunk 4 slice 2: refund completeness.
+`charge.refunded` must follow Stripe refund pagination when `has_more` is true,
+while preserving idempotent create-vs-update processing for every refund. Keep
+the decided `refund.updated` unknown-refund warning behavior. This is a
+behavior-changing slice, so pin pagination and per-refund idempotency through
+red-first public-interface tests before implementation.
 
 ## Risks / Constraints
 

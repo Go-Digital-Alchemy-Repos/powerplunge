@@ -7,6 +7,8 @@ const mocks = vi.hoisted(() => ({
   storage: {
     getProcessedWebhookEvent: vi.fn(),
     createProcessedWebhookEvent: vi.fn(),
+    updateProcessedWebhookEventMetadata: vi.fn(),
+    deleteProcessedWebhookEvent: vi.fn(),
     getOrder: vi.fn(),
     getOrderByStripeSession: vi.fn(),
     markOrderPaidIfPending: vi.fn(),
@@ -129,6 +131,8 @@ describe("Stripe webhook routes", () => {
     mocks.stripeService.constructWebhookEvent.mockImplementation(async () => mocks.currentEvent);
     mocks.storage.getProcessedWebhookEvent.mockResolvedValue(undefined);
     mocks.storage.createProcessedWebhookEvent.mockResolvedValue(undefined);
+    mocks.storage.updateProcessedWebhookEventMetadata.mockResolvedValue(undefined);
+    mocks.storage.deleteProcessedWebhookEvent.mockResolvedValue(undefined);
     mocks.storage.getOrderByPaymentIntentId.mockResolvedValue(undefined);
     mocks.storage.getRefundByStripeRefundId.mockResolvedValue(undefined);
     mocks.storage.createRefund.mockResolvedValue({ id: "refund-created" });
@@ -394,6 +398,37 @@ describe("Stripe webhook routes", () => {
       expect(mocks.alertPaymentFailure).toHaveBeenCalledOnce();
     });
 
+    it("marks successful Stripe deliveries as processed", async () => {
+      mocks.currentEvent = stripeEvent("evt_processed", "customer.created", { id: "cus_123" });
+
+      const response = await postWebhook("/webhooks/stripe");
+
+      expect(response.status).toBe(200);
+      expect(mocks.storage.createProcessedWebhookEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          eventId: "evt_processed",
+          metadata: expect.objectContaining({ status: "processing" }),
+        }),
+      );
+      expect(mocks.storage.updateProcessedWebhookEventMetadata).toHaveBeenCalledWith(
+        "evt_processed",
+        expect.objectContaining({ status: "processed" }),
+      );
+    });
+
+    it("acknowledges a concurrent Stripe duplicate when the claim insert loses", async () => {
+      mocks.currentEvent = stripeEvent("evt_concurrent", "customer.created", { id: "cus_123" });
+      mocks.storage.createProcessedWebhookEvent.mockRejectedValue(
+        Object.assign(new Error("duplicate key"), { code: "23505" }),
+      );
+
+      const response = await postWebhook("/webhooks/stripe");
+
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({ received: true, duplicate: true });
+      expect(mocks.storage.updateProcessedWebhookEventMetadata).not.toHaveBeenCalled();
+    });
+
     it("acknowledges unknown events without domain writes", async () => {
       mocks.currentEvent = stripeEvent("evt_unknown", "customer.created", { id: "cus_123" });
 
@@ -530,19 +565,34 @@ describe("Stripe webhook routes", () => {
       expect(mocks.updateOrderPaymentStatus).toHaveBeenCalledWith("order-existing-refund");
     });
 
-    it("acknowledges charge.refunded when refund storage fails", async () => {
+    it("returns 500 and reclaims charge.refunded when refund storage fails", async () => {
       mocks.currentEvent = stripeEvent("evt_charge_refunded_error", "charge.refunded", {
         payment_intent: "pi_refund_error",
         refunds: { data: [{ id: "re_error", amount: 1000, status: "pending" }] },
       });
-      mocks.storage.getOrderByPaymentIntentId.mockRejectedValue(new Error("refund storage unavailable"));
+      mocks.storage.getOrderByPaymentIntentId
+        .mockRejectedValueOnce(new Error("refund storage unavailable"))
+        .mockResolvedValueOnce(undefined);
 
-      const response = await postWebhook("/webhooks/stripe");
+      const app = await startApp();
+      server = app.server;
+      const request = () => app.request("/webhooks/stripe", {
+        method: "POST",
+        headers: { "stripe-signature": "sig_test", "content-type": "application/json" },
+        body: "{}",
+      });
 
-      // current behavior - candidate bug, do not rely on
-      expect(response.status).toBe(200);
-      expect(await response.json()).toEqual({ received: true });
-      expect(mocks.storage.createProcessedWebhookEvent).toHaveBeenCalledOnce();
+      const firstResponse = await request();
+      const secondResponse = await request();
+
+      expect(firstResponse.status).toBe(500);
+      expect(await firstResponse.json()).toEqual({ message: "Webhook processing failed" });
+      expect(secondResponse.status).toBe(200);
+      expect(mocks.storage.createProcessedWebhookEvent).toHaveBeenCalledTimes(2);
+      expect(mocks.storage.deleteProcessedWebhookEvent).toHaveBeenCalledWith(
+        "evt_charge_refunded_error",
+      );
+      expect(mocks.storage.getOrderByPaymentIntentId).toHaveBeenCalledTimes(2);
       expect(mocks.storage.createRefund).not.toHaveBeenCalled();
     });
 
@@ -684,6 +734,41 @@ describe("Stripe webhook routes", () => {
       }));
     });
 
+    it("marks successful Connect deliveries as processed", async () => {
+      mocks.currentEvent = stripeEvent("evt_connect_processed", "account.updated", {
+        id: "acct_processed",
+      });
+
+      const response = await postWebhook("/webhooks/stripe-connect");
+
+      expect(response.status).toBe(200);
+      expect(mocks.storage.createProcessedWebhookEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          eventId: "evt_connect_processed",
+          metadata: expect.objectContaining({ status: "processing" }),
+        }),
+      );
+      expect(mocks.storage.updateProcessedWebhookEventMetadata).toHaveBeenCalledWith(
+        "evt_connect_processed",
+        expect.objectContaining({ status: "processed" }),
+      );
+    });
+
+    it("acknowledges a concurrent Connect duplicate when the claim insert loses", async () => {
+      mocks.currentEvent = stripeEvent("evt_connect_concurrent", "account.updated", {
+        id: "acct_concurrent",
+      });
+      mocks.storage.createProcessedWebhookEvent.mockRejectedValue(
+        Object.assign(new Error("duplicate key"), { code: "23505" }),
+      );
+
+      const response = await postWebhook("/webhooks/stripe-connect");
+
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({ received: true, duplicate: true });
+      expect(mocks.storage.updateProcessedWebhookEventMetadata).not.toHaveBeenCalled();
+    });
+
     it("refreshes payout enablement when a capability is updated", async () => {
       mocks.currentEvent = stripeEvent("evt_capability_updated", "capability.updated", {
         id: "card_payments",
@@ -727,23 +812,31 @@ describe("Stripe webhook routes", () => {
       }));
     });
 
-    it("acknowledges Connect handler errors after delivery dedupe", async () => {
+    it("returns 500 and reclaims Connect handler errors after delivery dedupe", async () => {
       mocks.currentEvent = stripeEvent("evt_connect_error", "account.updated", {
         id: "acct_error",
       });
-      mocks.storage.getAffiliatePayoutAccountByStripeAccountId.mockRejectedValue(
-        new Error("payout storage unavailable")
-      );
+      mocks.storage.getAffiliatePayoutAccountByStripeAccountId
+        .mockRejectedValueOnce(new Error("payout storage unavailable"))
+        .mockResolvedValueOnce(undefined);
 
-      const response = await postWebhook("/webhooks/stripe-connect");
+      const app = await startApp();
+      server = app.server;
+      const request = () => app.request("/webhooks/stripe-connect", {
+        method: "POST",
+        headers: { "stripe-signature": "sig_test", "content-type": "application/json" },
+        body: "{}",
+      });
 
-      // current behavior - candidate bug, do not rely on
-      expect(response.status).toBe(200);
-      expect(await response.json()).toEqual({ received: true });
-      expect(mocks.storage.createProcessedWebhookEvent).toHaveBeenCalledWith(expect.objectContaining({
-        eventId: "evt_connect_error",
-        source: "stripe_connect",
-      }));
+      const firstResponse = await request();
+      const secondResponse = await request();
+
+      expect(firstResponse.status).toBe(500);
+      expect(await firstResponse.json()).toEqual({ message: "Webhook processing failed" });
+      expect(secondResponse.status).toBe(200);
+      expect(mocks.storage.createProcessedWebhookEvent).toHaveBeenCalledTimes(2);
+      expect(mocks.storage.deleteProcessedWebhookEvent).toHaveBeenCalledWith("evt_connect_error");
+      expect(mocks.storage.getAffiliatePayoutAccountByStripeAccountId).toHaveBeenCalledTimes(2);
       expect(mocks.storage.updateAffiliatePayoutAccount).not.toHaveBeenCalled();
     });
   });

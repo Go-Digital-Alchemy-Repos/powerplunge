@@ -124,6 +124,7 @@ export class StripeRefundWebhookService {
       await refundOperations.updateOrderPaymentStatus(order.id);
     } catch (refundErr: any) {
       this.deps.log.error("[WEBHOOK] Error processing charge.refunded:", refundErr.message);
+      throw refundErr;
     }
   }
 
@@ -183,6 +184,7 @@ export class StripeRefundWebhookService {
       );
     } catch (refundErr: any) {
       this.deps.log.error("[WEBHOOK] Error processing refund.updated:", refundErr.message);
+      throw refundErr;
     }
   }
 

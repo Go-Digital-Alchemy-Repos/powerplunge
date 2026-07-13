@@ -73,7 +73,7 @@ router.post("/stripe", async (req, res) => {
       eventId: event.id,
       eventType: event.type,
       source: "stripe",
-      metadata: { livemode: event.livemode },
+      metadata: { livemode: event.livemode, status: "processing" },
     });
   } catch (err: any) {
     if (err.code === "23505") {
@@ -83,40 +83,55 @@ router.post("/stripe", async (req, res) => {
     throw err;
   }
 
-  const handlers: Partial<Record<string, WebhookEventHandler>> = {
-    "checkout.session.completed": async () => {
-      const session = event.data.object as any;
-      await handleCheckoutSessionCompletedWebhook(session);
-    },
-    "payment_intent.succeeded": async () => {
-      const paymentIntent = event.data.object as any;
-      await handlePaymentIntentSucceededWebhook(paymentIntent);
-    },
-    "charge.refunded": async () => {
-      const charge = event.data.object as any;
-      await handleChargeRefundedWebhook(charge);
-    },
-    "refund.updated": async () => {
-      const stripeRefund = event.data.object as any;
-      const refundWebhookService = createStripeRefundWebhookService();
-      await refundWebhookService.synchronizeStripeRefundStatus({
-        refund: stripeRefund,
-        eventId: event.id,
-      });
-    },
-    "payment_intent.payment_failed": async () => {
-      const paymentIntent = event.data.object as any;
-      const paymentWebhookService = createStripePaymentWebhookService();
-      await paymentWebhookService.alertStripePaymentFailure({
-        paymentIntent,
-      });
-    },
-  };
+  try {
+    const handlers: Partial<Record<string, WebhookEventHandler>> = {
+      "checkout.session.completed": async () => {
+        const session = event.data.object as any;
+        await handleCheckoutSessionCompletedWebhook(session);
+      },
+      "payment_intent.succeeded": async () => {
+        const paymentIntent = event.data.object as any;
+        await handlePaymentIntentSucceededWebhook(paymentIntent);
+      },
+      "charge.refunded": async () => {
+        const charge = event.data.object as any;
+        await handleChargeRefundedWebhook(charge);
+      },
+      "refund.updated": async () => {
+        const stripeRefund = event.data.object as any;
+        const refundWebhookService = createStripeRefundWebhookService();
+        await refundWebhookService.synchronizeStripeRefundStatus({
+          refund: stripeRefund,
+          eventId: event.id,
+        });
+      },
+      "payment_intent.payment_failed": async () => {
+        const paymentIntent = event.data.object as any;
+        const paymentWebhookService = createStripePaymentWebhookService();
+        await paymentWebhookService.alertStripePaymentFailure({
+          paymentIntent,
+        });
+      },
+    };
 
-  const handler = Object.prototype.hasOwnProperty.call(handlers, event.type)
-    ? handlers[event.type]
-    : undefined;
-  if (handler) await handler();
+    const handler = Object.prototype.hasOwnProperty.call(handlers, event.type)
+      ? handlers[event.type]
+      : undefined;
+    if (handler) await handler();
+
+    await storage.updateProcessedWebhookEventMetadata(event.id, {
+      livemode: event.livemode,
+      status: "processed",
+    });
+  } catch (error) {
+    console.error("Error processing Stripe webhook:", error);
+    try {
+      await storage.deleteProcessedWebhookEvent(event.id);
+    } catch (cleanupError) {
+      console.error("Error deleting failed Stripe webhook claim:", cleanupError);
+    }
+    return res.status(500).json({ message: "Webhook processing failed" });
+  }
 
   res.json({ received: true });
 });
@@ -185,7 +200,7 @@ router.post("/stripe-connect", async (req, res) => {
       eventId: event.id,
       eventType: event.type,
       source: "stripe_connect",
-      metadata: { livemode: event.livemode },
+      metadata: { livemode: event.livemode, status: "processing" },
     });
   } catch (err: any) {
     if (err.code === "23505") {
@@ -219,8 +234,19 @@ router.post("/stripe-connect", async (req, res) => {
       ? handlers[event.type]
       : undefined;
     if (handler) await handler();
+
+    await storage.updateProcessedWebhookEventMetadata(event.id, {
+      livemode: event.livemode,
+      status: "processed",
+    });
   } catch (error) {
     console.error("Error processing Connect webhook:", error);
+    try {
+      await storage.deleteProcessedWebhookEvent(event.id);
+    } catch (cleanupError) {
+      console.error("Error deleting failed Connect webhook claim:", cleanupError);
+    }
+    return res.status(500).json({ message: "Webhook processing failed" });
   }
 
   res.json({ received: true });

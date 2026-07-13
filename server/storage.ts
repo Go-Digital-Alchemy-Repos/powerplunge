@@ -295,6 +295,11 @@ export interface IStorage {
   // Processed Webhook Events (for idempotency)
   getProcessedWebhookEvent(eventId: string): Promise<ProcessedWebhookEvent | undefined>;
   createProcessedWebhookEvent(event: InsertProcessedWebhookEvent): Promise<ProcessedWebhookEvent>;
+  updateProcessedWebhookEventMetadata(
+    eventId: string,
+    metadata: ProcessedWebhookEvent["metadata"],
+  ): Promise<ProcessedWebhookEvent | undefined>;
+  deleteProcessedWebhookEvent(eventId: string): Promise<void>;
 
   // Meta CAPI outbox
   createMetaCapiEvent(event: InsertMetaCapiEvent): Promise<MetaCapiEvent>;
@@ -1498,6 +1503,22 @@ export class DatabaseStorage implements IStorage {
   async createProcessedWebhookEvent(event: InsertProcessedWebhookEvent): Promise<ProcessedWebhookEvent> {
     const [newEvent] = await db.insert(processedWebhookEvents).values(event).returning();
     return newEvent;
+  }
+
+  async updateProcessedWebhookEventMetadata(
+    eventId: string,
+    metadata: ProcessedWebhookEvent["metadata"],
+  ): Promise<ProcessedWebhookEvent | undefined> {
+    const [updatedEvent] = await db
+      .update(processedWebhookEvents)
+      .set({ metadata })
+      .where(eq(processedWebhookEvents.eventId, eventId))
+      .returning();
+    return updatedEvent || undefined;
+  }
+
+  async deleteProcessedWebhookEvent(eventId: string): Promise<void> {
+    await db.delete(processedWebhookEvents).where(eq(processedWebhookEvents.eventId, eventId));
   }
 
   // Meta CAPI outbox
