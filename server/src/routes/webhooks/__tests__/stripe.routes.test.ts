@@ -448,6 +448,25 @@ describe("Stripe webhook routes", () => {
       }));
     });
 
+    it("alerts payment failures through the route's payment webhook service wiring", async () => {
+      mocks.currentEvent = stripeEvent(
+        "evt_payment_failed_service",
+        "payment_intent.payment_failed",
+        {
+          id: "pi_failed_service",
+          amount: 3200,
+          metadata: { orderId: "order-failed-service" },
+          last_payment_error: { message: "Payment method rejected" },
+        },
+      );
+
+      const response = await postWebhook("/webhooks/stripe");
+
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({ received: true });
+      expect(mocks.alertPaymentFailure).toHaveBeenCalledOnce();
+    });
+
     it("creates a processed refund from charge.refunded and attempts Meta enqueue", async () => {
       mocks.currentEvent = stripeEvent("evt_charge_refunded_create", "charge.refunded", {
         id: "ch_refunded",

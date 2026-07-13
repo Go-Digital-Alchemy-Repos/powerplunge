@@ -3,6 +3,7 @@ import { storage } from "../../../storage";
 import { errorAlertingService } from "../../services/error-alerting.service";
 import { createOrderFinalizationService } from "../../services/order-finalization.service";
 import { createStripeConnectWebhookService } from "../../services/stripe-connect-webhook.service";
+import { createStripePaymentWebhookService } from "../../services/stripe-payment-webhook.service";
 import { createStripeRefundWebhookService } from "../../services/stripe-refund-webhook.service";
 
 const router = Router();
@@ -105,28 +106,16 @@ router.post("/stripe", async (req, res) => {
     },
     "payment_intent.payment_failed": async () => {
       const paymentIntent = event.data.object as any;
-      const orderId = paymentIntent.metadata?.orderId;
-      const lastError = paymentIntent.last_payment_error;
-
-      console.error("[WEBHOOK] Payment failed:", {
-        paymentIntentId: paymentIntent.id,
-        orderId,
-        errorCode: lastError?.code,
-        errorMessage: lastError?.message,
-      });
-
-      await errorAlertingService.alertPaymentFailure({
-        orderId: orderId || undefined,
-        email: paymentIntent.receipt_email || paymentIntent.metadata?.customerEmail,
-        amount: paymentIntent.amount,
-        paymentIntentId: paymentIntent.id,
-        errorMessage: lastError?.message || "Payment failed",
-        errorCode: lastError?.code,
+      const paymentWebhookService = createStripePaymentWebhookService();
+      await paymentWebhookService.alertStripePaymentFailure({
+        paymentIntent,
       });
     },
   };
 
-  const handler = handlers[event.type];
+  const handler = Object.prototype.hasOwnProperty.call(handlers, event.type)
+    ? handlers[event.type]
+    : undefined;
   if (handler) await handler();
 
   res.json({ received: true });
@@ -226,7 +215,9 @@ router.post("/stripe-connect", async (req, res) => {
       },
     };
 
-    const handler = handlers[event.type];
+    const handler = Object.prototype.hasOwnProperty.call(handlers, event.type)
+      ? handlers[event.type]
+      : undefined;
     if (handler) await handler();
   } catch (error) {
     console.error("Error processing Connect webhook:", error);

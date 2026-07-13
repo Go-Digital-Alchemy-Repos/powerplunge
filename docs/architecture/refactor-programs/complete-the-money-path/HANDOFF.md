@@ -51,37 +51,35 @@ unavailable.
 
 ## State
 
-P16 completed chunk 3 slice 5: `capability.updated` payout-account refresh now
-lives behind `synchronizeAffiliatePayoutCapability` on the dependency-injected
-Connect webhook service. The service resolves string and object account forms,
-retrieves the full Stripe account through a lazy injected seam, maps account
-state with false defaults, preserves requirements, emits the exact Connect log,
-and always writes the capability audit after a matched update. Five new
-public-interface cases cover the happy path, object account form, unknown payout
-account, missing account ID, and seam-error propagation (10 Connect service
-tests total). Both webhook endpoints now use typed per-event handler maps while
-preserving endpoint-specific error and acknowledgement behavior. The legacy
-`handlePaymentIntentSucceededWebhook` export remains unchanged, and both frozen
-route files remain untouched. P16 checkpoint checks: focused Connect and route
-tests, typecheck, full unit suite, diff checks, and a standard review pass.
+P17 completed the blocking chunk-3 review remediation. The
+`payment_intent.payment_failed` field mapping, exact failure log, and
+`alertPaymentFailure` call now live behind `alertStripePaymentFailure` on the
+dependency-injected Stripe payment webhook service. Four public-interface cases
+cover order-aware mapping, missing-order and email fallback behavior, the
+default error message, and alert-error propagation. One additive route-seam
+case proves the endpoint still reaches alerting through the factory's default
+wiring. Both endpoint dispatch tables now require an own property before
+selecting a handler, so inherited object keys follow the unchanged unknown-event
+acknowledgement path. The frozen legacy route test file and
+`handlePaymentIntentSucceededWebhook` export remain unchanged. P17 checks:
+focused payment service and route tests, typecheck, full unit suite (42 files,
+335 tests), diff checks, and a standard review pass.
 
 ## Next Slice
 
-- Run the chunk-3 gate before PR: fixed floor plus adversarial review of the full
-  chunk diff.
-- Files: review only; change implementation files only to fix substantiated,
-  in-scope gate findings, and update this handoff with the gate result.
-- Classification: behavior-preserving verification gate.
-- Fixed floor: all chunk slice tests, affected webhook route/service/storage
-  tests, `npm run typecheck`, `git diff --check`, and the full unit suite.
-- Risk-based check: run
-  `e2e/customer-stripe-webhook-success.spec.ts` for signed-route success and
-  duplicate handling when the local E2E environment supports it; otherwise use
-  the binding PR CI run.
-- Review: fresh adversarial review of the full chunk-3 diff for route/service
-  regressions, delivery semantics, compatibility exports, and test quality.
-- Outcome: if the fixed floor, risk-based check, and review approve, open the PR
-  for chunk 3. Do not merge without director verification.
+- Open the chunk-3 PR after the director independently verifies the P17
+  checkpoint, binding gates, and full chunk diff.
+- Files: none unless independent verification or PR CI finds a substantiated,
+  in-scope defect.
+- Classification: review and publication only; no planned implementation.
+- PR evidence: include the completed chunk-3 fixed floor, the P17 remediation
+  checks, and the binding CI result for
+  `e2e/customer-stripe-webhook-success.spec.ts` if local E2E remains unavailable.
+- Review: verify route/service regressions, delivery semantics, compatibility
+  exports, dispatch behavior for inherited keys, and test quality across the
+  full chunk diff.
+- Outcome: open the PR when verification approves. Do not merge without director
+  approval.
 
 ## Risks / Constraints
 
