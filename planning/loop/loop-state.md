@@ -7,10 +7,20 @@ P2 VERIFIED (860ee7e). P3 (final chunk-1 slice) in flight.
 
 ## In-flight
 
-- Packet P3 (planning/handoffs/2026-07-13-p3-claim-vocabulary-split.md)
-  FIRED 2026-07-13 10:17 at gpt-5.6-sol medium, in flight.
-  RUN_DIR=/var/folders/kg/vqcvwwlx3xs4wblm4wpvpkz00000gn/T//codex-handoff/20260713-101751-2026-07-13-p3-claim-vocabulary-split
-  Branch refactor/complete-the-money-path @ 860ee7e + loop-state commit.
+- Chunk 1 ADVERSARIAL REVIEW
+  (planning/handoffs/2026-07-13-chunk1-adversarial-review.md)
+  FIRED 2026-07-13 10:26 at gpt-5.6-sol HIGH, read-only lane.
+  RUN_DIR=/var/folders/kg/vqcvwwlx3xs4wblm4wpvpkz00000gn/T//codex-handoff/20260713-102602-2026-07-13-chunk1-adversarial-review
+  Reviewing diff d366cef..eadfffb (P1 d0c7528, P2 860ee7e, P3 eadfffb —
+  all three director-verified green).
+- P3 VERIFIED: typecheck 0; unit 37/236 green; zero order-claim /
+  claimOrdersByEmail matches in server/src; CONTEXT.md Account linking
+  entry present; git rename recorded; extra ref found+fixed in
+  docs/ECOMMERCE_SYSTEM_PROMPT.md; ONE commit eadfffb.
+- Chunk gate fixed floor DONE: typecheck 0, unit green, git diff --check
+  clean over d366cef..HEAD. Local E2E SKIPPED: no
+  .env.test.local.template on this machine; CI critical E2E on the PR is
+  the binding gate for that surface.
 
 ## Verified facts (P2 cycle, 2026-07-13)
 
