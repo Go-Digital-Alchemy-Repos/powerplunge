@@ -29,10 +29,10 @@ to the director. Branch: `refactor/complete-the-money-path`.
 1. Characterization baseline: public-interface tests for POST /stripe and
    POST /stripe-connect (secrets resolution, signature failures, delivery
    dedupe, unknown events, payment-failure alerting, swallowed-error 200
-   acks) — test-only — next (P12)
+   acks) — test-only — done (P12)
 2. Extract charge.refunded into new `stripe-refund-webhook.service.ts`
    with public-interface tests — behavior-preserving — RISKIEST slice:
-   gets the HIGH mid-chunk mini-review before further slices — pending
+   gets the HIGH mid-chunk mini-review before further slices — next
 3. Move refund.updated into the same refund service —
    behavior-preserving — pending
 4. Extract account.updated into new `stripe-connect-webhook.service.ts`
@@ -50,25 +50,33 @@ unavailable.
 
 ## State
 
-Chunks 1-2 merged to main. Chunk 3 open: R2 survey complete and
-director-verified (two endpoints /stripe :18 and /stripe-connect :231 in
-stripe.routes.ts, 391 lines; seven event types; refund/Connect failures
-intentionally swallowed into 200 acks; coverage is Checkout-focused —
-refund sync, Connect, payment-failure alerting, unknown events, and most
-signature/dedupe failure paths are uncovered). Next: P12 characterization
-baseline.
+P12 completed in this commit: the existing public HTTP route test now has
+20 cases (4 retained, 16 added) covering both Stripe webhook endpoints,
+including signature and secret failures, delivery dedupe, unknown events,
+payment-failure alerting, refund create/update/status normalization, Connect
+payout writes, and the current swallowed-error 200 acknowledgements. Verified
+with `npm run typecheck` and the full unit suite (39 files / 305 tests); standard
+diff review approved. No production code changed. Chunk 3 slice 1 is done;
+slice 2 is next.
 
 ## Next Slice
 
-- Slice 1 (P12): characterization tests only, extending
-  server/src/routes/webhooks/__tests__/stripe.routes.test.ts: both
-  endpoints' secret resolution (settings-encrypted vs env fallback),
-  signature-failure responses, delivery dedupe (duplicate event id),
-  unknown-event fallthrough ack, payment-failure alerting branch, and the
-  swallowed-error-still-200 contract per event family. All green against
-  CURRENT code; no production changes.
-- Classification: test-only (characterization net for slices 2-5).
-- Checks: `npm run typecheck` exit 0; full unit suite green.
+- Slice 2: extract the `charge.refunded` branch into
+  `server/src/services/stripe-refund-webhook.service.ts`, leaving raw-body and
+  signature verification, delivery dedupe, HTTP acknowledgement mapping, and
+  dispatch in `server/src/routes/webhooks/stripe.routes.ts`.
+- Files: `server/src/routes/webhooks/stripe.routes.ts`,
+  `server/src/services/stripe-refund-webhook.service.ts`, focused tests under
+  `server/src/services/__tests__/`,
+  `server/src/routes/webhooks/__tests__/stripe.routes.test.ts`, and this handoff.
+- Classification: behavior-preserving.
+- Test: retain the P12 public HTTP characterization for refund creation,
+  existing-refund update, Meta enqueue, and swallowed-error 200 acknowledgement;
+  add focused public service tests only where needed to drive the extraction.
+- Checks: focused refund-service and webhook-route tests, `npm run typecheck`,
+  and the full unit suite.
+- Gate: this is the chunk's riskiest slice. Run the scheduled HIGH mid-chunk
+  mini-review after the standard slice review and before starting slice 3.
 
 ## Risks / Constraints
 
