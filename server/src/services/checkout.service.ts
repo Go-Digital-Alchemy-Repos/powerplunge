@@ -201,6 +201,20 @@ export class CheckoutZeroPayableError extends Error {
   }
 }
 
+export class CheckoutEmptyCartError extends Error {
+  constructor() {
+    super("Cart is empty");
+    this.name = "CheckoutEmptyCartError";
+  }
+}
+
+export class CheckoutInvalidItemQuantityError extends Error {
+  constructor() {
+    super("Invalid item quantity");
+    this.name = "CheckoutInvalidItemQuantityError";
+  }
+}
+
 type DiscountedCheckoutOrderItem = CheckoutOrderItem & { discountAmount?: number };
 
 function allocateDiscountAcrossUnits(unitPrices: number[], discountAmount: number): number[] {
@@ -413,6 +427,16 @@ export class CheckoutService {
   async createPaymentIntentCheckout(
     input: CreatePaymentIntentCheckoutInput,
   ): Promise<CreatePaymentIntentCheckoutResult> {
+    const { items } = input;
+    if (items === undefined || (Array.isArray(items) && items.length === 0)) {
+      throw new CheckoutEmptyCartError();
+    }
+    for (const item of items) {
+      if (typeof item.quantity !== "number" || !Number.isInteger(item.quantity) || item.quantity <= 0) {
+        throw new CheckoutInvalidItemQuantityError();
+      }
+    }
+
     const quote = await this.quote(input);
     const order = await this.deps.storage.createOrder({
       customerId: input.customerId,

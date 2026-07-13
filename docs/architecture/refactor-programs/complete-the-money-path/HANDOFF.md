@@ -20,7 +20,7 @@ to the director. Branch: `refactor/complete-the-money-path`.
    main via PR #25 (511b0b3, approved by Tommy 2026-07-13)
 2. Checkout service (B: extract create-payment-intent pricing/discount/order
    creation behind a deep interface; /checkout shares it via a distinct
-   operation; W1 shim cleanup) — in progress
+   operation; W1 shim cleanup) — all slices complete; chunk gate pending
 3. Webhook service (F: extract refund-sync + Connect handling from
    stripe.routes.ts; route becomes pure dispatch) — pending
 
@@ -46,30 +46,22 @@ to the director. Branch: `refactor/complete-the-money-path`.
    re-ground its characterization tests - BEHAVIOR-CHANGING - done (P9)
 6. Zero-total guard: reject empty carts and non-positive quantities at
    create-payment-intent — BEHAVIOR-CHANGING, red test first (replaces the
-   two candidate-bug characterizations from P5) — pending (director
+   two candidate-bug characterizations from P5) — done (P10; director
    decision 2026-07-13 under delegated grilling authority)
 
 ## State
 
-Chunk 2 slice 5 (P9) complete: confirm-payment accepts currency
-case-insensitively and lets Checkout Session PaymentIntents follow the
-finalization service's success fall-through. W1 is discharged; next is slice 6,
-the zero-total guard. P9 checkpoint: this commit. Verified after standard
-review with focused route tests, typecheck, and the full unit suite green.
+Chunk 2 slice 6 (P10) complete: create-payment-intent rejects empty or missing
+carts and quantities that are not positive integer numbers before product,
+order, tax, or Stripe PaymentIntent access. Chunk 2's implementation slices are
+complete. P10 checkpoint: this commit. Verified after standard review with
+focused route/service tests, typecheck, and the full unit suite green.
 
 ## Next Slice
 
-- Slice 6: reject empty carts and non-positive quantities at
-  create-payment-intent, replacing the two candidate-bug characterizations
-  from P5.
-- Files: `server/src/routes/public/payments.routes.ts`,
-  `server/src/routes/public/__tests__/create-payment-intent.routes.test.ts`.
-- Classification: BEHAVIOR-CHANGING, red test first.
-- Test: replace the empty-cart and zero-quantity candidate-bug
-  characterizations with rejection assertions, then observe both fail before
-  adding the route guard.
-- Checks: focused create-payment-intent characterizations, `npm run typecheck`,
-  and the full unit suite stay green.
+- Chunk 2 gate, owned by the director.
+- Review the full chunk diff for route/service regressions and run the fixed
+  chunk-gate floor plus selected risk-based checks before calling chunk 2 done.
 
 ## Risks / Constraints
 

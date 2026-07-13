@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  CheckoutEmptyCartError,
+  CheckoutInvalidItemQuantityError,
   CheckoutTaxCalculationError,
   CheckoutUnknownProductError,
   CheckoutZeroPayableError,
@@ -297,26 +299,40 @@ describe("CheckoutService createPaymentIntentCheckout", () => {
     expect(deps.storage.updateOrder).not.toHaveBeenCalled();
   });
 
-  it("passes a zero-total checkout through to PaymentIntent creation", async () => {
+  it.each([[], undefined])("rejects an empty or missing cart before invoking dependencies", async (items) => {
     const deps = makeDependencies();
-    vi.mocked(deps.calculateTax).mockResolvedValue({ id: "taxcalc-zero", taxAmountExclusive: 0 });
 
-    const result = await createCheckoutService(deps).createPaymentIntentCheckout(
-      paymentIntentCheckoutInput({ items: [] }),
-    );
+    await expect(
+      createCheckoutService(deps).createPaymentIntentCheckout(paymentIntentCheckoutInput({ items })),
+    ).rejects.toEqual(new CheckoutEmptyCartError());
 
-    expect(deps.storage.createOrder).toHaveBeenCalledWith(expect.objectContaining({
-      subtotalAmount: 0,
-      taxAmount: null,
-      totalAmount: 0,
-    }));
+    expect(deps.storage.getProduct).not.toHaveBeenCalled();
+    expect(deps.calculateTax).not.toHaveBeenCalled();
+    expect(deps.storage.createOrder).not.toHaveBeenCalled();
     expect(deps.storage.createOrderItem).not.toHaveBeenCalled();
-    expect(deps.createPaymentIntent).toHaveBeenCalledWith(expect.objectContaining({ amount: 0 }));
-    expect(deps.storage.updateOrder).toHaveBeenCalledWith("order-1", {
-      stripePaymentIntentId: "pi-1",
-    });
-    expect(result.totalAmount).toBe(0);
+    expect(deps.storage.updateOrder).not.toHaveBeenCalled();
+    expect(deps.createPaymentIntent).not.toHaveBeenCalled();
   });
+
+  it.each([0, -1, 1.5, "2"])(
+    "rejects invalid item quantity %j before invoking dependencies",
+    async (quantity) => {
+      const deps = makeDependencies();
+
+      await expect(
+        createCheckoutService(deps).createPaymentIntentCheckout(
+          paymentIntentCheckoutInput({ items: [{ productId: "product-1", quantity }] }),
+        ),
+      ).rejects.toEqual(new CheckoutInvalidItemQuantityError());
+
+      expect(deps.storage.getProduct).not.toHaveBeenCalled();
+      expect(deps.calculateTax).not.toHaveBeenCalled();
+      expect(deps.storage.createOrder).not.toHaveBeenCalled();
+      expect(deps.storage.createOrderItem).not.toHaveBeenCalled();
+      expect(deps.storage.updateOrder).not.toHaveBeenCalled();
+      expect(deps.createPaymentIntent).not.toHaveBeenCalled();
+    },
+  );
 });
 
 describe("CheckoutService createCheckoutSession", () => {

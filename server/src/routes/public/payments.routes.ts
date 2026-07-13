@@ -9,6 +9,8 @@ import { validateEmail, validatePhone, validateAddress, validateZip, normalizeAd
 import { stripeService } from "../../integrations/stripe/StripeService";
 import { createOrderFinalizationService } from "../../services/order-finalization.service";
 import {
+  CheckoutEmptyCartError,
+  CheckoutInvalidItemQuantityError,
   CheckoutTaxCalculationError,
   CheckoutUnknownProductError,
   CheckoutZeroPayableError,
@@ -405,6 +407,9 @@ router.post("/create-payment-intent", paymentLimiter, async (req: any, res) => {
         },
       });
     } catch (error) {
+      if (error instanceof CheckoutEmptyCartError || error instanceof CheckoutInvalidItemQuantityError) {
+        return res.status(400).json({ message: error.message });
+      }
       if (error instanceof CheckoutUnknownProductError) {
         return res.status(400).json({ message: error.message });
       }

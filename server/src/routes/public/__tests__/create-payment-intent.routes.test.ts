@@ -423,29 +423,24 @@ describe("POST /create-payment-intent", () => {
     expect(mocks.stripeClient.paymentIntents.create).not.toHaveBeenCalled();
   });
 
-  it("currently creates a zero-total order and PaymentIntent for an empty cart", async () => {
-    // current behavior - candidate bug, do not rely on
-    mocks.stripeClient.tax.calculations.create.mockResolvedValue({ id: "taxcalc-empty", tax_amount_exclusive: 0 });
+  it("rejects an empty cart before persisting or creating a PaymentIntent", async () => {
     const request = await startApp();
     const response = await request(requestBody({ items: [] }));
 
-    expect(response.status).toBe(200);
-    expect(await response.json()).toEqual(expect.objectContaining({ subtotal: 0, taxAmount: 0, total: 0 }));
-    expect(mocks.storage.createOrder).toHaveBeenCalledWith(expect.objectContaining({ subtotalAmount: 0, totalAmount: 0 }));
-    expect(mocks.storage.createOrderItem).not.toHaveBeenCalled();
-    expect(mocks.stripeClient.paymentIntents.create).toHaveBeenCalledWith(expect.objectContaining({ amount: 0 }));
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ message: "Cart is empty" });
+    expect(mocks.storage.createOrder).not.toHaveBeenCalled();
+    expect(mocks.stripeClient.paymentIntents.create).not.toHaveBeenCalled();
   });
 
-  it("currently persists a zero-quantity line and creates a zero-total PaymentIntent", async () => {
-    // current behavior - candidate bug, do not rely on
-    mocks.stripeClient.tax.calculations.create.mockResolvedValue({ id: "taxcalc-zero", tax_amount_exclusive: 0 });
+  it("rejects a zero item quantity before persisting or creating a PaymentIntent", async () => {
     const request = await startApp();
     const response = await request(requestBody({ items: [{ productId: product.id, quantity: 0 }] }));
 
-    expect(response.status).toBe(200);
-    expect(await response.json()).toEqual(expect.objectContaining({ subtotal: 0, taxAmount: 0, total: 0 }));
-    expect(mocks.storage.createOrderItem).toHaveBeenCalledWith(expect.objectContaining({ quantity: 0, unitPrice: 10_000 }));
-    expect(mocks.stripeClient.paymentIntents.create).toHaveBeenCalledWith(expect.objectContaining({ amount: 0 }));
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ message: "Invalid item quantity" });
+    expect(mocks.storage.createOrder).not.toHaveBeenCalled();
+    expect(mocks.stripeClient.paymentIntents.create).not.toHaveBeenCalled();
   });
 
   it("assigns an authenticated checkout to the session customer without creating a duplicate", async () => {
