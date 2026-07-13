@@ -29,7 +29,7 @@ to the director. Branch: `refactor/complete-the-money-path`.
 1. Characterization baseline: public-interface tests for
    POST /create-payment-intent (happy path, validation errors,
    affiliate/F&F branches, coupon math, tax, customer identity, order/item
-   writes) — test-only — next (P5)
+   writes) — test-only — done (P5)
 2. Pure quote nucleus: new `checkout.service.ts` owns product resolution,
    affiliate/coupon pricing, tax-line construction behind a public quote
    result; route consumes it — behavior-preserving — pending
@@ -47,28 +47,17 @@ to the director. Branch: `refactor/complete-the-money-path`.
 
 ## State
 
-Chunk 1 merged to main (PR #25). Chunk 2 open: R1 survey complete and
-director-verified (spot-checked citations by execution). Key survey facts:
-create-payment-intent (payments.routes.ts:232-571) and /checkout
-(:1029-1280) duplicate affiliate resolution, self-referral/ownership,
-product quoting, and order/metadata construction; no unit test POSTs
-create-payment-intent (only E2E covers it); zero/empty/negative item
-inputs are unguarded; writes are non-atomic; req/res leaks into business
-logic via cookies/auth/IP/user-agent. Next: P5 characterization baseline.
+Chunk 1 merged to main (PR #25). Chunk 2 slice 1 (P5) characterization baseline complete; next is slice 2, pure quote nucleus.
 
 ## Next Slice
 
-- Slice 1 (P5): characterization tests only, in
-  server/src/routes/public/__tests__/payments.routes.test.ts (split file
-  allowed if it grows unwieldy): create-payment-intent happy path,
-  validation failures, affiliate cookie/code/F&F, self-referral, coupon
-  validity/rounding/caps, tax success/422, guest vs authenticated
-  identity, order+item persistence, response contract
-  (clientSecret/orderId/totals). All green against CURRENT code; no
-  production changes.
-- Classification: test-only (characterization net for slices 2-4).
-- Checks: `npm run typecheck` exit 0; full unit suite green; new tests
-  fail if the response contract or write behavior changes.
+- Slice 2: add `checkout.service.ts` to own product resolution,
+  affiliate/coupon pricing, and tax-line construction behind a public
+  quote result; consume it from create-payment-intent without changing
+  external behavior.
+- Classification: behavior-preserving.
+- Checks: focused create-payment-intent characterizations, `npm run
+  typecheck`, and the full unit suite stay green.
 
 ## Risks / Constraints
 
