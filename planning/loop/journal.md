@@ -25,3 +25,4 @@
 13:33 Tommy approved merge; PR #26 merged (1e6a120); branch rebased+pushed; chunk 3 opened with R2 webhook survey (lint pre-passed)
 13:39 R2 verified (read-only clean, citations spot-checked); chunk-3 5-slice plan adopted into HANDOFF; P12 webhook characterization authored + pre-linted
 13:52 P12 verified (typecheck 0, 305 tests, 16 new cases, commit e5baec6 test-only); D2 queued (webhook retry semantics); P13 refund extraction next
+14:00 R3 fired (bazlyj3fp): Stripe webhook best-practices doc check to verify D2 recommendation (b); read-only + web search; running during P13 dead time

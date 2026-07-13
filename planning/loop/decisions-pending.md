@@ -17,4 +17,9 @@ path", chunks A+C+D -> B -> F, grilling decisions delegated to director.)
 - Recommendation: (b) as a small behavior-changing slice AFTER chunk 3's
   extractions land (services make idempotency auditable); not urgent
   while order volume is zero.
-- Needs: Tommy's pick. Does NOT block chunk 3.
+- Status: Tommy APPROVED (b) 2026-07-13, conditional on verifying it
+  against Stripe's current webhook best-practice docs. R3 research
+  packet in flight (read-only + web search). If verdict SUPPORTED:
+  resolve this entry and schedule (b) as a post-chunk-3
+  behavior-changing slice. If docs favor a different shape: reshape and
+  re-present to Tommy. Does NOT block chunk 3.
