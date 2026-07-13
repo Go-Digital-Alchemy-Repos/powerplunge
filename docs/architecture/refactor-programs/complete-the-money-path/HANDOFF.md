@@ -16,36 +16,59 @@ to the director. Branch: `refactor/complete-the-money-path`.
 ## Chunks
 
 1. Small unlocks (A: extract order-notification service; C: dedupe paid-state
-   gate at confirm-payment; D: split "claim" vocabulary) — done
+   gate at confirm-payment; D: split "claim" vocabulary) — DONE, merged to
+   main via PR #25 (511b0b3, approved by Tommy 2026-07-13)
 2. Checkout service (B: extract create-payment-intent pricing/discount/order
-   creation behind a deep interface) — pending
+   creation behind a deep interface; /checkout shares it via a distinct
+   operation; W1 shim cleanup) — in progress
 3. Webhook service (F: extract refund-sync + Connect handling from
    stripe.routes.ts; route becomes pure dispatch) — pending
 
-## Current Chunk Slices
+## Current Chunk Slices (chunk 2; from R1 survey, director-adopted)
 
-1. Extract `sendOrderNotification` into `order-notification.service.ts`;
-   factory defaults the dep — behavior-preserving — done (P1)
-2. Delete duplicated paid-state guards at confirm-payment call site
-   (payments.routes.ts:936-965), trust service `skipped` reasons —
-   behavior-preserving — done (P2)
-3. Separate account-linking vocabulary from the Finalization claim; update
-   CONTEXT.md — behavior-preserving — done (P3)
+1. Characterization baseline: public-interface tests for
+   POST /create-payment-intent (happy path, validation errors,
+   affiliate/F&F branches, coupon math, tax, customer identity, order/item
+   writes) — test-only — next (P5)
+2. Pure quote nucleus: new `checkout.service.ts` owns product resolution,
+   affiliate/coupon pricing, tax-line construction behind a public quote
+   result; route consumes it — behavior-preserving — pending
+3. PaymentIntent orchestration: move customer/attribution resolution,
+   draft order/items, PaymentIntent creation+linking into the service,
+   preserving call order and HTTP mapping — behavior-preserving,
+   riskiest slice (non-atomic writes, payments.routes.ts:494-561) — pending
+4. /checkout migration: shared quote/customer/order-draft primitives via a
+   distinct `createCheckoutSession` operation, preserving no-coupon,
+   automatic-tax, zero-total-reject, manual-order-fallback policies —
+   behavior-preserving — pending
+5. W1 cleanup: simplify the confirm-payment uppercase-USD/checkout-session
+   shim once both creation operations own amount/currency truths;
+   re-ground its characterization tests — behavior-preserving — pending
 
 ## State
 
-P3 complete on `refactor/complete-the-money-path`: the account-linking service,
-exports, result type, log prefix, customer auth call sites, and test mock use
-account-linking vocabulary. `CONTEXT.md` distinguishes account linking from the
-Finalization claim. All chunk 1 slices are complete.
-Chunk 1 review remediation has landed, and the chunk is ready for PR.
+Chunk 1 merged to main (PR #25). Chunk 2 open: R1 survey complete and
+director-verified (spot-checked citations by execution). Key survey facts:
+create-payment-intent (payments.routes.ts:232-571) and /checkout
+(:1029-1280) duplicate affiliate resolution, self-referral/ownership,
+product quoting, and order/metadata construction; no unit test POSTs
+create-payment-intent (only E2E covers it); zero/empty/negative item
+inputs are unguarded; writes are non-atomic; req/res leaks into business
+logic via cookies/auth/IP/user-agent. Next: P5 characterization baseline.
 
 ## Next Slice
 
-- Chunk 1 gate: adversarial review packet, branch push, and PR.
-- Owner: director. This is not a Codex implementation packet.
-- Review: inspect the full chunk diff for architectural regressions and verify
-  all chunk checks before publishing the branch.
+- Slice 1 (P5): characterization tests only, in
+  server/src/routes/public/__tests__/payments.routes.test.ts (split file
+  allowed if it grows unwieldy): create-payment-intent happy path,
+  validation failures, affiliate cookie/code/F&F, self-referral, coupon
+  validity/rounding/caps, tax success/422, guest vs authenticated
+  identity, order+item persistence, response contract
+  (clientSecret/orderId/totals). All green against CURRENT code; no
+  production changes.
+- Classification: test-only (characterization net for slices 2-4).
+- Checks: `npm run typecheck` exit 0; full unit suite green; new tests
+  fail if the response contract or write behavior changes.
 
 ## Risks / Constraints
 
