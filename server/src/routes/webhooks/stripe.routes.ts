@@ -2,6 +2,7 @@ import { Router } from "express";
 import { storage } from "../../../storage";
 import { errorAlertingService } from "../../services/error-alerting.service";
 import { createOrderFinalizationService } from "../../services/order-finalization.service";
+import { createStripeConnectWebhookService } from "../../services/stripe-connect-webhook.service";
 import { createStripeRefundWebhookService } from "../../services/stripe-refund-webhook.service";
 
 const router = Router();
@@ -206,46 +207,11 @@ router.post("/stripe-connect", async (req, res) => {
   try {
     if (event.type === "account.updated") {
       const account = event.data.object;
-      
-      const payoutAccount = await storage.getAffiliatePayoutAccountByStripeAccountId(account.id);
-      if (payoutAccount) {
-        const prevState = {
-          payoutsEnabled: payoutAccount.payoutsEnabled,
-          chargesEnabled: payoutAccount.chargesEnabled,
-          detailsSubmitted: payoutAccount.detailsSubmitted,
-        };
-        
-        await storage.updateAffiliatePayoutAccount(payoutAccount.id, {
-          payoutsEnabled: account.payouts_enabled ?? false,
-          chargesEnabled: account.charges_enabled ?? false,
-          detailsSubmitted: account.details_submitted ?? false,
-          requirements: account.requirements as any,
-        });
-        console.log(`[CONNECT] Updated payout account ${payoutAccount.id} for Stripe account ${account.id}`);
-        
-        const newState = {
-          payoutsEnabled: account.payouts_enabled ?? false,
-          chargesEnabled: account.charges_enabled ?? false,
-          detailsSubmitted: account.details_submitted ?? false,
-        };
-        
-        if (prevState.payoutsEnabled !== newState.payoutsEnabled ||
-            prevState.detailsSubmitted !== newState.detailsSubmitted) {
-          await storage.createAuditLog({
-            actor: "stripe_webhook",
-            action: "stripe_connect.account_updated",
-            entityType: "affiliate_payout_account",
-            entityId: payoutAccount.id,
-            metadata: {
-              stripeAccountId: account.id,
-              affiliateId: payoutAccount.affiliateId,
-              prevState,
-              newState,
-              eventId: event.id,
-            },
-          });
-        }
-      }
+      const connectWebhookService = createStripeConnectWebhookService();
+      await connectWebhookService.synchronizeAffiliatePayoutAccount({
+        account,
+        eventId: event.id,
+      });
     }
 
     if (event.type === "capability.updated") {
