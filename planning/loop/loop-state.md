@@ -8,13 +8,17 @@ Chunk 2 (checkout service extraction) now open, research phase.
 
 ## In-flight
 
-- Packet P6 quote nucleus (planning/handoffs/2026-07-13-p6-quote-nucleus.md)
-  FIRED 2026-07-13 11:52 at gpt-5.6-sol medium.
-  RUN_DIR=/var/folders/kg/vqcvwwlx3xs4wblm4wpvpkz00000gn/T//codex-handoff/20260713-115235-2026-07-13-p6-quote-nucleus
-  Extracts quote logic (payments.routes.ts:379-486) into
-  checkout.service.ts (deps-injected factory, order-finalization idiom).
-  BINDING: the 16 P5 characterizations must pass UNTOUCHED (git diff
-  --name-only must not list either payments route test file).
+- Packet P6b RESUME (planning/handoffs/2026-07-13-p6b-quote-nucleus-resume.md)
+  FIRED 2026-07-13 12:04 at gpt-5.6-sol medium.
+  RUN_DIR=/var/folders/kg/vqcvwwlx3xs4wblm4wpvpkz00000gn/T//codex-handoff/20260713-120442-2026-07-13-p6b-quote-nucleus-resume
+  Lands the P6 quote-nucleus work sitting uncommitted in the tree
+  (4 files: payments.routes.ts, checkout.service.ts + test, HANDOFF.md).
+- P6 ended BLOCKED without committing: sandbox-side nondeterministic
+  full-suite flake (trap 100 in planning/codex-traps.md). Director
+  executed the gates on the diff: full unit GREEN TWICE (39/263),
+  typecheck 0. Characterization files untouched (verified by
+  git diff --name-only). Not counted as verification divergence — Codex
+  under-claimed, honest blocker.
 - P5 VERIFIED (0285f00): typecheck 0; unit 38/253 green; 16 new cases,
   groups a-h; commit test-only; shapes clean (objectContaining at seams,
   no snapshots; candidate-bug cases commented).
