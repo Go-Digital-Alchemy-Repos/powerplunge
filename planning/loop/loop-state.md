@@ -7,12 +7,17 @@ P2 VERIFIED (860ee7e). P3 (final chunk-1 slice) in flight.
 
 ## In-flight
 
-- Chunk 1 ADVERSARIAL REVIEW
-  (planning/handoffs/2026-07-13-chunk1-adversarial-review.md)
-  FIRED 2026-07-13 10:26 at gpt-5.6-sol HIGH, read-only lane.
-  RUN_DIR=/var/folders/kg/vqcvwwlx3xs4wblm4wpvpkz00000gn/T//codex-handoff/20260713-102602-2026-07-13-chunk1-adversarial-review
-  Reviewing diff d366cef..eadfffb (P1 d0c7528, P2 860ee7e, P3 eadfffb —
-  all three director-verified green).
+- Packet P4 chunk-1 review remediation
+  (planning/handoffs/2026-07-13-p4-chunk1-review-remediation.md)
+  FIRED 2026-07-13 10:34 at gpt-5.6-sol medium.
+  RUN_DIR=/var/folders/kg/vqcvwwlx3xs4wblm4wpvpkz00000gn/T//codex-handoff/20260713-103452-2026-07-13-p4-chunk1-review-remediation
+  Fixes review findings 1 (email-audit scan paths), 2 (vacuous webhook
+  notification mocks), 4 (console-spy hygiene). Finding 3 waived as W1
+  (findings-waived.md, expires chunk-2 gate).
+- Chunk-1 adversarial review DONE (HIGH, read-only): NO behavior defects
+  across money path, webhook wiring, rename; shim keep/simplify verdict =
+  keep for chunk 1, simplify in chunk 2. Read-only compliance verified
+  (HEAD unchanged, no tree changes).
 - P3 VERIFIED: typecheck 0; unit 37/236 green; zero order-claim /
   claimOrdersByEmail matches in server/src; CONTEXT.md Account linking
   entry present; git rename recorded; extra ref found+fixed in
@@ -59,15 +64,18 @@ P2 VERIFIED (860ee7e). P3 (final chunk-1 slice) in flight.
 
 ## Next intents
 
-1. On P3 exit: triage verify-codex-report.mjs; re-run gates myself
-   (typecheck, unit suite, zero 'order-claim'/'claimOrdersByEmail' matches
-   in server/src, CONTEXT.md has Account linking entry, git rename
-   recorded); confirm ONE commit.
-2. If clean: chunk 1 GATE — fixed floor (typecheck, unit, git diff
-   --check) + risk-picked checks from docs/09-TESTING/SCRIPTS.md +
-   adversarial chunk review packet at HIGH effort (read-only lane; include
-   the uppercase-USD shim question) + push branch + open PR (CI binding)
-   + notify Tommy at the gate.
+1. On P4 exit: triage verify-codex-report.mjs; re-run gates myself
+   (typecheck, unit suite, zero public/payments.routes matches in
+   stripe.routes.test.ts, email-audit lists order-notification.service);
+   verify NO production-code files in the commit; confirm the
+   default-notification-seam test would actually fail on a broken default
+   (read the test, judge the seam); ONE commit.
+2. If clean: push refactor/complete-the-money-path, open chunk-1 PR to
+   main via gh-axi (CI pr-checks.yml is BINDING), notify Tommy at the
+   gate. Merge stays user-gated.
+3. After PR green + Tommy merge decision: draft chunk-2 program grilling
+   (checkout service extraction; includes W1 waiver expiry + shim
+   simplification).
 
 ## Standing facts
 
