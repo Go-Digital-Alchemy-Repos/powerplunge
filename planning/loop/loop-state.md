@@ -8,13 +8,20 @@ PR #26 1e6a120, both Tommy-approved 2026-07-13, CI green). Chunk 3
 
 ## In-flight
 
-- Packet R2 chunk-3 webhook survey
-  (planning/handoffs/2026-07-13-r2-chunk3-webhook-survey.md)
-  FIRED 2026-07-13 13:33 at gpt-5.6-sol medium, READ-ONLY research lane.
-  RUN_DIR=/var/folders/kg/vqcvwwlx3xs4wblm4wpvpkz00000gn/T//codex-handoff/20260713-133327-2026-07-13-r2-chunk3-webhook-survey
-  Maps POST /stripe (stripe.routes.ts, 391 lines), Connect path,
-  coverage, couplings; proposes 3-5 slices with riskiest flagged for the
-  new mid-chunk mini-review rule.
+- Packet P12 webhook characterization baseline
+  (planning/handoffs/2026-07-13-p12-webhook-characterization.md)
+  FIRED 2026-07-13 13:39 at gpt-5.6-sol medium (pre-linted).
+  RUN_DIR=/var/folders/kg/vqcvwwlx3xs4wblm4wpvpkz00000gn/T//codex-handoff/20260713-133946-2026-07-13-p12-webhook-characterization
+  Test-only: >=12 cases over POST /stripe (signature, dedupe, unknown
+  events, payment-failure alerting, refund create/update/swallowed-error)
+  and POST /stripe-connect (secret resolution chain, account/capability
+  updates). Additive-only on stripe.routes.test.ts.
+- R2 VERIFIED and adopted: 5-slice chunk-3 plan in HANDOFF (characterize
+  -> refund service [RISKIEST, mini-review after] -> refund.updated ->
+  connect service -> capability + dispatch cleanup). Two endpoints
+  confirmed: /stripe :18, /stripe-connect :231 (secret chain :238-258).
+  Known sharp edge pinned as-is: swallowed handler errors still 200-ack
+  and interact with pre-dispatch dedupe (no Stripe retry).
 - Branch rebased onto main merge 1e6a120 and pushed; retro-rule commits
   (loop hygiene in CLAUDE.md + template) ride the chunk-3 PR.
 - Loop hygiene rules ACTIVE (CLAUDE.md): pre-fire lint (R2 linted before
