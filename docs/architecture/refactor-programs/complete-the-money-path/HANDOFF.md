@@ -13,73 +13,64 @@ Architecture review artifact: `.lavish/architecture-review-2026-07-13.html`
 Approved by Tommy 2026-07-13: program shape and grilling decisions delegated
 to the director. Branch: `refactor/complete-the-money-path`.
 
+Extension approved by Tommy 2026-07-13 (D3 dispositions, "all your
+recommendations"): chunk 4 (webhook hardening: D2 retry semantics + refund
+pagination + Stripe idempotency keys + unpaid-order notification), chunk 5
+(reprice extraction, single-packet-scale). Posture E (repository layer)
+explicitly DEFERRED: storage.ts (2,067 lines) stays; recorded here as the
+program's known remaining debt, not scheduled.
+
 ## Chunks
 
-1. Small unlocks (A: extract order-notification service; C: dedupe paid-state
-   gate at confirm-payment; D: split "claim" vocabulary) — DONE, merged to
-   main via PR #25 (511b0b3, approved by Tommy 2026-07-13)
-2. Checkout service (B: extract create-payment-intent pricing/discount/order
-   creation behind a deep interface; /checkout shares it via a distinct
-   operation; W1 shim cleanup) — all slices complete; chunk gate pending
-3. Webhook service (F: extract refund-sync + Connect handling from
-   stripe.routes.ts; route becomes pure dispatch) — all slices complete;
-   chunk gate pending
+1. Small unlocks (A, C, D) — DONE, merged via PR #25 (511b0b3)
+2. Checkout service (B) — DONE, merged via PR #26 (1e6a120); declared
+   PARTIALLY complete per D3: /reprice-payment-intent residue moved to
+   chunk 5
+3. Webhook service (F) — DONE, merged via PR #27 (7b9e1ea): three services
+   (stripe-refund-webhook, stripe-connect-webhook, stripe-payment-webhook),
+   typed dispatch, route 391 -> 238 lines, suite 305 -> 335
+4. Webhook hardening (behavior-CHANGING; D2 resolved spec + D3 items 1-2, 4)
+   — CURRENT
+5. Reprice extraction (move /reprice-payment-intent pricing/coupon/affiliate
+   logic into checkout.service; behavior-preserving) — after chunk 4
 
-## Current Chunk Slices (chunk 3; from R2 survey, director-adopted)
+## Current Chunk Slices (chunk 4; director-authored from D2 resolved spec + D3)
 
-1. Characterization baseline: public-interface tests for POST /stripe and
-   POST /stripe-connect (secrets resolution, signature failures, delivery
-   dedupe, unknown events, payment-failure alerting, swallowed-error 200
-   acks) — test-only — done (P12)
-2. Extract charge.refunded into new `stripe-refund-webhook.service.ts`
-   with public-interface tests — behavior-preserving — RISKIEST slice:
-   gets the HIGH mid-chunk mini-review before further slices — done (P13)
-3. Move refund.updated into the same refund service —
-   behavior-preserving — done (P14)
-4. Extract account.updated into new `stripe-connect-webhook.service.ts`
-   with public-interface tests — behavior-preserving — done (P15)
-5. Add capability.updated to the Connect service; typed dispatch cleanup;
-   preserve or repoint server/src/routes/test/stripe-webhook.routes.ts —
-   behavior-preserving — done (P16)
-
-Route keeps: raw-body/signature verification, endpoint-specific secret
-resolution, delivery dedupe, HTTP acknowledgement mapping, explicit
-dispatch tables. Chunk gate additionally runs
-e2e/customer-stripe-webhook-success.spec.ts (real signed-route and
-duplicate assertions at :255-:410) — via CI if local E2E env is still
-unavailable.
+1. Retry semantics (D2 spec, RISKIEST — mid-chunk mini-review after): atomic
+   processing->processed delivery claim replacing insert-after-success
+   dedupe; handler failures propagate to non-2xx acks on BOTH endpoints
+   (refund/Connect swallowing removed at the service call boundary);
+   red-first — the P12 candidate-bug characterizations pinning swallowed-200
+   behavior are EXPLICITLY unpinned and rewritten by this slice
+2. Refund completeness: charge.refunded handles refund lists with has_more
+   via pagination; refund.updated unknown-refund path decided (warn stays);
+   per-refund idempotency asserted — red-first
+3. Stripe idempotency keys: deterministic key for refund creation (drop
+   Date.now()); idempotency keys on PI/Checkout Session creates in
+   checkout.service — red-first
+4. Unpaid-order notifications: manual-fallback PENDING orders no longer fire
+   fulfillment sendOrderNotification until paid (per ADR-0001
+   payment-authority; approved direction — suppress, notification fires on
+   finalization instead) — red-first
 
 ## State
 
-P17 completed the blocking chunk-3 review remediation. The
-`payment_intent.payment_failed` field mapping, exact failure log, and
-`alertPaymentFailure` call now live behind `alertStripePaymentFailure` on the
-dependency-injected Stripe payment webhook service. Four public-interface cases
-cover order-aware mapping, missing-order and email fallback behavior, the
-default error message, and alert-error propagation. One additive route-seam
-case proves the endpoint still reaches alerting through the factory's default
-wiring. Both endpoint dispatch tables now require an own property before
-selecting a handler, so inherited object keys follow the unchanged unknown-event
-acknowledgement path. The frozen legacy route test file and
-`handlePaymentIntentSucceededWebhook` export remain unchanged. P17 checks:
-focused payment service and route tests, typecheck, full unit suite (42 files,
-335 tests), diff checks, and a standard review pass.
+Chunk 3 merged to main (PR #27, 7b9e1ea, Tommy-approved 2026-07-13, CI
+green). Branch rebased onto the merge commit. Baseline at chunk-4 start:
+typecheck 0; unit 42 files / 335 tests green. Webhook routes are thin
+transport adapters; all per-event domain logic sits in deps-injected
+services tested at public interfaces.
 
 ## Next Slice
 
-- Open the chunk-3 PR after the director independently verifies the P17
-  checkpoint, binding gates, and full chunk diff.
-- Files: none unless independent verification or PR CI finds a substantiated,
-  in-scope defect.
-- Classification: review and publication only; no planned implementation.
-- PR evidence: include the completed chunk-3 fixed floor, the P17 remediation
-  checks, and the binding CI result for
-  `e2e/customer-stripe-webhook-success.spec.ts` if local E2E remains unavailable.
-- Review: verify route/service regressions, delivery semantics, compatibility
-  exports, dispatch behavior for inherited keys, and test quality across the
-  full chunk diff.
-- Outcome: open the PR when verification approves. Do not merge without director
-  approval.
+Slice 1 (retry semantics). Region: server/src/routes/webhooks/
+stripe.routes.ts (delivery-claim + ack mapping on both endpoints),
+storage processed-webhook-event seam, and the three webhook services'
+call boundaries. Red tests first at the route public interface: failed
+handler -> non-2xx + delivery NOT marked processed (retry-able); concurrent
+duplicate -> exactly one dispatch; successful duplicate -> deduped ack.
+The P12 cases carrying `candidate bug` comments are unpinned BY NAME in the
+packet; all other characterizations stay frozen.
 
 ## Risks / Constraints
 
@@ -89,6 +80,12 @@ focused payment service and route tests, typecheck, full unit suite (42 files,
 - Risk posture (Tommy 2026-07-13): no real orders exist yet; temporary
   breakage on the program branch is acceptable, but every slice still ends
   green and anything broken gets fixed before the chunk gate.
+- Chunk 4 is behavior-CHANGING end to end: every slice needs pasted red
+  output before implementation; characterization edits allowed ONLY for
+  cases the packet unpins by name.
 - Standing skill rules apply (.agents/skills/powerplunge-refactor-program):
   no new schema/routes/services beyond what the slice names; no obligation
   ledger; domain language from CONTEXT.md.
+- Stripe-doc grounding for chunk 4 (R3, director spot-checked): non-2xx ->
+  exponential-backoff retries up to three days (live); dedupe by event id;
+  processing/processed claim per docs.stripe.com/webhooks/process-undelivered-events.
