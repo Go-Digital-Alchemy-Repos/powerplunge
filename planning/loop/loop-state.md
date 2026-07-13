@@ -8,13 +8,19 @@ PR #26 1e6a120, both Tommy-approved 2026-07-13, CI green). Chunk 3
 
 ## In-flight
 
-- P13 MINI-REVIEW in flight (planning/handoffs/2026-07-13-p13-mini-review.md)
-  FIRED at gpt-5.6-sol HIGH read-only on commit aa11e24 per the
-  mid-chunk hygiene rule (riskiest slice). Focus: semantic drift vs
-  pre-move branch, lazy-import fix soundness, service boundary, test
-  quality, blocking-vs-deferrable split.
-  RUN_DIR: see task br3s2tegr output. On PASS: chain slice 3
-  (refund.updated into the same refund webhook service).
+- P14 refund.updated -> stripe-refund-webhook.service (chunk-3 slice 3)
+  (planning/handoffs/2026-07-13-p14-refund-updated-service.md) FIRED at
+  gpt-5.6-sol medium, danger-full-access. Second operation on the P13
+  factory; event.id passed in for the audit log; no-change fast path
+  and processedAt semantics pinned; stripe.routes.test.ts frozen; also
+  carries the mini-review's 2 deferrable gap cases (charge.refunded
+  Meta-failure continuation + multi-refund partial failure,
+  characterize-only). RUN_DIR: see task bxzevv7dk output.
+- P13 MINI-REVIEW PASSED (HIGH, read-only,
+  RUN_DIR=/var/folders/kg/vqcvwwlx3xs4wblm4wpvpkz00000gn/T//codex-handoff/20260713-141023-2026-07-13-p13-mini-review):
+  LOW risk, zero semantic drift, lazy-import fix sound, boundary clean,
+  7 tests obey brittle-seam law. 2 minor deferrable gaps folded into
+  P14. Read-only compliance verified (0 files touched, HEAD unchanged).
 - P13 VERIFIED (aa11e24): typecheck 0; unit 40/312 green (7 new service
   cases); commit-scoped to exactly 4 files; frozen
   stripe.routes.test.ts byte-identical; route charge.refunded branch
