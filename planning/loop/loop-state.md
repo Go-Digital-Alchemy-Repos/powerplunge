@@ -8,14 +8,21 @@ PR #26 1e6a120, both Tommy-approved 2026-07-13, CI green). Chunk 3
 
 ## In-flight
 
-- Packet P12 webhook characterization baseline
-  (planning/handoffs/2026-07-13-p12-webhook-characterization.md)
-  FIRED 2026-07-13 13:39 at gpt-5.6-sol medium (pre-linted).
-  RUN_DIR=/var/folders/kg/vqcvwwlx3xs4wblm4wpvpkz00000gn/T//codex-handoff/20260713-133946-2026-07-13-p12-webhook-characterization
-  Test-only: >=12 cases over POST /stripe (signature, dedupe, unknown
-  events, payment-failure alerting, refund create/update/swallowed-error)
-  and POST /stripe-connect (secret resolution chain, account/capability
-  updates). Additive-only on stripe.routes.test.ts.
+- Packet P13 refund webhook service (RISKIEST chunk-3 slice)
+  (planning/handoffs/2026-07-13-p13-refund-webhook-service.md)
+  FIRED 2026-07-13 13:53 at gpt-5.6-sol medium (pre-linted; first lint
+  caught a relative path — rule paying off).
+  RUN_DIR=/var/folders/kg/vqcvwwlx3xs4wblm4wpvpkz00000gn/T//codex-handoff/20260713-135310-2026-07-13-p13-refund-webhook-service
+  Extracts charge.refunded into stripe-refund-webhook.service.ts;
+  ack/dedupe semantics pinned (D2 open); stripe.routes.test.ts frozen.
+  AFTER P13 verifies: MID-CHUNK MINI-REVIEW at HIGH on its diff before
+  slice 3 chains (new loop-hygiene rule).
+- P12 VERIFIED (e5baec6): typecheck 0; unit 39/305 green; 16 new cases
+  (stripe.routes.test.ts 4 -> 20 it()); commit test-only + HANDOFF.
+- D2 QUEUED (decisions-pending.md): webhook retry semantics
+  (dedupe-before-dispatch + swallowed errors = no Stripe retry).
+  Recommendation (b): move dedupe-mark after dispatch, as a
+  behavior-changing slice after chunk 3. Does NOT block chunk 3.
 - R2 VERIFIED and adopted: 5-slice chunk-3 plan in HANDOFF (characterize
   -> refund service [RISKIEST, mini-review after] -> refund.updated ->
   connect service -> capability + dispatch cleanup). Two endpoints
