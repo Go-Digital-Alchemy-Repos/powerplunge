@@ -2,29 +2,21 @@
 
 ## Program
 
-Complete the Money Path — Chunk 1 (small unlocks). P1 VERIFIED (d0c7528),
-P2 VERIFIED (860ee7e). P3 (final chunk-1 slice) in flight.
+Complete the Money Path — Chunk 1 DONE and MERGED to main
+(PR #25, merge 511b0b3, Tommy approved 2026-07-13; CI was green).
+Chunk 2 (checkout service extraction) now open, research phase.
 
 ## In-flight
 
-- CHUNK 1 PR OPEN: https://github.com/Go-Digital-Alchemy-Repos/powerplunge/pull/25
-  (refactor/complete-the-money-path -> main, pushed 2026-07-13 10:4x).
-  CI GREEN 2026-07-13 (Typecheck, Build, Unit, Auth E2E pass).
-  MERGE IS USER-GATED: waiting on Tommy.
-- P4 VERIFIED (c371ed9): typecheck 0; unit 37/237 green; webhook seam
-  test importActuals the real factory and fails-first on a broken
-  default; email audit scans order-notification.service; commit scoped to
-  4 files, no production code.
-- Chunk-1 adversarial review DONE (HIGH, read-only): NO behavior defects;
-  3 findings fixed in P4, 1 waived (W1, expires chunk-2 gate).
-- P3 VERIFIED: typecheck 0; unit 37/236 green; zero order-claim /
-  claimOrdersByEmail matches in server/src; CONTEXT.md Account linking
-  entry present; git rename recorded; extra ref found+fixed in
-  docs/ECOMMERCE_SYSTEM_PROMPT.md; ONE commit eadfffb.
-- Chunk gate fixed floor DONE: typecheck 0, unit green, git diff --check
-  clean over d366cef..HEAD. Local E2E SKIPPED: no
-  .env.test.local.template on this machine; CI critical E2E on the PR is
-  the binding gate for that surface.
+- Packet R1 chunk-2 checkout survey
+  (planning/handoffs/2026-07-13-r1-chunk2-checkout-survey.md)
+  FIRED 2026-07-13 11:34 at gpt-5.6-sol medium, READ-ONLY research lane.
+  RUN_DIR=/var/folders/kg/vqcvwwlx3xs4wblm4wpvpkz00000gn/T//codex-handoff/20260713-113458-2026-07-13-r1-chunk2-checkout-survey
+  Maps create-payment-intent (payments.routes.ts:232-~578), overlap with
+  POST /checkout, test coverage, hidden couplings; proposes 3-6 slices
+  including where W1 shim simplification lands.
+- Branch refactor/complete-the-money-path fast-forwarded to 511b0b3
+  (= main) and continues as the program branch for chunk 2.
 
 ## Verified facts (P2 cycle, 2026-07-13)
 
@@ -63,18 +55,16 @@ P2 VERIFIED (860ee7e). P3 (final chunk-1 slice) in flight.
 
 ## Next intents
 
-1. On P4 exit: triage verify-codex-report.mjs; re-run gates myself
-   (typecheck, unit suite, zero public/payments.routes matches in
-   stripe.routes.test.ts, email-audit lists order-notification.service);
-   verify NO production-code files in the commit; confirm the
-   default-notification-seam test would actually fail on a broken default
-   (read the test, judge the seam); ONE commit.
-2. If clean: push refactor/complete-the-money-path, open chunk-1 PR to
-   main via gh-axi (CI pr-checks.yml is BINDING), notify Tommy at the
-   gate. Merge stays user-gated.
-3. After PR green + Tommy merge decision: draft chunk-2 program grilling
-   (checkout service extraction; includes W1 waiver expiry + shim
-   simplification).
+1. On R1 exit: verify read-only compliance (HEAD still 511b0b3, clean
+   tree); grill the survey — check its citations by targeted execution
+   before trusting the slice plan; then write the chunk-2 slice list into
+   the program HANDOFF.md (director edit) and author the first
+   implementation packet.
+2. Chunk-2 slices must include: deep checkout service behind a small
+   interface; decision on /checkout sharing it; W1 waiver expiry (shim
+   simplification + re-grounded characterizations at the chunk-2 gate).
+3. Chunk-2 gate mirrors chunk 1: fixed floor + adversarial review at HIGH
+   + PR (CI binding) + Tommy merge decision.
 
 ## Standing facts
 
