@@ -2,14 +2,27 @@
 
 ## Program
 
-Complete the Money Path — Chunk 1 (small unlocks). P1 VERIFIED and landed
-(d0c7528). P2 next.
+Complete the Money Path — Chunk 1 (small unlocks). P1 VERIFIED (d0c7528),
+P2 VERIFIED (860ee7e). P3 (final chunk-1 slice) in flight.
 
 ## In-flight
 
-- Packet P2 (planning/handoffs/2026-07-13-p2-paid-state-guard-dedupe.md)
+- Packet P3 (planning/handoffs/2026-07-13-p3-claim-vocabulary-split.md)
   firing at gpt-5.6-sol medium. Branch refactor/complete-the-money-path
-  @ d0c7528 + loop-state commit.
+  @ 860ee7e + loop-state commit. RUN_DIR: see journal/fire output on exit.
+
+## Verified facts (P2 cycle, 2026-07-13)
+
+- P2 gates re-run by director: typecheck 0; unit 37 files / 236 tests
+  green (10 new confirm-payment characterization tests, all asserting
+  status+message+no-side-effects at the HTTP interface — quality PASS);
+  admin orders.routes.ts has zero payments.routes refs; re-export gone;
+  ONE commit 860ee7e. No divergence.
+- Chunk-review note: confirm-payment now carries two narrow compatibility
+  pre-guards (checkout_session amount/currency, uppercase-USD precedence)
+  that pin possibly-accidental legacy behavior. Simplification candidate
+  for chunk 2 (checkout service extraction); raise at chunk-1 adversarial
+  review.
 
 ## Verified facts (P1 cycle, 2026-07-13)
 
@@ -35,17 +48,15 @@ Complete the Money Path — Chunk 1 (small unlocks). P1 VERIFIED and landed
 
 ## Next intents
 
-1. On P2 exit: triage verify-codex-report.mjs; re-run gates myself
-   (typecheck, unit suite, zero payments.routes import in admin
-   orders.routes.ts, no sendOrderNotification re-export); review new
-   characterization tests against brittle-seam rule; confirm ONE commit.
-2. If clean: journal, commit loop state, author P3 (rename
-   order-claim.service to account-linking vocabulary + CONTEXT.md note),
-   fire at medium.
-3. Chunk 1 gate after P3: fixed floor (typecheck, unit, git diff --check)
-   + risk-picked checks from docs/09-TESTING/SCRIPTS.md + adversarial
-   chunk review packet at HIGH effort (read-only lane) + push branch +
-   open PR (CI binding) + notify Tommy.
+1. On P3 exit: triage verify-codex-report.mjs; re-run gates myself
+   (typecheck, unit suite, zero 'order-claim'/'claimOrdersByEmail' matches
+   in server/src, CONTEXT.md has Account linking entry, git rename
+   recorded); confirm ONE commit.
+2. If clean: chunk 1 GATE — fixed floor (typecheck, unit, git diff
+   --check) + risk-picked checks from docs/09-TESTING/SCRIPTS.md +
+   adversarial chunk review packet at HIGH effort (read-only lane; include
+   the uppercase-USD shim question) + push branch + open PR (CI binding)
+   + notify Tommy at the gate.
 
 ## Standing facts
 
