@@ -8,17 +8,21 @@ PR #26 1e6a120, both Tommy-approved 2026-07-13, CI green). Chunk 3
 
 ## In-flight
 
-- P16 capability.updated + typed dispatch cleanup (chunk-3 slice 5,
-  FINAL slice)
-  (planning/handoffs/2026-07-13-p16-capability-dispatch-cleanup.md)
-  FIRED at gpt-5.6-sol medium, danger-full-access. Second operation on
-  Connect factory (stripeService injected; UNCONDITIONAL audit, unlike
-  account.updated); both endpoints' if-chains -> one typed dispatch
-  idiom; handlePaymentIntentSucceededWebhook export pinned (test route
-  imports it; that file frozen via empty-diff gate).
-  RUN_DIR: see task bxvj3zqt1 output. After P16 verifies: CHUNK-3 GATE
-  (fixed floor + adversarial review HIGH + PR w/ CI binding + PR-CI
-  freeze + Tommy merge decision), then program closeout.
+- CHUNK-3 GATE in progress. Fixed floor DONE (director-executed):
+  typecheck 0; unit 41/330 green; git diff --check clean. Adversarial
+  review FIRED at HIGH read-only
+  (planning/handoffs/2026-07-13-chunk3-adversarial-review.md), scope =
+  five chunk commits e5baec6/aa11e24/bd15b59/658f5b4/c56b100; D2-pinned
+  semantics and D3 queue explicitly out of scope (no duplicates).
+  RUN_DIR: see task by55e2a7r output. On PASS (or after remediation):
+  push branch, open chunk-3 PR (CI BINDING, PR-CI freeze from open to
+  merge decision), then STOP: present merge decision + D3 queue +
+  program closeout to Tommy.
+- P16 VERIFIED (c56b100): typecheck 0; unit 41/330 green first try;
+  commit-scoped 4 files; frozen stripe.routes.test.ts AND test route
+  file intact; Connect tests 5 -> 10; route 335 -> 238 lines (391 at
+  chunk start); typed dispatch both endpoints; pinned export at :11.
+  Codex review: 0 findings. ALL 5 CHUNK-3 SLICES DONE.
 - P15 VERIFIED (658f5b4): typecheck 0; unit 41/325 green first try;
   commit-scoped 4 files; frozen stripe.routes.test.ts intact; 5 service
   cases incl. propagate-not-swallow boundary. Codex review: 0 findings.
