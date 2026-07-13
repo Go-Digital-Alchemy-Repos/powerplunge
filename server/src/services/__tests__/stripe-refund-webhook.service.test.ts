@@ -260,6 +260,40 @@ describe("StripeRefundWebhookService", () => {
     });
   });
 
+  it("completes a refund status retry after the order payment status update initially fails", async () => {
+    const persistedRefund = {
+      id: "refund-existing",
+      orderId: "order-1",
+      status: "pending",
+      processedAt: null,
+    };
+    vi.mocked(deps.storage.getRefundByStripeRefundId).mockImplementation(
+      async () => persistedRefund as any,
+    );
+    vi.mocked(deps.storage.updateRefund).mockImplementation(async (_id, update) => {
+      persistedRefund.status = update.status;
+      persistedRefund.processedAt = update.processedAt ?? null;
+      return persistedRefund as any;
+    });
+    const refundOperations = await deps.loadRefundOperations();
+    vi.mocked(refundOperations.updateOrderPaymentStatus)
+      .mockRejectedValueOnce(new Error("order status unavailable"))
+      .mockResolvedValueOnce(undefined);
+    const service = createStripeRefundWebhookService(deps);
+    const input = { refund: makeRefundUpdate(), eventId: "evt_retry" };
+
+    await expect(service.synchronizeStripeRefundStatus(input)).rejects.toThrow(
+      "order status unavailable",
+    );
+    await expect(service.synchronizeStripeRefundStatus(input)).resolves.toBeUndefined();
+
+    expect(refundOperations.updateOrderPaymentStatus).toHaveBeenCalledTimes(2);
+    expect(deps.storage.createAuditLog).toHaveBeenCalledTimes(1);
+    expect(deps.storage.updateRefund).toHaveBeenCalledTimes(1);
+    expect(persistedRefund.status).toBe("processed");
+    // An audit-success/final-status-failure retry may duplicate the append-only audit entry.
+  });
+
   it("does nothing when the Stripe refund status is unchanged", async () => {
     vi.mocked(deps.storage.getRefundByStripeRefundId).mockResolvedValue({
       id: "refund-existing",

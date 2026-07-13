@@ -60,14 +60,6 @@ export class StripeConnectWebhookService {
       detailsSubmitted: account.details_submitted ?? false,
     };
 
-    await this.deps.storage.updateAffiliatePayoutAccount(payoutAccount.id, {
-      ...newState,
-      requirements: account.requirements as any,
-    });
-    this.deps.log.log(
-      `[CONNECT] Updated payout account ${payoutAccount.id} for Stripe account ${account.id}`,
-    );
-
     if (
       prevState.payoutsEnabled !== newState.payoutsEnabled ||
       prevState.detailsSubmitted !== newState.detailsSubmitted
@@ -86,6 +78,14 @@ export class StripeConnectWebhookService {
         },
       });
     }
+
+    await this.deps.storage.updateAffiliatePayoutAccount(payoutAccount.id, {
+      ...newState,
+      requirements: account.requirements as any,
+    });
+    this.deps.log.log(
+      `[CONNECT] Updated payout account ${payoutAccount.id} for Stripe account ${account.id}`,
+    );
   }
 
   async synchronizeAffiliatePayoutCapability(

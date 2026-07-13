@@ -79,6 +79,49 @@ describe("StripeConnectWebhookService", () => {
     });
   });
 
+  it("completes a payout account retry after the audit write initially fails", async () => {
+    const persistedPayoutAccount = {
+      id: "payout-account-1",
+      affiliateId: "affiliate-1",
+      payoutsEnabled: false,
+      chargesEnabled: false,
+      detailsSubmitted: false,
+    };
+    vi.mocked(deps.storage.getAffiliatePayoutAccountByStripeAccountId).mockImplementation(
+      async () => persistedPayoutAccount as any,
+    );
+    vi.mocked(deps.storage.updateAffiliatePayoutAccount).mockImplementation(
+      async (_id, update) => {
+        Object.assign(persistedPayoutAccount, update);
+        return persistedPayoutAccount as any;
+      },
+    );
+    vi.mocked(deps.storage.createAuditLog)
+      .mockRejectedValueOnce(new Error("audit unavailable"))
+      .mockResolvedValueOnce({} as any);
+    const service = createStripeConnectWebhookService(deps);
+    const input = {
+      account: {
+        id: "acct_updated",
+        payouts_enabled: true,
+        charges_enabled: true,
+        details_submitted: true,
+      },
+      eventId: "evt_retry",
+    };
+
+    await expect(service.synchronizeAffiliatePayoutAccount(input)).rejects.toThrow(
+      "audit unavailable",
+    );
+    await expect(service.synchronizeAffiliatePayoutAccount(input)).resolves.toBeUndefined();
+
+    expect(deps.storage.createAuditLog).toHaveBeenCalledTimes(2);
+    expect(deps.storage.updateAffiliatePayoutAccount).toHaveBeenCalledTimes(1);
+    expect(persistedPayoutAccount.payoutsEnabled).toBe(true);
+    expect(persistedPayoutAccount.detailsSubmitted).toBe(true);
+    // An audit-success/final-account-write-failure retry may duplicate the append-only audit entry.
+  });
+
   it("does not audit when only charges enablement changes", async () => {
     vi.mocked(deps.storage.getAffiliatePayoutAccountByStripeAccountId).mockResolvedValue({
       id: "payout-account-1",

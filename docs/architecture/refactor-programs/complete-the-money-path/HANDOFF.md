@@ -55,36 +55,42 @@ program's known remaining debt, not scheduled.
 
 ## State
 
-Chunk 4 slice 1 (retry semantics) is done on the program branch. Both Stripe
-webhook endpoints now claim an event atomically by inserting its unique event
-ID with `metadata.status="processing"`, then mark the claim `processed` only
-after dispatch succeeds. A handler failure deletes the claim and returns a
-minimal 500 response so Stripe can redeliver it; duplicate, signature,
-unknown-event, and successful-delivery acknowledgements retain their prior
-semantics. Refund synchronization now propagates non-Meta failures to the route,
-while the existing Meta enqueue catches remain best-effort. The storage boundary
-grew only by metadata-update-by-event-ID and delete-by-event-ID operations; no
-schema change was needed.
+Chunk 4 slice 1 (retry semantics), including the P18d partial-progress retry
+remediation, is done on the program branch. Both Stripe webhook endpoints claim
+an event atomically with `metadata.status="processing"`, mark it `processed`
+only after dispatch succeeds, and delete the claim before returning a minimal
+500 response when a handler fails. Duplicate, signature, unknown-event, and
+successful-delivery acknowledgements retain their prior semantics. Refund
+synchronization propagates non-Meta failures, while Meta enqueue remains
+best-effort.
 
-The slice was developed against the chunk-start baseline of typecheck 0 and 42
-unit files / 335 tests. Five pre-existing cases were explicitly unpinned to move
-from swallowed-success assertions to retryable-failure assertions; all other
-existing cases remained frozen. New route coverage exercises refund and Connect
-handler failure/reclaim, successful processed-state transition, and the
-concurrent unique-violation duplicate path.
+The remediation makes the persisted business-state marker the last write in
+both affected update operations. `refund.updated` now attempts Meta enqueue,
+updates the Order payment status, and appends its audit record before persisting
+the Refund status. `account.updated` appends its conditional audit record before
+persisting the payout-account state. A pre-marker failure therefore leaves the
+old state visible and a Stripe retry completes the branch. The accepted narrow
+window between an audit append and the final marker write can produce a duplicate
+append-only audit record on retry. `charge.refunded` remains unchanged because
+its per-Refund create-vs-update operation is already the retry marker.
+
+The P18d public-interface regressions script a first-call failure and second-call
+success against stateful storage seams. They prove the retry completes the Order
+status and Refund audit/update work, and the payout-account audit/update work.
+No route, storage, schema, acknowledgement, or claim-contract changes were made.
 
 ## Next Slice
 
-Run the required mid-chunk mini-review of slice 1 before starting more webhook
-hardening. Reconcile its findings without widening the slice's decided claim or
-failure contracts.
+Implement chunk 4 slice 2: refund completeness. `charge.refunded` must follow
+Stripe refund pagination when `has_more` is true, while preserving idempotent
+create-vs-update processing for every Refund. Keep the decided `refund.updated`
+unknown-Refund warning behavior and the P18/P18d propagation, best-effort Meta,
+claim, acknowledgement, and marker-last retry contracts unchanged.
 
-After that review clears, implement chunk 4 slice 2: refund completeness.
-`charge.refunded` must follow Stripe refund pagination when `has_more` is true,
-while preserving idempotent create-vs-update processing for every refund. Keep
-the decided `refund.updated` unknown-refund warning behavior. This is a
-behavior-changing slice, so pin pagination and per-refund idempotency through
-red-first public-interface tests before implementation.
+This is a behavior-changing slice. Pin pagination and per-Refund idempotency
+through red-first public-interface tests before implementation. Do not add
+crash-stale processing-claim reconciliation; that remains deferred to the
+chunk-4 gate.
 
 ## Risks / Constraints
 
