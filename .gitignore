@@ -26,3 +26,6 @@ blob-report/
 
 # Coverage
 coverage/
+
+# Lavish review artifacts
+.lavish/

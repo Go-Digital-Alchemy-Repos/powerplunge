@@ -43,7 +43,7 @@ const mocks = vi.hoisted(() => ({
     };
     next();
   }),
-  claimOrdersByEmail: vi.fn(),
+  linkOrdersToCustomerByEmail: vi.fn(),
 }));
 
 vi.mock("../../../../storage", () => ({ storage: mocks.storage }));
@@ -55,8 +55,8 @@ vi.mock("../../../middleware/rate-limiter", () => ({
   authLimiter: (_req: any, _res: any, next: any) => next(),
   passwordResetLimiter: (_req: any, _res: any, next: any) => next(),
 }));
-vi.mock("../../../services/order-claim.service", () => ({
-  claimOrdersByEmail: mocks.claimOrdersByEmail,
+vi.mock("../../../services/account-linking.service", () => ({
+  linkOrdersToCustomerByEmail: mocks.linkOrdersToCustomerByEmail,
 }));
 
 const router = (await import("../auth.routes")).default;
@@ -87,8 +87,8 @@ describe("customer auth routes", () => {
       if (typeof mock === "function" && "mockReset" in mock) mock.mockReset();
     }
     mocks.requireCustomerAuth.mockClear();
-    mocks.claimOrdersByEmail.mockClear();
-    mocks.claimOrdersByEmail.mockResolvedValue(undefined);
+    mocks.linkOrdersToCustomerByEmail.mockClear();
+    mocks.linkOrdersToCustomerByEmail.mockResolvedValue(undefined);
     mocks.customerBetterAuth.BETTER_AUTH_CUSTOMER_PASSWORD_PLACEHOLDER = "better-auth-managed";
     mocks.customerBetterAuth.applyBetterAuthHeaders.mockImplementation((res: any) => res.set("x-auth-headers-applied", "true"));
     mocks.customerBetterAuth.isBetterAuthEmailReservedForAdmin.mockResolvedValue(false);

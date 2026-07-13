@@ -8,9 +8,9 @@ import { normalizeState } from "@shared/us-states";
 import { validateEmail, validatePhone, validateAddress, validateZip, normalizeAddress, type ValidationError } from "@shared/validation";
 import { stripeService } from "../../integrations/stripe/StripeService";
 import { createOrderFinalizationService } from "../../services/order-finalization.service";
+import { sendOrderNotification } from "../../services/order-notification.service";
 import { db } from "../../../db";
 import { eq, and, sql } from "drizzle-orm";
-import { isEmailOutboxEnabled } from "../../testing/email-outbox";
 
 const DEFAULT_STRIPE_TAX_CODE = "txcd_99999999";
 
@@ -78,6 +78,76 @@ function computeAffiliateDiscount(
   } else {
     return Math.min(lineTotal, discountValue * quantity);
   }
+}
+
+type CheckoutOrderItem = {
+  productName: string;
+  quantity: number;
+  unitPrice: number;
+  discountAmount?: number;
+};
+
+function allocateDiscountAcrossUnits(unitPrices: number[], discountAmount: number): number[] {
+  const subtotal = unitPrices.reduce((sum, unitPrice) => sum + unitPrice, 0);
+  const cappedDiscount = Math.min(Math.max(0, discountAmount), subtotal);
+  const allocations = unitPrices.map((unitPrice, index) => {
+    const exactShare = subtotal > 0 ? (cappedDiscount * unitPrice) / subtotal : 0;
+    const floorShare = Math.floor(exactShare);
+    return {
+      index,
+      floorShare,
+      remainder: exactShare - floorShare,
+      unitPrice,
+    };
+  });
+
+  let remaining = cappedDiscount - allocations.reduce((sum, allocation) => sum + allocation.floorShare, 0);
+  for (const allocation of [...allocations].sort((a, b) => {
+    if (b.remainder !== a.remainder) return b.remainder - a.remainder;
+    if (b.unitPrice !== a.unitPrice) return b.unitPrice - a.unitPrice;
+    return a.index - b.index;
+  })) {
+    if (remaining <= 0) break;
+    allocation.floorShare += 1;
+    remaining -= 1;
+  }
+
+  return allocations.map((allocation) => allocation.floorShare);
+}
+
+function buildCheckoutLineItems(orderItems: CheckoutOrderItem[]) {
+  const units = orderItems.flatMap((item) => {
+    const unitPrices = Array.from({ length: item.quantity }, () => item.unitPrice);
+    const unitDiscounts = allocateDiscountAcrossUnits(unitPrices, item.discountAmount ?? 0);
+    return unitPrices.map((unitPrice, index) => ({
+      productName: item.productName,
+      unitAmount: Math.max(0, unitPrice - (unitDiscounts[index] ?? 0)),
+    }));
+  });
+
+  const grouped = new Map<string, { productName: string; unitAmount: number; quantity: number }>();
+  for (const unit of units) {
+    if (unit.unitAmount === 0) continue;
+    const key = `${unit.productName}\0${unit.unitAmount}`;
+    const existing = grouped.get(key);
+    if (existing) {
+      existing.quantity += 1;
+    } else {
+      grouped.set(key, { productName: unit.productName, unitAmount: unit.unitAmount, quantity: 1 });
+    }
+  }
+
+  return [...grouped.values()].map((item) => ({
+    price_data: {
+      currency: "usd",
+      product_data: {
+        name: item.productName,
+      },
+      unit_amount: item.unitAmount,
+      tax_behavior: "exclusive" as const,
+    },
+    quantity: item.quantity,
+  }));
 }
 
 async function resolveAffiliateCode(code: string): Promise<{ baseCode: string; isFriendsFamily: boolean }> {
@@ -877,20 +947,30 @@ router.post("/confirm-payment", paymentLimiter, async (req: any, res) => {
       return res.status(400).json({ message: "Invalid payment verification" });
     }
 
-    let order = await storage.getOrder(orderId);
-    if (!order) {
-      return res.status(404).json({ message: "Order not found" });
+    // The finalization service intentionally skips Checkout Session PaymentIntents
+    // before its amount/currency gates. Preserve this route's existing 4xx contract.
+    let checkoutSessionOrder;
+    if (paymentIntent.metadata.paymentFlow === "checkout_session") {
+      checkoutSessionOrder = await storage.getOrder(orderId);
+      if (checkoutSessionOrder && paymentIntent.amount !== checkoutSessionOrder.totalAmount) {
+        return res.status(400).json({ message: "Payment amount mismatch" });
+      }
+      if (checkoutSessionOrder && paymentIntent.currency !== "usd") {
+        return res.status(400).json({ message: "Invalid currency" });
+      }
     }
 
-    if (paymentIntent.amount !== order.totalAmount) {
-      console.error("Amount mismatch:", { 
-        paymentAmount: paymentIntent.amount, 
-        orderAmount: order.totalAmount 
-      });
-      return res.status(400).json({ message: "Payment amount mismatch" });
-    }
-
-    if (paymentIntent.currency !== "usd") {
+    // The service normalizes currency casing; this endpoint historically requires
+    // Stripe's lowercase currency representation exactly. Preserve the route's
+    // former order -> amount -> currency error precedence for that narrow case.
+    if (paymentIntent.currency?.toLowerCase() === "usd" && paymentIntent.currency !== "usd") {
+      const currencyCompatibilityOrder = checkoutSessionOrder ?? await storage.getOrder(orderId);
+      if (!currencyCompatibilityOrder) {
+        return res.status(404).json({ message: "Order not found" });
+      }
+      if (paymentIntent.amount !== currencyCompatibilityOrder.totalAmount) {
+        return res.status(400).json({ message: "Payment amount mismatch" });
+      }
       return res.status(400).json({ message: "Invalid currency" });
     }
 
@@ -904,7 +984,6 @@ router.post("/confirm-payment", paymentLimiter, async (req: any, res) => {
     }
 
     const finalizationService = createOrderFinalizationService({
-      sendOrderNotification,
       createTaxTransaction: async (calculation, reference) => {
         await stripeClient.tax.transactions.createFromCalculation({ calculation, reference });
       },
@@ -919,8 +998,24 @@ router.post("/confirm-payment", paymentLimiter, async (req: any, res) => {
       orderUpdate: finalizationUpdate,
     });
 
-    if (finalizationResult.status === "finalized") {
-      order = finalizationResult.order;
+    if (finalizationResult.status === "skipped") {
+      switch (finalizationResult.reason) {
+        case "missing_order_id":
+        case "order_not_found":
+          return res.status(404).json({ message: "Order not found" });
+        case "amount_mismatch":
+          return res.status(400).json({ message: "Payment amount mismatch" });
+        case "currency_mismatch":
+          return res.status(400).json({ message: "Invalid currency" });
+      }
+    }
+
+    let order = finalizationResult.order ?? checkoutSessionOrder;
+    if (!order) {
+      order = await storage.getOrder(orderId);
+      if (!order) {
+        return res.status(404).json({ message: "Order not found" });
+      }
     }
 
     if (finalizationResult.status !== "finalized" && order.status === "paid" && hasMetaTracking) {
@@ -1036,6 +1131,7 @@ router.post("/checkout", checkoutLimiter, async (req: any, res) => {
       productName: string;
       quantity: number;
       unitPrice: number;
+      discountAmount?: number;
     }> = [];
     const resolvedCheckoutProducts: Product[] = [];
 
@@ -1059,12 +1155,18 @@ router.post("/checkout", checkoutLimiter, async (req: any, res) => {
     if (affiliate && affiliate.status === "active") {
       for (let i = 0; i < orderItems.length; i++) {
         const lineTotal = orderItems[i].unitPrice * orderItems[i].quantity;
-        affiliateDiscountAmount += computeAffiliateDiscount(resolvedCheckoutProducts[i], lineTotal, affSettings, isFriendsFamily, affiliate, orderItems[i].quantity);
+        const discountAmount = computeAffiliateDiscount(resolvedCheckoutProducts[i], lineTotal, affSettings, isFriendsFamily, affiliate, orderItems[i].quantity);
+        affiliateDiscountAmount += discountAmount;
+        orderItems[i].discountAmount = discountAmount;
       }
     }
 
     const discountedSubtotal = Math.max(0, subtotalAmount - affiliateDiscountAmount);
     const totalAmount = discountedSubtotal;
+    const lineItems = buildCheckoutLineItems(orderItems);
+    if (lineItems.length === 0) {
+      return res.status(400).json({ message: "Checkout total must be greater than zero" });
+    }
 
     const checkoutStripeClient = await stripeService.getClient();
     if (!checkoutStripeClient) {
@@ -1079,7 +1181,7 @@ router.post("/checkout", checkoutLimiter, async (req: any, res) => {
         affiliateDiscountAmount: affiliateDiscountAmount > 0 ? affiliateDiscountAmount : null,
       });
 
-      for (const item of orderItems) {
+      for (const { discountAmount: _discountAmount, ...item } of orderItems) {
         await storage.createOrderItem({
           orderId: order.id,
           ...item,
@@ -1118,19 +1220,37 @@ router.post("/checkout", checkoutLimiter, async (req: any, res) => {
       });
     }
 
-    const lineItems = orderItems.map((item) => ({
-      price_data: {
-        currency: "usd",
-        product_data: {
-          name: item.productName,
-        },
-        unit_amount: item.unitPrice,
-        tax_behavior: "exclusive" as const,
-      },
-      quantity: item.quantity,
-    }));
-
     const baseUrl = process.env.BASE_URL || `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`;
+
+    const order = await storage.createOrder({
+      customerId: existingCustomer.id,
+      status: "pending",
+      subtotalAmount,
+      totalAmount,
+      stripeSessionId: null,
+      affiliateCode: affiliate?.affiliateCode,
+      affiliateIsFriendsFamily: isFriendsFamily,
+      affiliateDiscountAmount: affiliateDiscountAmount > 0 ? affiliateDiscountAmount : null,
+    });
+
+    for (const { discountAmount: _discountAmount, ...item } of orderItems) {
+      await storage.createOrderItem({
+        orderId: order.id,
+        ...item,
+      });
+    }
+
+    const checkoutMetadata = {
+      orderId: order.id,
+      customerId: existingCustomer.id,
+      affiliateCode: affiliate?.affiliateCode || "",
+      affiliateId: affiliate?.id || "",
+      affiliateSessionId: affiliateSessionId || "",
+      attributionType: affiliateCode ? "coupon" : (affiliateSessionId ? "cookie" : "direct"),
+      isFriendsFamily: isFriendsFamily ? "true" : "false",
+      affiliateDiscountAmount: affiliateDiscountAmount.toString(),
+      paymentFlow: "checkout_session",
+    };
 
     const stripeSession = await checkoutStripeClient.checkout.sessions.create({
       line_items: lineItems,
@@ -1138,37 +1258,20 @@ router.post("/checkout", checkoutLimiter, async (req: any, res) => {
       success_url: `${baseUrl}/order-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}?cancelled=true`,
       customer_email: customerData.email,
+      client_reference_id: order.id,
       automatic_tax: { enabled: true },
       shipping_address_collection: {
         allowed_countries: ["US"],
       },
-      metadata: {
-        customerId: existingCustomer.id,
-        affiliateCode: affiliate?.affiliateCode || "",
-        affiliateId: affiliate?.id || "",
-        affiliateSessionId: affiliateSessionId || "",
-        attributionType: affiliateCode ? "coupon" : (affiliateSessionId ? "cookie" : "direct"),
-        isFriendsFamily: isFriendsFamily ? "true" : "false",
+      metadata: checkoutMetadata,
+      payment_intent_data: {
+        metadata: checkoutMetadata,
       },
     });
 
-    const order = await storage.createOrder({
-      customerId: existingCustomer.id,
-      status: "pending",
-      subtotalAmount,
-      totalAmount,
+    await storage.updateOrder(order.id, {
       stripeSessionId: stripeSession.id,
-      affiliateCode: affiliate?.affiliateCode,
-      affiliateIsFriendsFamily: isFriendsFamily,
-      affiliateDiscountAmount: affiliateDiscountAmount > 0 ? affiliateDiscountAmount : null,
     });
-
-    for (const item of orderItems) {
-      await storage.createOrderItem({
-        orderId: order.id,
-        ...item,
-      });
-    }
 
     res.json({
       success: true,
@@ -1195,188 +1298,6 @@ router.get("/orders/by-session/:sessionId", async (req, res) => {
   }
 });
 
-export async function sendOrderNotification(orderId: string) {
-  try {
-    const settings = await storage.getSiteSettings();
-    const order = await storage.getOrder(orderId);
-    if (!order) return;
-
-    const customer = await storage.getCustomer(order.customerId);
-    const items = await storage.getOrderItems(orderId);
-
-    const { customerEmailService } = await import("../../services/customer-email.service");
-    const customerEmailResult = await customerEmailService.sendOrderConfirmation(orderId);
-    if (customerEmailResult.success) {
-      console.log(`Order confirmation email sent to customer for order ${orderId}`);
-    } else {
-      console.log(`Failed to send customer confirmation email: ${customerEmailResult.error}`);
-    }
-
-    const allAdminUsers = await storage.getAdminUsers();
-    const fulfillmentEmails = allAdminUsers
-      .filter(u => u.role === "fulfillment")
-      .map(u => u.email);
-
-    const recipientSet = new Set<string>(fulfillmentEmails);
-    if (settings?.orderNotificationEmail) {
-      recipientSet.add(settings.orderNotificationEmail);
-    }
-
-    const recipients = Array.from(recipientSet);
-    if (recipients.length === 0) {
-      console.log("No fulfillment team members or admin notification email configured — skipping order notification");
-      return;
-    }
-
-    const companyName = settings?.companyName || "Power Plunge";
-    let baseUrl = (process.env.PUBLIC_SITE_URL || process.env.E2E_BASE_URL || "").replace(/\/+$/, "");
-    if (!baseUrl) {
-      if (process.env.REPLIT_DOMAINS) {
-        baseUrl = `https://${process.env.REPLIT_DOMAINS.split(",")[0]}`;
-      } else if (process.env.REPLIT_DEV_DOMAIN) {
-        baseUrl = `https://${process.env.REPLIT_DEV_DOMAIN}`;
-      } else if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
-        baseUrl = `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`;
-      } else {
-        baseUrl = "https://your-domain.replit.app";
-      }
-    }
-
-    const adminOrderUrl = `${baseUrl}/admin/orders`;
-    const orderDate = new Date(order.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
-    const orderTime = new Date(order.createdAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
-    const formatCents = (cents: number) => `$${(cents / 100).toFixed(2)}`;
-    const isFreeOrder = !!order.isManualOrder && !order.stripePaymentIntentId;
-    const formatOrderTotal = isFreeOrder ? "$0.00" : formatCents(order.totalAmount);
-
-    const itemsHtml = items.map(item => `
-          <tr>
-            <td style="padding: 12px 16px; border-bottom: 1px solid #e5e7eb; color: #374151; font-size: 14px;">${item.productName}</td>
-            <td style="padding: 12px 16px; border-bottom: 1px solid #e5e7eb; text-align: center; color: #374151; font-size: 14px;">${item.quantity}</td>
-            <td style="padding: 12px 16px; border-bottom: 1px solid #e5e7eb; text-align: right; color: #111827; font-weight: 500; font-size: 14px;">${isFreeOrder ? "$0.00" : formatCents(item.unitPrice * item.quantity)}</td>
-          </tr>`).join("");
-
-    const html = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f4f4f5;">
-  <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
-    <div style="background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-      <!-- Header -->
-      <div style="background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%); padding: 32px; text-align: center;">
-        <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 600;">New Order Received</h1>
-        <p style="margin: 8px 0 0; color: rgba(255,255,255,0.9); font-size: 14px;">Order #${order.id.slice(0, 8).toUpperCase()} needs fulfillment</p>
-      </div>
-
-      <!-- Content -->
-      <div style="padding: 32px;">
-        <!-- Order Summary -->
-        <div style="background: #f9fafb; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
-          <h3 style="margin: 0 0 12px; color: #111827; font-size: 16px; font-weight: 600;">Order Summary</h3>
-          <div style="margin-bottom: 8px;">
-            <span style="color: #6b7280; font-size: 14px;">Order Number: </span>
-            <span style="color: #111827; font-weight: 600; font-size: 14px;">#${order.id.slice(0, 8).toUpperCase()}</span>
-          </div>
-          <div style="margin-bottom: 8px;">
-            <span style="color: #6b7280; font-size: 14px;">Date: </span>
-            <span style="color: #111827; font-size: 14px;">${orderDate} at ${orderTime}</span>
-          </div>
-          <div>
-            <span style="color: #6b7280; font-size: 14px;">Total: </span>
-            <span style="color: #111827; font-weight: 700; font-size: 16px;">${formatOrderTotal}</span>
-          </div>
-        </div>
-
-        <!-- Items to Pack -->
-        <h3 style="margin: 0 0 16px; color: #111827; font-size: 16px; font-weight: 600;">Items to Pack</h3>
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
-          <thead>
-            <tr style="background: #f9fafb;">
-              <th style="padding: 10px 16px; text-align: left; color: #6b7280; font-size: 12px; font-weight: 600; text-transform: uppercase; border-bottom: 2px solid #e5e7eb;">Product</th>
-              <th style="padding: 10px 16px; text-align: center; color: #6b7280; font-size: 12px; font-weight: 600; text-transform: uppercase; border-bottom: 2px solid #e5e7eb;">Qty</th>
-              <th style="padding: 10px 16px; text-align: right; color: #6b7280; font-size: 12px; font-weight: 600; text-transform: uppercase; border-bottom: 2px solid #e5e7eb;">Price</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${itemsHtml}
-          </tbody>
-          <tfoot>
-            <tr>
-              <td colspan="2" style="padding: 16px; font-weight: 600; color: #111827; font-size: 16px; border-top: 2px solid #e5e7eb;">Order Total</td>
-              <td style="padding: 16px; text-align: right; font-weight: 700; color: #111827; font-size: 18px; border-top: 2px solid #e5e7eb;">${formatOrderTotal}</td>
-            </tr>
-          </tfoot>
-        </table>
-
-        <!-- Ship To -->
-        <h3 style="margin: 0 0 12px; color: #111827; font-size: 16px; font-weight: 600;">Ship To</h3>
-        <div style="background: #f9fafb; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
-          <p style="margin: 0; color: #111827; font-weight: 600; font-size: 14px;">${customer?.name || "N/A"}</p>
-          ${customer?.address ? `<p style="margin: 4px 0 0; color: #374151; font-size: 14px;">${customer.address}</p>` : ""}
-          ${customer?.city ? `<p style="margin: 4px 0 0; color: #374151; font-size: 14px;">${customer.city}${customer?.state ? `, ${customer.state}` : ""} ${customer?.zipCode || ""}</p>` : ""}
-          ${customer?.country && customer.country !== "US" ? `<p style="margin: 4px 0 0; color: #374151; font-size: 14px;">${customer.country}</p>` : ""}
-        </div>
-
-        <!-- Customer Contact -->
-        <h3 style="margin: 0 0 12px; color: #111827; font-size: 16px; font-weight: 600;">Customer Contact</h3>
-        <div style="background: #f9fafb; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
-          ${customer?.email ? `<div style="margin-bottom: 8px;"><span style="color: #6b7280; font-size: 14px;">Email: </span><a href="mailto:${customer.email}" style="color: #0891b2; text-decoration: none; font-size: 14px;">${customer.email}</a></div>` : ""}
-          ${customer?.phone ? `<div><span style="color: #6b7280; font-size: 14px;">Phone: </span><a href="tel:${customer.phone}" style="color: #0891b2; text-decoration: none; font-size: 14px;">${customer.phone}</a></div>` : ""}
-        </div>
-
-        <!-- View in Admin Button -->
-        <div style="text-align: center; margin: 32px 0;">
-          <a href="${adminOrderUrl}" style="display: inline-block; background: #0891b2; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-weight: 600; font-size: 16px;">View Order in Admin</a>
-        </div>
-      </div>
-
-      <!-- Footer -->
-      <div style="background: #f9fafb; padding: 24px; text-align: center; border-top: 1px solid #e5e7eb;">
-        <p style="margin: 0 0 8px; color: #374151; font-size: 13px; font-weight: 500;">${companyName}</p>
-        <p style="margin: 0; color: #9ca3af; font-size: 11px;">This is an internal fulfillment notification. Do not forward to customers.</p>
-      </div>
-    </div>
-  </div>
-</body>
-</html>`;
-
-    const subject = `New Order #${order.id.slice(0, 8).toUpperCase()} — ${formatOrderTotal} — ${customer?.name || "Unknown"}`;
-
-    if (!isEmailOutboxEnabled() && process.env.MAILGUN_API_KEY && process.env.MAILGUN_DOMAIN) {
-      const formData = (await import("form-data")).default;
-      const Mailgun = (await import("mailgun.js")).default;
-      const mailgun = new Mailgun(formData);
-      const mg = mailgun.client({ username: "api", key: process.env.MAILGUN_API_KEY });
-      await mg.messages.create(process.env.MAILGUN_DOMAIN, {
-        from: `${companyName} Orders <orders@${process.env.MAILGUN_DOMAIN}>`,
-        to: recipients,
-        subject,
-        html,
-      });
-
-      console.log(`Order notification email sent via Mailgun to: ${recipients.join(", ")}`);
-    } else if (isEmailOutboxEnabled()) {
-      const { emailService } = await import("../../integrations/mailgun/EmailService");
-      const result = await emailService.sendEmail({
-        to: recipients,
-        subject,
-        html,
-      });
-      if (!result.success) {
-        console.log(`Failed to send fulfillment notification email: ${result.error}`);
-      }
-    } else {
-      console.log("Mailgun not configured, skipping admin email notification");
-      console.log(`Order ${orderId} notification would be sent to: ${recipients.join(", ")}`);
-    }
-  } catch (error) {
-    console.error("Failed to send order notification:", error);
-  }
-}
 
 router.post("/analytics/checkout-event", (req, res) => {
   try {

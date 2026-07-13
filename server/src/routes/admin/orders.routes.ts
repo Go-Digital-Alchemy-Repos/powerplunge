@@ -4,6 +4,7 @@ import { requireFullAccess } from "../../middleware";
 import { stripeService } from "../../integrations/stripe/StripeService";
 import { normalizeAddress, validateAddress, validateEmail, validatePhone } from "@shared/validation";
 import { normalizeEmail } from "../../services/customer-identity.service";
+import { sendOrderNotification } from "../../services/order-notification.service";
 
 const router = Router();
 
@@ -217,7 +218,6 @@ router.post("/", requireFullAccess, async (req: Request, res: Response) => {
     const orderItemsList = await storage.getOrderItems(order.id);
 
     try {
-      const { sendOrderNotification } = await import("../public/payments.routes");
       await sendOrderNotification(order.id);
     } catch (emailError: any) {
       console.error("Failed to send manual order notification emails:", emailError.message);

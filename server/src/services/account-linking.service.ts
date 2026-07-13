@@ -3,16 +3,16 @@ import { orders, customers } from "@shared/schema";
 import { eq, and, ne, inArray, isNull } from "drizzle-orm";
 import { normalizeEmail } from "./customer-identity.service";
 
-export interface ClaimResult {
-  claimed: number;
+export interface OrderLinkResult {
+  linkedCount: number;
   orderIds: string[];
 }
 
-export async function claimOrdersByEmail(
+export async function linkOrdersToCustomerByEmail(
   activeCustomerId: string,
   rawEmail: string,
   source: string
-): Promise<ClaimResult> {
+): Promise<OrderLinkResult> {
   const email = normalizeEmail(rawEmail);
 
   const otherCustomerIds = await db
@@ -27,7 +27,7 @@ export async function claimOrdersByEmail(
 
   const donorIds = otherCustomerIds.map((c) => c.id);
   if (donorIds.length === 0) {
-    return { claimed: 0, orderIds: [] };
+    return { linkedCount: 0, orderIds: [] };
   }
 
   const result = await db.transaction(async (tx) => {
@@ -37,7 +37,7 @@ export async function claimOrdersByEmail(
       .where(inArray(orders.customerId, donorIds));
 
     if (orphanedOrders.length === 0) {
-      return { claimed: 0, orderIds: [] as string[] };
+      return { linkedCount: 0, orderIds: [] as string[] };
     }
 
     const orderIds = orphanedOrders.map((o) => o.id);
@@ -57,13 +57,13 @@ export async function claimOrdersByEmail(
         )
       );
 
-    return { claimed: orderIds.length, orderIds };
+    return { linkedCount: orderIds.length, orderIds };
   });
 
-  if (result.claimed > 0) {
+  if (result.linkedCount > 0) {
     console.log(
-      `[ORDER-CLAIM] source=${source} email=${email} activeCustomerId=${activeCustomerId} ` +
-      `claimedOrders=${result.claimed} orderIds=${result.orderIds.join(",")} donorIds=${donorIds.join(",")}`
+      `[ACCOUNT-LINKING] source=${source} email=${email} activeCustomerId=${activeCustomerId} ` +
+      `linkedOrders=${result.linkedCount} orderIds=${result.orderIds.join(",")} donorIds=${donorIds.join(",")}`
     );
   }
 
