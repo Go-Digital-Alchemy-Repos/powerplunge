@@ -17,3 +17,4 @@
 12:22 P7 verified (typecheck 0, 266 tests, commit 42d6be2 scoped, no findings); P8 /checkout migration authored (characterize-first, additive-only test rule)
 12:37 P8 verified (typecheck 0, 273 tests, additive-only proven, commit 7ce1bd2 scoped); P9 W1 shim cleanup authored (behavior-changing, red-first, new contract named)
 12:50 P9 verified (typecheck 0, 271 tests, red-first evidence, W1 discharged, commit d7199d2 scoped); P10 zero-total guard authored (final chunk-2 slice)
+12:58 P10 verified (typecheck 0, 276 tests, red-first, old candidate-bug cases replaced); chunk 2 slices COMPLETE; fixed floor green (diff --check 0); firing chunk-2 adversarial review at HIGH read-only
