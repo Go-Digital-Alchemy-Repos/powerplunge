@@ -8,6 +8,11 @@ import { normalizeState } from "@shared/us-states";
 import { validateEmail, validatePhone, validateAddress, validateZip, normalizeAddress, type ValidationError } from "@shared/validation";
 import { stripeService } from "../../integrations/stripe/StripeService";
 import { createOrderFinalizationService } from "../../services/order-finalization.service";
+import {
+  CheckoutTaxCalculationError,
+  CheckoutUnknownProductError,
+  createCheckoutService,
+} from "../../services/checkout.service";
 import { sendOrderNotification } from "../../services/order-notification.service";
 import { db } from "../../../db";
 import { eq, and, sql } from "drizzle-orm";
@@ -376,116 +381,70 @@ router.post("/create-payment-intent", paymentLimiter, async (req: any, res) => {
       }
     }
 
-    let subtotalAmount = 0;
-    const orderItems: Array<{
-      productId: string;
-      productName: string;
-      quantity: number;
-      unitPrice: number;
-    }> = [];
-    const resolvedProducts: Product[] = [];
-
-    for (const item of items) {
-      const product = await storage.getProduct(item.productId);
-      if (!product) {
-        return res.status(400).json({ message: `Product ${item.productId} not found` });
-      }
-      subtotalAmount += product.price * item.quantity;
-      orderItems.push({
-        productId: product.id,
-        productName: product.name,
-        quantity: item.quantity,
-        unitPrice: product.price,
-      });
-      resolvedProducts.push(product);
-    }
-
-    let affiliateDiscountAmount = 0;
-    if (affiliate && affiliate.status === "active") {
-      const affSettings = await storage.getAffiliateSettings();
-      for (let i = 0; i < orderItems.length; i++) {
-        const lineTotal = orderItems[i].unitPrice * orderItems[i].quantity;
-        affiliateDiscountAmount += computeAffiliateDiscount(resolvedProducts[i], lineTotal, affSettings, isFriendsFamily, affiliate, orderItems[i].quantity);
-      }
-    }
-
-    let couponDiscountAmount = 0;
-    let validatedCoupon: any = null;
-    if (couponCode) {
-      const coupon = await storage.getCouponByCode(couponCode.toUpperCase());
-      if (coupon && coupon.active) {
-        const now = new Date();
-        const notExpired = !coupon.endDate || new Date(coupon.endDate) >= now;
-        const started = !coupon.startDate || new Date(coupon.startDate) <= now;
-        const hasUses = !coupon.maxRedemptions || coupon.timesUsed < coupon.maxRedemptions;
-        const meetsMin = !coupon.minOrderAmount || subtotalAmount >= coupon.minOrderAmount;
-
-        if (notExpired && started && hasUses && meetsMin) {
-          validatedCoupon = coupon;
-          if (coupon.type === "percentage") {
-            couponDiscountAmount = Math.round(subtotalAmount * (coupon.value / 100));
-            if (coupon.maxDiscountAmount) {
-              couponDiscountAmount = Math.min(couponDiscountAmount, coupon.maxDiscountAmount);
-            }
-          } else if (coupon.type === "fixed") {
-            couponDiscountAmount = Math.min(coupon.value, subtotalAmount);
-          }
-          if (coupon.blockAffiliateCommission && affiliate) {
-            console.log(`[COUPON] Coupon ${coupon.code} blocks affiliate commission for ${affiliate.affiliateCode}`);
-          }
-        }
-      }
-    }
-
-    const discountedSubtotal = Math.max(0, subtotalAmount - affiliateDiscountAmount - couponDiscountAmount);
-
-    let taxAmount = 0;
-    let taxCalculationId: string | null = null;
-    
+    let quote;
     try {
-      const taxableAmount = discountedSubtotal;
-      const taxLineItems = orderItems.map((item) => {
-        const itemTotal = item.unitPrice * item.quantity;
-        const itemShare = subtotalAmount > 0 ? Math.floor(taxableAmount * (itemTotal / subtotalAmount)) : 0;
-        return {
-          amount: itemShare,
-          reference: item.productId,
-          tax_behavior: "exclusive" as const,
-          tax_code: DEFAULT_STRIPE_TAX_CODE,
-        };
-      });
-
-      const taxCalculation = await stripeClient.tax.calculations.create({
-        currency: "usd",
-        line_items: taxLineItems,
-        customer_details: {
-          address: {
-            line1: customerData.address || "",
-            city: customerData.city || "",
-            state: normalizedShipping.state,
-            postal_code: customerData.zipCode.split("-")[0],
-            country: "US",
-          },
-          address_source: "shipping",
+      const checkoutService = createCheckoutService({
+        storage: {
+          getProduct: (...args) => storage.getProduct(...args),
+          getAffiliateSettings: (...args) => storage.getAffiliateSettings(...args),
+          getCouponByCode: (...args) => storage.getCouponByCode(...args),
+        },
+        calculateTax: async (input) => {
+          const calculation = await stripeClient.tax.calculations.create({
+            currency: input.currency,
+            line_items: input.lineItems.map((item) => ({
+              amount: item.amount,
+              reference: item.reference,
+              tax_behavior: item.taxBehavior,
+              tax_code: item.taxCode,
+            })),
+            customer_details: {
+              address: {
+                line1: input.customerAddress.line1,
+                city: input.customerAddress.city,
+                state: input.customerAddress.state,
+                postal_code: input.customerAddress.postalCode,
+                country: input.customerAddress.country,
+              },
+              address_source: "shipping",
+            },
+          });
+          return { id: calculation.id, taxAmountExclusive: calculation.tax_amount_exclusive };
         },
       });
-
-      taxAmount = taxCalculation.tax_amount_exclusive;
-      taxCalculationId = taxCalculation.id;
-      console.log(`[TAX] Calculated: $${(taxAmount / 100).toFixed(2)} | state=${normalizedShipping.state} zip=${customerData.zipCode.split("-")[0]} calcId=${taxCalculationId}`);
-
-      if (taxAmount === 0 && TAXABLE_STATES_WARN_ON_ZERO.includes(normalizedShipping.state)) {
-        console.warn(`[TAX][WARN] Zero tax returned for taxable state ${normalizedShipping.state} (zip=${customerData.zipCode}, calcId=${taxCalculationId}). Verify Stripe Tax registration.`);
-      }
-    } catch (taxError: any) {
-      console.error(`[TAX] Calculation failed | state=${normalizedShipping.state} zip=${customerData.zipCode}:`, taxError.message);
-      return res.status(422).json({
-        message: "Unable to calculate tax. Please verify your shipping state and ZIP code.",
-        field: "address",
+      quote = await checkoutService.quote({
+        items,
+        affiliate,
+        isFriendsFamily,
+        couponCode,
+        taxAddress: {
+          line1: customerData.address || "",
+          city: customerData.city || "",
+          state: normalizedShipping.state,
+          postalCode: customerData.zipCode,
+          country: "US",
+        },
       });
+    } catch (error) {
+      if (error instanceof CheckoutUnknownProductError) {
+        return res.status(400).json({ message: error.message });
+      }
+      if (error instanceof CheckoutTaxCalculationError) {
+        return res.status(422).json({ message: error.message, field: "address" });
+      }
+      throw error;
     }
 
-    const totalAmount = discountedSubtotal + taxAmount;
+    const {
+      affiliateDiscountAmount,
+      couponDiscountAmount,
+      orderItems,
+      subtotalAmount,
+      taxAmount,
+      taxCalculationId,
+      totalAmount,
+      validatedCoupon,
+    } = quote;
     const forwardedFor = req.headers?.["x-forwarded-for"];
     const customerIp = typeof forwardedFor === "string"
       ? forwardedFor.split(",")[0]?.trim() || null

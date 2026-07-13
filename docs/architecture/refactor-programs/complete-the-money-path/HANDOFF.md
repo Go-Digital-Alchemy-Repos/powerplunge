@@ -32,7 +32,7 @@ to the director. Branch: `refactor/complete-the-money-path`.
    writes) — test-only — done (P5)
 2. Pure quote nucleus: new `checkout.service.ts` owns product resolution,
    affiliate/coupon pricing, tax-line construction behind a public quote
-   result; route consumes it — behavior-preserving — pending
+   result; route consumes it — behavior-preserving — done (P6)
 3. PaymentIntent orchestration: move customer/attribution resolution,
    draft order/items, PaymentIntent creation+linking into the service,
    preserving call order and HTTP mapping — behavior-preserving,
@@ -51,17 +51,16 @@ to the director. Branch: `refactor/complete-the-money-path`.
 
 ## State
 
-Chunk 1 merged to main (PR #25). Chunk 2 slice 1 (P5) characterization baseline complete; next is slice 2, pure quote nucleus.
+Chunk 2 slice 2 (P6) complete: checkout quote service extracted with focused service coverage and unchanged create-payment-intent characterizations; next is slice 3, PaymentIntent orchestration.
 
 ## Next Slice
 
-- Slice 2: add `checkout.service.ts` to own product resolution,
-  affiliate/coupon pricing, and tax-line construction behind a public
-  quote result; consume it from create-payment-intent without changing
-  external behavior.
+- Slice 3: move customer/attribution resolution, draft order/items, and
+  PaymentIntent creation/linking behind the checkout service while preserving
+  call order and HTTP mapping.
 - Classification: behavior-preserving.
-- Checks: focused create-payment-intent characterizations, `npm run
-  typecheck`, and the full unit suite stay green.
+- Checks: focused create-payment-intent characterizations, service tests,
+  `npm run typecheck`, and the full unit suite stay green.
 
 ## Risks / Constraints
 
