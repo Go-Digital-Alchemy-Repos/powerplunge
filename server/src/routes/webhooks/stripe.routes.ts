@@ -6,6 +6,7 @@ import { createStripeConnectWebhookService } from "../../services/stripe-connect
 import { createStripeRefundWebhookService } from "../../services/stripe-refund-webhook.service";
 
 const router = Router();
+type WebhookEventHandler = () => Promise<void>;
 
 export async function handlePaymentIntentSucceededWebhook(paymentIntent: any): Promise<void> {
   const finalizationService = createOrderFinalizationService();
@@ -81,51 +82,52 @@ router.post("/stripe", async (req, res) => {
     throw err;
   }
 
-  if (event.type === "checkout.session.completed") {
-    const session = event.data.object as any;
-    await handleCheckoutSessionCompletedWebhook(session);
-  }
+  const handlers: Partial<Record<string, WebhookEventHandler>> = {
+    "checkout.session.completed": async () => {
+      const session = event.data.object as any;
+      await handleCheckoutSessionCompletedWebhook(session);
+    },
+    "payment_intent.succeeded": async () => {
+      const paymentIntent = event.data.object as any;
+      await handlePaymentIntentSucceededWebhook(paymentIntent);
+    },
+    "charge.refunded": async () => {
+      const charge = event.data.object as any;
+      await handleChargeRefundedWebhook(charge);
+    },
+    "refund.updated": async () => {
+      const stripeRefund = event.data.object as any;
+      const refundWebhookService = createStripeRefundWebhookService();
+      await refundWebhookService.synchronizeStripeRefundStatus({
+        refund: stripeRefund,
+        eventId: event.id,
+      });
+    },
+    "payment_intent.payment_failed": async () => {
+      const paymentIntent = event.data.object as any;
+      const orderId = paymentIntent.metadata?.orderId;
+      const lastError = paymentIntent.last_payment_error;
 
-  if (event.type === "payment_intent.succeeded") {
-    const paymentIntent = event.data.object as any;
-    await handlePaymentIntentSucceededWebhook(paymentIntent);
-  }
+      console.error("[WEBHOOK] Payment failed:", {
+        paymentIntentId: paymentIntent.id,
+        orderId,
+        errorCode: lastError?.code,
+        errorMessage: lastError?.message,
+      });
 
-  if (event.type === "charge.refunded") {
-    const charge = event.data.object as any;
-    await handleChargeRefundedWebhook(charge);
-  }
+      await errorAlertingService.alertPaymentFailure({
+        orderId: orderId || undefined,
+        email: paymentIntent.receipt_email || paymentIntent.metadata?.customerEmail,
+        amount: paymentIntent.amount,
+        paymentIntentId: paymentIntent.id,
+        errorMessage: lastError?.message || "Payment failed",
+        errorCode: lastError?.code,
+      });
+    },
+  };
 
-  if (event.type === "refund.updated") {
-    const stripeRefund = event.data.object as any;
-    const refundWebhookService = createStripeRefundWebhookService();
-    await refundWebhookService.synchronizeStripeRefundStatus({
-      refund: stripeRefund,
-      eventId: event.id,
-    });
-  }
-
-  if (event.type === "payment_intent.payment_failed") {
-    const paymentIntent = event.data.object as any;
-    const orderId = paymentIntent.metadata?.orderId;
-    const lastError = paymentIntent.last_payment_error;
-    
-    console.error("[WEBHOOK] Payment failed:", {
-      paymentIntentId: paymentIntent.id,
-      orderId,
-      errorCode: lastError?.code,
-      errorMessage: lastError?.message,
-    });
-
-    await errorAlertingService.alertPaymentFailure({
-      orderId: orderId || undefined,
-      email: paymentIntent.receipt_email || paymentIntent.metadata?.customerEmail,
-      amount: paymentIntent.amount,
-      paymentIntentId: paymentIntent.id,
-      errorMessage: lastError?.message || "Payment failed",
-      errorCode: lastError?.code,
-    });
-  }
+  const handler = handlers[event.type];
+  if (handler) await handler();
 
   res.json({ received: true });
 });
@@ -205,49 +207,27 @@ router.post("/stripe-connect", async (req, res) => {
   }
 
   try {
-    if (event.type === "account.updated") {
-      const account = event.data.object;
-      const connectWebhookService = createStripeConnectWebhookService();
-      await connectWebhookService.synchronizeAffiliatePayoutAccount({
-        account,
-        eventId: event.id,
-      });
-    }
+    const handlers: Partial<Record<string, WebhookEventHandler>> = {
+      "account.updated": async () => {
+        const account = event.data.object;
+        const connectWebhookService = createStripeConnectWebhookService();
+        await connectWebhookService.synchronizeAffiliatePayoutAccount({
+          account,
+          eventId: event.id,
+        });
+      },
+      "capability.updated": async () => {
+        const capability = event.data.object;
+        const connectWebhookService = createStripeConnectWebhookService();
+        await connectWebhookService.synchronizeAffiliatePayoutCapability({
+          capability,
+          eventId: event.id,
+        });
+      },
+    };
 
-    if (event.type === "capability.updated") {
-      const capability = event.data.object;
-      const accountId = typeof capability.account === "string" 
-        ? capability.account 
-        : capability.account?.id;
-
-      if (accountId) {
-        const payoutAccount = await storage.getAffiliatePayoutAccountByStripeAccountId(accountId);
-        if (payoutAccount) {
-          const fullAccount = await stripeService.retrieveAccount(accountId);
-          await storage.updateAffiliatePayoutAccount(payoutAccount.id, {
-            payoutsEnabled: fullAccount.payouts_enabled ?? false,
-            chargesEnabled: fullAccount.charges_enabled ?? false,
-            detailsSubmitted: fullAccount.details_submitted ?? false,
-            requirements: fullAccount.requirements as any,
-          });
-          console.log(`[CONNECT] Updated capability for payout account ${payoutAccount.id}`);
-          
-          await storage.createAuditLog({
-            actor: "stripe_webhook",
-            action: "stripe_connect.capability_updated",
-            entityType: "affiliate_payout_account",
-            entityId: payoutAccount.id,
-            metadata: {
-              stripeAccountId: accountId,
-              affiliateId: payoutAccount.affiliateId,
-              capability: capability.id,
-              status: capability.status,
-              eventId: event.id,
-            },
-          });
-        }
-      }
-    }
+    const handler = handlers[event.type];
+    if (handler) await handler();
   } catch (error) {
     console.error("Error processing Connect webhook:", error);
   }

@@ -22,7 +22,8 @@ to the director. Branch: `refactor/complete-the-money-path`.
    creation behind a deep interface; /checkout shares it via a distinct
    operation; W1 shim cleanup) — all slices complete; chunk gate pending
 3. Webhook service (F: extract refund-sync + Connect handling from
-   stripe.routes.ts; route becomes pure dispatch) — in progress
+   stripe.routes.ts; route becomes pure dispatch) — all slices complete;
+   chunk gate pending
 
 ## Current Chunk Slices (chunk 3; from R2 survey, director-adopted)
 
@@ -39,7 +40,7 @@ to the director. Branch: `refactor/complete-the-money-path`.
    with public-interface tests — behavior-preserving — done (P15)
 5. Add capability.updated to the Connect service; typed dispatch cleanup;
    preserve or repoint server/src/routes/test/stripe-webhook.routes.ts —
-   behavior-preserving — pending
+   behavior-preserving — done (P16)
 
 Route keeps: raw-body/signature verification, endpoint-specific secret
 resolution, delivery dedupe, HTTP acknowledgement mapping, explicit
@@ -50,39 +51,37 @@ unavailable.
 
 ## State
 
-P15 completed chunk 3 slice 4: `account.updated` payout-account synchronization
-now lives behind `synchronizeAffiliatePayoutAccount` on the dependency-injected
-`stripe-connect-webhook.service.ts`. The operation receives the plain Stripe
-account and event ID, owns lookup, enablement/default mapping, requirements
-passthrough, exact Connect logging, and changed-fields-only audit behavior. It
-silently no-ops for an unknown account and propagates seam errors to the route's
-existing catch, preserving the endpoint's 200 acknowledgement behavior. Five
-public-interface service tests cover the required update, conditional audit,
-unknown-account, absent-field defaulting, and propagation paths. The P12 route
-characterizations remain untouched and green. P15 checkpoint checks: focused
-Connect service tests (5), focused route tests, typecheck, and full unit suite.
+P16 completed chunk 3 slice 5: `capability.updated` payout-account refresh now
+lives behind `synchronizeAffiliatePayoutCapability` on the dependency-injected
+Connect webhook service. The service resolves string and object account forms,
+retrieves the full Stripe account through a lazy injected seam, maps account
+state with false defaults, preserves requirements, emits the exact Connect log,
+and always writes the capability audit after a matched update. Five new
+public-interface cases cover the happy path, object account form, unknown payout
+account, missing account ID, and seam-error propagation (10 Connect service
+tests total). Both webhook endpoints now use typed per-event handler maps while
+preserving endpoint-specific error and acknowledgement behavior. The legacy
+`handlePaymentIntentSucceededWebhook` export remains unchanged, and both frozen
+route files remain untouched. P16 checkpoint checks: focused Connect and route
+tests, typecheck, full unit suite, diff checks, and a standard review pass.
 
 ## Next Slice
 
-- Slice 5 moves `capability.updated` into the existing
-  `server/src/services/stripe-connect-webhook.service.ts` and cleans up webhook
-  dispatch typing without changing endpoint behavior.
-- Files: `server/src/routes/webhooks/stripe.routes.ts`,
-  `server/src/services/stripe-connect-webhook.service.ts`,
-  `server/src/services/__tests__/stripe-connect-webhook.service.test.ts`,
-  `server/src/routes/test/stripe-webhook.routes.ts` if required to preserve or
-  repoint its compatibility surface, and this handoff.
-- Classification: behavior-preserving.
-- Test: add public-interface Connect service coverage for capability account ID
-  resolution, Stripe account retrieval, payout-account refresh, exact audit/log
-  content, unknown/missing account no-op, and error propagation before moving
-  the route branch. Preserve or repoint the legacy test-route surface explicitly.
-- Preserve byte-for-byte capability update log/audit content, Connect delivery
-  dedupe, signature handling, and route-owned swallowed-error 200 acknowledgement.
-- Checks: focused Connect service tests, frozen webhook route characterizations,
-  affected legacy test-route tests, `npm run typecheck`, `git diff --check`, and
-  the full unit suite. Because slice 5 completes chunk 3, also run the chunk gate
-  and the signed webhook E2E via CI if the local E2E environment is unavailable.
+- Run the chunk-3 gate before PR: fixed floor plus adversarial review of the full
+  chunk diff.
+- Files: review only; change implementation files only to fix substantiated,
+  in-scope gate findings, and update this handoff with the gate result.
+- Classification: behavior-preserving verification gate.
+- Fixed floor: all chunk slice tests, affected webhook route/service/storage
+  tests, `npm run typecheck`, `git diff --check`, and the full unit suite.
+- Risk-based check: run
+  `e2e/customer-stripe-webhook-success.spec.ts` for signed-route success and
+  duplicate handling when the local E2E environment supports it; otherwise use
+  the binding PR CI run.
+- Review: fresh adversarial review of the full chunk-3 diff for route/service
+  regressions, delivery semantics, compatibility exports, and test quality.
+- Outcome: if the fixed floor, risk-based check, and review approve, open the PR
+  for chunk 3. Do not merge without director verification.
 
 ## Risks / Constraints
 

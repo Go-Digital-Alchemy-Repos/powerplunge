@@ -13,6 +13,17 @@ export interface SynchronizeAffiliatePayoutAccountInput {
   eventId: string;
 }
 
+export interface StripeCapability {
+  id: string;
+  account?: string | { id?: string | null } | null;
+  status?: string | null;
+}
+
+export interface SynchronizeAffiliatePayoutCapabilityInput {
+  capability: StripeCapability;
+  eventId: string;
+}
+
 export interface StripeConnectWebhookDependencies {
   storage: Pick<
     IStorage,
@@ -20,6 +31,9 @@ export interface StripeConnectWebhookDependencies {
     | "updateAffiliatePayoutAccount"
     | "createAuditLog"
   >;
+  stripeService: {
+    retrieveAccount(accountId: string): Promise<StripeConnectAccount>;
+  };
   log: Pick<Console, "log">;
 }
 
@@ -73,6 +87,44 @@ export class StripeConnectWebhookService {
       });
     }
   }
+
+  async synchronizeAffiliatePayoutCapability(
+    input: SynchronizeAffiliatePayoutCapabilityInput,
+  ): Promise<void> {
+    const { capability, eventId } = input;
+    const accountId = typeof capability.account === "string"
+      ? capability.account
+      : capability.account?.id;
+    if (!accountId) return;
+
+    const payoutAccount = await this.deps.storage.getAffiliatePayoutAccountByStripeAccountId(
+      accountId,
+    );
+    if (!payoutAccount) return;
+
+    const fullAccount = await this.deps.stripeService.retrieveAccount(accountId);
+    await this.deps.storage.updateAffiliatePayoutAccount(payoutAccount.id, {
+      payoutsEnabled: fullAccount.payouts_enabled ?? false,
+      chargesEnabled: fullAccount.charges_enabled ?? false,
+      detailsSubmitted: fullAccount.details_submitted ?? false,
+      requirements: fullAccount.requirements as any,
+    });
+    this.deps.log.log(`[CONNECT] Updated capability for payout account ${payoutAccount.id}`);
+
+    await this.deps.storage.createAuditLog({
+      actor: "stripe_webhook",
+      action: "stripe_connect.capability_updated",
+      entityType: "affiliate_payout_account",
+      entityId: payoutAccount.id,
+      metadata: {
+        stripeAccountId: accountId,
+        affiliateId: payoutAccount.affiliateId,
+        capability: capability.id,
+        status: capability.status,
+        eventId,
+      },
+    });
+  }
 }
 
 export function createStripeConnectWebhookService(
@@ -89,6 +141,12 @@ export function createStripeConnectWebhookService(
 
   return new StripeConnectWebhookService({
     storage: dependencies.storage ?? storageDependency,
+    stripeService: dependencies.stripeService ?? {
+      retrieveAccount: async (accountId) => {
+        const { stripeService } = await import("../integrations/stripe/StripeService");
+        return stripeService.retrieveAccount(accountId);
+      },
+    },
     log: dependencies.log ?? console,
   });
 }
