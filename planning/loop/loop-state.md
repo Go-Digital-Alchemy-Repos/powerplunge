@@ -8,14 +8,20 @@ PR #26 1e6a120, both Tommy-approved 2026-07-13, CI green). Chunk 3
 
 ## In-flight
 
-- P14 refund.updated -> stripe-refund-webhook.service (chunk-3 slice 3)
-  (planning/handoffs/2026-07-13-p14-refund-updated-service.md) FIRED at
-  gpt-5.6-sol medium, danger-full-access. Second operation on the P13
-  factory; event.id passed in for the audit log; no-change fast path
-  and processedAt semantics pinned; stripe.routes.test.ts frozen; also
-  carries the mini-review's 2 deferrable gap cases (charge.refunded
-  Meta-failure continuation + multi-refund partial failure,
-  characterize-only). RUN_DIR: see task bxzevv7dk output.
+- P15 account.updated -> stripe-connect-webhook.service (chunk-3
+  slice 4) (planning/handoffs/2026-07-13-p15-connect-account-service.md)
+  FIRED at gpt-5.6-sol medium, danger-full-access. New Connect service
+  factory; changed-fields-only audit condition and silent no-account
+  path pinned; seam errors PROPAGATE (route catch owns swallowing,
+  unlike refund service); capability.updated forbidden (slice 5).
+  RUN_DIR: see task bm4qm5s26 output. After P15: slice 5
+  (capability.updated + typed dispatch cleanup), then chunk-3 gate.
+- P14 VERIFIED (bd15b59): typecheck 0; unit 40/320 green ON RETRY
+  (first run flaked 4 unrelated cross-route tests — trap 100 now
+  reproduced director-side, note appended to codex-traps.md);
+  commit-scoped 4 files; frozen stripe.routes.test.ts intact; service
+  tests 7 -> 15 incl. both mini-review gap cases (Meta-failure
+  continuation, multi-refund partial failure). Codex review: 0 findings.
 - P13 MINI-REVIEW PASSED (HIGH, read-only,
   RUN_DIR=/var/folders/kg/vqcvwwlx3xs4wblm4wpvpkz00000gn/T//codex-handoff/20260713-141023-2026-07-13-p13-mini-review):
   LOW risk, zero semantic drift, lazy-import fix sound, boundary clean,

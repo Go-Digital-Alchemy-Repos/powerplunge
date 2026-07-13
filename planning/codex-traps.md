@@ -31,3 +31,10 @@ workers + local auth env), not the diff. Law: when Codex reports
 nondeterministic suite failures the director cannot reproduce, treat the
 director's executed result as truth, land via a resume packet, and note
 which suites flipped in case a pattern emerges.
+
+Trap 100 update (2026-07-13, P14 cycle): the nondeterministic full-suite
+flake now reproduced on the DIRECTOR machine too (4 unrelated cross-route
+tests failed once, identical suite green on immediate retry). Not
+sandbox-specific. One-retry rule stands for both sides; two consecutive
+failures remain the stop signal. Candidate root cause to investigate
+post-program: shared HTTP/express state across route test files.
