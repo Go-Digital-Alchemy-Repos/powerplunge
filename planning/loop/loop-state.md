@@ -8,16 +8,21 @@ PR #26 1e6a120, both Tommy-approved 2026-07-13, CI green). Chunk 3
 
 ## In-flight
 
-- CHUNK-3 GATE in progress. Fixed floor DONE (director-executed):
-  typecheck 0; unit 41/330 green; git diff --check clean. Adversarial
-  review FIRED at HIGH read-only
-  (planning/handoffs/2026-07-13-chunk3-adversarial-review.md), scope =
-  five chunk commits e5baec6/aa11e24/bd15b59/658f5b4/c56b100; D2-pinned
-  semantics and D3 queue explicitly out of scope (no duplicates).
-  RUN_DIR: see task by55e2a7r output. On PASS (or after remediation):
-  push branch, open chunk-3 PR (CI BINDING, PR-CI freeze from open to
-  merge decision), then STOP: present merge decision + D3 queue +
-  program closeout to Tommy.
+- CHUNK-3 GATE in progress. Fixed floor DONE. Adversarial review DONE
+  (HIGH,
+  RUN_DIR=/var/folders/kg/vqcvwwlx3xs4wblm4wpvpkz00000gn/T//codex-handoff/20260713-144604-2026-07-13-chunk3-adversarial-review):
+  verdict HIGH, ONE blocking finding (payment_intent.payment_failed
+  business mapping inline in route :106-126 — director confirmed by
+  read) + 2 minors (prototype-inherited dispatch keys; missing
+  payment_failed route-wiring test). Runtime behavior for real event
+  types PRESERVED per review. Read-only compliance verified.
+- P17 remediation FIRED (bjhnx377y,
+  planning/handoffs/2026-07-13-p17-chunk3-review-remediation.md):
+  extract payment-failure alerting into new
+  stripe-payment-webhook.service.ts; own-property guard on both
+  dispatch lookups; append-only route test. After P17 verifies: re-run
+  fixed floor, push branch, open chunk-3 PR (CI BINDING, PR-CI freeze),
+  then STOP for Tommy (merge + D3 queue + closeout).
 - P16 VERIFIED (c56b100): typecheck 0; unit 41/330 green first try;
   commit-scoped 4 files; frozen stripe.routes.test.ts AND test route
   file intact; Connect tests 5 -> 10; route 335 -> 238 lines (391 at

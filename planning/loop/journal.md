@@ -34,3 +34,4 @@
 14:36 P15 VERIFIED (658f5b4): unit 41/325 green, scoped 4 files, 5 quality-PASS cases; P16 fired (bxvj3zqt1) - final chunk-3 slice
 14:42 D3 RESOLVED: Tommy approved all recommendations — D2 slice expands (refund pagination + stable refund key, binding red-first); chunk 4 approved (reprice extraction + PI/session idempotency keys + unpaid-order notice fix: order-received + suppress fulfillment until paid); E + atomicity explicitly deferred to follow-on program; report corrections into closeout docs. Spec in decisions-pending D3-RESOLVED; HANDOFF amendment left to driving lane (P16 in flight).
 14:48 P16 VERIFIED (c56b100): all 5 chunk-3 slices done; fixed floor green (41/330); chunk-3 adversarial review fired at HIGH (by55e2a7r)
+14:54 Chunk-3 review: HIGH verdict, 1 blocking (payment_failed mapping inline) + 2 minors; P17 remediation fired (bjhnx377y)
