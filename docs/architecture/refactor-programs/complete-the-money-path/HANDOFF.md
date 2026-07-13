@@ -44,6 +44,10 @@ to the director. Branch: `refactor/complete-the-money-path`.
 5. W1 cleanup: simplify the confirm-payment uppercase-USD/checkout-session
    shim once both creation operations own amount/currency truths;
    re-ground its characterization tests — behavior-preserving — pending
+6. Zero-total guard: reject empty carts and non-positive quantities at
+   create-payment-intent — BEHAVIOR-CHANGING, red test first (replaces the
+   two candidate-bug characterizations from P5) — pending (director
+   decision 2026-07-13 under delegated grilling authority)
 
 ## State
 
