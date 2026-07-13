@@ -12,8 +12,6 @@ import { sendOrderNotification } from "../../services/order-notification.service
 import { db } from "../../../db";
 import { eq, and, sql } from "drizzle-orm";
 
-export { sendOrderNotification };
-
 const DEFAULT_STRIPE_TAX_CODE = "txcd_99999999";
 
 const TAXABLE_STATES_WARN_ON_ZERO = ["NC"];
@@ -949,20 +947,30 @@ router.post("/confirm-payment", paymentLimiter, async (req: any, res) => {
       return res.status(400).json({ message: "Invalid payment verification" });
     }
 
-    let order = await storage.getOrder(orderId);
-    if (!order) {
-      return res.status(404).json({ message: "Order not found" });
+    // The finalization service intentionally skips Checkout Session PaymentIntents
+    // before its amount/currency gates. Preserve this route's existing 4xx contract.
+    let checkoutSessionOrder;
+    if (paymentIntent.metadata.paymentFlow === "checkout_session") {
+      checkoutSessionOrder = await storage.getOrder(orderId);
+      if (checkoutSessionOrder && paymentIntent.amount !== checkoutSessionOrder.totalAmount) {
+        return res.status(400).json({ message: "Payment amount mismatch" });
+      }
+      if (checkoutSessionOrder && paymentIntent.currency !== "usd") {
+        return res.status(400).json({ message: "Invalid currency" });
+      }
     }
 
-    if (paymentIntent.amount !== order.totalAmount) {
-      console.error("Amount mismatch:", { 
-        paymentAmount: paymentIntent.amount, 
-        orderAmount: order.totalAmount 
-      });
-      return res.status(400).json({ message: "Payment amount mismatch" });
-    }
-
-    if (paymentIntent.currency !== "usd") {
+    // The service normalizes currency casing; this endpoint historically requires
+    // Stripe's lowercase currency representation exactly. Preserve the route's
+    // former order -> amount -> currency error precedence for that narrow case.
+    if (paymentIntent.currency?.toLowerCase() === "usd" && paymentIntent.currency !== "usd") {
+      const currencyCompatibilityOrder = checkoutSessionOrder ?? await storage.getOrder(orderId);
+      if (!currencyCompatibilityOrder) {
+        return res.status(404).json({ message: "Order not found" });
+      }
+      if (paymentIntent.amount !== currencyCompatibilityOrder.totalAmount) {
+        return res.status(400).json({ message: "Payment amount mismatch" });
+      }
       return res.status(400).json({ message: "Invalid currency" });
     }
 
@@ -990,8 +998,24 @@ router.post("/confirm-payment", paymentLimiter, async (req: any, res) => {
       orderUpdate: finalizationUpdate,
     });
 
-    if (finalizationResult.status === "finalized") {
-      order = finalizationResult.order;
+    if (finalizationResult.status === "skipped") {
+      switch (finalizationResult.reason) {
+        case "missing_order_id":
+        case "order_not_found":
+          return res.status(404).json({ message: "Order not found" });
+        case "amount_mismatch":
+          return res.status(400).json({ message: "Payment amount mismatch" });
+        case "currency_mismatch":
+          return res.status(400).json({ message: "Invalid currency" });
+      }
+    }
+
+    let order = finalizationResult.order ?? checkoutSessionOrder;
+    if (!order) {
+      order = await storage.getOrder(orderId);
+      if (!order) {
+        return res.status(404).json({ message: "Order not found" });
+      }
     }
 
     if (finalizationResult.status !== "finalized" && order.status === "paid" && hasMetaTracking) {

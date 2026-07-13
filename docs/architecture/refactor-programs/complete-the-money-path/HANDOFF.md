@@ -28,37 +28,37 @@ to the director. Branch: `refactor/complete-the-money-path`.
    factory defaults the dep — behavior-preserving — done (P1)
 2. Delete duplicated paid-state guards at confirm-payment call site
    (payments.routes.ts:936-965), trust service `skipped` reasons —
-   behavior-preserving — next
+   behavior-preserving — done (P2)
 3. Rename `order-claim.service` to account-linking vocabulary; update
    CONTEXT.md; note the finalization claim's home — behavior-preserving —
-   pending
+   next
 
 ## State
 
-P1 complete on `refactor/complete-the-money-path`: order notification now
-lives in `order-notification.service.ts`, and finalization defaults the
-dependency. Next slice: deduplicate the confirm-payment paid-state guards.
+P2 complete on `refactor/complete-the-money-path`: confirm-payment delegates
+order-not-found, amount, and currency paid-state decisions to order
+finalization and translates skipped reasons to the existing HTTP contract.
+Admin manual-order notification imports the notification service directly;
+the payments route compatibility re-export is gone. Next slice: rename
+`order-claim.service` to account-linking vocabulary and document the
+finalization claim's actual home.
 
 ## Next Slice
 
-- Slice 2 (P2): delete the duplicated paid-state guards at the
-  confirm-payment call site in `server/src/routes/public/payments.routes.ts`
-  (route-level pre-checks duplicating
-  `order-finalization.service.ts` guard logic at :83-98); trust the
-  service's `skipped` reasons instead. Plus P1 remainder: switch
-  `server/src/routes/admin/orders.routes.ts:220` to import
-  `sendOrderNotification` from the service and drop the compatibility
-  re-export from payments.routes.ts (:11,:15).
-- Classification: behavior-preserving (guard logic already lives in the
-  service; route duplicate is dead weight).
-- Test: existing confirm-payment/finalization tests are the
-  characterization net and stay green untouched; no new test file expected
-  unless a guard behavior turns out NOT to be covered — then cover it at
-  the route's public interface first, then delete the duplicate.
+- Slice 3 (P3): rename `server/src/services/order-claim.service.ts` and its
+  public vocabulary to account-linking/order-reassignment language; update
+  the customer auth call sites and test mock path. Update `CONTEXT.md` to
+  clarify that order finalization and `markOrderPaidIfPending` own the domain
+  Finalization claim. Choose exact account-linking names from existing domain
+  language during the slice; do not conflate ownership reassignment with the
+  Finalization claim.
+- Classification: behavior-preserving.
+- Test: existing customer auth and order-claim service coverage stays green;
+  add behavior coverage only if inspection finds a public-interface gap before
+  renaming.
 - Checks: `npm run typecheck` exit 0; `npm run with:local-auth-env -- npm
-  run test:unit` exit 0; zero matches for `payments.routes` imports in
-  admin orders.routes.ts; no `sendOrderNotification` re-export remains in
-  payments.routes.ts.
+  run test:unit` exit 0; zero scoped matches for the old service filename and
+  claim vocabulary after the rename.
 
 ## Risks / Constraints
 

@@ -81,6 +81,16 @@ async function startApp() {
 
 let server: Server | undefined;
 
+async function confirmPayment(body: { orderId: string; paymentIntentId: string }) {
+  const app = await startApp();
+  server = app.server;
+  return app.request("/api/confirm-payment", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
 describe("public payment routes", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -101,6 +111,244 @@ describe("public payment routes", () => {
       server!.close((error) => (error ? reject(error) : resolve()));
     });
     server = undefined;
+  });
+
+  it("returns not found when confirm-payment names an unknown order", async () => {
+    mocks.stripeClient.paymentIntents.retrieve.mockResolvedValue({
+      id: "pi_unknown",
+      status: "succeeded",
+      amount: 10000,
+      currency: "usd",
+      metadata: { orderId: "order-missing" },
+    });
+    mocks.storage.getOrder.mockResolvedValue(undefined);
+    mocks.finalizationService.finalizeStripePaymentIntent.mockResolvedValue({
+      status: "skipped",
+      orderId: "order-missing",
+      reason: "order_not_found",
+    });
+
+    const response = await confirmPayment({
+      orderId: "order-missing",
+      paymentIntentId: "pi_unknown",
+    });
+
+    expect(response.status).toBe(404);
+    expect(await response.json()).toEqual({ message: "Order not found" });
+    expect(mocks.storage.updateOrder).not.toHaveBeenCalled();
+    expect(mocks.enqueuePurchase).not.toHaveBeenCalled();
+  });
+
+  it("rejects a confirm-payment amount that differs from the order total", async () => {
+    mocks.stripeClient.paymentIntents.retrieve.mockResolvedValue({
+      id: "pi_wrong_amount",
+      status: "succeeded",
+      amount: 9999,
+      currency: "usd",
+      metadata: { orderId: "order-1" },
+    });
+    const order = { id: "order-1", status: "pending", paymentStatus: "unpaid", totalAmount: 10000 };
+    mocks.storage.getOrder.mockResolvedValue(order);
+    mocks.finalizationService.finalizeStripePaymentIntent.mockResolvedValue({
+      status: "skipped",
+      orderId: "order-1",
+      reason: "amount_mismatch",
+      order,
+    });
+
+    const response = await confirmPayment({ orderId: "order-1", paymentIntentId: "pi_wrong_amount" });
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ message: "Payment amount mismatch" });
+    expect(mocks.storage.updateOrder).not.toHaveBeenCalled();
+    expect(mocks.enqueuePurchase).not.toHaveBeenCalled();
+  });
+
+  it("rejects a confirm-payment currency other than usd", async () => {
+    mocks.stripeClient.paymentIntents.retrieve.mockResolvedValue({
+      id: "pi_wrong_currency",
+      status: "succeeded",
+      amount: 10000,
+      currency: "eur",
+      metadata: { orderId: "order-1" },
+    });
+    const order = { id: "order-1", status: "pending", paymentStatus: "unpaid", totalAmount: 10000 };
+    mocks.storage.getOrder.mockResolvedValue(order);
+    mocks.finalizationService.finalizeStripePaymentIntent.mockResolvedValue({
+      status: "skipped",
+      orderId: "order-1",
+      reason: "currency_mismatch",
+      order,
+    });
+
+    const response = await confirmPayment({ orderId: "order-1", paymentIntentId: "pi_wrong_currency" });
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ message: "Invalid currency" });
+    expect(mocks.storage.updateOrder).not.toHaveBeenCalled();
+    expect(mocks.enqueuePurchase).not.toHaveBeenCalled();
+  });
+
+  it("rejects uppercase USD to preserve the exact confirm-payment currency contract", async () => {
+    mocks.stripeClient.paymentIntents.retrieve.mockResolvedValue({
+      id: "pi_uppercase_currency",
+      status: "succeeded",
+      amount: 10000,
+      currency: "USD",
+      metadata: { orderId: "order-1" },
+    });
+    mocks.storage.getOrder.mockResolvedValue({ id: "order-1", totalAmount: 10000 });
+
+    const response = await confirmPayment({ orderId: "order-1", paymentIntentId: "pi_uppercase_currency" });
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ message: "Invalid currency" });
+    expect(mocks.storage.updateOrder).not.toHaveBeenCalled();
+    expect(mocks.enqueuePurchase).not.toHaveBeenCalled();
+  });
+
+  it("returns not found before rejecting uppercase USD for an unknown order", async () => {
+    mocks.stripeClient.paymentIntents.retrieve.mockResolvedValue({
+      id: "pi_unknown_uppercase_currency",
+      status: "succeeded",
+      amount: 10000,
+      currency: "USD",
+      metadata: { orderId: "order-missing" },
+    });
+    mocks.storage.getOrder.mockResolvedValue(undefined);
+    mocks.finalizationService.finalizeStripePaymentIntent.mockResolvedValue({
+      status: "skipped",
+      orderId: "order-missing",
+      reason: "order_not_found",
+    });
+
+    const response = await confirmPayment({
+      orderId: "order-missing",
+      paymentIntentId: "pi_unknown_uppercase_currency",
+    });
+
+    expect(response.status).toBe(404);
+    expect(await response.json()).toEqual({ message: "Order not found" });
+    expect(mocks.storage.updateOrder).not.toHaveBeenCalled();
+    expect(mocks.enqueuePurchase).not.toHaveBeenCalled();
+  });
+
+  it("rejects an amount mismatch before rejecting uppercase USD", async () => {
+    mocks.stripeClient.paymentIntents.retrieve.mockResolvedValue({
+      id: "pi_wrong_amount_uppercase_currency",
+      status: "succeeded",
+      amount: 9999,
+      currency: "USD",
+      metadata: { orderId: "order-1" },
+    });
+    const order = { id: "order-1", status: "pending", paymentStatus: "unpaid", totalAmount: 10000 };
+    mocks.storage.getOrder.mockResolvedValue(order);
+    mocks.finalizationService.finalizeStripePaymentIntent.mockResolvedValue({
+      status: "skipped",
+      orderId: "order-1",
+      reason: "amount_mismatch",
+      order,
+    });
+
+    const response = await confirmPayment({
+      orderId: "order-1",
+      paymentIntentId: "pi_wrong_amount_uppercase_currency",
+    });
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ message: "Payment amount mismatch" });
+    expect(mocks.storage.updateOrder).not.toHaveBeenCalled();
+    expect(mocks.enqueuePurchase).not.toHaveBeenCalled();
+  });
+
+  it("rejects confirm-payment when the request order differs from Stripe metadata", async () => {
+    mocks.stripeClient.paymentIntents.retrieve.mockResolvedValue({
+      id: "pi_wrong_order",
+      status: "succeeded",
+      amount: 10000,
+      currency: "usd",
+      metadata: { orderId: "order-2" },
+    });
+
+    const response = await confirmPayment({ orderId: "order-1", paymentIntentId: "pi_wrong_order" });
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ message: "Invalid payment verification" });
+    expect(mocks.storage.updateOrder).not.toHaveBeenCalled();
+    expect(mocks.enqueuePurchase).not.toHaveBeenCalled();
+  });
+
+  it("rejects confirm-payment when Stripe has not completed the payment", async () => {
+    mocks.stripeClient.paymentIntents.retrieve.mockResolvedValue({
+      id: "pi_processing",
+      status: "processing",
+      amount: 10000,
+      currency: "usd",
+      metadata: { orderId: "order-1" },
+    });
+
+    const response = await confirmPayment({ orderId: "order-1", paymentIntentId: "pi_processing" });
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ message: "Payment not completed" });
+    expect(mocks.storage.updateOrder).not.toHaveBeenCalled();
+    expect(mocks.enqueuePurchase).not.toHaveBeenCalled();
+  });
+
+  it("rejects a checkout-session payment intent with the wrong amount", async () => {
+    mocks.stripeClient.paymentIntents.retrieve.mockResolvedValue({
+      id: "pi_checkout_wrong_amount",
+      status: "succeeded",
+      amount: 9999,
+      currency: "usd",
+      metadata: { orderId: "order-1", paymentFlow: "checkout_session" },
+    });
+    const order = { id: "order-1", status: "pending", paymentStatus: "unpaid", totalAmount: 10000 };
+    mocks.storage.getOrder.mockResolvedValue(order);
+    mocks.finalizationService.finalizeStripePaymentIntent.mockResolvedValue({
+      status: "skipped",
+      orderId: "order-1",
+      reason: "checkout_session_payment_intent",
+      order,
+    });
+
+    const response = await confirmPayment({
+      orderId: "order-1",
+      paymentIntentId: "pi_checkout_wrong_amount",
+    });
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ message: "Payment amount mismatch" });
+    expect(mocks.storage.updateOrder).not.toHaveBeenCalled();
+    expect(mocks.enqueuePurchase).not.toHaveBeenCalled();
+  });
+
+  it("rejects a checkout-session payment intent with the wrong currency", async () => {
+    mocks.stripeClient.paymentIntents.retrieve.mockResolvedValue({
+      id: "pi_checkout_wrong_currency",
+      status: "succeeded",
+      amount: 10000,
+      currency: "eur",
+      metadata: { orderId: "order-1", paymentFlow: "checkout_session" },
+    });
+    const order = { id: "order-1", status: "pending", paymentStatus: "unpaid", totalAmount: 10000 };
+    mocks.storage.getOrder.mockResolvedValue(order);
+    mocks.finalizationService.finalizeStripePaymentIntent.mockResolvedValue({
+      status: "skipped",
+      orderId: "order-1",
+      reason: "checkout_session_payment_intent",
+      order,
+    });
+
+    const response = await confirmPayment({
+      orderId: "order-1",
+      paymentIntentId: "pi_checkout_wrong_currency",
+    });
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ message: "Invalid currency" });
+    expect(mocks.storage.updateOrder).not.toHaveBeenCalled();
+    expect(mocks.enqueuePurchase).not.toHaveBeenCalled();
   });
 
   it("keeps the already-paid confirm-payment Meta repair path after updating late tracking", async () => {
