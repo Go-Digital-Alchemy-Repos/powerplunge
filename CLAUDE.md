@@ -34,6 +34,21 @@ CODEX_EXTRA_ARGS='-m gpt-5.6-sol -c model_reasoning_effort="medium"' \
 ~/.claude/skills/codex-handoff/scripts/codex-handoff.sh <packet> $PWD
 ```
 
+Loop hygiene (Tommy-approved 2026-07-13, from chunk 1-2 retros):
+
+- Lint before firing: `node planning/scripts/lint-packet.mjs <packet>`
+  right after authoring; never discover lint failures at fire time.
+- PR-CI freeze: from the moment a chunk PR opens until the merge
+  decision, do NOT push to the program branch (loop-state commits stay
+  local); every push cancels and restarts the binding CI run.
+- Packet gates are commit-scoped (`git diff-tree`), never
+  worktree-scoped; director worktree dirt under planning/ must not
+  pollute Codex gates.
+- Mid-chunk mini-review: after the chunk's riskiest slice lands (the
+  slice the plan flags as such), fire a scoped read-only review packet
+  at HIGH on just that slice's diff before chaining further slices; the
+  full chunk-gate adversarial review still runs at the end.
+
 Model policy (Tommy 2026-07-13): implementation and research
 packets fire gpt-5.6-sol at medium effort; adversarial reviews
 (packet pre-fire reviews, chunk-gate reviews) fire at high

@@ -41,6 +41,14 @@ JUDGMENT rules the linter cannot check — the director owns these:
   CONTEXT.md and docs/adr/; local dev protocol (`npm run dev`,
   `npm run local:urls`, no fallback ports); no obligation ledger schema in
   Checkout/order-finalization work unless the slice says so explicitly.
+- HANDOFF ownership: every implementation packet's Scope includes the
+  program HANDOFF.md and grants the FULL State + slice-status + Next
+  Slice rewrite (per its existing format). Never scope it to "State
+  only" — a half-updatable handoff forces needless decision_needed
+  round-trips (see P1).
+- Lint BEFORE firing: run
+  `node planning/scripts/lint-packet.mjs <packet>` right after authoring;
+  fix failures locally instead of burning a fire cycle on exit 3.
 
 Fire (from repo root):
 CODEX_PACKET_LINT=$PWD/planning/scripts/lint-packet.mjs \
@@ -77,8 +85,17 @@ them):
 ## Validation commands (binding gates)
 
 - <command> -> <exact expected output/exit code/count>
-- ONE commit on the program branch (code + HANDOFF.md update together),
-  clean tree. Do NOT push.
+- Full unit suite gate carries the trap-100 rule: if it fails, run it
+  ONCE more before concluding; report both outcomes; two failures = STOP,
+  commit nothing, report the exact failing assertions
+  (planning/codex-traps.md trap 100: sandbox-side nondeterministic suite
+  flake the director could not reproduce).
+- ONE commit on the program branch (code + HANDOFF.md update together).
+  Do NOT push. File-scope proof is COMMIT-SCOPED:
+  `git diff-tree --no-commit-id --name-only -r <your-commit>` lists ONLY
+  the in-scope files. Pre-existing worktree dirt under planning/ is the
+  director's, NOT yours, and NOT part of any cleanliness gate — leave it
+  untouched and do not report it as a blocker.
 - After code-review fixes: re-run the FULL gate set before final JSON; if
   you cannot return to green, commit nothing and report the exact failing
   assertion plus your partial diff.

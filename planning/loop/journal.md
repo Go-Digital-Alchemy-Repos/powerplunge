@@ -20,3 +20,4 @@
 12:58 P10 verified (typecheck 0, 276 tests, red-first, old candidate-bug cases replaced); chunk 2 slices COMPLETE; fixed floor green (diff --check 0); firing chunk-2 adversarial review at HIGH read-only
 13:04 Chunk-2 review: extraction clean, W1 discharged; 2 majors (guard after persistence, malformed containers) + 1 minor (vacuous uppercase test); P11 remediation authored
 13:22 P11 verified (typecheck 0, 289 tests, 14 red-first cases, commit 5d95c88 scoped); chunk 2 gate complete; pushing + opening PR
+13:27 Retro changes applied (Tommy-approved): pre-fire lint + PR-CI freeze + commit-scoped gates + mid-chunk mini-review in CLAUDE.md; template gets trap-100/diff-tree/HANDOFF-ownership boilerplate; .env.test.local.template scaffolded (needs Tommy 1Password refs); paths-ignore CI edit dropped (ineffective on pull_request triggers)
