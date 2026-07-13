@@ -16,6 +16,9 @@ const mocks = vi.hoisted(() => ({
     getProduct: vi.fn(),
     createOrder: vi.fn(),
     createOrderItem: vi.fn(),
+    getAffiliateReferralByOrderId: vi.fn(),
+    createAffiliateReferral: vi.fn(),
+    updateAffiliate: vi.fn(),
   },
   stripeClient: {
     paymentIntents: {
@@ -39,12 +42,16 @@ const mocks = vi.hoisted(() => ({
     finalizeStripePaymentIntent: vi.fn(),
   },
   enqueuePurchase: vi.fn(),
+  sendOrderNotification: vi.fn(),
 }));
 
 vi.mock("../../../../storage", () => ({ storage: mocks.storage }));
 vi.mock("../../../integrations/stripe/StripeService", () => ({ stripeService: mocks.stripeService }));
 vi.mock("../../../services/order-finalization.service", () => ({
   createOrderFinalizationService: vi.fn(() => mocks.finalizationService),
+}));
+vi.mock("../../../services/order-notification.service", () => ({
+  sendOrderNotification: mocks.sendOrderNotification,
 }));
 vi.mock("../../../integrations/meta/MetaConversionsService", () => ({
   metaConversionsService: {
@@ -776,5 +783,187 @@ describe("public payment routes", () => {
     expect(mocks.stripeService.getClient).not.toHaveBeenCalled();
     expect(mocks.stripeClient.checkout.sessions.create).not.toHaveBeenCalled();
     expect(mocks.storage.createOrder).not.toHaveBeenCalled();
+  });
+
+  it("creates a pending manual-payment order with affiliate balances when Stripe is unavailable", async () => {
+    const affiliate = {
+      id: "affiliate-1",
+      affiliateCode: "SAVE10",
+      customerId: "affiliate-customer-1",
+      status: "active",
+      useCustomRates: false,
+      customDiscountType: null,
+      customDiscountValue: null,
+      ffEnabled: false,
+      totalReferrals: 2,
+      pendingBalance: 300,
+      totalEarnings: 500,
+    };
+    mocks.stripeService.getClient.mockResolvedValue(null);
+    mocks.storage.getAffiliateByCode.mockResolvedValue(affiliate);
+    mocks.storage.getAffiliateSettings.mockResolvedValue({
+      defaultDiscountType: "PERCENT",
+      defaultDiscountValue: 10,
+      commissionRate: 12,
+    });
+    mocks.storage.getCustomer.mockResolvedValue({
+      id: "affiliate-customer-1",
+      email: "affiliate@example.com",
+      isDisabled: false,
+    });
+    mocks.storage.createCustomer.mockResolvedValue({ id: "customer-1", email: "buyer@example.com" });
+    mocks.storage.getProduct.mockResolvedValue({
+      id: "product-1",
+      name: "Cold Plunge",
+      price: 2500,
+      affiliateEnabled: true,
+      affiliateUseGlobalSettings: true,
+      affiliateDiscountType: null,
+      affiliateDiscountValue: null,
+    });
+    mocks.storage.createOrder.mockResolvedValue({ id: "order-1" });
+    mocks.storage.createOrderItem.mockResolvedValue({ id: "item-1" });
+    mocks.storage.getAffiliateReferralByOrderId.mockResolvedValue(undefined);
+
+    const app = await startApp();
+    server = app.server;
+    const response = await app.request("/api/checkout", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        affiliateCode: "SAVE10",
+        items: [{ productId: "product-1", quantity: 1 }],
+        customer: {
+          email: "buyer@example.com", name: "Buyer Example", phone: "555-555-5555",
+          address: "1 Test Way", city: "Raleigh", state: "NC", zipCode: "27601",
+        },
+      }),
+    });
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      success: true,
+      orderId: "order-1",
+      message: "Order created - Stripe not configured for payment processing",
+    });
+    expect(mocks.storage.createOrder).toHaveBeenCalledWith(expect.objectContaining({
+      customerId: "customer-1",
+      status: "pending",
+      subtotalAmount: 2500,
+      totalAmount: 2250,
+      notes: "Stripe not configured - manual payment required",
+      affiliateCode: "SAVE10",
+      affiliateDiscountAmount: 250,
+    }));
+    expect(mocks.storage.createAffiliateReferral).toHaveBeenCalledWith({
+      affiliateId: "affiliate-1",
+      orderId: "order-1",
+      orderAmount: 2500,
+      commissionAmount: 300,
+      commissionRate: 12,
+      status: "pending",
+    });
+    expect(mocks.storage.updateAffiliate).toHaveBeenCalledWith("affiliate-1", {
+      totalReferrals: 3,
+      pendingBalance: 600,
+      totalEarnings: 800,
+    });
+    expect(mocks.sendOrderNotification).toHaveBeenCalledWith("order-1");
+  });
+
+  it("persists affiliate attribution for a successful Checkout Session without creating a referral", async () => {
+    const affiliate = {
+      id: "affiliate-1", affiliateCode: "SAVE10", customerId: "affiliate-customer-1",
+      status: "active", useCustomRates: false, customDiscountType: null,
+      customDiscountValue: null, ffEnabled: false,
+    };
+    mocks.storage.getAffiliateByCode.mockResolvedValue(affiliate);
+    mocks.storage.getCustomer.mockResolvedValue({
+      id: "affiliate-customer-1", email: "affiliate@example.com", isDisabled: false,
+    });
+    mocks.storage.createCustomer.mockResolvedValue({ id: "customer-1", email: "buyer@example.com" });
+    mocks.storage.getProduct.mockResolvedValue({
+      id: "product-1", name: "Cold Plunge", price: 2500, affiliateEnabled: true,
+      affiliateUseGlobalSettings: true, affiliateDiscountType: null, affiliateDiscountValue: null,
+    });
+    mocks.storage.createOrder.mockResolvedValue({ id: "order-1" });
+    mocks.storage.createOrderItem.mockResolvedValue({ id: "item-1" });
+    mocks.stripeClient.checkout.sessions.create.mockResolvedValue({
+      id: "cs_test_123", url: "https://checkout.stripe.test/cs_test_123",
+    });
+
+    const app = await startApp();
+    server = app.server;
+    const response = await app.request("/api/checkout", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        affiliateCode: "SAVE10",
+        items: [{ productId: "product-1", quantity: 1 }],
+        customer: {
+          email: "buyer@example.com", name: "Buyer Example", phone: "555-555-5555",
+          address: "1 Test Way", city: "Raleigh", state: "NC", zipCode: "27601",
+        },
+      }),
+    });
+
+    expect(response.status).toBe(200);
+    expect(mocks.storage.createOrder).toHaveBeenCalledWith(expect.objectContaining({
+      affiliateCode: "SAVE10",
+      affiliateIsFriendsFamily: false,
+      affiliateDiscountAmount: null,
+    }));
+    expect(mocks.storage.updateOrder).toHaveBeenCalledWith("order-1", { stripeSessionId: "cs_test_123" });
+    expect(mocks.storage.createAffiliateReferral).not.toHaveBeenCalled();
+    expect(mocks.storage.updateAffiliate).not.toHaveBeenCalled();
+  });
+
+  it("preserves local order identity and the pre-tax Session subtotal contract", async () => {
+    mocks.storage.createCustomer.mockResolvedValue({ id: "customer-1", email: "buyer@example.com" });
+    mocks.storage.getProduct.mockResolvedValue({
+      id: "product-1", name: "Cold Plunge", price: 2500, affiliateEnabled: true,
+      affiliateUseGlobalSettings: true, affiliateDiscountType: null, affiliateDiscountValue: null,
+    });
+    mocks.storage.createOrder.mockResolvedValue({ id: "order-1" });
+    mocks.storage.createOrderItem.mockResolvedValue({ id: "item-1" });
+    mocks.stripeClient.checkout.sessions.create.mockResolvedValue({
+      id: "cs_test_123", url: "https://checkout.stripe.test/cs_test_123",
+    });
+
+    const app = await startApp();
+    server = app.server;
+    await app.request("/api/checkout", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        items: [{ productId: "product-1", quantity: 1 }],
+        customer: {
+          email: "buyer@example.com", name: "Buyer Example", phone: "555-555-5555",
+          address: "1 Test Way", city: "Raleigh", state: "NC", zipCode: "27601",
+        },
+      }),
+    });
+
+    const sessionInput = mocks.stripeClient.checkout.sessions.create.mock.calls[0][0];
+    const sessionSubtotal = sessionInput.line_items.reduce(
+      (sum: number, item: any) => sum + item.price_data.unit_amount * item.quantity,
+      0,
+    );
+    expect(mocks.storage.createOrder).toHaveBeenCalledWith(expect.objectContaining({
+      subtotalAmount: 2500,
+      totalAmount: sessionSubtotal,
+    }));
+    expect(sessionInput.client_reference_id).toBe("order-1");
+    expect(sessionInput.line_items).toEqual([expect.objectContaining({
+      price_data: expect.objectContaining({ unit_amount: 2500 }),
+      quantity: 1,
+    })]);
+    expect(sessionInput.metadata).toEqual(expect.objectContaining({
+      orderId: "order-1",
+      customerId: "customer-1",
+      affiliateDiscountAmount: "0",
+      paymentFlow: "checkout_session",
+    }));
+    expect(sessionInput.payment_intent_data.metadata).toEqual(sessionInput.metadata);
   });
 });

@@ -113,6 +113,51 @@ export interface CreatePaymentIntentCheckoutResult {
   totalAmount: number;
 }
 
+export interface CreateCheckoutSessionInput {
+  items: Array<{ productId: string; quantity: number }>;
+  customerId: string;
+  customerEmail: string;
+  affiliate: Affiliate | null | undefined;
+  isFriendsFamily: boolean;
+  affiliateSessionId: string | null;
+  attributionType: "coupon" | "cookie" | "direct";
+  baseUrl: string;
+}
+
+export interface CheckoutSessionCreateInput {
+  lineItems: Array<{
+    productName: string;
+    unitAmount: number;
+    quantity: number;
+  }>;
+  successUrl: string;
+  cancelUrl: string;
+  customerEmail: string;
+  clientReferenceId: string;
+  automaticTax: { enabled: true };
+  allowedShippingCountries: ["US"];
+  metadata: Record<string, string>;
+  paymentIntentMetadata: Record<string, string>;
+}
+
+export interface CheckoutSessionCreateResult {
+  id: string;
+  url: string | null;
+}
+
+export type CreateCheckoutSessionResult =
+  | {
+    status: "session_created";
+    orderId: string;
+    sessionId: string;
+    checkoutUrl: string | null;
+  }
+  | {
+    status: "manual_fallback";
+    orderId: string;
+    message: "Order created - Stripe not configured for payment processing";
+  };
+
 export interface CheckoutServiceDependencies {
   storage: Pick<IStorage,
     | "getProduct"
@@ -121,9 +166,16 @@ export interface CheckoutServiceDependencies {
     | "createOrder"
     | "createOrderItem"
     | "updateOrder"
+    | "getAffiliateReferralByOrderId"
+    | "createAffiliateReferral"
+    | "updateAffiliate"
   >;
   calculateTax: (input: CheckoutTaxCalculationInput) => Promise<CheckoutTaxCalculationResult>;
   createPaymentIntent: (input: CreatePaymentIntentInput) => Promise<CreatePaymentIntentResult>;
+  getCheckoutSessionCreator: () => Promise<
+    ((input: CheckoutSessionCreateInput) => Promise<CheckoutSessionCreateResult>) | null
+  >;
+  sendOrderNotification: (orderId: string) => Promise<void>;
   now: () => Date;
   log: Pick<Console, "info" | "warn" | "error">;
 }
@@ -140,6 +192,59 @@ export class CheckoutTaxCalculationError extends Error {
     super("Unable to calculate tax. Please verify your shipping state and ZIP code.");
     this.name = "CheckoutTaxCalculationError";
   }
+}
+
+export class CheckoutZeroPayableError extends Error {
+  constructor() {
+    super("Checkout total must be greater than zero");
+    this.name = "CheckoutZeroPayableError";
+  }
+}
+
+type DiscountedCheckoutOrderItem = CheckoutOrderItem & { discountAmount?: number };
+
+function allocateDiscountAcrossUnits(unitPrices: number[], discountAmount: number): number[] {
+  const subtotal = unitPrices.reduce((sum, unitPrice) => sum + unitPrice, 0);
+  const cappedDiscount = Math.min(Math.max(0, discountAmount), subtotal);
+  const allocations = unitPrices.map((unitPrice, index) => {
+    const exactShare = subtotal > 0 ? (cappedDiscount * unitPrice) / subtotal : 0;
+    const floorShare = Math.floor(exactShare);
+    return { index, floorShare, remainder: exactShare - floorShare, unitPrice };
+  });
+
+  let remaining = cappedDiscount - allocations.reduce((sum, allocation) => sum + allocation.floorShare, 0);
+  for (const allocation of [...allocations].sort((a, b) => {
+    if (b.remainder !== a.remainder) return b.remainder - a.remainder;
+    if (b.unitPrice !== a.unitPrice) return b.unitPrice - a.unitPrice;
+    return a.index - b.index;
+  })) {
+    if (remaining <= 0) break;
+    allocation.floorShare += 1;
+    remaining -= 1;
+  }
+
+  return allocations.map((allocation) => allocation.floorShare);
+}
+
+function buildCheckoutSessionLineItems(orderItems: DiscountedCheckoutOrderItem[]) {
+  const units = orderItems.flatMap((item) => {
+    const unitPrices = Array.from({ length: item.quantity }, () => item.unitPrice);
+    const unitDiscounts = allocateDiscountAcrossUnits(unitPrices, item.discountAmount ?? 0);
+    return unitPrices.map((unitPrice, index) => ({
+      productName: item.productName,
+      unitAmount: Math.max(0, unitPrice - (unitDiscounts[index] ?? 0)),
+    }));
+  });
+
+  const grouped = new Map<string, { productName: string; unitAmount: number; quantity: number }>();
+  for (const unit of units) {
+    if (unit.unitAmount === 0) continue;
+    const key = `${unit.productName}\0${unit.unitAmount}`;
+    const existing = grouped.get(key);
+    if (existing) existing.quantity += 1;
+    else grouped.set(key, { ...unit, quantity: 1 });
+  }
+  return [...grouped.values()];
 }
 
 function computeAffiliateDiscount(
@@ -180,11 +285,10 @@ function computeAffiliateDiscount(
 export class CheckoutService {
   constructor(private readonly deps: CheckoutServiceDependencies) {}
 
-  async quote(input: CheckoutQuoteInput): Promise<CheckoutQuoteResult> {
+  private async resolveItems(items: Array<{ productId: string; quantity: number }>) {
     let subtotalAmount = 0;
     const orderItems: CheckoutOrderItem[] = [];
     const resolvedProducts: Product[] = [];
-    const { items } = input;
 
     for (const item of items) {
       const product = await this.deps.storage.getProduct(item.productId);
@@ -199,17 +303,39 @@ export class CheckoutService {
       resolvedProducts.push(product);
     }
 
+    return { subtotalAmount, orderItems, resolvedProducts };
+  }
+
+  private applyAffiliatePricing(
+    orderItems: CheckoutOrderItem[],
+    resolvedProducts: Product[],
+    affiliate: Affiliate | null | undefined,
+    isFriendsFamily: boolean,
+    settings: AffiliateSettings | undefined,
+  ) {
     let affiliateDiscountAmount = 0;
+    const discountedOrderItems: DiscountedCheckoutOrderItem[] = orderItems.map((item, index) => {
+      if (affiliate?.status !== "active") return { ...item };
+      const lineTotal = item.unitPrice * item.quantity;
+      const discountAmount = computeAffiliateDiscount(
+        resolvedProducts[index], lineTotal, settings, isFriendsFamily, affiliate, item.quantity,
+      );
+      affiliateDiscountAmount += discountAmount;
+      return { ...item, discountAmount };
+    });
+    return { affiliateDiscountAmount, discountedOrderItems };
+  }
+
+  async quote(input: CheckoutQuoteInput): Promise<CheckoutQuoteResult> {
+    const { subtotalAmount, orderItems, resolvedProducts } = await this.resolveItems(input.items);
+
+    let affiliateSettings: AffiliateSettings | undefined;
     if (input.affiliate?.status === "active") {
-      const settings = await this.deps.storage.getAffiliateSettings();
-      for (let index = 0; index < orderItems.length; index++) {
-        const item = orderItems[index];
-        const lineTotal = item.unitPrice * item.quantity;
-        affiliateDiscountAmount += computeAffiliateDiscount(
-          resolvedProducts[index], lineTotal, settings, input.isFriendsFamily, input.affiliate, item.quantity,
-        );
-      }
+      affiliateSettings = await this.deps.storage.getAffiliateSettings();
     }
+    const { affiliateDiscountAmount } = this.applyAffiliatePricing(
+      orderItems, resolvedProducts, input.affiliate, input.isFriendsFamily, affiliateSettings,
+    );
 
     let couponDiscountAmount = 0;
     let validatedCoupon: Coupon | null = null;
@@ -364,10 +490,113 @@ export class CheckoutService {
       totalAmount: quote.totalAmount,
     };
   }
+
+  async createCheckoutSession(input: CreateCheckoutSessionInput): Promise<CreateCheckoutSessionResult> {
+    const { subtotalAmount, orderItems, resolvedProducts } = await this.resolveItems(input.items);
+    const affiliateSettings = await this.deps.storage.getAffiliateSettings();
+    const { affiliateDiscountAmount, discountedOrderItems } = this.applyAffiliatePricing(
+      orderItems, resolvedProducts, input.affiliate, input.isFriendsFamily, affiliateSettings,
+    );
+    const totalAmount = Math.max(0, subtotalAmount - affiliateDiscountAmount);
+    const lineItems = buildCheckoutSessionLineItems(discountedOrderItems);
+    if (lineItems.length === 0) throw new CheckoutZeroPayableError();
+
+    const createSession = await this.deps.getCheckoutSessionCreator();
+    if (!createSession) {
+      const order = await this.deps.storage.createOrder({
+        customerId: input.customerId,
+        status: "pending",
+        subtotalAmount,
+        totalAmount,
+        notes: "Stripe not configured - manual payment required",
+        affiliateCode: input.affiliate?.affiliateCode,
+        affiliateIsFriendsFamily: input.isFriendsFamily,
+        affiliateDiscountAmount: affiliateDiscountAmount > 0 ? affiliateDiscountAmount : null,
+      });
+
+      for (const item of orderItems) {
+        await this.deps.storage.createOrderItem({ orderId: order.id, ...item });
+      }
+
+      if (input.affiliate?.status === "active") {
+        const existingReferral = await this.deps.storage.getAffiliateReferralByOrderId(order.id);
+        if (!existingReferral) {
+          const commissionRate = affiliateSettings?.commissionRate || 10;
+          const commissionAmount = Math.round(subtotalAmount * (commissionRate / 100));
+          await this.deps.storage.createAffiliateReferral({
+            affiliateId: input.affiliate.id,
+            orderId: order.id,
+            orderAmount: subtotalAmount,
+            commissionAmount,
+            commissionRate,
+            status: "pending",
+          });
+          await this.deps.storage.updateAffiliate(input.affiliate.id, {
+            totalReferrals: input.affiliate.totalReferrals + 1,
+            pendingBalance: input.affiliate.pendingBalance + commissionAmount,
+            totalEarnings: input.affiliate.totalEarnings + commissionAmount,
+          });
+        }
+      }
+
+      await this.deps.sendOrderNotification(order.id);
+      return {
+        status: "manual_fallback",
+        orderId: order.id,
+        message: "Order created - Stripe not configured for payment processing",
+      };
+    }
+
+    const order = await this.deps.storage.createOrder({
+      customerId: input.customerId,
+      status: "pending",
+      subtotalAmount,
+      totalAmount,
+      stripeSessionId: null,
+      affiliateCode: input.affiliate?.affiliateCode,
+      affiliateIsFriendsFamily: input.isFriendsFamily,
+      affiliateDiscountAmount: affiliateDiscountAmount > 0 ? affiliateDiscountAmount : null,
+    });
+    for (const item of orderItems) {
+      await this.deps.storage.createOrderItem({ orderId: order.id, ...item });
+    }
+
+    const metadata = {
+      orderId: order.id,
+      customerId: input.customerId,
+      affiliateCode: input.affiliate?.affiliateCode || "",
+      affiliateId: input.affiliate?.id || "",
+      affiliateSessionId: input.affiliateSessionId || "",
+      attributionType: input.attributionType,
+      isFriendsFamily: input.isFriendsFamily ? "true" : "false",
+      affiliateDiscountAmount: affiliateDiscountAmount.toString(),
+      paymentFlow: "checkout_session",
+    };
+    const session = await createSession({
+      lineItems,
+      successUrl: `${input.baseUrl}/order-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancelUrl: `${input.baseUrl}?cancelled=true`,
+      customerEmail: input.customerEmail,
+      clientReferenceId: order.id,
+      automaticTax: { enabled: true },
+      allowedShippingCountries: ["US"],
+      metadata,
+      paymentIntentMetadata: metadata,
+    });
+    await this.deps.storage.updateOrder(order.id, { stripeSessionId: session.id });
+    return {
+      status: "session_created",
+      orderId: order.id,
+      sessionId: session.id,
+      checkoutUrl: session.url,
+    };
+  }
 }
 
 export function createCheckoutService(
-  overrides: Partial<CheckoutServiceDependencies> = {},
+  overrides: Omit<Partial<CheckoutServiceDependencies>, "storage"> & {
+    storage?: Partial<CheckoutServiceDependencies["storage"]>;
+  } = {},
 ): CheckoutService {
   const storageDependency: CheckoutServiceDependencies["storage"] = {
     getProduct: async (...args) => (await import("../../storage")).storage.getProduct(...args),
@@ -376,10 +605,13 @@ export function createCheckoutService(
     createOrder: async (...args) => (await import("../../storage")).storage.createOrder(...args),
     createOrderItem: async (...args) => (await import("../../storage")).storage.createOrderItem(...args),
     updateOrder: async (...args) => (await import("../../storage")).storage.updateOrder(...args),
+    getAffiliateReferralByOrderId: async (...args) => (await import("../../storage")).storage.getAffiliateReferralByOrderId(...args),
+    createAffiliateReferral: async (...args) => (await import("../../storage")).storage.createAffiliateReferral(...args),
+    updateAffiliate: async (...args) => (await import("../../storage")).storage.updateAffiliate(...args),
   };
 
   return new CheckoutService({
-    storage: overrides.storage ?? storageDependency,
+    storage: { ...storageDependency, ...overrides.storage },
     calculateTax: overrides.calculateTax ?? (async (input) => {
       const { stripeService } = await import("../integrations/stripe/StripeService");
       const stripeClient = await stripeService.getClient();
@@ -416,6 +648,38 @@ export function createCheckoutService(
         metadata: input.metadata,
       });
       return { id: result.id, clientSecret: result.client_secret };
+    }),
+    getCheckoutSessionCreator: overrides.getCheckoutSessionCreator ?? (async () => {
+      const { stripeService } = await import("../integrations/stripe/StripeService");
+      const stripeClient = await stripeService.getClient();
+      if (!stripeClient) return null;
+      return async (input) => {
+        const session = await stripeClient.checkout.sessions.create({
+          line_items: input.lineItems.map((item) => ({
+            price_data: {
+              currency: "usd",
+              product_data: { name: item.productName },
+              unit_amount: item.unitAmount,
+              tax_behavior: "exclusive",
+            },
+            quantity: item.quantity,
+          })),
+          mode: "payment",
+          success_url: input.successUrl,
+          cancel_url: input.cancelUrl,
+          customer_email: input.customerEmail,
+          client_reference_id: input.clientReferenceId,
+          automatic_tax: input.automaticTax,
+          shipping_address_collection: { allowed_countries: input.allowedShippingCountries },
+          metadata: input.metadata,
+          payment_intent_data: { metadata: input.paymentIntentMetadata },
+        });
+        return { id: session.id, url: session.url };
+      };
+    }),
+    sendOrderNotification: overrides.sendOrderNotification ?? (async (orderId) => {
+      const { sendOrderNotification } = await import("./order-notification.service");
+      await sendOrderNotification(orderId);
     }),
     now: overrides.now ?? (() => new Date()),
     log: overrides.log ?? console,

@@ -40,7 +40,7 @@ to the director. Branch: `refactor/complete-the-money-path`.
 4. /checkout migration: shared quote/customer/order-draft primitives via a
    distinct `createCheckoutSession` operation, preserving no-coupon,
    automatic-tax, zero-total-reject, manual-order-fallback policies —
-   behavior-preserving — pending
+   behavior-preserving — done (P8)
 5. W1 cleanup: simplify the confirm-payment uppercase-USD/checkout-session
    shim once both creation operations own amount/currency truths;
    re-ground its characterization tests — behavior-preserving — pending
@@ -51,17 +51,17 @@ to the director. Branch: `refactor/complete-the-money-path`.
 
 ## State
 
-Chunk 2 slice 3 (P7) complete: checkout service owns create-payment-intent
-orchestration with focused service coverage and unchanged route
-characterizations; next is slice 4, `/checkout` migration.
+Chunk 2 slice 4 (P8) complete: checkout service owns distinct Checkout
+Session orchestration, including line-item allocation, zero-payable rejection,
+manual fallback, and Session metadata; next is slice 5, W1 shim cleanup.
 
 ## Next Slice
 
-- Slice 4: migrate `/checkout` to shared quote/customer/order-draft primitives
-  through a distinct `createCheckoutSession` operation while preserving its
-  existing policies.
+- Slice 5: simplify the confirm-payment uppercase-USD/checkout-session shim
+  now that both creation operations own amount/currency truths, and re-ground
+  its characterization tests.
 - Classification: behavior-preserving.
-- Checks: focused create-payment-intent characterizations, service tests,
+- Checks: focused confirm-payment characterizations, affected service tests,
   `npm run typecheck`, and the full unit suite stay green.
 
 ## Risks / Constraints

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   CheckoutTaxCalculationError,
   CheckoutUnknownProductError,
+  CheckoutZeroPayableError,
   createCheckoutService,
   type CheckoutServiceDependencies,
 } from "../checkout.service";
@@ -37,11 +38,32 @@ function makeDependencies(): CheckoutServiceDependencies {
       createOrder: vi.fn().mockResolvedValue({ id: "order-1" }),
       createOrderItem: vi.fn().mockResolvedValue({ id: "order-item-1" }),
       updateOrder: vi.fn().mockResolvedValue({ id: "order-1" }),
+      getAffiliateReferralByOrderId: vi.fn(),
+      createAffiliateReferral: vi.fn().mockResolvedValue({ id: "referral-1" }),
+      updateAffiliate: vi.fn().mockResolvedValue({ id: "affiliate-1" }),
     },
     calculateTax: vi.fn().mockResolvedValue({ id: "taxcalc-1", taxAmountExclusive: 800 }),
     createPaymentIntent: vi.fn().mockResolvedValue({ id: "pi-1", clientSecret: "secret-1" }),
+    getCheckoutSessionCreator: vi.fn().mockResolvedValue(
+      vi.fn().mockResolvedValue({ id: "cs-1", url: "https://checkout.test/cs-1" }),
+    ),
+    sendOrderNotification: vi.fn().mockResolvedValue(undefined),
     now: vi.fn(() => new Date("2026-07-13T12:00:00Z")),
     log: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+  };
+}
+
+function checkoutSessionInput(overrides: Record<string, unknown> = {}) {
+  return {
+    items: [{ productId: "product-1", quantity: 1 }],
+    customerId: "customer-1",
+    customerEmail: "buyer@example.com",
+    affiliate: null,
+    isFriendsFamily: false,
+    affiliateSessionId: null,
+    attributionType: "direct",
+    baseUrl: "https://shop.example.test",
+    ...overrides,
   };
 }
 
@@ -294,5 +316,136 @@ describe("CheckoutService createPaymentIntentCheckout", () => {
       stripePaymentIntentId: "pi-1",
     });
     expect(result.totalAmount).toBe(0);
+  });
+});
+
+describe("CheckoutService createCheckoutSession", () => {
+  it("allocates discount cents per unit and leaves ineligible products undiscounted", async () => {
+    const deps = makeDependencies();
+    const eligible = { ...product, id: "eligible", name: "Eligible", price: 99 };
+    const ineligible = {
+      ...product, id: "ineligible", name: "Ineligible", price: 50, affiliateEnabled: false,
+    };
+    vi.mocked(deps.storage.getProduct)
+      .mockResolvedValueOnce(eligible as any)
+      .mockResolvedValueOnce(ineligible as any);
+    vi.mocked(deps.storage.getAffiliateSettings).mockResolvedValue({
+      defaultDiscountType: "PERCENT", defaultDiscountValue: 10,
+    } as any);
+
+    const result = await createCheckoutService(deps).createCheckoutSession(checkoutSessionInput({
+      affiliate,
+      items: [
+        { productId: "eligible", quantity: 2 },
+        { productId: "ineligible", quantity: 1 },
+      ],
+    }));
+
+    const createSession = await vi.mocked(deps.getCheckoutSessionCreator).mock.results[0].value;
+    expect(createSession).toHaveBeenCalledWith(expect.objectContaining({
+      lineItems: [
+        expect.objectContaining({ unitAmount: 89, quantity: 1 }),
+        expect.objectContaining({ unitAmount: 90, quantity: 1 }),
+        expect.objectContaining({ productName: "Ineligible", unitAmount: 50, quantity: 1 }),
+      ],
+    }));
+    expect(deps.storage.createOrder).toHaveBeenCalledWith(expect.objectContaining({
+      subtotalAmount: 248,
+      totalAmount: 229,
+      affiliateDiscountAmount: 19,
+    }));
+    expect(result).toEqual({
+      status: "session_created",
+      orderId: "order-1",
+      sessionId: "cs-1",
+      checkoutUrl: "https://checkout.test/cs-1",
+    });
+  });
+
+  it("rejects a zero-payable Session before checking Stripe or persisting an order", async () => {
+    const deps = makeDependencies();
+    const freeAffiliate = { ...affiliate, useCustomRates: true, customDiscountType: "PERCENT", customDiscountValue: 100 };
+
+    await expect(createCheckoutService(deps).createCheckoutSession(
+      checkoutSessionInput({ affiliate: freeAffiliate }),
+    )).rejects.toBeInstanceOf(CheckoutZeroPayableError);
+
+    expect(deps.getCheckoutSessionCreator).not.toHaveBeenCalled();
+    expect(deps.storage.createOrder).not.toHaveBeenCalled();
+  });
+
+  it("creates the existing manual-payment order and affiliate referral when Stripe is unavailable", async () => {
+    const deps = makeDependencies();
+    vi.mocked(deps.getCheckoutSessionCreator).mockResolvedValue(null);
+    vi.mocked(deps.storage.getAffiliateSettings).mockResolvedValue({ commissionRate: 12 } as any);
+    vi.mocked(deps.storage.getAffiliateReferralByOrderId).mockResolvedValue(undefined);
+    const creditedAffiliate = {
+      ...affiliate, totalReferrals: 2, pendingBalance: 300, totalEarnings: 500,
+    };
+
+    const result = await createCheckoutService(deps).createCheckoutSession(
+      checkoutSessionInput({ affiliate: creditedAffiliate }),
+    );
+
+    expect(deps.storage.createOrder).toHaveBeenCalledWith(expect.objectContaining({
+      status: "pending",
+      subtotalAmount: 10_000,
+      totalAmount: 10_000,
+      notes: "Stripe not configured - manual payment required",
+    }));
+    expect(deps.storage.createAffiliateReferral).toHaveBeenCalledWith({
+      affiliateId: "affiliate-1",
+      orderId: "order-1",
+      orderAmount: 10_000,
+      commissionAmount: 1_200,
+      commissionRate: 12,
+      status: "pending",
+    });
+    expect(deps.storage.updateAffiliate).toHaveBeenCalledWith("affiliate-1", {
+      totalReferrals: 3,
+      pendingBalance: 1_500,
+      totalEarnings: 1_700,
+    });
+    expect(deps.sendOrderNotification).toHaveBeenCalledWith("order-1");
+    expect(result).toEqual({
+      status: "manual_fallback",
+      orderId: "order-1",
+      message: "Order created - Stripe not configured for payment processing",
+    });
+  });
+
+  it("preserves Session order identity, metadata, and the pre-tax subtotal invariant", async () => {
+    const deps = makeDependencies();
+
+    await createCheckoutService(deps).createCheckoutSession(checkoutSessionInput({
+      affiliate,
+      affiliateSessionId: "affiliate-session-1",
+      attributionType: "coupon",
+    }));
+
+    const createSession = await vi.mocked(deps.getCheckoutSessionCreator).mock.results[0].value;
+    const input = vi.mocked(createSession!).mock.calls[0][0];
+    const sessionSubtotal = input.lineItems.reduce(
+      (sum: number, item: any) => sum + item.unitAmount * item.quantity,
+      0,
+    );
+    expect(deps.storage.createOrder).toHaveBeenCalledWith(expect.objectContaining({
+      subtotalAmount: 10_000,
+      totalAmount: sessionSubtotal,
+    }));
+    expect(input.clientReferenceId).toBe("order-1");
+    expect(input.metadata).toEqual({
+      orderId: "order-1",
+      customerId: "customer-1",
+      affiliateCode: "SAVE",
+      affiliateId: "affiliate-1",
+      affiliateSessionId: "affiliate-session-1",
+      attributionType: "coupon",
+      isFriendsFamily: "false",
+      affiliateDiscountAmount: "1000",
+      paymentFlow: "checkout_session",
+    });
+    expect(input.paymentIntentMetadata).toEqual(input.metadata);
+    expect(input.automaticTax).toEqual({ enabled: true });
   });
 });
