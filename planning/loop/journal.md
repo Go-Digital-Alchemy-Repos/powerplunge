@@ -40,3 +40,4 @@
 15:10 Chunk-3 PR #27 CI GREEN (Typecheck/Build/Unit/Auth E2E pass 3m18s); STOP: awaiting Tommy merge decision + D3 calls
 15:33 PR #27 MERGED (7b9e1ea, Tommy approved all D3 recommendations); program extended: chunk 4 hardening + chunk 5 reprice, E deferred; HANDOFF rewritten; P18 fired (b6shc701e)
 15:36 P18 BLOCKED honestly (storage boundary lacks update/delete for webhook events; 0 files touched; not divergence); P18b resume fired (bnmngxd4e) granting storage.ts as 6th file, two methods only
+15:55 P18b stopped at decision point (5th contradicting case found: keeps-earlier-writes); director unpinned it (persist earlier writes AND reject); P18c finish fired (bp7vgvqvq)
