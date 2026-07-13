@@ -8,14 +8,18 @@ Chunk 2 (checkout service extraction) now open, research phase.
 
 ## In-flight
 
-- CHUNK 2 ADVERSARIAL REVIEW
-  (planning/handoffs/2026-07-13-chunk2-adversarial-review.md)
-  FIRED 2026-07-13 12:58 at gpt-5.6-sol HIGH, read-only lane.
-  RUN_DIR=/var/folders/kg/vqcvwwlx3xs4wblm4wpvpkz00000gn/T//codex-handoff/20260713-125807-2026-07-13-chunk2-adversarial-review
-  Reviews diff 511b0b3..2b58e20 (P5 0285f00, P6 088589e, P7 42d6be2,
-  P8 7ce1bd2, P9 d7199d2, P10 2b58e20). Priorities: extraction drift,
-  service boundary, P9/P10 behavior-change audit, test quality, CI/client
-  breakage (does the SPA send shapes P10 rejects?), W1 discharge audit.
+- Packet P11 chunk-2 review remediation
+  (planning/handoffs/2026-07-13-p11-chunk2-review-remediation.md)
+  FIRED 2026-07-13 13:04 at gpt-5.6-sol medium.
+  RUN_DIR=/var/folders/kg/vqcvwwlx3xs4wblm4wpvpkz00000gn/T//codex-handoff/20260713-130433-2026-07-13-p11-chunk2-review-remediation
+  Fixes review F1 (cart guard fires AFTER customer persistence — hoist
+  to route entry, keep service defense), F2 (malformed containers
+  bypass/500 — Array.isArray boundary), F3 (uppercase-USD service-level
+  finalization test). Red-first; commit-scoped to 6 files.
+- Chunk-2 adversarial review DONE (HIGH, read-only): extraction
+  behavior-preserving, service boundary clean, W1 genuinely discharged;
+  2 majors + 1 minor -> P11; risk_level low. Read-only compliance
+  verified (0 files touched).
 - ALL 6 chunk-2 slices VERIFIED: P10 (2b58e20) typecheck 0, unit 39/276
   green, red-first evidence, old candidate-bug cases replaced; P9
   (d7199d2); P8 (7ce1bd2); P7 (42d6be2); P6 (088589e); P5 (0285f00).
