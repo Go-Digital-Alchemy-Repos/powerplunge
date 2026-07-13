@@ -8,15 +8,20 @@ PR #26 1e6a120, both Tommy-approved 2026-07-13, CI green). Chunk 3
 
 ## In-flight
 
-- Packet P13 refund webhook service (RISKIEST chunk-3 slice)
-  (planning/handoffs/2026-07-13-p13-refund-webhook-service.md)
-  FIRED 2026-07-13 13:53 at gpt-5.6-sol medium (pre-linted; first lint
-  caught a relative path — rule paying off).
-  RUN_DIR=/var/folders/kg/vqcvwwlx3xs4wblm4wpvpkz00000gn/T//codex-handoff/20260713-135310-2026-07-13-p13-refund-webhook-service
-  Extracts charge.refunded into stripe-refund-webhook.service.ts;
-  ack/dedupe semantics pinned (D2 open); stripe.routes.test.ts frozen.
-  AFTER P13 verifies: MID-CHUNK MINI-REVIEW at HIGH on its diff before
-  slice 3 chains (new loop-hygiene rule).
+- P13 MINI-REVIEW in flight (planning/handoffs/2026-07-13-p13-mini-review.md)
+  FIRED at gpt-5.6-sol HIGH read-only on commit aa11e24 per the
+  mid-chunk hygiene rule (riskiest slice). Focus: semantic drift vs
+  pre-move branch, lazy-import fix soundness, service boundary, test
+  quality, blocking-vs-deferrable split.
+  RUN_DIR: see task br3s2tegr output. On PASS: chain slice 3
+  (refund.updated into the same refund webhook service).
+- P13 VERIFIED (aa11e24): typecheck 0; unit 40/312 green (7 new service
+  cases); commit-scoped to exactly 4 files; frozen
+  stripe.routes.test.ts byte-identical; route charge.refunded branch
+  now thin handleChargeRefundedWebhook() call; route 391 -> 335 lines.
+  Codex self-review caught+fixed an eager refund.service import
+  (module-load DB side effect) via injected loadRefundOperations —
+  mini-review must confirm.
 - P12 VERIFIED (e5baec6): typecheck 0; unit 39/305 green; 16 new cases
   (stripe.routes.test.ts 4 -> 20 it()); commit test-only + HANDOFF.
 - D2 RESOLVED (Tommy approved (b) + R3 doc check 2026-07-13). R3
