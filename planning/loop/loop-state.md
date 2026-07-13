@@ -8,18 +8,21 @@ Chunk 2 (checkout service extraction) now open, research phase.
 
 ## In-flight
 
-- Packet P10 zero-total guard (FINAL chunk-2 slice)
-  (planning/handoffs/2026-07-13-p10-zero-total-guard.md)
-  FIRED 2026-07-13 12:50 at gpt-5.6-sol medium. BEHAVIOR-CHANGING,
-  red-first. Contract: empty cart -> 400 "Cart is empty"; non-positive-
-  integer quantity -> 400 "Invalid item quantity"; guard in the PI
-  service operation (NOT shared quote()), /checkout unchanged. Replaces
-  the two P5 candidate-bug characterizations.
-  RUN_DIR=/var/folders/kg/vqcvwwlx3xs4wblm4wpvpkz00000gn/T//codex-handoff/20260713-125003-2026-07-13-p10-zero-total-guard
-- P9 VERIFIED (d7199d2): typecheck 0; unit 39/271 green; red-first
-  evidence in report; W1 discharged; commit scoped to 4 files; Codex
-  review self-caught a deleted-coverage hole and re-grounded it.
-- P8 VERIFIED (7ce1bd2), P7 VERIFIED (42d6be2), P6 VERIFIED (088589e).
+- CHUNK 2 ADVERSARIAL REVIEW
+  (planning/handoffs/2026-07-13-chunk2-adversarial-review.md)
+  FIRED 2026-07-13 12:58 at gpt-5.6-sol HIGH, read-only lane.
+  RUN_DIR=/var/folders/kg/vqcvwwlx3xs4wblm4wpvpkz00000gn/T//codex-handoff/20260713-125807-2026-07-13-chunk2-adversarial-review
+  Reviews diff 511b0b3..2b58e20 (P5 0285f00, P6 088589e, P7 42d6be2,
+  P8 7ce1bd2, P9 d7199d2, P10 2b58e20). Priorities: extraction drift,
+  service boundary, P9/P10 behavior-change audit, test quality, CI/client
+  breakage (does the SPA send shapes P10 rejects?), W1 discharge audit.
+- ALL 6 chunk-2 slices VERIFIED: P10 (2b58e20) typecheck 0, unit 39/276
+  green, red-first evidence, old candidate-bug cases replaced; P9
+  (d7199d2); P8 (7ce1bd2); P7 (42d6be2); P6 (088589e); P5 (0285f00).
+- Chunk-2 fixed floor DONE: typecheck 0, unit green, git diff --check 0
+  over 511b0b3..HEAD. Route file 1471 -> 1027 lines;
+  checkout.service.ts 711 lines with quote/createPaymentIntentCheckout/
+  createCheckoutSession.
 - P5 VERIFIED (0285f00): typecheck 0; unit 38/253 green; 16 new cases,
   groups a-h; commit test-only; shapes clean (objectContaining at seams,
   no snapshots; candidate-bug cases commented).
