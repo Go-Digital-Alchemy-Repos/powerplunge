@@ -8,14 +8,12 @@ Chunk 2 (checkout service extraction) now open, research phase.
 
 ## In-flight
 
-- Packet P11 chunk-2 review remediation
-  (planning/handoffs/2026-07-13-p11-chunk2-review-remediation.md)
-  FIRED 2026-07-13 13:04 at gpt-5.6-sol medium.
-  RUN_DIR=/var/folders/kg/vqcvwwlx3xs4wblm4wpvpkz00000gn/T//codex-handoff/20260713-130433-2026-07-13-p11-chunk2-review-remediation
-  Fixes review F1 (cart guard fires AFTER customer persistence — hoist
-  to route entry, keep service defense), F2 (malformed containers
-  bypass/500 — Array.isArray boundary), F3 (uppercase-USD service-level
-  finalization test). Red-first; commit-scoped to 6 files.
+- CHUNK 2 PR OPEN: https://github.com/Go-Digital-Alchemy-Repos/powerplunge/pull/26
+  (refactor/complete-the-money-path -> main). CI run 29270202776 in
+  flight — BINDING gate; watcher in background. MERGE IS USER-GATED.
+- P11 VERIFIED (5d95c88): typecheck 0; unit 39/289 green; 14 red-first
+  cases; commit scoped to 6 files; validator type-guard issue self-caught
+  and fixed in review pass.
 - Chunk-2 adversarial review DONE (HIGH, read-only): extraction
   behavior-preserving, service boundary clean, W1 genuinely discharged;
   2 majors + 1 minor -> P11; risk_level low. Read-only compliance
