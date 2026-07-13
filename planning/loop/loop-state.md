@@ -16,13 +16,16 @@ PR #26 1e6a120, both Tommy-approved 2026-07-13, CI green). Chunk 3
   read) + 2 minors (prototype-inherited dispatch keys; missing
   payment_failed route-wiring test). Runtime behavior for real event
   types PRESERVED per review. Read-only compliance verified.
-- P17 remediation FIRED (bjhnx377y,
-  planning/handoffs/2026-07-13-p17-chunk3-review-remediation.md):
-  extract payment-failure alerting into new
-  stripe-payment-webhook.service.ts; own-property guard on both
-  dispatch lookups; append-only route test. After P17 verifies: re-run
-  fixed floor, push branch, open chunk-3 PR (CI BINDING, PR-CI freeze),
-  then STOP for Tommy (merge + D3 queue + closeout).
+- P17 remediation VERIFIED (b8061ea): typecheck 0; unit 42/335 green;
+  fixed floor re-passed (diff --check clean over 1e6a120..HEAD);
+  commit-scoped 5 files; frozen files intact (0 deletions in
+  stripe.routes.test.ts, test route untouched); hasOwnProperty guard on
+  both dispatch lookups (:116, :218); 4 quality-PASS service cases.
+  Review finding REMEDIATED.
+- NEXT ACTION: push branch, open chunk-3 PR (CI BINDING; PR-CI FREEZE
+  from open to merge decision — loop-state commits stay LOCAL from that
+  moment), watch CI, then STOP for Tommy: merge decision + D3 queue +
+  program closeout summary.
 - P16 VERIFIED (c56b100): typecheck 0; unit 41/330 green first try;
   commit-scoped 4 files; frozen stripe.routes.test.ts AND test route
   file intact; Connect tests 5 -> 10; route 335 -> 238 lines (391 at
