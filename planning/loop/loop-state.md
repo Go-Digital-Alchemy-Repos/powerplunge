@@ -8,8 +8,9 @@ P2 VERIFIED (860ee7e). P3 (final chunk-1 slice) in flight.
 ## In-flight
 
 - Packet P3 (planning/handoffs/2026-07-13-p3-claim-vocabulary-split.md)
-  firing at gpt-5.6-sol medium. Branch refactor/complete-the-money-path
-  @ 860ee7e + loop-state commit. RUN_DIR: see journal/fire output on exit.
+  FIRED 2026-07-13 10:17 at gpt-5.6-sol medium, in flight.
+  RUN_DIR=/var/folders/kg/vqcvwwlx3xs4wblm4wpvpkz00000gn/T//codex-handoff/20260713-101751-2026-07-13-p3-claim-vocabulary-split
+  Branch refactor/complete-the-money-path @ 860ee7e + loop-state commit.
 
 ## Verified facts (P2 cycle, 2026-07-13)
 
