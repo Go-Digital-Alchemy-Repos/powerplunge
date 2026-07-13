@@ -19,14 +19,19 @@ PR #26 1e6a120, both Tommy-approved 2026-07-13, CI green). Chunk 3
   slice 3 chains (new loop-hygiene rule).
 - P12 VERIFIED (e5baec6): typecheck 0; unit 39/305 green; 16 new cases
   (stripe.routes.test.ts 4 -> 20 it()); commit test-only + HANDOFF.
-- D2: Tommy APPROVED recommendation (b) 2026-07-13, CONDITIONAL on a
-  Stripe-docs check. R3 research packet FIRED (read-only + web search,
-  gpt-5.6-sol medium) to verify (b) against current Stripe webhook
-  best-practice docs.
-  RUN_DIR=/var/folders/kg/vqcvwwlx3xs4wblm4wpvpkz00000gn/T//codex-handoff/20260713-140015-2026-07-13-r3-stripe-webhook-best-practices
-  On verdict: SUPPORTED -> resolve D2, plan (b) as post-chunk-3
-  behavior-changing slice; otherwise reshape D2 per docs and re-present
-  to Tommy. Does NOT block chunk 3.
+- D2 RESOLVED (Tommy approved (b) + R3 doc check 2026-07-13). R3
+  verdict SUPPORTED-WITH-CHANGES; director spot-checked the two
+  load-bearing citations by execution (recovery guide models
+  processing/processed states; webhooks doc: exponential backoff,
+  three-day live retry window, quick-2xx guidance).
+  D2 resolved spec (post-chunk-3 behavior-changing slice(s), red-first):
+  keep synchronous dispatch (no queue infra at this scale); on handler
+  failure return non-2xx so Stripe retries; replace insert-after-success
+  dedupe with an ATOMIC processing->processed claim (prevents concurrent
+  duplicate work, per docs.stripe.com/webhooks/process-undelivered-events);
+  stop swallowing refund/Connect handler errors (propagate to the ack);
+  per-refund mutations idempotent (retries redeliver). SEPARATE follow-up
+  (not this slice): charge.refunds.data pagination for >10 refunds.
 - R2 VERIFIED and adopted: 5-slice chunk-3 plan in HANDOFF (characterize
   -> refund service [RISKIEST, mini-review after] -> refund.updated ->
   connect service -> capability + dispatch cleanup). Two endpoints
