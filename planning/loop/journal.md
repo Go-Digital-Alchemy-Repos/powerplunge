@@ -42,3 +42,4 @@
 15:36 P18 BLOCKED honestly (storage boundary lacks update/delete for webhook events; 0 files touched; not divergence); P18b resume fired (bnmngxd4e) granting storage.ts as 6th file, two methods only
 15:55 P18b stopped at decision point (5th contradicting case found: keeps-earlier-writes); director unpinned it (persist earlier writes AND reject); P18c finish fired (bp7vgvqvq)
 15:57 P18 VERIFIED (063f4df): 42/339 green, red-first evidence, 5 unpins exact, storage +2 methods only; known limitations logged (stale-claim-on-cleanup-failure, duplicated claim protocol); mini-review fired at HIGH (bnx0of23p)
+16:15 P18 mini-review: MEDIUM, concurrency/acks/storage sound; BLOCKING partial-progress retry holes (refund.updated, account.updated); P18d remediation fired (b5l3wnbnz); crash-stale claims queued for chunk-4 gate
