@@ -8,18 +8,19 @@ Chunk 2 (checkout service extraction) now open, research phase.
 
 ## In-flight
 
-- Packet P8 /checkout migration
-  (planning/handoffs/2026-07-13-p8-checkout-session-migration.md)
-  FIRED 2026-07-13 12:22 at gpt-5.6-sol medium. R1's riskiest-overall
-  slice (cent allocation, Session subtotal invariant, manual fallback).
-  RUN_DIR=/var/folders/kg/vqcvwwlx3xs4wblm4wpvpkz00000gn/T//codex-handoff/20260713-122234-2026-07-13-p8-checkout-session-migration
-  Characterize-first (manual fallback, referral side effects, Session
-  metadata), then distinct createCheckoutSession operation; additive-only
-  rule on payments.routes.test.ts; commit-scoped file gate; trap-100
-  retry rule.
-- P7 VERIFIED (42d6be2): typecheck 0; unit 39/266 green; commit scoped
-  to 4 files; no review findings; non-atomicity + zero-total passthrough
-  preserved per packet.
+- Packet P9 W1 shim cleanup
+  (planning/handoffs/2026-07-13-p9-w1-shim-cleanup.md)
+  FIRED 2026-07-13 12:37 at gpt-5.6-sol medium. BEHAVIOR-CHANGING,
+  red-test-first. New contract (director decision): currency
+  case-insensitive end to end; checkout_session PIs at confirm-payment
+  fall through to success (no route amount/currency 4xx — session
+  integrity owned by webhook/session-proof finalization); non-session PI
+  contract unchanged. Discharges W1 (entry deleted on land).
+  RUN_DIR=/var/folders/kg/vqcvwwlx3xs4wblm4wpvpkz00000gn/T//codex-handoff/20260713-123703-2026-07-13-p9-w1-shim-cleanup
+- P8 VERIFIED (7ce1bd2): typecheck 0; unit 39/273 green; frozen
+  characterization file untouched (empty diff); payments.routes.test.ts
+  additive 15->18 it(); commit scoped to 5 files; no review findings.
+- P7 VERIFIED (42d6be2): typecheck 0; unit 39/266 green; scoped; clean.
 - P5 VERIFIED (0285f00): typecheck 0; unit 38/253 green; 16 new cases,
   groups a-h; commit test-only; shapes clean (objectContaining at seams,
   no snapshots; candidate-bug cases commented).
