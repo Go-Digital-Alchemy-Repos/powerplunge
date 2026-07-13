@@ -8,18 +8,18 @@ Chunk 2 (checkout service extraction) now open, research phase.
 
 ## In-flight
 
-- Packet P7 PaymentIntent orchestration
-  (planning/handoffs/2026-07-13-p7-payment-intent-orchestration.md)
-  FIRED 2026-07-13 12:11 at gpt-5.6-sol medium. RISKIEST chunk-2 slice.
-  RUN_DIR=/var/folders/kg/vqcvwwlx3xs4wblm4wpvpkz00000gn/T//codex-handoff/20260713-121119-2026-07-13-p7-payment-intent-orchestration
-  Moves order+items+PI creation/linking into checkout.service as a second
-  public operation; attribution/ownership stays in route; non-atomicity
-  PRESERVED (fix would be a separate named slice). Commit-scoped file
-  gate (git diff-tree), trap-100 retry rule included.
-- P6 VERIFIED LANDED (088589e via P6b resume): commit-scoped to exactly
-  4 files; director re-ran gates on committed state: typecheck 0, unit
-  39/263 green. Service interface reviewed: typed quote types,
-  deps-injected factory, no Express types; route 1471 -> 1273 lines.
+- Packet P8 /checkout migration
+  (planning/handoffs/2026-07-13-p8-checkout-session-migration.md)
+  FIRED 2026-07-13 12:22 at gpt-5.6-sol medium. R1's riskiest-overall
+  slice (cent allocation, Session subtotal invariant, manual fallback).
+  RUN_DIR=/var/folders/kg/vqcvwwlx3xs4wblm4wpvpkz00000gn/T//codex-handoff/20260713-122234-2026-07-13-p8-checkout-session-migration
+  Characterize-first (manual fallback, referral side effects, Session
+  metadata), then distinct createCheckoutSession operation; additive-only
+  rule on payments.routes.test.ts; commit-scoped file gate; trap-100
+  retry rule.
+- P7 VERIFIED (42d6be2): typecheck 0; unit 39/266 green; commit scoped
+  to 4 files; no review findings; non-atomicity + zero-total passthrough
+  preserved per packet.
 - P5 VERIFIED (0285f00): typecheck 0; unit 38/253 green; 16 new cases,
   groups a-h; commit test-only; shapes clean (objectContaining at seams,
   no snapshots; candidate-bug cases commented).
