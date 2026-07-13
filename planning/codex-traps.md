@@ -20,3 +20,14 @@ PowerPlunge-specific traps as they occur, numbered from 100.
 - Trap 27 (L1): workspace paths in packets are absolute.
 - Trap 28 (L9): hostops lanes enumerate the mandated tool's call sites
   (command-surface evidence).
+
+## Trap 100 (PowerPlunge, 2026-07-13): full-suite flake inside Codex sandbox
+
+P6 run reported nondeterministic full-unit failures (cross-route HTTP
+status flips: 200->404, 200->401, varying per retry) while focused tests
+stayed green. Director reproduced the full suite GREEN twice on the same
+diff. Suspect environment contention in the Codex sandbox (parallel vitest
+workers + local auth env), not the diff. Law: when Codex reports
+nondeterministic suite failures the director cannot reproduce, treat the
+director's executed result as truth, land via a resume packet, and note
+which suites flipped in case a pattern emerges.
