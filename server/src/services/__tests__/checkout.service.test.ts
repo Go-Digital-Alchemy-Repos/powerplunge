@@ -34,10 +34,44 @@ function makeDependencies(): CheckoutServiceDependencies {
         defaultDiscountValue: 10,
       }),
       getCouponByCode: vi.fn(),
+      createOrder: vi.fn().mockResolvedValue({ id: "order-1" }),
+      createOrderItem: vi.fn().mockResolvedValue({ id: "order-item-1" }),
+      updateOrder: vi.fn().mockResolvedValue({ id: "order-1" }),
     },
     calculateTax: vi.fn().mockResolvedValue({ id: "taxcalc-1", taxAmountExclusive: 800 }),
+    createPaymentIntent: vi.fn().mockResolvedValue({ id: "pi-1", clientSecret: "secret-1" }),
     now: vi.fn(() => new Date("2026-07-13T12:00:00Z")),
     log: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+  };
+}
+
+function paymentIntentCheckoutInput(overrides: Record<string, unknown> = {}) {
+  return {
+    ...quoteInput(),
+    customerId: "customer-1",
+    shipping: {
+      name: "Taylor Test",
+      company: "Plunge Co",
+      address: "1 Test Way",
+      line2: "Suite 2",
+      city: "Raleigh",
+      state: "NC",
+      zipCode: "27601",
+      country: "US",
+    },
+    billingSameAsShipping: true,
+    billing: null,
+    affiliateSessionId: null,
+    attributionType: "direct",
+    customerIp: "203.0.113.4",
+    tracking: {
+      marketingConsentGranted: true,
+      fbp: "fbp-1",
+      fbc: "fbc-1",
+      eventSourceUrl: "https://example.test/checkout",
+      userAgent: "test-agent",
+    },
+    ...overrides,
   };
 }
 
@@ -169,5 +203,96 @@ describe("CheckoutService quote", () => {
       new CheckoutUnknownProductError("product-1"),
     );
     expect(deps.calculateTax).not.toHaveBeenCalled();
+  });
+});
+
+describe("CheckoutService createPaymentIntentCheckout", () => {
+  it("creates and links a pending order from the quoted checkout", async () => {
+    const deps = makeDependencies();
+
+    const result = await createCheckoutService(deps).createPaymentIntentCheckout(
+      paymentIntentCheckoutInput({
+        affiliate,
+        affiliateSessionId: "affiliate-session-1",
+        attributionType: "coupon",
+      }),
+    );
+
+    expect(deps.storage.createOrder).toHaveBeenCalledWith(expect.objectContaining({
+      customerId: "customer-1",
+      status: "pending",
+      subtotalAmount: 10_000,
+      taxAmount: 800,
+      totalAmount: 9_800,
+      affiliateCode: "SAVE",
+      affiliateIsFriendsFamily: false,
+      affiliateDiscountAmount: 1_000,
+      customerIp: "203.0.113.4",
+      marketingConsentGranted: true,
+      metaFbp: "fbp-1",
+    }));
+    expect(deps.storage.createOrderItem).toHaveBeenCalledWith({
+      orderId: "order-1",
+      productId: "product-1",
+      productName: "Cold Plunge",
+      quantity: 1,
+      unitPrice: 10_000,
+    });
+    expect(deps.createPaymentIntent).toHaveBeenCalledWith(expect.objectContaining({
+      amount: 9_800,
+      metadata: expect.objectContaining({
+        orderId: "order-1",
+        affiliateCode: "SAVE",
+        affiliateSessionId: "affiliate-session-1",
+        attributionType: "coupon",
+      }),
+    }));
+    expect(deps.storage.updateOrder).toHaveBeenCalledWith("order-1", {
+      stripePaymentIntentId: "pi-1",
+    });
+    expect(result).toEqual({
+      clientSecret: "secret-1",
+      orderId: "order-1",
+      subtotalAmount: 10_000,
+      affiliateDiscountAmount: 1_000,
+      couponDiscountAmount: 0,
+      taxAmount: 800,
+      totalAmount: 9_800,
+    });
+  });
+
+  it("preserves partial writes when PaymentIntent creation fails", async () => {
+    const deps = makeDependencies();
+    const paymentError = new Error("payment unavailable");
+    vi.mocked(deps.createPaymentIntent).mockRejectedValue(paymentError);
+
+    await expect(
+      createCheckoutService(deps).createPaymentIntentCheckout(paymentIntentCheckoutInput()),
+    ).rejects.toBe(paymentError);
+
+    expect(deps.storage.createOrder).toHaveBeenCalled();
+    expect(deps.storage.createOrderItem).toHaveBeenCalled();
+    expect(deps.storage.updateOrder).not.toHaveBeenCalled();
+  });
+
+  it("passes a zero-total checkout through to PaymentIntent creation", async () => {
+    const deps = makeDependencies();
+    vi.mocked(deps.calculateTax).mockResolvedValue({ id: "taxcalc-zero", taxAmountExclusive: 0 });
+
+    const result = await createCheckoutService(deps).createPaymentIntentCheckout(
+      paymentIntentCheckoutInput({ items: [] }),
+    );
+
+    expect(deps.storage.createOrder).toHaveBeenCalledWith(expect.objectContaining({
+      subtotalAmount: 0,
+      taxAmount: null,
+      totalAmount: 0,
+    }));
+    expect(deps.storage.createOrderItem).not.toHaveBeenCalled();
+    expect(deps.createPaymentIntent).toHaveBeenCalledWith(expect.objectContaining({ amount: 0 }));
+    expect(deps.storage.updateOrder).toHaveBeenCalledWith("order-1", {
+      stripePaymentIntentId: "pi-1",
+    });
+    expect(result.totalAmount).toBe(0);
   });
 });

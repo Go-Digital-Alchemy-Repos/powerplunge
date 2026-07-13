@@ -56,9 +56,74 @@ export interface CheckoutQuoteResult {
   validatedCoupon: Coupon | null;
 }
 
+export interface CreatePaymentIntentCheckoutInput extends CheckoutQuoteInput {
+  customerId: string;
+  shipping: {
+    name: string;
+    company: string | null;
+    address: string;
+    line2: string | null;
+    city: string;
+    state: string;
+    zipCode: string;
+    country: string;
+  };
+  billingSameAsShipping: boolean;
+  billing: {
+    name: string;
+    company: string | null;
+    address: string;
+    line2: string | null;
+    city: string;
+    state: string;
+    zipCode: string;
+    country: string;
+  } | null;
+  affiliateSessionId: string | null;
+  attributionType: "coupon" | "cookie" | "direct";
+  customerIp: string | null;
+  tracking: {
+    marketingConsentGranted: boolean;
+    fbp: string | null;
+    fbc: string | null;
+    eventSourceUrl: string | null;
+    userAgent: string | null;
+  };
+}
+
+export interface CreatePaymentIntentInput {
+  amount: number;
+  currency: "usd";
+  automaticPaymentMethods: { enabled: true };
+  metadata: Record<string, string>;
+}
+
+export interface CreatePaymentIntentResult {
+  id: string;
+  clientSecret: string | null;
+}
+
+export interface CreatePaymentIntentCheckoutResult {
+  clientSecret: string | null;
+  orderId: string;
+  subtotalAmount: number;
+  affiliateDiscountAmount: number;
+  couponDiscountAmount: number;
+  taxAmount: number;
+  totalAmount: number;
+}
+
 export interface CheckoutServiceDependencies {
-  storage: Pick<IStorage, "getProduct" | "getAffiliateSettings" | "getCouponByCode">;
+  storage: Pick<IStorage,
+    | "getProduct"
+    | "getAffiliateSettings"
+    | "getCouponByCode"
+    | "createOrder"
+    | "createOrderItem"
+    | "updateOrder"
+  >;
   calculateTax: (input: CheckoutTaxCalculationInput) => Promise<CheckoutTaxCalculationResult>;
+  createPaymentIntent: (input: CreatePaymentIntentInput) => Promise<CreatePaymentIntentResult>;
   now: () => Date;
   log: Pick<Console, "info" | "warn" | "error">;
 }
@@ -218,6 +283,87 @@ export class CheckoutService {
       validatedCoupon,
     };
   }
+
+  async createPaymentIntentCheckout(
+    input: CreatePaymentIntentCheckoutInput,
+  ): Promise<CreatePaymentIntentCheckoutResult> {
+    const quote = await this.quote(input);
+    const order = await this.deps.storage.createOrder({
+      customerId: input.customerId,
+      status: "pending",
+      totalAmount: quote.totalAmount,
+      subtotalAmount: quote.subtotalAmount,
+      taxAmount: quote.taxAmount > 0 ? quote.taxAmount : null,
+      stripeTaxCalculationId: quote.taxCalculationId,
+      affiliateCode: input.affiliate?.affiliateCode,
+      affiliateIsFriendsFamily: input.isFriendsFamily,
+      affiliateDiscountAmount: quote.affiliateDiscountAmount > 0 ? quote.affiliateDiscountAmount : null,
+      couponDiscountAmount: quote.couponDiscountAmount > 0 ? quote.couponDiscountAmount : null,
+      couponCode: quote.validatedCoupon?.code || null,
+      shippingName: input.shipping.name,
+      shippingCompany: input.shipping.company,
+      shippingAddress: input.shipping.address,
+      shippingLine2: input.shipping.line2,
+      shippingCity: input.shipping.city,
+      shippingState: input.shipping.state,
+      shippingZip: input.shipping.zipCode,
+      shippingCountry: input.shipping.country,
+      billingSameAsShipping: input.billingSameAsShipping,
+      billingName: input.billing?.name || null,
+      billingCompany: input.billing?.company || null,
+      billingAddress: input.billing?.address || null,
+      billingLine2: input.billing?.line2 || null,
+      billingCity: input.billing?.city || null,
+      billingState: input.billing?.state || null,
+      billingZip: input.billing?.zipCode || null,
+      billingCountry: input.billing?.country || null,
+      customerIp: input.customerIp,
+      marketingConsentGranted: input.tracking.marketingConsentGranted,
+      metaFbp: input.tracking.fbp,
+      metaFbc: input.tracking.fbc,
+      metaEventSourceUrl: input.tracking.eventSourceUrl,
+      customerUserAgent: input.tracking.userAgent,
+    });
+
+    for (const item of quote.orderItems) {
+      await this.deps.storage.createOrderItem({ orderId: order.id, ...item });
+    }
+
+    const paymentIntent = await this.deps.createPaymentIntent({
+      amount: quote.totalAmount,
+      currency: "usd",
+      automaticPaymentMethods: { enabled: true },
+      metadata: {
+        orderId: order.id,
+        customerId: input.customerId,
+        affiliateCode: input.affiliate?.affiliateCode || "",
+        affiliateId: input.affiliate?.id || "",
+        affiliateSessionId: input.affiliateSessionId || "",
+        attributionType: input.attributionType,
+        isFriendsFamily: input.isFriendsFamily ? "true" : "false",
+        taxAmount: quote.taxAmount.toString(),
+        taxCalculationId: quote.taxCalculationId || "",
+        affiliateDiscountAmount: quote.affiliateDiscountAmount.toString(),
+        couponCode: quote.validatedCoupon?.code || "",
+        couponId: quote.validatedCoupon?.id || "",
+        couponDiscountAmount: quote.couponDiscountAmount.toString(),
+      },
+    });
+
+    await this.deps.storage.updateOrder(order.id, {
+      stripePaymentIntentId: paymentIntent.id,
+    });
+
+    return {
+      clientSecret: paymentIntent.clientSecret,
+      orderId: order.id,
+      subtotalAmount: quote.subtotalAmount,
+      affiliateDiscountAmount: quote.affiliateDiscountAmount,
+      couponDiscountAmount: quote.couponDiscountAmount,
+      taxAmount: quote.taxAmount,
+      totalAmount: quote.totalAmount,
+    };
+  }
 }
 
 export function createCheckoutService(
@@ -227,6 +373,9 @@ export function createCheckoutService(
     getProduct: async (...args) => (await import("../../storage")).storage.getProduct(...args),
     getAffiliateSettings: async (...args) => (await import("../../storage")).storage.getAffiliateSettings(...args),
     getCouponByCode: async (...args) => (await import("../../storage")).storage.getCouponByCode(...args),
+    createOrder: async (...args) => (await import("../../storage")).storage.createOrder(...args),
+    createOrderItem: async (...args) => (await import("../../storage")).storage.createOrderItem(...args),
+    updateOrder: async (...args) => (await import("../../storage")).storage.updateOrder(...args),
   };
 
   return new CheckoutService({
@@ -255,6 +404,18 @@ export function createCheckoutService(
         },
       });
       return { id: result.id, taxAmountExclusive: result.tax_amount_exclusive };
+    }),
+    createPaymentIntent: overrides.createPaymentIntent ?? (async (input) => {
+      const { stripeService } = await import("../integrations/stripe/StripeService");
+      const stripeClient = await stripeService.getClient();
+      if (!stripeClient) throw new Error("Stripe is not configured");
+      const result = await stripeClient.paymentIntents.create({
+        amount: input.amount,
+        currency: input.currency,
+        automatic_payment_methods: input.automaticPaymentMethods,
+        metadata: input.metadata,
+      });
+      return { id: result.id, clientSecret: result.client_secret };
     }),
     now: overrides.now ?? (() => new Date()),
     log: overrides.log ?? console,

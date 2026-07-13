@@ -36,7 +36,7 @@ to the director. Branch: `refactor/complete-the-money-path`.
 3. PaymentIntent orchestration: move customer/attribution resolution,
    draft order/items, PaymentIntent creation+linking into the service,
    preserving call order and HTTP mapping — behavior-preserving,
-   riskiest slice (non-atomic writes, payments.routes.ts:494-561) — pending
+   riskiest slice (non-atomic writes, payments.routes.ts:494-561) — done (P7)
 4. /checkout migration: shared quote/customer/order-draft primitives via a
    distinct `createCheckoutSession` operation, preserving no-coupon,
    automatic-tax, zero-total-reject, manual-order-fallback policies —
@@ -51,13 +51,15 @@ to the director. Branch: `refactor/complete-the-money-path`.
 
 ## State
 
-Chunk 2 slice 2 (P6) complete: checkout quote service extracted with focused service coverage and unchanged create-payment-intent characterizations; next is slice 3, PaymentIntent orchestration.
+Chunk 2 slice 3 (P7) complete: checkout service owns create-payment-intent
+orchestration with focused service coverage and unchanged route
+characterizations; next is slice 4, `/checkout` migration.
 
 ## Next Slice
 
-- Slice 3: move customer/attribution resolution, draft order/items, and
-  PaymentIntent creation/linking behind the checkout service while preserving
-  call order and HTTP mapping.
+- Slice 4: migrate `/checkout` to shared quote/customer/order-draft primitives
+  through a distinct `createCheckoutSession` operation while preserving its
+  existing policies.
 - Classification: behavior-preserving.
 - Checks: focused create-payment-intent characterizations, service tests,
   `npm run typecheck`, and the full unit suite stay green.

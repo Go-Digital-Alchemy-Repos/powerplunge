@@ -381,13 +381,21 @@ router.post("/create-payment-intent", paymentLimiter, async (req: any, res) => {
       }
     }
 
-    let quote;
+    const forwardedFor = req.headers?.["x-forwarded-for"];
+    const customerIp = typeof forwardedFor === "string"
+      ? forwardedFor.split(",")[0]?.trim() || null
+      : req.ip || null;
+
+    let checkout;
     try {
       const checkoutService = createCheckoutService({
         storage: {
           getProduct: (...args) => storage.getProduct(...args),
           getAffiliateSettings: (...args) => storage.getAffiliateSettings(...args),
           getCouponByCode: (...args) => storage.getCouponByCode(...args),
+          createOrder: (...args) => storage.createOrder(...args),
+          createOrderItem: (...args) => storage.createOrderItem(...args),
+          updateOrder: (...args) => storage.updateOrder(...args),
         },
         calculateTax: async (input) => {
           const calculation = await stripeClient.tax.calculations.create({
@@ -411,8 +419,17 @@ router.post("/create-payment-intent", paymentLimiter, async (req: any, res) => {
           });
           return { id: calculation.id, taxAmountExclusive: calculation.tax_amount_exclusive };
         },
+        createPaymentIntent: async (input) => {
+          const paymentIntent = await stripeClient.paymentIntents.create({
+            amount: input.amount,
+            currency: input.currency,
+            automatic_payment_methods: input.automaticPaymentMethods,
+            metadata: input.metadata,
+          });
+          return { id: paymentIntent.id, clientSecret: paymentIntent.client_secret };
+        },
       });
-      quote = await checkoutService.quote({
+      checkout = await checkoutService.createPaymentIntentCheckout({
         items,
         affiliate,
         isFriendsFamily,
@@ -423,6 +440,38 @@ router.post("/create-payment-intent", paymentLimiter, async (req: any, res) => {
           state: normalizedShipping.state,
           postalCode: customerData.zipCode,
           country: "US",
+        },
+        customerId: existingCustomer.id,
+        shipping: {
+          name: customerData.name,
+          company: shippingAddr.company || null,
+          address: customerData.address,
+          line2: shippingAddr.line2 || null,
+          city: customerData.city,
+          state: normalizedShipping.state,
+          zipCode: customerData.zipCode,
+          country: "US",
+        },
+        billingSameAsShipping: isBillingSame,
+        billing: validatedBilling ? {
+          name: validatedBilling.name,
+          company: validatedBilling.company || null,
+          address: validatedBilling.address,
+          line2: validatedBilling.line2 || null,
+          city: validatedBilling.city,
+          state: validatedBilling.state,
+          zipCode: validatedBilling.zipCode,
+          country: "US",
+        } : null,
+        affiliateSessionId,
+        attributionType: affiliateCode ? "coupon" : (affiliateSessionId ? "cookie" : "direct"),
+        customerIp,
+        tracking: {
+          marketingConsentGranted: normalizedMetaTracking.marketingConsentGranted === true,
+          fbp: normalizedMetaTracking.fbp || null,
+          fbc: normalizedMetaTracking.fbc || null,
+          eventSourceUrl: normalizedMetaTracking.eventSourceUrl || null,
+          userAgent: normalizedMetaTracking.userAgent || req.get("user-agent") || null,
         },
       });
     } catch (error) {
@@ -438,90 +487,16 @@ router.post("/create-payment-intent", paymentLimiter, async (req: any, res) => {
     const {
       affiliateDiscountAmount,
       couponDiscountAmount,
-      orderItems,
+      clientSecret,
+      orderId,
       subtotalAmount,
       taxAmount,
-      taxCalculationId,
       totalAmount,
-      validatedCoupon,
-    } = quote;
-    const forwardedFor = req.headers?.["x-forwarded-for"];
-    const customerIp = typeof forwardedFor === "string"
-      ? forwardedFor.split(",")[0]?.trim() || null
-      : req.ip || null;
-
-    const order = await storage.createOrder({
-      customerId: existingCustomer.id,
-      status: "pending",
-      totalAmount,
-      subtotalAmount,
-      taxAmount: taxAmount > 0 ? taxAmount : null,
-      stripeTaxCalculationId: taxCalculationId,
-      affiliateCode: affiliate?.affiliateCode,
-      affiliateIsFriendsFamily: isFriendsFamily,
-      affiliateDiscountAmount: affiliateDiscountAmount > 0 ? affiliateDiscountAmount : null,
-      couponDiscountAmount: couponDiscountAmount > 0 ? couponDiscountAmount : null,
-      couponCode: validatedCoupon?.code || null,
-      shippingName: customerData.name,
-      shippingCompany: shippingAddr.company || null,
-      shippingAddress: customerData.address,
-      shippingLine2: shippingAddr.line2 || null,
-      shippingCity: customerData.city,
-      shippingState: normalizedShipping.state,
-      shippingZip: customerData.zipCode,
-      shippingCountry: "US",
-      billingSameAsShipping: isBillingSame,
-      billingName: validatedBilling?.name || null,
-      billingCompany: validatedBilling?.company || null,
-      billingAddress: validatedBilling?.address || null,
-      billingLine2: validatedBilling?.line2 || null,
-      billingCity: validatedBilling?.city || null,
-      billingState: validatedBilling?.state || null,
-      billingZip: validatedBilling?.zipCode || null,
-      billingCountry: validatedBilling ? "US" : null,
-      customerIp,
-      marketingConsentGranted: normalizedMetaTracking.marketingConsentGranted === true,
-      metaFbp: normalizedMetaTracking.fbp || null,
-      metaFbc: normalizedMetaTracking.fbc || null,
-      metaEventSourceUrl: normalizedMetaTracking.eventSourceUrl || null,
-      customerUserAgent: normalizedMetaTracking.userAgent || req.get("user-agent") || null,
-    });
-
-    for (const item of orderItems) {
-      await storage.createOrderItem({
-        orderId: order.id,
-        ...item,
-      });
-    }
-
-    const paymentIntent = await stripeClient.paymentIntents.create({
-      amount: totalAmount,
-      currency: "usd",
-      automatic_payment_methods: { enabled: true },
-      metadata: {
-        orderId: order.id,
-        customerId: existingCustomer.id,
-        affiliateCode: affiliate?.affiliateCode || "",
-        affiliateId: affiliate?.id || "",
-        affiliateSessionId: affiliateSessionId || "",
-        attributionType: affiliateCode ? "coupon" : (affiliateSessionId ? "cookie" : "direct"),
-        isFriendsFamily: isFriendsFamily ? "true" : "false",
-        taxAmount: taxAmount.toString(),
-        taxCalculationId: taxCalculationId || "",
-        affiliateDiscountAmount: affiliateDiscountAmount.toString(),
-        couponCode: validatedCoupon?.code || "",
-        couponId: validatedCoupon?.id || "",
-        couponDiscountAmount: couponDiscountAmount.toString(),
-      },
-    });
-
-    await storage.updateOrder(order.id, {
-      stripePaymentIntentId: paymentIntent.id,
-    });
+    } = checkout;
 
     res.json({
-      clientSecret: paymentIntent.client_secret,
-      orderId: order.id,
+      clientSecret,
+      orderId,
       subtotal: subtotalAmount,
       affiliateDiscount: affiliateDiscountAmount,
       couponDiscount: couponDiscountAmount,
