@@ -15,3 +15,4 @@
 12:04 P6 blocked on sandbox-side suite flake (trap 100); director repro GREEN twice on the diff; P6b resume packet firing to land the commit
 12:11 P6b landed (088589e, commit-scoped to 4 files); P6 gates re-verified by director (typecheck 0, 263 tests); P7 orchestration packet authored
 12:22 P7 verified (typecheck 0, 266 tests, commit 42d6be2 scoped, no findings); P8 /checkout migration authored (characterize-first, additive-only test rule)
+12:37 P8 verified (typecheck 0, 273 tests, additive-only proven, commit 7ce1bd2 scoped); P9 W1 shim cleanup authored (behavior-changing, red-first, new contract named)
