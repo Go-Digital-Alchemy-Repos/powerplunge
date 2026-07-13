@@ -2,18 +2,83 @@
 
 ## Program
 
-Complete the Money Path — Chunk 1 DONE and MERGED to main
-(PR #25, merge 511b0b3, Tommy approved 2026-07-13; CI was green).
-Chunk 2 (checkout service extraction) now open, research phase.
+Complete the Money Path — Chunks 1 AND 2 MERGED to main (PR #25 511b0b3,
+PR #26 1e6a120, both Tommy-approved 2026-07-13, CI green). Chunk 3
+(webhook service extraction, FINAL chunk) open, research phase.
 
 ## In-flight
 
-- CHUNK 2 PR OPEN: https://github.com/Go-Digital-Alchemy-Repos/powerplunge/pull/26
-  (refactor/complete-the-money-path -> main). CI run 29270202776 in
-  flight — BINDING gate; watcher in background. MERGE IS USER-GATED.
-- P11 VERIFIED (5d95c88): typecheck 0; unit 39/289 green; 14 red-first
-  cases; commit scoped to 6 files; validator type-guard issue self-caught
-  and fixed in review pass.
+- CHUNK-3 GATE in progress. Fixed floor DONE. Adversarial review DONE
+  (HIGH,
+  RUN_DIR=/var/folders/kg/vqcvwwlx3xs4wblm4wpvpkz00000gn/T//codex-handoff/20260713-144604-2026-07-13-chunk3-adversarial-review):
+  verdict HIGH, ONE blocking finding (payment_intent.payment_failed
+  business mapping inline in route :106-126 — director confirmed by
+  read) + 2 minors (prototype-inherited dispatch keys; missing
+  payment_failed route-wiring test). Runtime behavior for real event
+  types PRESERVED per review. Read-only compliance verified.
+- P17 remediation VERIFIED (b8061ea): typecheck 0; unit 42/335 green;
+  fixed floor re-passed (diff --check clean over 1e6a120..HEAD);
+  commit-scoped 5 files; frozen files intact (0 deletions in
+  stripe.routes.test.ts, test route untouched); hasOwnProperty guard on
+  both dispatch lookups (:116, :218); 4 quality-PASS service cases.
+  Review finding REMEDIATED.
+- NEXT ACTION: push branch, open chunk-3 PR (CI BINDING; PR-CI FREEZE
+  from open to merge decision — loop-state commits stay LOCAL from that
+  moment), watch CI, then STOP for Tommy: merge decision + D3 queue +
+  program closeout summary.
+- P16 VERIFIED (c56b100): typecheck 0; unit 41/330 green first try;
+  commit-scoped 4 files; frozen stripe.routes.test.ts AND test route
+  file intact; Connect tests 5 -> 10; route 335 -> 238 lines (391 at
+  chunk start); typed dispatch both endpoints; pinned export at :11.
+  Codex review: 0 findings. ALL 5 CHUNK-3 SLICES DONE.
+- P15 VERIFIED (658f5b4): typecheck 0; unit 41/325 green first try;
+  commit-scoped 4 files; frozen stripe.routes.test.ts intact; 5 service
+  cases incl. propagate-not-swallow boundary. Codex review: 0 findings.
+- P14 VERIFIED (bd15b59): typecheck 0; unit 40/320 green ON RETRY
+  (first run flaked 4 unrelated cross-route tests — trap 100 now
+  reproduced director-side, note appended to codex-traps.md);
+  commit-scoped 4 files; frozen stripe.routes.test.ts intact; service
+  tests 7 -> 15 incl. both mini-review gap cases (Meta-failure
+  continuation, multi-refund partial failure). Codex review: 0 findings.
+- P13 MINI-REVIEW PASSED (HIGH, read-only,
+  RUN_DIR=/var/folders/kg/vqcvwwlx3xs4wblm4wpvpkz00000gn/T//codex-handoff/20260713-141023-2026-07-13-p13-mini-review):
+  LOW risk, zero semantic drift, lazy-import fix sound, boundary clean,
+  7 tests obey brittle-seam law. 2 minor deferrable gaps folded into
+  P14. Read-only compliance verified (0 files touched, HEAD unchanged).
+- P13 VERIFIED (aa11e24): typecheck 0; unit 40/312 green (7 new service
+  cases); commit-scoped to exactly 4 files; frozen
+  stripe.routes.test.ts byte-identical; route charge.refunded branch
+  now thin handleChargeRefundedWebhook() call; route 391 -> 335 lines.
+  Codex self-review caught+fixed an eager refund.service import
+  (module-load DB side effect) via injected loadRefundOperations —
+  mini-review must confirm.
+- P12 VERIFIED (e5baec6): typecheck 0; unit 39/305 green; 16 new cases
+  (stripe.routes.test.ts 4 -> 20 it()); commit test-only + HANDOFF.
+- D2 RESOLVED (Tommy approved (b) + R3 doc check 2026-07-13). R3
+  verdict SUPPORTED-WITH-CHANGES; director spot-checked the two
+  load-bearing citations by execution (recovery guide models
+  processing/processed states; webhooks doc: exponential backoff,
+  three-day live retry window, quick-2xx guidance).
+  D2 resolved spec (post-chunk-3 behavior-changing slice(s), red-first):
+  keep synchronous dispatch (no queue infra at this scale); on handler
+  failure return non-2xx so Stripe retries; replace insert-after-success
+  dedupe with an ATOMIC processing->processed claim (prevents concurrent
+  duplicate work, per docs.stripe.com/webhooks/process-undelivered-events);
+  stop swallowing refund/Connect handler errors (propagate to the ack);
+  per-refund mutations idempotent (retries redeliver). SEPARATE follow-up
+  (not this slice): charge.refunds.data pagination for >10 refunds.
+- R2 VERIFIED and adopted: 5-slice chunk-3 plan in HANDOFF (characterize
+  -> refund service [RISKIEST, mini-review after] -> refund.updated ->
+  connect service -> capability + dispatch cleanup). Two endpoints
+  confirmed: /stripe :18, /stripe-connect :231 (secret chain :238-258).
+  Known sharp edge pinned as-is: swallowed handler errors still 200-ack
+  and interact with pre-dispatch dedupe (no Stripe retry).
+- Branch rebased onto main merge 1e6a120 and pushed; retro-rule commits
+  (loop hygiene in CLAUDE.md + template) ride the chunk-3 PR.
+- Loop hygiene rules ACTIVE (CLAUDE.md): pre-fire lint (R2 linted before
+  firing), PR-CI freeze, commit-scoped gates, mid-chunk mini-review.
+- .env.test.local.template scaffolded; BLOCKED on Tommy filling op://
+  refs before local E2E works.
 - Chunk-2 adversarial review DONE (HIGH, read-only): extraction
   behavior-preserving, service boundary clean, W1 genuinely discharged;
   2 majors + 1 minor -> P11; risk_level low. Read-only compliance
@@ -70,17 +135,16 @@ Chunk 2 (checkout service extraction) now open, research phase.
 
 ## Next intents
 
-1. On P10 exit: triage; re-run gates myself (typecheck, unit suite,
-   commit-scoped file list, red-first evidence, old candidate-bug test
-   names gone); ONE commit.
-2. If clean: CHUNK 2 GATE — fixed floor (typecheck, unit, git diff
-   --check over the chunk range 511b0b3..HEAD) + adversarial chunk
-   review at HIGH read-only (review must verify W1 discharge: shims
-   simplified AND characterizations re-grounded; plus behavior-change
-   audit of P9/P10 red-first discipline) + push branch + open chunk-2 PR
-   (CI binding) + notify Tommy. Merge user-gated.
-3. After merge decision: chunk 3 (webhook service extraction from
-   stripe.routes.ts) research packet.
+1. On R2 exit: verify read-only compliance; grill the survey (spot-check
+   citations by execution); adopt slice plan into program HANDOFF.md;
+   author first chunk-3 packet (likely characterization baseline for the
+   webhook route, mirroring chunk 2's P5 pattern).
+2. Mid-chunk: after the flagged riskiest slice lands, scoped mini-review
+   at HIGH read-only on that slice's diff (new loop-hygiene rule).
+3. Chunk-3 gate mirrors prior chunks: fixed floor + adversarial review at
+   HIGH + PR (CI binding, PR-CI freeze on pushes) + Tommy merge decision.
+   After chunk 3: program closeout (HANDOFF final state, program summary
+   for Tommy).
 
 ## Standing facts
 

@@ -20,3 +20,19 @@
 12:58 P10 verified (typecheck 0, 276 tests, red-first, old candidate-bug cases replaced); chunk 2 slices COMPLETE; fixed floor green (diff --check 0); firing chunk-2 adversarial review at HIGH read-only
 13:04 Chunk-2 review: extraction clean, W1 discharged; 2 majors (guard after persistence, malformed containers) + 1 minor (vacuous uppercase test); P11 remediation authored
 13:22 P11 verified (typecheck 0, 289 tests, 14 red-first cases, commit 5d95c88 scoped); chunk 2 gate complete; pushing + opening PR
+13:27 Retro changes applied (Tommy-approved): pre-fire lint + PR-CI freeze + commit-scoped gates + mid-chunk mini-review in CLAUDE.md; template gets trap-100/diff-tree/HANDOFF-ownership boilerplate; .env.test.local.template scaffolded (needs Tommy 1Password refs); paths-ignore CI edit dropped (ineffective on pull_request triggers)
+13:28 PR #26 CI GREEN (Typecheck, Build, Unit, Auth E2E pass); chunk 2 fully gated; merge awaits Tommy; loop-state commits held local per PR-CI freeze
+13:33 Tommy approved merge; PR #26 merged (1e6a120); branch rebased+pushed; chunk 3 opened with R2 webhook survey (lint pre-passed)
+13:39 R2 verified (read-only clean, citations spot-checked); chunk-3 5-slice plan adopted into HANDOFF; P12 webhook characterization authored + pre-linted
+13:52 P12 verified (typecheck 0, 305 tests, 16 new cases, commit e5baec6 test-only); D2 queued (webhook retry semantics); P13 refund extraction next
+14:00 R3 fired (bazlyj3fp): Stripe webhook best-practices doc check to verify D2 recommendation (b); read-only + web search; running during P13 dead time
+14:08 R3 verified: SUPPORTED-WITH-CHANGES; citations spot-checked by curl; D2 resolved with refined spec (non-2xx on failure + atomic processing/processed claim + error propagation + per-refund idempotency; pagination follow-up separate)
+14:12 P13 VERIFIED (aa11e24): typecheck 0, unit 40/312, commit-scoped 4 files, frozen test file intact, 7 service cases quality-PASS; mini-review fired at HIGH (br3s2tegr)
+14:18 P13 mini-review PASSED (LOW risk, no drift, no blockers; 2 deferrable test gaps folded into P14); P14 fired (bxzevv7dk)
+14:30 P14 VERIFIED (bd15b59): unit 320 green on trap-100 retry (flake now seen director-side); tests 7->15 w/ gap cases; P15 fired (bm4qm5s26)
+14:36 arch-report adversarial review (HIGH, read-only) DONE: report direction sound, C claim factually wrong (landed fix safer), B incomplete (reprice inline), 5 missed money-path risks -> D3 in decisions-pending; read-only compliance verified, 0 commits by codex
+14:36 P15 VERIFIED (658f5b4): unit 41/325 green, scoped 4 files, 5 quality-PASS cases; P16 fired (bxvj3zqt1) - final chunk-3 slice
+14:42 D3 RESOLVED: Tommy approved all recommendations — D2 slice expands (refund pagination + stable refund key, binding red-first); chunk 4 approved (reprice extraction + PI/session idempotency keys + unpaid-order notice fix: order-received + suppress fulfillment until paid); E + atomicity explicitly deferred to follow-on program; report corrections into closeout docs. Spec in decisions-pending D3-RESOLVED; HANDOFF amendment left to driving lane (P16 in flight).
+14:48 P16 VERIFIED (c56b100): all 5 chunk-3 slices done; fixed floor green (41/330); chunk-3 adversarial review fired at HIGH (by55e2a7r)
+14:54 Chunk-3 review: HIGH verdict, 1 blocking (payment_failed mapping inline) + 2 minors; P17 remediation fired (bjhnx377y)
+15:05 P17 VERIFIED (b8061ea): 42/335 green, review finding remediated; opening chunk-3 PR (freeze starts)

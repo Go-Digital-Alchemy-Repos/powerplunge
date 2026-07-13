@@ -2,8 +2,12 @@ import { Router } from "express";
 import { storage } from "../../../storage";
 import { errorAlertingService } from "../../services/error-alerting.service";
 import { createOrderFinalizationService } from "../../services/order-finalization.service";
+import { createStripeConnectWebhookService } from "../../services/stripe-connect-webhook.service";
+import { createStripePaymentWebhookService } from "../../services/stripe-payment-webhook.service";
+import { createStripeRefundWebhookService } from "../../services/stripe-refund-webhook.service";
 
 const router = Router();
+type WebhookEventHandler = () => Promise<void>;
 
 export async function handlePaymentIntentSucceededWebhook(paymentIntent: any): Promise<void> {
   const finalizationService = createOrderFinalizationService();
@@ -13,6 +17,11 @@ export async function handlePaymentIntentSucceededWebhook(paymentIntent: any): P
 export async function handleCheckoutSessionCompletedWebhook(session: any): Promise<void> {
   const finalizationService = createOrderFinalizationService();
   await finalizationService.finalizeStripeCheckoutSession({ session });
+}
+
+export async function handleChargeRefundedWebhook(charge: any): Promise<void> {
+  const refundWebhookService = createStripeRefundWebhookService();
+  await refundWebhookService.synchronizeStripeChargeRefunds({ charge });
 }
 
 router.post("/stripe", async (req, res) => {
@@ -74,156 +83,40 @@ router.post("/stripe", async (req, res) => {
     throw err;
   }
 
-  if (event.type === "checkout.session.completed") {
-    const session = event.data.object as any;
-    await handleCheckoutSessionCompletedWebhook(session);
-  }
+  const handlers: Partial<Record<string, WebhookEventHandler>> = {
+    "checkout.session.completed": async () => {
+      const session = event.data.object as any;
+      await handleCheckoutSessionCompletedWebhook(session);
+    },
+    "payment_intent.succeeded": async () => {
+      const paymentIntent = event.data.object as any;
+      await handlePaymentIntentSucceededWebhook(paymentIntent);
+    },
+    "charge.refunded": async () => {
+      const charge = event.data.object as any;
+      await handleChargeRefundedWebhook(charge);
+    },
+    "refund.updated": async () => {
+      const stripeRefund = event.data.object as any;
+      const refundWebhookService = createStripeRefundWebhookService();
+      await refundWebhookService.synchronizeStripeRefundStatus({
+        refund: stripeRefund,
+        eventId: event.id,
+      });
+    },
+    "payment_intent.payment_failed": async () => {
+      const paymentIntent = event.data.object as any;
+      const paymentWebhookService = createStripePaymentWebhookService();
+      await paymentWebhookService.alertStripePaymentFailure({
+        paymentIntent,
+      });
+    },
+  };
 
-  if (event.type === "payment_intent.succeeded") {
-    const paymentIntent = event.data.object as any;
-    await handlePaymentIntentSucceededWebhook(paymentIntent);
-  }
-
-  if (event.type === "charge.refunded") {
-    const charge = event.data.object as any;
-    const paymentIntentId = charge.payment_intent;
-
-    if (paymentIntentId) {
-      try {
-        const { normalizeStripeRefundStatus, updateOrderPaymentStatus } = await import("../../services/refund.service");
-
-        const order = await storage.getOrderByPaymentIntentId(paymentIntentId);
-        if (order) {
-          const stripeClient = await stripeService.getClient();
-          if (stripeClient && charge.refunds?.data) {
-            for (const stripeRefund of charge.refunds.data) {
-              const existingRefund = await storage.getRefundByStripeRefundId(stripeRefund.id);
-              const normalizedStatus = normalizeStripeRefundStatus(stripeRefund.status || "pending");
-
-              if (existingRefund) {
-                if (existingRefund.status !== normalizedStatus) {
-                  await storage.updateRefund(existingRefund.id, {
-                    status: normalizedStatus,
-                    processedAt: normalizedStatus === "processed" ? new Date() : existingRefund.processedAt,
-                  });
-                  console.log(`[WEBHOOK] Updated refund ${existingRefund.id} status to ${normalizedStatus} (charge.refunded)`);
-                  if (normalizedStatus === "processed") {
-                    try {
-                      const { metaConversionsService } = await import("../../integrations/meta/MetaConversionsService");
-                      await metaConversionsService.enqueueRefundProcessed(existingRefund.id);
-                    } catch (metaErr: any) {
-                      console.error("[META] Failed to enqueue processed refund (charge.refunded/update):", metaErr.message || metaErr);
-                    }
-                  }
-                }
-              } else {
-                const createdRefund = await storage.createRefund({
-                  orderId: order.id,
-                  amount: stripeRefund.amount,
-                  reason: stripeRefund.reason || "Refund via Stripe",
-                  reasonCode: stripeRefund.reason || "other",
-                  type: stripeRefund.amount >= order.totalAmount ? "full" : "partial",
-                  source: "stripe",
-                  stripeRefundId: stripeRefund.id,
-                  status: normalizedStatus,
-                  processedAt: normalizedStatus === "processed" ? new Date() : undefined,
-                });
-                console.log(`[WEBHOOK] Created refund record for Stripe refund ${stripeRefund.id} on order ${order.id}`);
-                if (normalizedStatus === "processed") {
-                  try {
-                    const { metaConversionsService } = await import("../../integrations/meta/MetaConversionsService");
-                    await metaConversionsService.enqueueRefundProcessed(createdRefund.id);
-                  } catch (metaErr: any) {
-                    console.error("[META] Failed to enqueue processed refund (charge.refunded/create):", metaErr.message || metaErr);
-                  }
-                }
-              }
-            }
-
-            await updateOrderPaymentStatus(order.id);
-          }
-        } else {
-          console.warn(`[WEBHOOK] charge.refunded: No order found for payment_intent ${paymentIntentId}`);
-        }
-      } catch (refundErr: any) {
-        console.error("[WEBHOOK] Error processing charge.refunded:", refundErr.message);
-      }
-    }
-  }
-
-  if (event.type === "refund.updated") {
-    const stripeRefund = event.data.object as any;
-
-    try {
-      const { normalizeStripeRefundStatus, updateOrderPaymentStatus } = await import("../../services/refund.service");
-
-      const existingRefund = await storage.getRefundByStripeRefundId(stripeRefund.id);
-      if (existingRefund) {
-        const normalizedStatus = normalizeStripeRefundStatus(stripeRefund.status || "pending");
-
-        if (existingRefund.status !== normalizedStatus) {
-          await storage.updateRefund(existingRefund.id, {
-            status: normalizedStatus,
-            processedAt: normalizedStatus === "processed" ? new Date() : existingRefund.processedAt,
-          });
-
-          if (normalizedStatus === "processed") {
-            try {
-              const { metaConversionsService } = await import("../../integrations/meta/MetaConversionsService");
-              await metaConversionsService.enqueueRefundProcessed(existingRefund.id);
-            } catch (metaErr: any) {
-              console.error("[META] Failed to enqueue processed refund (refund.updated):", metaErr.message || metaErr);
-            }
-          }
-
-          await updateOrderPaymentStatus(existingRefund.orderId);
-
-          await storage.createAuditLog({
-            actor: "stripe_webhook",
-            action: "refund.status_synced",
-            entityType: "refund",
-            entityId: existingRefund.id,
-            metadata: {
-              orderId: existingRefund.orderId,
-              stripeRefundId: stripeRefund.id,
-              previousStatus: existingRefund.status,
-              newStatus: normalizedStatus,
-              stripeStatus: stripeRefund.status,
-              eventId: event.id,
-            },
-          });
-
-          console.log(`[WEBHOOK] Synced refund ${existingRefund.id} status: ${existingRefund.status} -> ${normalizedStatus}`);
-        }
-      } else {
-        console.warn(`[WEBHOOK] refund.updated: No local refund found for Stripe refund ${stripeRefund.id}`);
-      }
-    } catch (refundErr: any) {
-      console.error("[WEBHOOK] Error processing refund.updated:", refundErr.message);
-    }
-  }
-
-  if (event.type === "payment_intent.payment_failed") {
-    const paymentIntent = event.data.object as any;
-    const orderId = paymentIntent.metadata?.orderId;
-    const lastError = paymentIntent.last_payment_error;
-    
-    console.error("[WEBHOOK] Payment failed:", {
-      paymentIntentId: paymentIntent.id,
-      orderId,
-      errorCode: lastError?.code,
-      errorMessage: lastError?.message,
-    });
-
-    await errorAlertingService.alertPaymentFailure({
-      orderId: orderId || undefined,
-      email: paymentIntent.receipt_email || paymentIntent.metadata?.customerEmail,
-      amount: paymentIntent.amount,
-      paymentIntentId: paymentIntent.id,
-      errorMessage: lastError?.message || "Payment failed",
-      errorCode: lastError?.code,
-    });
-  }
+  const handler = Object.prototype.hasOwnProperty.call(handlers, event.type)
+    ? handlers[event.type]
+    : undefined;
+  if (handler) await handler();
 
   res.json({ received: true });
 });
@@ -303,84 +196,29 @@ router.post("/stripe-connect", async (req, res) => {
   }
 
   try {
-    if (event.type === "account.updated") {
-      const account = event.data.object;
-      
-      const payoutAccount = await storage.getAffiliatePayoutAccountByStripeAccountId(account.id);
-      if (payoutAccount) {
-        const prevState = {
-          payoutsEnabled: payoutAccount.payoutsEnabled,
-          chargesEnabled: payoutAccount.chargesEnabled,
-          detailsSubmitted: payoutAccount.detailsSubmitted,
-        };
-        
-        await storage.updateAffiliatePayoutAccount(payoutAccount.id, {
-          payoutsEnabled: account.payouts_enabled ?? false,
-          chargesEnabled: account.charges_enabled ?? false,
-          detailsSubmitted: account.details_submitted ?? false,
-          requirements: account.requirements as any,
+    const handlers: Partial<Record<string, WebhookEventHandler>> = {
+      "account.updated": async () => {
+        const account = event.data.object;
+        const connectWebhookService = createStripeConnectWebhookService();
+        await connectWebhookService.synchronizeAffiliatePayoutAccount({
+          account,
+          eventId: event.id,
         });
-        console.log(`[CONNECT] Updated payout account ${payoutAccount.id} for Stripe account ${account.id}`);
-        
-        const newState = {
-          payoutsEnabled: account.payouts_enabled ?? false,
-          chargesEnabled: account.charges_enabled ?? false,
-          detailsSubmitted: account.details_submitted ?? false,
-        };
-        
-        if (prevState.payoutsEnabled !== newState.payoutsEnabled ||
-            prevState.detailsSubmitted !== newState.detailsSubmitted) {
-          await storage.createAuditLog({
-            actor: "stripe_webhook",
-            action: "stripe_connect.account_updated",
-            entityType: "affiliate_payout_account",
-            entityId: payoutAccount.id,
-            metadata: {
-              stripeAccountId: account.id,
-              affiliateId: payoutAccount.affiliateId,
-              prevState,
-              newState,
-              eventId: event.id,
-            },
-          });
-        }
-      }
-    }
+      },
+      "capability.updated": async () => {
+        const capability = event.data.object;
+        const connectWebhookService = createStripeConnectWebhookService();
+        await connectWebhookService.synchronizeAffiliatePayoutCapability({
+          capability,
+          eventId: event.id,
+        });
+      },
+    };
 
-    if (event.type === "capability.updated") {
-      const capability = event.data.object;
-      const accountId = typeof capability.account === "string" 
-        ? capability.account 
-        : capability.account?.id;
-
-      if (accountId) {
-        const payoutAccount = await storage.getAffiliatePayoutAccountByStripeAccountId(accountId);
-        if (payoutAccount) {
-          const fullAccount = await stripeService.retrieveAccount(accountId);
-          await storage.updateAffiliatePayoutAccount(payoutAccount.id, {
-            payoutsEnabled: fullAccount.payouts_enabled ?? false,
-            chargesEnabled: fullAccount.charges_enabled ?? false,
-            detailsSubmitted: fullAccount.details_submitted ?? false,
-            requirements: fullAccount.requirements as any,
-          });
-          console.log(`[CONNECT] Updated capability for payout account ${payoutAccount.id}`);
-          
-          await storage.createAuditLog({
-            actor: "stripe_webhook",
-            action: "stripe_connect.capability_updated",
-            entityType: "affiliate_payout_account",
-            entityId: payoutAccount.id,
-            metadata: {
-              stripeAccountId: accountId,
-              affiliateId: payoutAccount.affiliateId,
-              capability: capability.id,
-              status: capability.status,
-              eventId: event.id,
-            },
-          });
-        }
-      }
-    }
+    const handler = Object.prototype.hasOwnProperty.call(handlers, event.type)
+      ? handlers[event.type]
+      : undefined;
+    if (handler) await handler();
   } catch (error) {
     console.error("Error processing Connect webhook:", error);
   }

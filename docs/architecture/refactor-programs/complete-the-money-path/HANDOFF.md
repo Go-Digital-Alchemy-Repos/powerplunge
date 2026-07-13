@@ -22,46 +22,64 @@ to the director. Branch: `refactor/complete-the-money-path`.
    creation behind a deep interface; /checkout shares it via a distinct
    operation; W1 shim cleanup) — all slices complete; chunk gate pending
 3. Webhook service (F: extract refund-sync + Connect handling from
-   stripe.routes.ts; route becomes pure dispatch) — pending
+   stripe.routes.ts; route becomes pure dispatch) — all slices complete;
+   chunk gate pending
 
-## Current Chunk Slices (chunk 2; from R1 survey, director-adopted)
+## Current Chunk Slices (chunk 3; from R2 survey, director-adopted)
 
-1. Characterization baseline: public-interface tests for
-   POST /create-payment-intent (happy path, validation errors,
-   affiliate/F&F branches, coupon math, tax, customer identity, order/item
-   writes) — test-only — done (P5)
-2. Pure quote nucleus: new `checkout.service.ts` owns product resolution,
-   affiliate/coupon pricing, tax-line construction behind a public quote
-   result; route consumes it — behavior-preserving — done (P6)
-3. PaymentIntent orchestration: move customer/attribution resolution,
-   draft order/items, PaymentIntent creation+linking into the service,
-   preserving call order and HTTP mapping — behavior-preserving,
-   riskiest slice (non-atomic writes, payments.routes.ts:494-561) — done (P7)
-4. /checkout migration: shared quote/customer/order-draft primitives via a
-   distinct `createCheckoutSession` operation, preserving no-coupon,
-   automatic-tax, zero-total-reject, manual-order-fallback policies —
-   behavior-preserving — done (P8)
-5. W1 cleanup: simplify the confirm-payment uppercase-USD/checkout-session
-   shim once both creation operations own amount/currency truths;
-   re-ground its characterization tests - BEHAVIOR-CHANGING - done (P9)
-6. Zero-total guard: reject empty carts and non-positive quantities at
-   create-payment-intent — BEHAVIOR-CHANGING, red test first (replaces the
-   two candidate-bug characterizations from P5) — done (P10; director
-   decision 2026-07-13 under delegated grilling authority)
+1. Characterization baseline: public-interface tests for POST /stripe and
+   POST /stripe-connect (secrets resolution, signature failures, delivery
+   dedupe, unknown events, payment-failure alerting, swallowed-error 200
+   acks) — test-only — done (P12)
+2. Extract charge.refunded into new `stripe-refund-webhook.service.ts`
+   with public-interface tests — behavior-preserving — RISKIEST slice:
+   gets the HIGH mid-chunk mini-review before further slices — done (P13)
+3. Move refund.updated into the same refund service —
+   behavior-preserving — done (P14)
+4. Extract account.updated into new `stripe-connect-webhook.service.ts`
+   with public-interface tests — behavior-preserving — done (P15)
+5. Add capability.updated to the Connect service; typed dispatch cleanup;
+   preserve or repoint server/src/routes/test/stripe-webhook.routes.ts —
+   behavior-preserving — done (P16)
+
+Route keeps: raw-body/signature verification, endpoint-specific secret
+resolution, delivery dedupe, HTTP acknowledgement mapping, explicit
+dispatch tables. Chunk gate additionally runs
+e2e/customer-stripe-webhook-success.spec.ts (real signed-route and
+duplicate assertions at :255-:410) — via CI if local E2E env is still
+unavailable.
 
 ## State
 
-Chunk 2 review remediation (P11) landed: create-payment-intent now rejects
-empty, missing, and malformed carts plus invalid quantities at the route entry,
-before Stripe access or customer persistence, while preserving the service
-guard as defense in depth. Uppercase-USD finalization is grounded at the service
-boundary. Chunk 2 is PR-ready. P11 checkpoint: this commit.
+P17 completed the blocking chunk-3 review remediation. The
+`payment_intent.payment_failed` field mapping, exact failure log, and
+`alertPaymentFailure` call now live behind `alertStripePaymentFailure` on the
+dependency-injected Stripe payment webhook service. Four public-interface cases
+cover order-aware mapping, missing-order and email fallback behavior, the
+default error message, and alert-error propagation. One additive route-seam
+case proves the endpoint still reaches alerting through the factory's default
+wiring. Both endpoint dispatch tables now require an own property before
+selecting a handler, so inherited object keys follow the unchanged unknown-event
+acknowledgement path. The frozen legacy route test file and
+`handlePaymentIntentSucceededWebhook` export remain unchanged. P17 checks:
+focused payment service and route tests, typecheck, full unit suite (42 files,
+335 tests), diff checks, and a standard review pass.
 
 ## Next Slice
 
-- Chunk 2 gate, owned by the director.
-- Review the full chunk diff for route/service regressions and run the fixed
-  chunk-gate floor plus selected risk-based checks before calling chunk 2 done.
+- Open the chunk-3 PR after the director independently verifies the P17
+  checkpoint, binding gates, and full chunk diff.
+- Files: none unless independent verification or PR CI finds a substantiated,
+  in-scope defect.
+- Classification: review and publication only; no planned implementation.
+- PR evidence: include the completed chunk-3 fixed floor, the P17 remediation
+  checks, and the binding CI result for
+  `e2e/customer-stripe-webhook-success.spec.ts` if local E2E remains unavailable.
+- Review: verify route/service regressions, delivery semantics, compatibility
+  exports, dispatch behavior for inherited keys, and test quality across the
+  full chunk diff.
+- Outcome: open the PR when verification approves. Do not merge without director
+  approval.
 
 ## Risks / Constraints
 
