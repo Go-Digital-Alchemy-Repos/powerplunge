@@ -8,19 +8,18 @@ Chunk 2 (checkout service extraction) now open, research phase.
 
 ## In-flight
 
-- Packet P9 W1 shim cleanup
-  (planning/handoffs/2026-07-13-p9-w1-shim-cleanup.md)
-  FIRED 2026-07-13 12:37 at gpt-5.6-sol medium. BEHAVIOR-CHANGING,
-  red-test-first. New contract (director decision): currency
-  case-insensitive end to end; checkout_session PIs at confirm-payment
-  fall through to success (no route amount/currency 4xx — session
-  integrity owned by webhook/session-proof finalization); non-session PI
-  contract unchanged. Discharges W1 (entry deleted on land).
-  RUN_DIR=/var/folders/kg/vqcvwwlx3xs4wblm4wpvpkz00000gn/T//codex-handoff/20260713-123703-2026-07-13-p9-w1-shim-cleanup
-- P8 VERIFIED (7ce1bd2): typecheck 0; unit 39/273 green; frozen
-  characterization file untouched (empty diff); payments.routes.test.ts
-  additive 15->18 it(); commit scoped to 5 files; no review findings.
-- P7 VERIFIED (42d6be2): typecheck 0; unit 39/266 green; scoped; clean.
+- Packet P10 zero-total guard (FINAL chunk-2 slice)
+  (planning/handoffs/2026-07-13-p10-zero-total-guard.md)
+  FIRED 2026-07-13 12:50 at gpt-5.6-sol medium. BEHAVIOR-CHANGING,
+  red-first. Contract: empty cart -> 400 "Cart is empty"; non-positive-
+  integer quantity -> 400 "Invalid item quantity"; guard in the PI
+  service operation (NOT shared quote()), /checkout unchanged. Replaces
+  the two P5 candidate-bug characterizations.
+  RUN_DIR=/var/folders/kg/vqcvwwlx3xs4wblm4wpvpkz00000gn/T//codex-handoff/20260713-125003-2026-07-13-p10-zero-total-guard
+- P9 VERIFIED (d7199d2): typecheck 0; unit 39/271 green; red-first
+  evidence in report; W1 discharged; commit scoped to 4 files; Codex
+  review self-caught a deleted-coverage hole and re-grounded it.
+- P8 VERIFIED (7ce1bd2), P7 VERIFIED (42d6be2), P6 VERIFIED (088589e).
 - P5 VERIFIED (0285f00): typecheck 0; unit 38/253 green; 16 new cases,
   groups a-h; commit test-only; shapes clean (objectContaining at seams,
   no snapshots; candidate-bug cases commented).
@@ -66,17 +65,17 @@ Chunk 2 (checkout service extraction) now open, research phase.
 
 ## Next intents
 
-1. On P6 exit: triage; re-run gates myself (typecheck, unit suite,
-   characterization test files UNTOUCHED per git diff --name-only, new
-   service test count >= 8); review checkout.service.ts interface against
-   the deep-service goal (no req/res leakage, domain names) and its tests
-   against the brittle-seam rule; ONE commit.
-2. If clean: author slice 3 (PaymentIntent orchestration — riskiest,
-   non-atomic writes at :488-571 move into the service preserving call
-   order and HTTP mapping), fire at medium.
-3. Then slices 4-6 per HANDOFF; chunk-2 gate mirrors chunk 1: fixed floor
-   + adversarial review at HIGH (W1 expiry check included) + PR (CI
-   binding) + Tommy merge decision.
+1. On P10 exit: triage; re-run gates myself (typecheck, unit suite,
+   commit-scoped file list, red-first evidence, old candidate-bug test
+   names gone); ONE commit.
+2. If clean: CHUNK 2 GATE — fixed floor (typecheck, unit, git diff
+   --check over the chunk range 511b0b3..HEAD) + adversarial chunk
+   review at HIGH read-only (review must verify W1 discharge: shims
+   simplified AND characterizations re-grounded; plus behavior-change
+   audit of P9/P10 red-first discipline) + push branch + open chunk-2 PR
+   (CI binding) + notify Tommy. Merge user-gated.
+3. After merge decision: chunk 3 (webhook service extraction from
+   stripe.routes.ts) research packet.
 
 ## Standing facts
 
