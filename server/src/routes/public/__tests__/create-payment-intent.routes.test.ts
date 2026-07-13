@@ -225,13 +225,38 @@ describe("POST /create-payment-intent", () => {
     expect(mocks.storage.createOrder).not.toHaveBeenCalled();
   });
 
-  it("returns the current server error for malformed items", async () => {
+  it("preserves customer validation precedence when the cart is also invalid", async () => {
+    const request = await startApp();
+    const response = await request(requestBody({
+      items: [],
+      customer: { ...customerInput, email: "bad", phone: "x", address: "", state: "nope", zipCode: "2" },
+    }));
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ errors: [
+      { field: "email", code: "invalid_format", message: "Please enter a valid email address" },
+      { field: "phone", code: "invalid_format", message: "Please enter a valid phone number" },
+      { field: "line1", code: "required", message: "Street address is required (min 3 characters)" },
+      { field: "state", code: "invalid", message: "Please select a valid US state" },
+      { field: "postalCode", code: "invalid_format", message: "Valid ZIP code required (e.g. 12345)" },
+    ] });
+    expect(mocks.stripeService.getClient).not.toHaveBeenCalled();
+    expect(mocks.storage.createCustomer).not.toHaveBeenCalled();
+    expect(mocks.storage.updateCustomer).not.toHaveBeenCalled();
+  });
+
+  it("rejects a malformed item container at the route boundary", async () => {
     const request = await startApp();
     const response = await request(requestBody({ items: {} }));
 
-    expect(response.status).toBe(500);
-    expect(await response.json()).toEqual({ message: "items is not iterable" });
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ message: "Cart is empty" });
+    expect(mocks.stripeService.getClient).not.toHaveBeenCalled();
+    expect(mocks.storage.createCustomer).not.toHaveBeenCalled();
+    expect(mocks.storage.updateCustomer).not.toHaveBeenCalled();
+    expect(mocks.stripeClient.tax.calculations.create).not.toHaveBeenCalled();
     expect(mocks.storage.createOrder).not.toHaveBeenCalled();
+    expect(mocks.stripeClient.paymentIntents.create).not.toHaveBeenCalled();
   });
 
   it("returns the exact response when Stripe is unconfigured", async () => {
@@ -429,6 +454,10 @@ describe("POST /create-payment-intent", () => {
 
     expect(response.status).toBe(400);
     expect(await response.json()).toEqual({ message: "Cart is empty" });
+    expect(mocks.stripeService.getClient).not.toHaveBeenCalled();
+    expect(mocks.storage.createCustomer).not.toHaveBeenCalled();
+    expect(mocks.storage.updateCustomer).not.toHaveBeenCalled();
+    expect(mocks.stripeClient.tax.calculations.create).not.toHaveBeenCalled();
     expect(mocks.storage.createOrder).not.toHaveBeenCalled();
     expect(mocks.stripeClient.paymentIntents.create).not.toHaveBeenCalled();
   });
@@ -439,6 +468,35 @@ describe("POST /create-payment-intent", () => {
 
     expect(response.status).toBe(400);
     expect(await response.json()).toEqual({ message: "Invalid item quantity" });
+    expect(mocks.stripeService.getClient).not.toHaveBeenCalled();
+    expect(mocks.storage.createCustomer).not.toHaveBeenCalled();
+    expect(mocks.storage.updateCustomer).not.toHaveBeenCalled();
+    expect(mocks.stripeClient.tax.calculations.create).not.toHaveBeenCalled();
+    expect(mocks.storage.createOrder).not.toHaveBeenCalled();
+    expect(mocks.stripeClient.paymentIntents.create).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { name: "missing items", items: undefined, message: "Cart is empty" },
+    { name: "empty string", items: "", message: "Cart is empty" },
+    { name: "null", items: null, message: "Cart is empty" },
+    { name: "plain object", items: {}, message: "Cart is empty" },
+    { name: "element without quantity", items: [{}], message: "Invalid item quantity" },
+    {
+      name: "string quantity",
+      items: [{ productId: product.id, quantity: "2" }],
+      message: "Invalid item quantity",
+    },
+  ])("rejects $name before any external access", async ({ items, message }) => {
+    const request = await startApp();
+    const response = await request(requestBody({ items }));
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ message });
+    expect(mocks.stripeService.getClient).not.toHaveBeenCalled();
+    expect(mocks.storage.createCustomer).not.toHaveBeenCalled();
+    expect(mocks.storage.updateCustomer).not.toHaveBeenCalled();
+    expect(mocks.stripeClient.tax.calculations.create).not.toHaveBeenCalled();
     expect(mocks.storage.createOrder).not.toHaveBeenCalled();
     expect(mocks.stripeClient.paymentIntents.create).not.toHaveBeenCalled();
   });

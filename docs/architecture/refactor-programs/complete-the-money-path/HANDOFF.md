@@ -51,11 +51,11 @@ to the director. Branch: `refactor/complete-the-money-path`.
 
 ## State
 
-Chunk 2 slice 6 (P10) complete: create-payment-intent rejects empty or missing
-carts and quantities that are not positive integer numbers before product,
-order, tax, or Stripe PaymentIntent access. Chunk 2's implementation slices are
-complete. P10 checkpoint: this commit. Verified after standard review with
-focused route/service tests, typecheck, and the full unit suite green.
+Chunk 2 review remediation (P11) landed: create-payment-intent now rejects
+empty, missing, and malformed carts plus invalid quantities at the route entry,
+before Stripe access or customer persistence, while preserving the service
+guard as defense in depth. Uppercase-USD finalization is grounded at the service
+boundary. Chunk 2 is PR-ready. P11 checkpoint: this commit.
 
 ## Next Slice
 

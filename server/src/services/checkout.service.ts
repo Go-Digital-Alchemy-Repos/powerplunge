@@ -215,6 +215,23 @@ export class CheckoutInvalidItemQuantityError extends Error {
   }
 }
 
+export function validatePaymentIntentCart(items: unknown): void {
+  if (!Array.isArray(items) || items.length === 0) {
+    throw new CheckoutEmptyCartError();
+  }
+  for (const item of items) {
+    if (
+      !item
+      || typeof item !== "object"
+      || typeof item.quantity !== "number"
+      || !Number.isInteger(item.quantity)
+      || item.quantity <= 0
+    ) {
+      throw new CheckoutInvalidItemQuantityError();
+    }
+  }
+}
+
 type DiscountedCheckoutOrderItem = CheckoutOrderItem & { discountAmount?: number };
 
 function allocateDiscountAcrossUnits(unitPrices: number[], discountAmount: number): number[] {
@@ -428,14 +445,7 @@ export class CheckoutService {
     input: CreatePaymentIntentCheckoutInput,
   ): Promise<CreatePaymentIntentCheckoutResult> {
     const { items } = input;
-    if (items === undefined || (Array.isArray(items) && items.length === 0)) {
-      throw new CheckoutEmptyCartError();
-    }
-    for (const item of items) {
-      if (typeof item.quantity !== "number" || !Number.isInteger(item.quantity) || item.quantity <= 0) {
-        throw new CheckoutInvalidItemQuantityError();
-      }
-    }
+    validatePaymentIntentCart(items);
 
     const quote = await this.quote(input);
     const order = await this.deps.storage.createOrder({

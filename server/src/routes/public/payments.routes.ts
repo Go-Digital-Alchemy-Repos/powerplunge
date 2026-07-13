@@ -15,6 +15,7 @@ import {
   CheckoutUnknownProductError,
   CheckoutZeroPayableError,
   createCheckoutService,
+  validatePaymentIntentCart,
 } from "../../services/checkout.service";
 import { db } from "../../../db";
 import { eq, and, sql } from "drizzle-orm";
@@ -180,11 +181,6 @@ router.post("/create-payment-intent", paymentLimiter, async (req: any, res) => {
     const normalizedMetaTracking = normalizeMetaTracking(metaTracking);
     const isBillingSame = billingSame !== false;
 
-    const stripeClient = await stripeService.getClient();
-    if (!stripeClient) {
-      return res.status(400).json({ message: "Stripe is not configured" });
-    }
-
     const parsedCustomer = insertCustomerSchema.parse(customer);
     const customerData = { ...parsedCustomer, email: normalizeEmail(parsedCustomer.email) };
 
@@ -242,6 +238,20 @@ router.post("/create-payment-intent", paymentLimiter, async (req: any, res) => {
 
     if (allErrors.length > 0) {
       return res.status(400).json({ errors: allErrors });
+    }
+
+    try {
+      validatePaymentIntentCart(items);
+    } catch (error) {
+      if (error instanceof CheckoutEmptyCartError || error instanceof CheckoutInvalidItemQuantityError) {
+        return res.status(400).json({ message: error.message });
+      }
+      throw error;
+    }
+
+    const stripeClient = await stripeService.getClient();
+    if (!stripeClient) {
+      return res.status(400).json({ message: "Stripe is not configured" });
     }
 
     let affiliateSessionId: string | null = null;

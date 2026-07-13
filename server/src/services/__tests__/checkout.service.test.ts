@@ -314,6 +314,39 @@ describe("CheckoutService createPaymentIntentCheckout", () => {
     expect(deps.createPaymentIntent).not.toHaveBeenCalled();
   });
 
+  it.each(["", null, {}])("rejects malformed item container %j before invoking dependencies", async (items) => {
+    const deps = makeDependencies();
+
+    await expect(
+      createCheckoutService(deps).createPaymentIntentCheckout(paymentIntentCheckoutInput({ items })),
+    ).rejects.toEqual(new CheckoutEmptyCartError());
+
+    expect(deps.storage.getProduct).not.toHaveBeenCalled();
+    expect(deps.calculateTax).not.toHaveBeenCalled();
+    expect(deps.storage.createOrder).not.toHaveBeenCalled();
+    expect(deps.storage.createOrderItem).not.toHaveBeenCalled();
+    expect(deps.storage.updateOrder).not.toHaveBeenCalled();
+    expect(deps.createPaymentIntent).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { items: [{}] },
+    { items: [{ productId: "product-1", quantity: "2" }] },
+  ])("rejects malformed item elements before invoking dependencies", async ({ items }) => {
+    const deps = makeDependencies();
+
+    await expect(
+      createCheckoutService(deps).createPaymentIntentCheckout(paymentIntentCheckoutInput({ items })),
+    ).rejects.toEqual(new CheckoutInvalidItemQuantityError());
+
+    expect(deps.storage.getProduct).not.toHaveBeenCalled();
+    expect(deps.calculateTax).not.toHaveBeenCalled();
+    expect(deps.storage.createOrder).not.toHaveBeenCalled();
+    expect(deps.storage.createOrderItem).not.toHaveBeenCalled();
+    expect(deps.storage.updateOrder).not.toHaveBeenCalled();
+    expect(deps.createPaymentIntent).not.toHaveBeenCalled();
+  });
+
   it.each([0, -1, 1.5, "2"])(
     "rejects invalid item quantity %j before invoking dependencies",
     async (quantity) => {
