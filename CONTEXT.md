@@ -20,6 +20,10 @@ _Avoid_: Side effects, after-payment tasks
 A durable claim that one process owns finalizing an Order. The claim prevents concurrent payment triggers from performing the same Order finalization more than once.
 _Avoid_: Status check, webhook dedupe
 
+**Account linking**:
+Reassignment of pre-auth Orders from other customer rows with the same normalized email to the authenticated customer. Account linking also marks the donor customer rows as merged into the authenticated customer. It is unrelated to the Finalization claim.
+_Avoid_: Order claim, finalization claim
+
 **Obligation ledger**:
 A durable per-Order record of post-payment obligations and whether each one has been completed. The ledger lets finalization resume safely without repeating obligations that already succeeded.
 _Avoid_: Side-effect flags, email sent checks

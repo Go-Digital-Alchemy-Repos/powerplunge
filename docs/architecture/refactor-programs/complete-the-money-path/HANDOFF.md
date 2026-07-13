@@ -16,7 +16,7 @@ to the director. Branch: `refactor/complete-the-money-path`.
 ## Chunks
 
 1. Small unlocks (A: extract order-notification service; C: dedupe paid-state
-   gate at confirm-payment; D: split "claim" vocabulary) — in progress
+   gate at confirm-payment; D: split "claim" vocabulary) — done
 2. Checkout service (B: extract create-payment-intent pricing/discount/order
    creation behind a deep interface) — pending
 3. Webhook service (F: extract refund-sync + Connect handling from
@@ -29,36 +29,22 @@ to the director. Branch: `refactor/complete-the-money-path`.
 2. Delete duplicated paid-state guards at confirm-payment call site
    (payments.routes.ts:936-965), trust service `skipped` reasons —
    behavior-preserving — done (P2)
-3. Rename `order-claim.service` to account-linking vocabulary; update
-   CONTEXT.md; note the finalization claim's home — behavior-preserving —
-   next
+3. Separate account-linking vocabulary from the Finalization claim; update
+   CONTEXT.md — behavior-preserving — done (P3)
 
 ## State
 
-P2 complete on `refactor/complete-the-money-path`: confirm-payment delegates
-order-not-found, amount, and currency paid-state decisions to order
-finalization and translates skipped reasons to the existing HTTP contract.
-Admin manual-order notification imports the notification service directly;
-the payments route compatibility re-export is gone. Next slice: rename
-`order-claim.service` to account-linking vocabulary and document the
-finalization claim's actual home.
+P3 complete on `refactor/complete-the-money-path`: the account-linking service,
+exports, result type, log prefix, customer auth call sites, and test mock use
+account-linking vocabulary. `CONTEXT.md` distinguishes account linking from the
+Finalization claim. All chunk 1 slices are complete.
 
 ## Next Slice
 
-- Slice 3 (P3): rename `server/src/services/order-claim.service.ts` and its
-  public vocabulary to account-linking/order-reassignment language; update
-  the customer auth call sites and test mock path. Update `CONTEXT.md` to
-  clarify that order finalization and `markOrderPaidIfPending` own the domain
-  Finalization claim. Choose exact account-linking names from existing domain
-  language during the slice; do not conflate ownership reassignment with the
-  Finalization claim.
-- Classification: behavior-preserving.
-- Test: existing customer auth and order-claim service coverage stays green;
-  add behavior coverage only if inspection finds a public-interface gap before
-  renaming.
-- Checks: `npm run typecheck` exit 0; `npm run with:local-auth-env -- npm
-  run test:unit` exit 0; zero scoped matches for the old service filename and
-  claim vocabulary after the rename.
+- Chunk 1 gate: adversarial review packet, branch push, and PR.
+- Owner: director. This is not a Codex implementation packet.
+- Review: inspect the full chunk diff for architectural regressions and verify
+  all chunk checks before publishing the branch.
 
 ## Risks / Constraints
 

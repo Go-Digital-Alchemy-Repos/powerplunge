@@ -827,7 +827,7 @@ POST /api/customer/auth/reset-password  { token, newPassword }
 GET  /api/customer/auth/me              → returns current customer (requires auth)
 ```
 
-**Order claiming:** On registration/login, orders placed as guest with the same email are automatically linked to the new customer account via `claimOrdersByEmail()`.
+**Account linking:** On registration/login, orders placed as guest with the same email are automatically linked to the authenticated customer via `linkOrdersToCustomerByEmail()`.
 
 ---
 

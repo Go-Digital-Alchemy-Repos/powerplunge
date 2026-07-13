@@ -4,7 +4,7 @@ import { z } from "zod";
 import { storage } from "../../../storage";
 import { requireCustomerAuth, type AuthenticatedRequest } from "../../middleware/customer-auth.middleware";
 import { authLimiter, passwordResetLimiter } from "../../middleware/rate-limiter";
-import { claimOrdersByEmail } from "../../services/order-claim.service";
+import { linkOrdersToCustomerByEmail } from "../../services/account-linking.service";
 import {
   BETTER_AUTH_CUSTOMER_PASSWORD_PLACEHOLDER,
   applyBetterAuthHeaders,
@@ -144,8 +144,8 @@ router.post("/register", authLimiter, async (req, res) => {
     const signIn = await signInCustomerWithPassword({ email, password: parsed.password });
     applyBetterAuthHeaders(res, signIn.headers);
 
-    claimOrdersByEmail(customer.id, email, "register").catch(
-      (err) => console.error("[ORDER-CLAIM] register failed:", err),
+    linkOrdersToCustomerByEmail(customer.id, email, "register").catch(
+      (err) => console.error("[ACCOUNT-LINKING] register failed:", err),
     );
 
     res.json({
@@ -191,8 +191,8 @@ router.post("/login", authLimiter, async (req, res) => {
     }
 
     applyBetterAuthHeaders(res, signIn.headers);
-    claimOrdersByEmail(customer.id, email, "login").catch(
-      (err) => console.error("[ORDER-CLAIM] login failed:", err),
+    linkOrdersToCustomerByEmail(customer.id, email, "login").catch(
+      (err) => console.error("[ACCOUNT-LINKING] login failed:", err),
     );
 
     res.json({
@@ -246,8 +246,8 @@ router.post("/verify-magic-link", passwordResetLimiter, async (req, res) => {
     const { token } = verifyMagicLinkSchema.parse(req.body);
     const customer = await verifyCustomerMagicLink(req, res, token);
 
-    claimOrdersByEmail(customer.id, customer.email, "magic-link").catch(
-      (err) => console.error("[ORDER-CLAIM] magic-link failed:", err),
+    linkOrdersToCustomerByEmail(customer.id, customer.email, "magic-link").catch(
+      (err) => console.error("[ACCOUNT-LINKING] magic-link failed:", err),
     );
 
     res.json({
@@ -379,8 +379,8 @@ router.post("/reset-password", passwordResetLimiter, async (req, res) => {
     const { token, newPassword } = resetPasswordSchema.parse(req.body);
     const { customer } = await resetCustomerPasswordAndCreateSession(res, { token, newPassword });
 
-    claimOrdersByEmail(customer.id, customer.email, "password-reset").catch(
-      (err) => console.error("[ORDER-CLAIM] password-reset failed:", err),
+    linkOrdersToCustomerByEmail(customer.id, customer.email, "password-reset").catch(
+      (err) => console.error("[ACCOUNT-LINKING] password-reset failed:", err),
     );
 
     res.json({
@@ -404,8 +404,8 @@ router.post("/verify-session", async (req, res) => {
     if (!context) {
       return res.json({ valid: false });
     }
-    claimOrdersByEmail(context.customer.id, context.customer.email, "session").catch(
-      (err) => console.error("[ORDER-CLAIM] session failed:", err),
+    linkOrdersToCustomerByEmail(context.customer.id, context.customer.email, "session").catch(
+      (err) => console.error("[ACCOUNT-LINKING] session failed:", err),
     );
     res.json({
       valid: true,
