@@ -41,22 +41,24 @@ dependency. Next slice: deduplicate the confirm-payment paid-state guards.
 
 ## Next Slice
 
-- Files: `server/src/routes/public/payments.routes.ts` (remove
-  :1276-1457 function; keep call at :1189 via import; stop injecting at
-  :976-977), `server/src/routes/webhooks/stripe.routes.ts` (:5,:10,:15 stop
-  importing from route), new `server/src/services/order-notification.service.ts`,
-  `server/src/services/order-finalization.service.ts` (factory defaults the
-  `sendOrderNotification` dep; explicit dep override stays for tests), new
-  test `server/src/services/__tests__/order-notification.service.test.ts`.
-- Classification: behavior-preserving (verbatim move + wiring).
-- Test: characterization at the public interface before the move — existing
-  order-finalization tests stay green; new service test asserts observable
-  behavior only (recipient, subject, order id reach the email seam; both
-  email outcomes logged, failures never throw). No HTML-body snapshots, no
-  internal call-order assertions.
-- Checks: `npm run typecheck` exit 0; `npm run with:local-auth-env -- npm run
-  test:unit` exit 0; `rtk grep -c 'from "../public/payments.routes"'
-  server/src/routes/webhooks/stripe.routes.ts` returns 0 matches.
+- Slice 2 (P2): delete the duplicated paid-state guards at the
+  confirm-payment call site in `server/src/routes/public/payments.routes.ts`
+  (route-level pre-checks duplicating
+  `order-finalization.service.ts` guard logic at :83-98); trust the
+  service's `skipped` reasons instead. Plus P1 remainder: switch
+  `server/src/routes/admin/orders.routes.ts:220` to import
+  `sendOrderNotification` from the service and drop the compatibility
+  re-export from payments.routes.ts (:11,:15).
+- Classification: behavior-preserving (guard logic already lives in the
+  service; route duplicate is dead weight).
+- Test: existing confirm-payment/finalization tests are the
+  characterization net and stay green untouched; no new test file expected
+  unless a guard behavior turns out NOT to be covered — then cover it at
+  the route's public interface first, then delete the duplicate.
+- Checks: `npm run typecheck` exit 0; `npm run with:local-auth-env -- npm
+  run test:unit` exit 0; zero matches for `payments.routes` imports in
+  admin orders.routes.ts; no `sendOrderNotification` re-export remains in
+  payments.routes.ts.
 
 ## Risks / Constraints
 
