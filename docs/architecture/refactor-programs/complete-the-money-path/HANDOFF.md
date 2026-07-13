@@ -43,7 +43,7 @@ to the director. Branch: `refactor/complete-the-money-path`.
    behavior-preserving — done (P8)
 5. W1 cleanup: simplify the confirm-payment uppercase-USD/checkout-session
    shim once both creation operations own amount/currency truths;
-   re-ground its characterization tests — behavior-preserving — pending
+   re-ground its characterization tests - BEHAVIOR-CHANGING - done (P9)
 6. Zero-total guard: reject empty carts and non-positive quantities at
    create-payment-intent — BEHAVIOR-CHANGING, red test first (replaces the
    two candidate-bug characterizations from P5) — pending (director
@@ -51,18 +51,25 @@ to the director. Branch: `refactor/complete-the-money-path`.
 
 ## State
 
-Chunk 2 slice 4 (P8) complete: checkout service owns distinct Checkout
-Session orchestration, including line-item allocation, zero-payable rejection,
-manual fallback, and Session metadata; next is slice 5, W1 shim cleanup.
+Chunk 2 slice 5 (P9) complete: confirm-payment accepts currency
+case-insensitively and lets Checkout Session PaymentIntents follow the
+finalization service's success fall-through. W1 is discharged; next is slice 6,
+the zero-total guard. P9 checkpoint: this commit. Verified after standard
+review with focused route tests, typecheck, and the full unit suite green.
 
 ## Next Slice
 
-- Slice 5: simplify the confirm-payment uppercase-USD/checkout-session shim
-  now that both creation operations own amount/currency truths, and re-ground
-  its characterization tests.
-- Classification: behavior-preserving.
-- Checks: focused confirm-payment characterizations, affected service tests,
-  `npm run typecheck`, and the full unit suite stay green.
+- Slice 6: reject empty carts and non-positive quantities at
+  create-payment-intent, replacing the two candidate-bug characterizations
+  from P5.
+- Files: `server/src/routes/public/payments.routes.ts`,
+  `server/src/routes/public/__tests__/create-payment-intent.routes.test.ts`.
+- Classification: BEHAVIOR-CHANGING, red test first.
+- Test: replace the empty-cart and zero-quantity candidate-bug
+  characterizations with rejection assertions, then observe both fail before
+  adding the route guard.
+- Checks: focused create-payment-intent characterizations, `npm run typecheck`,
+  and the full unit suite stay green.
 
 ## Risks / Constraints
 

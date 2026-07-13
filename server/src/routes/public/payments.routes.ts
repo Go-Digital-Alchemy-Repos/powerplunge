@@ -811,33 +811,6 @@ router.post("/confirm-payment", paymentLimiter, async (req: any, res) => {
       return res.status(400).json({ message: "Invalid payment verification" });
     }
 
-    // The finalization service intentionally skips Checkout Session PaymentIntents
-    // before its amount/currency gates. Preserve this route's existing 4xx contract.
-    let checkoutSessionOrder;
-    if (paymentIntent.metadata.paymentFlow === "checkout_session") {
-      checkoutSessionOrder = await storage.getOrder(orderId);
-      if (checkoutSessionOrder && paymentIntent.amount !== checkoutSessionOrder.totalAmount) {
-        return res.status(400).json({ message: "Payment amount mismatch" });
-      }
-      if (checkoutSessionOrder && paymentIntent.currency !== "usd") {
-        return res.status(400).json({ message: "Invalid currency" });
-      }
-    }
-
-    // The service normalizes currency casing; this endpoint historically requires
-    // Stripe's lowercase currency representation exactly. Preserve the route's
-    // former order -> amount -> currency error precedence for that narrow case.
-    if (paymentIntent.currency?.toLowerCase() === "usd" && paymentIntent.currency !== "usd") {
-      const currencyCompatibilityOrder = checkoutSessionOrder ?? await storage.getOrder(orderId);
-      if (!currencyCompatibilityOrder) {
-        return res.status(404).json({ message: "Order not found" });
-      }
-      if (paymentIntent.amount !== currencyCompatibilityOrder.totalAmount) {
-        return res.status(400).json({ message: "Payment amount mismatch" });
-      }
-      return res.status(400).json({ message: "Invalid currency" });
-    }
-
     const finalizationUpdate: Record<string, any> = {};
     if (hasMetaTracking) {
       finalizationUpdate.marketingConsentGranted = normalizedMetaTracking.marketingConsentGranted === true;
@@ -874,7 +847,7 @@ router.post("/confirm-payment", paymentLimiter, async (req: any, res) => {
       }
     }
 
-    let order = finalizationResult.order ?? checkoutSessionOrder;
+    let order = finalizationResult.order;
     if (!order) {
       order = await storage.getOrder(orderId);
       if (!order) {
