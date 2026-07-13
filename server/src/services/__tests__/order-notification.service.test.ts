@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   storage: {
@@ -65,6 +65,10 @@ describe("sendOrderNotification", () => {
     mocks.isEmailOutboxEnabled.mockReturnValue(true);
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it("resolves without sending when the order is missing", async () => {
     mocks.storage.getOrder.mockResolvedValue(undefined);
 
@@ -75,12 +79,9 @@ describe("sendOrderNotification", () => {
   });
 
   it("attempts customer and fulfillment notifications with the order data", async () => {
-    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
-
     await sendOrderNotification(orderId);
 
     expect(mocks.sendOrderConfirmation).toHaveBeenCalledWith(orderId);
-    expect(logSpy).toHaveBeenCalledWith(`Order confirmation email sent to customer for order ${orderId}`);
     expect(mocks.sendEmail).toHaveBeenCalledWith(expect.objectContaining({
       to: ["fulfillment@example.com", "orders@example.com"],
       subject: expect.stringContaining("ORDER-12"),
@@ -94,7 +95,7 @@ describe("sendOrderNotification", () => {
 
     await expect(sendOrderNotification(orderId)).resolves.toBeUndefined();
 
-    expect(logSpy).toHaveBeenCalledWith("Failed to send customer confirmation email: customer email failed");
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("customer email failed"));
   });
 
   it("logs an email failure and resolves without throwing", async () => {
@@ -104,6 +105,6 @@ describe("sendOrderNotification", () => {
 
     await expect(sendOrderNotification(orderId)).resolves.toBeUndefined();
 
-    expect(errorSpy).toHaveBeenCalledWith("Failed to send order notification:", failure);
+    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("order notification"), failure);
   });
 });

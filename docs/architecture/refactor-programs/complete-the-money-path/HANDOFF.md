@@ -38,6 +38,7 @@ P3 complete on `refactor/complete-the-money-path`: the account-linking service,
 exports, result type, log prefix, customer auth call sites, and test mock use
 account-linking vocabulary. `CONTEXT.md` distinguishes account linking from the
 Finalization claim. All chunk 1 slices are complete.
+Chunk 1 review remediation has landed, and the chunk is ready for PR.
 
 ## Next Slice
 

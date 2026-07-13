@@ -7,7 +7,11 @@ const mocks = vi.hoisted(() => ({
   storage: {
     getProcessedWebhookEvent: vi.fn(),
     createProcessedWebhookEvent: vi.fn(),
+    getOrder: vi.fn(),
     getOrderByStripeSession: vi.fn(),
+    markOrderPaidIfPending: vi.fn(),
+    createCouponRedemption: vi.fn(),
+    incrementCouponUsage: vi.fn(),
     updateOrder: vi.fn(),
   },
   stripeService: {
@@ -29,6 +33,9 @@ vi.mock("../../../integrations/stripe/StripeService", () => ({ stripeService: mo
 vi.mock("../../../services/order-finalization.service", () => ({
   createOrderFinalizationService: vi.fn(() => mocks.finalizationService),
 }));
+vi.mock("../../../services/order-notification.service", () => ({
+  sendOrderNotification: mocks.sendOrderNotification,
+}));
 vi.mock("../../../services/affiliate-commission.service", () => ({
   affiliateCommissionService: {
     recordCommission: mocks.recordCommission,
@@ -44,10 +51,6 @@ vi.mock("../../../services/error-alerting.service", () => ({
     alertWebhookFailure: mocks.alertWebhookFailure,
   },
 }));
-vi.mock("../../public/payments.routes", () => ({
-  sendOrderNotification: mocks.sendOrderNotification,
-}));
-
 const router = (await import("../stripe.routes")).default;
 
 async function startApp() {
@@ -146,6 +149,33 @@ describe("Stripe webhook routes", () => {
     expect(mocks.recordCommission).not.toHaveBeenCalled();
     expect(mocks.enqueuePurchase).not.toHaveBeenCalled();
     expect(mocks.sendOrderNotification).not.toHaveBeenCalled();
+  });
+
+  it("uses the notification service by default when the finalization factory finalizes an order", async () => {
+    const paidOrder = {
+      id: "order-1",
+      customerId: "customer-1",
+      status: "paid",
+      paymentStatus: "paid",
+      totalAmount: 10000,
+    };
+    mocks.storage.getOrder.mockResolvedValue(paidOrder);
+    mocks.storage.markOrderPaidIfPending.mockResolvedValue(paidOrder);
+    const { createOrderFinalizationService } = await vi.importActual<
+      typeof import("../../../services/order-finalization.service")
+    >("../../../services/order-finalization.service");
+
+    const result = await createOrderFinalizationService().finalizeStripePaymentIntent({
+      paymentIntent: {
+        id: "pi_123",
+        amount: 10000,
+        currency: "usd",
+        metadata: { orderId: "order-1" },
+      },
+    });
+
+    expect(result).toEqual({ status: "finalized", orderId: "order-1", order: paidOrder });
+    expect(mocks.sendOrderNotification).toHaveBeenCalledWith("order-1");
   });
 
   it("leaves late checkout.session.completed paid obligations behind the finalization claim", async () => {
