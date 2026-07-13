@@ -8,17 +8,18 @@ Chunk 2 (checkout service extraction) now open, research phase.
 
 ## In-flight
 
-- Packet P6b RESUME (planning/handoffs/2026-07-13-p6b-quote-nucleus-resume.md)
-  FIRED 2026-07-13 12:04 at gpt-5.6-sol medium.
-  RUN_DIR=/var/folders/kg/vqcvwwlx3xs4wblm4wpvpkz00000gn/T//codex-handoff/20260713-120442-2026-07-13-p6b-quote-nucleus-resume
-  Lands the P6 quote-nucleus work sitting uncommitted in the tree
-  (4 files: payments.routes.ts, checkout.service.ts + test, HANDOFF.md).
-- P6 ended BLOCKED without committing: sandbox-side nondeterministic
-  full-suite flake (trap 100 in planning/codex-traps.md). Director
-  executed the gates on the diff: full unit GREEN TWICE (39/263),
-  typecheck 0. Characterization files untouched (verified by
-  git diff --name-only). Not counted as verification divergence — Codex
-  under-claimed, honest blocker.
+- Packet P7 PaymentIntent orchestration
+  (planning/handoffs/2026-07-13-p7-payment-intent-orchestration.md)
+  FIRED 2026-07-13 12:11 at gpt-5.6-sol medium. RISKIEST chunk-2 slice.
+  RUN_DIR=/var/folders/kg/vqcvwwlx3xs4wblm4wpvpkz00000gn/T//codex-handoff/20260713-121119-2026-07-13-p7-payment-intent-orchestration
+  Moves order+items+PI creation/linking into checkout.service as a second
+  public operation; attribution/ownership stays in route; non-atomicity
+  PRESERVED (fix would be a separate named slice). Commit-scoped file
+  gate (git diff-tree), trap-100 retry rule included.
+- P6 VERIFIED LANDED (088589e via P6b resume): commit-scoped to exactly
+  4 files; director re-ran gates on committed state: typecheck 0, unit
+  39/263 green. Service interface reviewed: typed quote types,
+  deps-injected factory, no Express types; route 1471 -> 1273 lines.
 - P5 VERIFIED (0285f00): typecheck 0; unit 38/253 green; 16 new cases,
   groups a-h; commit test-only; shapes clean (objectContaining at seams,
   no snapshots; candidate-bug cases commented).
