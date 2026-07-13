@@ -2,18 +2,25 @@
 
 ## Program
 
-Complete the Money Path — Chunk 1 DONE and MERGED to main
-(PR #25, merge 511b0b3, Tommy approved 2026-07-13; CI was green).
-Chunk 2 (checkout service extraction) now open, research phase.
+Complete the Money Path — Chunks 1 AND 2 MERGED to main (PR #25 511b0b3,
+PR #26 1e6a120, both Tommy-approved 2026-07-13, CI green). Chunk 3
+(webhook service extraction, FINAL chunk) open, research phase.
 
 ## In-flight
 
-- CHUNK 2 PR OPEN: https://github.com/Go-Digital-Alchemy-Repos/powerplunge/pull/26
-  (refactor/complete-the-money-path -> main). CI run 29270202776 in
-  flight — BINDING gate; watcher in background. MERGE IS USER-GATED.
-- P11 VERIFIED (5d95c88): typecheck 0; unit 39/289 green; 14 red-first
-  cases; commit scoped to 6 files; validator type-guard issue self-caught
-  and fixed in review pass.
+- Packet R2 chunk-3 webhook survey
+  (planning/handoffs/2026-07-13-r2-chunk3-webhook-survey.md)
+  FIRED 2026-07-13 13:33 at gpt-5.6-sol medium, READ-ONLY research lane.
+  RUN_DIR=/var/folders/kg/vqcvwwlx3xs4wblm4wpvpkz00000gn/T//codex-handoff/20260713-133327-2026-07-13-r2-chunk3-webhook-survey
+  Maps POST /stripe (stripe.routes.ts, 391 lines), Connect path,
+  coverage, couplings; proposes 3-5 slices with riskiest flagged for the
+  new mid-chunk mini-review rule.
+- Branch rebased onto main merge 1e6a120 and pushed; retro-rule commits
+  (loop hygiene in CLAUDE.md + template) ride the chunk-3 PR.
+- Loop hygiene rules ACTIVE (CLAUDE.md): pre-fire lint (R2 linted before
+  firing), PR-CI freeze, commit-scoped gates, mid-chunk mini-review.
+- .env.test.local.template scaffolded; BLOCKED on Tommy filling op://
+  refs before local E2E works.
 - Chunk-2 adversarial review DONE (HIGH, read-only): extraction
   behavior-preserving, service boundary clean, W1 genuinely discharged;
   2 majors + 1 minor -> P11; risk_level low. Read-only compliance
@@ -70,17 +77,16 @@ Chunk 2 (checkout service extraction) now open, research phase.
 
 ## Next intents
 
-1. On P10 exit: triage; re-run gates myself (typecheck, unit suite,
-   commit-scoped file list, red-first evidence, old candidate-bug test
-   names gone); ONE commit.
-2. If clean: CHUNK 2 GATE — fixed floor (typecheck, unit, git diff
-   --check over the chunk range 511b0b3..HEAD) + adversarial chunk
-   review at HIGH read-only (review must verify W1 discharge: shims
-   simplified AND characterizations re-grounded; plus behavior-change
-   audit of P9/P10 red-first discipline) + push branch + open chunk-2 PR
-   (CI binding) + notify Tommy. Merge user-gated.
-3. After merge decision: chunk 3 (webhook service extraction from
-   stripe.routes.ts) research packet.
+1. On R2 exit: verify read-only compliance; grill the survey (spot-check
+   citations by execution); adopt slice plan into program HANDOFF.md;
+   author first chunk-3 packet (likely characterization baseline for the
+   webhook route, mirroring chunk 2's P5 pattern).
+2. Mid-chunk: after the flagged riskiest slice lands, scoped mini-review
+   at HIGH read-only on that slice's diff (new loop-hygiene rule).
+3. Chunk-3 gate mirrors prior chunks: fixed floor + adversarial review at
+   HIGH + PR (CI binding, PR-CI freeze on pushes) + Tommy merge decision.
+   After chunk 3: program closeout (HANDOFF final state, program summary
+   for Tommy).
 
 ## Standing facts
 
