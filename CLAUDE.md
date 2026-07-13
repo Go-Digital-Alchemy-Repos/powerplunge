@@ -66,6 +66,15 @@ Global defaults plus:
 - The packet reveals the chunk plan is wrong, not merely
   incomplete.
 
+## Token Economy (Tommy 2026-07-13)
+
+Fable quota is limited. Codex is the workhorse: groundwork,
+research, and diff-reading go into packets (read-only lanes for
+research), not Claude subagents. Claude verifies mechanically
+(targeted commands, exit codes, counts) instead of pulling large
+files/diffs into context; caveman narration in-loop; no optional
+dead-time passes (research-recon) unless asked.
+
 ## State Discipline
 
 LIVE-ONLY files in `planning/loop/` (git history is the archive):
