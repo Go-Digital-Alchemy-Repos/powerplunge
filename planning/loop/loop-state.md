@@ -8,14 +8,20 @@ PR #26 1e6a120, both Tommy-approved 2026-07-13, CI green). Chunk 3
 
 ## In-flight
 
-- P15 account.updated -> stripe-connect-webhook.service (chunk-3
-  slice 4) (planning/handoffs/2026-07-13-p15-connect-account-service.md)
-  FIRED at gpt-5.6-sol medium, danger-full-access. New Connect service
-  factory; changed-fields-only audit condition and silent no-account
-  path pinned; seam errors PROPAGATE (route catch owns swallowing,
-  unlike refund service); capability.updated forbidden (slice 5).
-  RUN_DIR: see task bm4qm5s26 output. After P15: slice 5
-  (capability.updated + typed dispatch cleanup), then chunk-3 gate.
+- P16 capability.updated + typed dispatch cleanup (chunk-3 slice 5,
+  FINAL slice)
+  (planning/handoffs/2026-07-13-p16-capability-dispatch-cleanup.md)
+  FIRED at gpt-5.6-sol medium, danger-full-access. Second operation on
+  Connect factory (stripeService injected; UNCONDITIONAL audit, unlike
+  account.updated); both endpoints' if-chains -> one typed dispatch
+  idiom; handlePaymentIntentSucceededWebhook export pinned (test route
+  imports it; that file frozen via empty-diff gate).
+  RUN_DIR: see task bxvj3zqt1 output. After P16 verifies: CHUNK-3 GATE
+  (fixed floor + adversarial review HIGH + PR w/ CI binding + PR-CI
+  freeze + Tommy merge decision), then program closeout.
+- P15 VERIFIED (658f5b4): typecheck 0; unit 41/325 green first try;
+  commit-scoped 4 files; frozen stripe.routes.test.ts intact; 5 service
+  cases incl. propagate-not-swallow boundary. Codex review: 0 findings.
 - P14 VERIFIED (bd15b59): typecheck 0; unit 40/320 green ON RETRY
   (first run flaked 4 unrelated cross-route tests — trap 100 now
   reproduced director-side, note appended to codex-traps.md);

@@ -30,3 +30,5 @@
 14:12 P13 VERIFIED (aa11e24): typecheck 0, unit 40/312, commit-scoped 4 files, frozen test file intact, 7 service cases quality-PASS; mini-review fired at HIGH (br3s2tegr)
 14:18 P13 mini-review PASSED (LOW risk, no drift, no blockers; 2 deferrable test gaps folded into P14); P14 fired (bxzevv7dk)
 14:30 P14 VERIFIED (bd15b59): unit 320 green on trap-100 retry (flake now seen director-side); tests 7->15 w/ gap cases; P15 fired (bm4qm5s26)
+14:36 arch-report adversarial review (HIGH, read-only) DONE: report direction sound, C claim factually wrong (landed fix safer), B incomplete (reprice inline), 5 missed money-path risks -> D3 in decisions-pending; read-only compliance verified, 0 commits by codex
+14:36 P15 VERIFIED (658f5b4): unit 41/325 green, scoped 4 files, 5 quality-PASS cases; P16 fired (bxvj3zqt1) - final chunk-3 slice
