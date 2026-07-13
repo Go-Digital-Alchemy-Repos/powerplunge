@@ -97,54 +97,11 @@ router.post("/stripe", async (req, res) => {
 
   if (event.type === "refund.updated") {
     const stripeRefund = event.data.object as any;
-
-    try {
-      const { normalizeStripeRefundStatus, updateOrderPaymentStatus } = await import("../../services/refund.service");
-
-      const existingRefund = await storage.getRefundByStripeRefundId(stripeRefund.id);
-      if (existingRefund) {
-        const normalizedStatus = normalizeStripeRefundStatus(stripeRefund.status || "pending");
-
-        if (existingRefund.status !== normalizedStatus) {
-          await storage.updateRefund(existingRefund.id, {
-            status: normalizedStatus,
-            processedAt: normalizedStatus === "processed" ? new Date() : existingRefund.processedAt,
-          });
-
-          if (normalizedStatus === "processed") {
-            try {
-              const { metaConversionsService } = await import("../../integrations/meta/MetaConversionsService");
-              await metaConversionsService.enqueueRefundProcessed(existingRefund.id);
-            } catch (metaErr: any) {
-              console.error("[META] Failed to enqueue processed refund (refund.updated):", metaErr.message || metaErr);
-            }
-          }
-
-          await updateOrderPaymentStatus(existingRefund.orderId);
-
-          await storage.createAuditLog({
-            actor: "stripe_webhook",
-            action: "refund.status_synced",
-            entityType: "refund",
-            entityId: existingRefund.id,
-            metadata: {
-              orderId: existingRefund.orderId,
-              stripeRefundId: stripeRefund.id,
-              previousStatus: existingRefund.status,
-              newStatus: normalizedStatus,
-              stripeStatus: stripeRefund.status,
-              eventId: event.id,
-            },
-          });
-
-          console.log(`[WEBHOOK] Synced refund ${existingRefund.id} status: ${existingRefund.status} -> ${normalizedStatus}`);
-        }
-      } else {
-        console.warn(`[WEBHOOK] refund.updated: No local refund found for Stripe refund ${stripeRefund.id}`);
-      }
-    } catch (refundErr: any) {
-      console.error("[WEBHOOK] Error processing refund.updated:", refundErr.message);
-    }
+    const refundWebhookService = createStripeRefundWebhookService();
+    await refundWebhookService.synchronizeStripeRefundStatus({
+      refund: stripeRefund,
+      eventId: event.id,
+    });
   }
 
   if (event.type === "payment_intent.payment_failed") {

@@ -18,6 +18,7 @@ function makeDependencies(): StripeRefundWebhookDependencies {
       getRefundByStripeRefundId: vi.fn(),
       createRefund: vi.fn(),
       updateRefund: vi.fn(),
+      createAuditLog: vi.fn(),
     },
     getStripeClient: vi.fn().mockResolvedValue({}),
     loadRefundOperations: vi.fn().mockResolvedValue(refundOperations),
@@ -44,6 +45,14 @@ function makeOrder(overrides: Record<string, unknown> = {}) {
   return {
     id: "order-1",
     totalAmount: 5000,
+    ...overrides,
+  };
+}
+
+function makeRefundUpdate(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "re_123",
+    status: "succeeded",
     ...overrides,
   };
 }
@@ -165,5 +174,186 @@ describe("StripeRefundWebhookService", () => {
     expect(deps.storage.createRefund).toHaveBeenCalledTimes(2);
     const refundOperations = await deps.loadRefundOperations();
     expect(refundOperations.updateOrderPaymentStatus).toHaveBeenCalledWith("order-1");
+  });
+
+  it("swallows a charge refund Meta failure and completes the refund sync", async () => {
+    vi.mocked(deps.enqueueRefundProcessed).mockRejectedValue(new Error("Meta unavailable"));
+
+    await expect(
+      createStripeRefundWebhookService(deps).synchronizeStripeChargeRefunds({
+        charge: makeCharge({
+          refunds: { data: [{ id: "re_processed", amount: 5000, status: "succeeded" }] },
+        }),
+      }),
+    ).resolves.toBeUndefined();
+
+    const refundOperations = await deps.loadRefundOperations();
+    expect(refundOperations.updateOrderPaymentStatus).toHaveBeenCalledWith("order-1");
+    expect(deps.log.error).toHaveBeenCalledWith(
+      "[META] Failed to enqueue processed refund (charge.refunded/create):",
+      "Meta unavailable",
+    );
+  });
+
+  it("keeps earlier charge refund writes when a later write fails", async () => {
+    vi.mocked(deps.storage.createRefund)
+      .mockResolvedValueOnce({ id: "refund-first" } as any)
+      .mockRejectedValueOnce(new Error("refund write unavailable"));
+
+    await expect(
+      createStripeRefundWebhookService(deps).synchronizeStripeChargeRefunds({
+        charge: makeCharge({
+          refunds: {
+            data: [
+              { id: "re_first", amount: 1000, status: "pending" },
+              { id: "re_second", amount: 2000, status: "pending" },
+              { id: "re_third", amount: 3000, status: "pending" },
+            ],
+          },
+        }),
+      }),
+    ).resolves.toBeUndefined();
+
+    expect(deps.storage.createRefund).toHaveBeenCalledTimes(2);
+    expect(deps.storage.createRefund).toHaveBeenCalledWith(expect.objectContaining({
+      stripeRefundId: "re_first",
+    }));
+    expect(deps.storage.createRefund).not.toHaveBeenCalledWith(expect.objectContaining({
+      stripeRefundId: "re_third",
+    }));
+    const refundOperations = await deps.loadRefundOperations();
+    expect(refundOperations.updateOrderPaymentStatus).not.toHaveBeenCalled();
+    expect(deps.log.error).toHaveBeenCalledWith(
+      "[WEBHOOK] Error processing charge.refunded:",
+      "refund write unavailable",
+    );
+  });
+
+  it("synchronizes a changed Stripe refund status", async () => {
+    vi.mocked(deps.storage.getRefundByStripeRefundId).mockResolvedValue({
+      id: "refund-existing",
+      orderId: "order-1",
+      status: "pending",
+      processedAt: null,
+    } as any);
+
+    await createStripeRefundWebhookService(deps).synchronizeStripeRefundStatus({
+      refund: makeRefundUpdate(),
+      eventId: "evt_123",
+    });
+
+    expect(deps.storage.updateRefund).toHaveBeenCalledWith("refund-existing", {
+      status: "processed",
+      processedAt: expect.any(Date),
+    });
+    const refundOperations = await deps.loadRefundOperations();
+    expect(refundOperations.updateOrderPaymentStatus).toHaveBeenCalledWith("order-1");
+    expect(deps.storage.createAuditLog).toHaveBeenCalledWith({
+      actor: "stripe_webhook",
+      action: "refund.status_synced",
+      entityType: "refund",
+      entityId: "refund-existing",
+      metadata: {
+        orderId: "order-1",
+        stripeRefundId: "re_123",
+        previousStatus: "pending",
+        newStatus: "processed",
+        stripeStatus: "succeeded",
+        eventId: "evt_123",
+      },
+    });
+  });
+
+  it("does nothing when the Stripe refund status is unchanged", async () => {
+    vi.mocked(deps.storage.getRefundByStripeRefundId).mockResolvedValue({
+      id: "refund-existing",
+      orderId: "order-1",
+      status: "pending",
+      processedAt: null,
+    } as any);
+
+    await createStripeRefundWebhookService(deps).synchronizeStripeRefundStatus({
+      refund: makeRefundUpdate({ status: "pending" }),
+      eventId: "evt_123",
+    });
+
+    expect(deps.storage.updateRefund).not.toHaveBeenCalled();
+    expect(deps.storage.createAuditLog).not.toHaveBeenCalled();
+    expect(deps.enqueueRefundProcessed).not.toHaveBeenCalled();
+    const refundOperations = await deps.loadRefundOperations();
+    expect(refundOperations.updateOrderPaymentStatus).not.toHaveBeenCalled();
+    expect(deps.log.log).not.toHaveBeenCalled();
+  });
+
+  it("attempts Meta enqueue when a refund update becomes processed", async () => {
+    vi.mocked(deps.storage.getRefundByStripeRefundId).mockResolvedValue({
+      id: "refund-existing",
+      orderId: "order-1",
+      status: "pending",
+      processedAt: null,
+    } as any);
+
+    await createStripeRefundWebhookService(deps).synchronizeStripeRefundStatus({
+      refund: makeRefundUpdate(),
+      eventId: "evt_123",
+    });
+
+    expect(deps.enqueueRefundProcessed).toHaveBeenCalledWith("refund-existing");
+  });
+
+  it("swallows a refund update Meta failure and completes the status sync", async () => {
+    vi.mocked(deps.storage.getRefundByStripeRefundId).mockResolvedValue({
+      id: "refund-existing",
+      orderId: "order-1",
+      status: "pending",
+      processedAt: null,
+    } as any);
+    vi.mocked(deps.enqueueRefundProcessed).mockRejectedValue(new Error("Meta unavailable"));
+
+    await expect(
+      createStripeRefundWebhookService(deps).synchronizeStripeRefundStatus({
+        refund: makeRefundUpdate(),
+        eventId: "evt_123",
+      }),
+    ).resolves.toBeUndefined();
+
+    const refundOperations = await deps.loadRefundOperations();
+    expect(refundOperations.updateOrderPaymentStatus).toHaveBeenCalledWith("order-1");
+    expect(deps.storage.createAuditLog).toHaveBeenCalled();
+    expect(deps.log.error).toHaveBeenCalledWith(
+      "[META] Failed to enqueue processed refund (refund.updated):",
+      "Meta unavailable",
+    );
+  });
+
+  it("warns when a Stripe refund update has no local refund", async () => {
+    vi.mocked(deps.storage.getRefundByStripeRefundId).mockResolvedValue(undefined);
+
+    await createStripeRefundWebhookService(deps).synchronizeStripeRefundStatus({
+      refund: makeRefundUpdate(),
+      eventId: "evt_123",
+    });
+
+    expect(deps.log.warn).toHaveBeenCalledWith(
+      "[WEBHOOK] refund.updated: No local refund found for Stripe refund re_123",
+    );
+    expect(deps.storage.updateRefund).not.toHaveBeenCalled();
+  });
+
+  it("swallows refund status synchronization seam errors", async () => {
+    vi.mocked(deps.storage.getRefundByStripeRefundId).mockRejectedValue(
+      new Error("refund storage unavailable"),
+    );
+
+    await expect(
+      createStripeRefundWebhookService(deps).synchronizeStripeRefundStatus({
+        refund: makeRefundUpdate(),
+        eventId: "evt_123",
+      }),
+    ).resolves.toBeUndefined();
+    expect(deps.log.error).toHaveBeenCalledWith(
+      "[WEBHOOK] Error processing refund.updated:",
+      "refund storage unavailable",
+    );
   });
 });

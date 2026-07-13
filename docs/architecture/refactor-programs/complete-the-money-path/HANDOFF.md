@@ -34,7 +34,7 @@ to the director. Branch: `refactor/complete-the-money-path`.
    with public-interface tests — behavior-preserving — RISKIEST slice:
    gets the HIGH mid-chunk mini-review before further slices — done (P13)
 3. Move refund.updated into the same refund service —
-   behavior-preserving — pending
+   behavior-preserving — done (P14)
 4. Extract account.updated into new `stripe-connect-webhook.service.ts`
    with public-interface tests — behavior-preserving — pending
 5. Add capability.updated to the Connect service; typed dispatch cleanup;
@@ -50,29 +50,31 @@ unavailable.
 
 ## State
 
-P13 completed chunk 3 slice 2: `charge.refunded` synchronization now lives in
-`stripe-refund-webhook.service.ts` behind a dependency-injected public
-operation. The route retains signature verification, secret resolution,
-delivery dedupe, dispatch, and HTTP acknowledgement behavior. Focused service
-tests cover local refund creation, existing-refund update without duplication,
-missing-order warning, swallowed seam errors, processed-refund Meta enqueue on
-both write paths, and multi-refund iteration. The 20 P12 public HTTP
-characterizations remain untouched and green. Slice 2 receives the scheduled
-HIGH mid-chunk mini-review next; no later slice starts before that review.
+P14 completed chunk 3 slice 3: both `charge.refunded` and `refund.updated`
+synchronization now live behind public operations on
+`stripe-refund-webhook.service.ts`. The `refund.updated` operation receives the
+plain Stripe refund and event ID, owns refund lookup/update, processed-refund
+Meta enqueue, order payment-status synchronization, audit logging, and
+error-swallowing, while the route remains thin dispatch. Public service tests
+cover changed/no-op/unknown/error paths and pin charge-refund Meta failure and
+mid-loop partial-failure behavior. The 20 P12 route characterizations remain
+untouched and green. P14 checkpoint checks: focused service tests (15), focused
+route tests (20), typecheck, and full unit suite.
 
 ## Next Slice
 
-- Gate first: run the scheduled HIGH mid-chunk mini-review of completed slice 2.
-- After that gate passes, slice 3 moves `refund.updated` into the existing
-  `server/src/services/stripe-refund-webhook.service.ts` behind a public
-  operation while preserving its audit-log payload, Meta enqueue behavior,
-  warning/error logging, delivery dedupe, and swallowed-error 200 acknowledgement.
-- Files for slice 3: `server/src/routes/webhooks/stripe.routes.ts`,
-  `server/src/services/stripe-refund-webhook.service.ts`, focused service tests,
-  and this handoff. The P12 route characterizations remain untouched.
+- Slice 4 extracts `account.updated` into a new
+  `server/src/services/stripe-connect-webhook.service.ts` public operation.
+- Files: `server/src/routes/webhooks/stripe.routes.ts`, the new Connect webhook
+  service, its focused public-interface test file, and this handoff.
 - Classification: behavior-preserving.
-- Checks: focused refund webhook service and route tests, `npm run typecheck`,
-  and the full unit suite.
+- Test: characterize the public operation's known-account update and conditional
+  audit behavior, unchanged-state no-audit path, unknown-account no-op, and
+  swallowed seam errors before moving the route branch. Stub storage seams only.
+- Preserve byte-for-byte account update log/audit content, event ID metadata,
+  Connect delivery dedupe, signature handling, and swallowed-error 200 ack.
+- Checks: focused Connect service and frozen route characterizations,
+  `npm run typecheck`, and the full unit suite.
 
 ## Risks / Constraints
 

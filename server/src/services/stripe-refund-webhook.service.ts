@@ -25,10 +25,24 @@ export interface SynchronizeStripeChargeRefundsInput {
   charge: StripeChargeWithRefunds;
 }
 
+export interface StripeRefundUpdate {
+  id: string;
+  status?: string | null;
+}
+
+export interface SynchronizeStripeRefundStatusInput {
+  refund: StripeRefundUpdate;
+  eventId: string;
+}
+
 export interface StripeRefundWebhookDependencies {
   storage: Pick<
     IStorage,
-    "getOrderByPaymentIntentId" | "getRefundByStripeRefundId" | "createRefund" | "updateRefund"
+    | "getOrderByPaymentIntentId"
+    | "getRefundByStripeRefundId"
+    | "createRefund"
+    | "updateRefund"
+    | "createAuditLog"
   >;
   getStripeClient: () => Promise<unknown | null>;
   loadRefundOperations: () => Promise<StripeRefundOperations>;
@@ -113,6 +127,65 @@ export class StripeRefundWebhookService {
     }
   }
 
+  async synchronizeStripeRefundStatus(
+    input: SynchronizeStripeRefundStatusInput,
+  ): Promise<void> {
+    const { refund: stripeRefund, eventId } = input;
+
+    try {
+      const refundOperations = await this.deps.loadRefundOperations();
+      const existingRefund = await this.deps.storage.getRefundByStripeRefundId(stripeRefund.id);
+      if (!existingRefund) {
+        this.deps.log.warn(
+          `[WEBHOOK] refund.updated: No local refund found for Stripe refund ${stripeRefund.id}`,
+        );
+        return;
+      }
+
+      const normalizedStatus = refundOperations.normalizeStripeRefundStatus(
+        stripeRefund.status || "pending",
+      );
+      if (existingRefund.status === normalizedStatus) return;
+
+      await this.deps.storage.updateRefund(existingRefund.id, {
+        status: normalizedStatus,
+        processedAt: normalizedStatus === "processed"
+          ? new Date()
+          : existingRefund.processedAt,
+      });
+
+      if (normalizedStatus === "processed") {
+        await this.enqueueProcessedRefund(
+          existingRefund.id,
+          "[META] Failed to enqueue processed refund (refund.updated):",
+        );
+      }
+
+      await refundOperations.updateOrderPaymentStatus(existingRefund.orderId);
+
+      await this.deps.storage.createAuditLog({
+        actor: "stripe_webhook",
+        action: "refund.status_synced",
+        entityType: "refund",
+        entityId: existingRefund.id,
+        metadata: {
+          orderId: existingRefund.orderId,
+          stripeRefundId: stripeRefund.id,
+          previousStatus: existingRefund.status,
+          newStatus: normalizedStatus,
+          stripeStatus: stripeRefund.status,
+          eventId,
+        },
+      });
+
+      this.deps.log.log(
+        `[WEBHOOK] Synced refund ${existingRefund.id} status: ${existingRefund.status} -> ${normalizedStatus}`,
+      );
+    } catch (refundErr: any) {
+      this.deps.log.error("[WEBHOOK] Error processing refund.updated:", refundErr.message);
+    }
+  }
+
   private async enqueueProcessedRefund(refundId: string, errorMessage: string): Promise<void> {
     try {
       await this.deps.enqueueRefundProcessed(refundId);
@@ -132,6 +205,8 @@ export function createStripeRefundWebhookService(
       (await import("../../storage")).storage.getRefundByStripeRefundId(...args),
     createRefund: async (...args) => (await import("../../storage")).storage.createRefund(...args),
     updateRefund: async (...args) => (await import("../../storage")).storage.updateRefund(...args),
+    createAuditLog: async (...args) =>
+      (await import("../../storage")).storage.createAuditLog(...args),
   };
 
   return new StripeRefundWebhookService({
