@@ -441,6 +441,19 @@ class StripeService {
     return client.accounts.retrieve(accountId);
   }
 
+  async listRefundsForCharge(chargeId: string): Promise<Stripe.Refund[]> {
+    const client = await this.getClient();
+    if (!client) {
+      throw new Error("Stripe is not configured");
+    }
+
+    const refunds: Stripe.Refund[] = [];
+    await client.refunds.list({ charge: chargeId, limit: 100 }).autoPagingEach((refund) => {
+      refunds.push(refund);
+    });
+    return refunds;
+  }
+
   async createTransfer(params: {
     amount: number;
     currency: string;

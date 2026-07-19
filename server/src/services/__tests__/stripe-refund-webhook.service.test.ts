@@ -21,6 +21,7 @@ function makeDependencies(): StripeRefundWebhookDependencies {
       createAuditLog: vi.fn(),
     },
     getStripeClient: vi.fn().mockResolvedValue({}),
+    listRefundsForCharge: vi.fn(),
     loadRefundOperations: vi.fn().mockResolvedValue(refundOperations),
     enqueueRefundProcessed: vi.fn(),
     log: {
@@ -33,6 +34,7 @@ function makeDependencies(): StripeRefundWebhookDependencies {
 
 function makeCharge(overrides: Record<string, unknown> = {}) {
   return {
+    id: "ch_123",
     payment_intent: "pi_123",
     refunds: {
       data: [{ id: "re_123", amount: 2500, reason: "requested_by_customer", status: "pending" }],
@@ -174,6 +176,61 @@ describe("StripeRefundWebhookService", () => {
     expect(deps.storage.createRefund).toHaveBeenCalledTimes(2);
     const refundOperations = await deps.loadRefundOperations();
     expect(refundOperations.updateOrderPaymentStatus).toHaveBeenCalledWith("order-1");
+  });
+
+  it("creates a local record for a refund beyond the embedded charge page", async () => {
+    const embeddedRefunds = Array.from({ length: 10 }, (_, index) => ({
+      id: `re_${index + 1}`,
+      amount: 100,
+      status: "pending",
+    }));
+    const completeRefunds = [
+      ...embeddedRefunds,
+      { id: "re_11", amount: 100, status: "pending" },
+    ];
+    vi.mocked(deps.listRefundsForCharge).mockResolvedValue(completeRefunds);
+
+    await createStripeRefundWebhookService(deps).synchronizeStripeChargeRefunds({
+      charge: makeCharge({
+        id: "ch_123",
+        refunds: { data: embeddedRefunds, has_more: true },
+      }),
+    });
+
+    expect(deps.listRefundsForCharge).toHaveBeenCalledWith("ch_123");
+    expect(deps.storage.createRefund).toHaveBeenCalledTimes(11);
+    expect(deps.storage.createRefund).toHaveBeenCalledWith(expect.objectContaining({
+      stripeRefundId: "re_11",
+    }));
+  });
+
+  it("does not list refunds when the embedded charge page is complete", async () => {
+    await createStripeRefundWebhookService(deps).synchronizeStripeChargeRefunds({
+      charge: makeCharge({
+        id: "ch_123",
+        refunds: { data: [{ id: "re_123", amount: 2500, status: "pending" }], has_more: false },
+      }),
+    });
+
+    expect(deps.listRefundsForCharge).not.toHaveBeenCalled();
+  });
+
+  it("propagates a failure while listing the complete refund collection", async () => {
+    vi.mocked(deps.listRefundsForCharge).mockRejectedValue(new Error("Stripe refunds unavailable"));
+
+    await expect(
+      createStripeRefundWebhookService(deps).synchronizeStripeChargeRefunds({
+        charge: makeCharge({
+          refunds: { data: [], has_more: true },
+        }),
+      }),
+    ).rejects.toThrow("Stripe refunds unavailable");
+
+    expect(deps.storage.createRefund).not.toHaveBeenCalled();
+    expect(deps.log.error).toHaveBeenCalledWith(
+      "[WEBHOOK] Error processing charge.refunded:",
+      "Stripe refunds unavailable",
+    );
   });
 
   it("swallows a charge refund Meta failure and completes the refund sync", async () => {

@@ -55,43 +55,68 @@ program's known remaining debt, not scheduled.
 
 ## State
 
-Chunk 4 slice 1 (retry semantics) and its partial-progress adjudication are done
-on the program branch. Both Stripe webhook endpoints atomically claim an event
-with `metadata.status="processing"`, mark it `processed` only after dispatch
-succeeds, and delete the claim before returning a minimal 500 response when a
-handler fails. Duplicate, signature, unknown-event, and successful-delivery
-acknowledgements retain their prior semantics. Handler failures propagate, while
-refund Meta enqueue remains best-effort.
+Chunk 4 slices 1-2 are done on the program branch. The P18/P18d/P18e delivery
+claim and retry contracts remain in force: handler failures propagate, claims are
+deleted before 500 responses, and refund Meta enqueue stays best-effort. The
+accepted `refund.updated` partial-progress limitation and persisted-Refund-first
+ordering are unchanged.
 
-`account.updated` keeps the P18d audit-first ordering before payout-account state
-persistence. Its collaborators have no stored-state read dependency, so a retry
-after a pre-marker failure completes the remaining work. `refund.updated` instead
-persists the Refund status first, then attempts Meta enqueue, updates the Order
-payment status, appends the audit record, and writes the existing sync log. Both
-Meta enqueue and Order payment-status calculation re-read the persisted Refund,
-so this ordering is required for correct downstream behavior.
+For `charge.refunded`, an incomplete embedded Refund collection
+(`refunds.has_more=true`) now uses `StripeService.listRefundsForCharge`. That
+method uses Stripe SDK 20.3.1 `autoPagingEach`, so the SDK follows every cursor
+without an artificial result cap and rejects naturally if any page fetch fails.
+The complete collection replaces the embedded page during processing, preventing
+Refunds present in both sources from being processed twice. A false or absent
+`has_more` retains the embedded-only path and makes no list call.
 
-The resulting `refund.updated` partial-progress retry hole is accepted for the
-chunk-4 gate: a failure after Refund persistence returns 500, but the retry takes
-the status-equal fast path and cannot complete the remaining Order-status or audit
-writes without transactional storage. The Connect regression still proves retry
-completion; the Refund regression now characterizes this non-completion. No route,
-storage, schema, acknowledgement, claim-contract, or `charge.refunded` behavior
-changed during the adjudication.
+Red-first coverage failed on the missing eleventh Refund before implementation.
+The completed service suite proves the eleventh Refund is created, the first ten
+are not duplicated, complete embedded collections do not list, and list failures
+propagate. Verified checks: `npm run typecheck` exit 0; focused service suite 19
+tests passed; full unit suite 42 files / 344 tests passed. No route, storage,
+schema, `refund.updated`, claim, acknowledgement, or write ordering changed. The
+standard fresh-context review approved the slice with no material findings.
 
 ## Next Slice
 
-Implement chunk 4 slice 2: refund completeness. `charge.refunded` must follow
-Stripe refund pagination when `has_more` is true, while preserving idempotent
-create-vs-update processing for every Refund. Keep the decided `refund.updated`
-unknown-Refund warning behavior; persisted-state-first ordering and accepted
-partial-progress retry limitation; `account.updated` audit-first retry completion;
-and the P18 propagation, best-effort Meta, claim, and acknowledgement contracts.
+Implement chunk 4 slice 3: Stripe idempotency keys. Replace the `Date.now()`
+component of Stripe Refund creation keys with a deterministic operation identity,
+and pass deterministic idempotency keys to PaymentIntent and Checkout Session
+creation in checkout.service. Pin each operation at its public service interface:
+equivalent retries must send the same key, while distinct business operations
+must not collide.
 
-This is a behavior-changing slice. Pin pagination and per-Refund idempotency
-through red-first public-interface tests before implementation. Do not add
-crash-stale processing-claim reconciliation; that remains deferred to the
-chunk-4 gate.
+- Files: `server/src/services/refund.service.ts`,
+  `server/src/services/__tests__/refund.service.test.ts`,
+  `server/src/routes/admin/operations.routes.ts` and a focused route test;
+  `server/src/services/checkout.service.ts`,
+  `server/src/services/__tests__/checkout.service.test.ts`,
+  `server/src/routes/public/payments.routes.ts`,
+  `server/src/routes/public/__tests__/create-payment-intent.routes.test.ts`, and
+  `server/src/routes/public/__tests__/payments.routes.test.ts`. The public
+  PaymentIntent route injects a direct Stripe adapter, so service-only edits would
+  leave that production path without the key.
+- Classification: behavior-changing.
+- Test: red-first assertions for stable Refund, PaymentIntent, and Checkout
+  Session keys across equivalent retries, plus non-collision coverage for distinct
+  operations. Do not assert private helper details.
+- Checks: focused refund and checkout service suites,
+  `npm run typecheck`, `npm run with:local-auth-env -- npm run test:unit`, and
+  `git diff --check`.
+
+The slice packet must pin the Refund operation identity before editing. Current
+inputs have only order, amount, and reason; those fields can collide for two
+legitimate same-amount Refunds, while refundable balance is not stable across a
+post-Stripe/pre-local-write retry. Recommended direction: require a caller-owned
+attempt token (the admin HTTP `Idempotency-Key` header) and pass it through
+`CreateRefundParams`; equivalent retries reuse it and distinct attempts use a new
+one. Do not substitute an order/amount key or another time-derived value.
+
+Do not change webhook routes, schema, refund pagination, notification behavior,
+webhook claim/acknowledgement semantics, or the accepted partial-progress
+contracts. Keep public/admin route edits limited to forwarding the new keys or
+Refund attempt identity. Do not add crash-stale processing-claim reconciliation;
+it remains deferred to the chunk-4 gate.
 
 ## Risks / Constraints
 

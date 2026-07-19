@@ -15,9 +15,11 @@ export interface StripeChargeRefund {
 }
 
 export interface StripeChargeWithRefunds {
+  id: string;
   payment_intent?: string | null;
   refunds?: {
     data: StripeChargeRefund[];
+    has_more?: boolean;
   } | null;
 }
 
@@ -45,6 +47,7 @@ export interface StripeRefundWebhookDependencies {
     | "createAuditLog"
   >;
   getStripeClient: () => Promise<unknown | null>;
+  listRefundsForCharge: (chargeId: string) => Promise<StripeChargeRefund[]>;
   loadRefundOperations: () => Promise<StripeRefundOperations>;
   enqueueRefundProcessed: (refundId: string) => Promise<unknown>;
   log: Pick<Console, "log" | "warn" | "error">;
@@ -73,7 +76,11 @@ export class StripeRefundWebhookService {
       const stripeClient = await this.deps.getStripeClient();
       if (!stripeClient || !charge.refunds?.data) return;
 
-      for (const stripeRefund of charge.refunds.data) {
+      const stripeRefunds = charge.refunds.has_more
+        ? await this.deps.listRefundsForCharge(charge.id)
+        : charge.refunds.data;
+
+      for (const stripeRefund of stripeRefunds) {
         const existingRefund = await this.deps.storage.getRefundByStripeRefundId(stripeRefund.id);
         const normalizedStatus = refundOperations.normalizeStripeRefundStatus(
           stripeRefund.status || "pending",
@@ -216,6 +223,10 @@ export function createStripeRefundWebhookService(
     getStripeClient: dependencies.getStripeClient ?? (async () => {
       const { stripeService } = await import("../integrations/stripe/StripeService");
       return stripeService.getClient();
+    }),
+    listRefundsForCharge: dependencies.listRefundsForCharge ?? (async (chargeId) => {
+      const { stripeService } = await import("../integrations/stripe/StripeService");
+      return stripeService.listRefundsForCharge(chargeId);
     }),
     loadRefundOperations: dependencies.loadRefundOperations ?? (async () => {
       const { normalizeStripeRefundStatus, updateOrderPaymentStatus } = await import(
