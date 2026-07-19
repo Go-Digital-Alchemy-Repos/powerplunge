@@ -5,11 +5,16 @@ Lane: implementation
 ## Context (self-contained; verified by director 2026-07-13)
 
 Repo: /Users/thomascarney/Projects/powerplunge, branch
-refactor/complete-the-money-path. HEAD is P18's verified slice
-(063f4df) + director loop-state commits; P18's mid-chunk mini-review
-passed before this fired. Baseline VERIFIED by execution: `npm run
-typecheck` exit 0; `npm run with:local-auth-env -- npm run test:unit`
-green (42 files / 339 tests).
+refactor/complete-the-money-path. HEAD is slice 1 fully closed: P18
+(063f4df) + partial-progress remediation P18d (9209cd9) + adjudication
+P18e (2878642) + director loop-state commits; the mid-chunk mini-review
+passed and both its blocking findings are adjudicated. Baseline
+VERIFIED by execution at 2878642: `npm run typecheck` exit 0; `npm run
+with:local-auth-env -- npm run test:unit` green (42 files / 341 tests).
+NOTE (binding, from P18e): in synchronizeStripeRefundStatus and
+charge.refunded processing, storage.updateRefund runs BEFORE the Meta
+enqueue and updateOrderPaymentStatus because those collaborators
+re-read persisted refund state. Do NOT reorder writes in this slice.
 
 Chunk 4 slice 2 — BEHAVIOR-CHANGING, approved by Tommy 2026-07-13 (D3
 item 1). Stripe embeds at most 10 refunds in

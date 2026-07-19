@@ -11,10 +11,11 @@ DEFERRED.
 
 ## In-flight
 
-- None. P19 (refund pagination, chunk-4 slice 2) staged at
-  planning/handoffs/2026-07-13-p19-refund-pagination.md, linted;
-  fire next after baseline refresh (packet says 42/339 — actual
-  post-P18e baseline is 42/341; update Context before firing).
+- P20 Stripe idempotency keys (chunk-4 slice 3) FIRING at gpt-5.6-sol
+  medium, danger-full-access
+  (planning/handoffs/2026-07-19-p20-stripe-idempotency-keys.md).
+  Binding keys: refund_${orderId}_${amount}_${count};
+  pi_create_${order.id}; checkout_session_${order.id}.
 
 ## Chunk-4 progress (HANDOFF is truth)
 
@@ -23,7 +24,9 @@ DEFERRED.
    2878642: typecheck 0, suite 42/341 green, 3-file scope, routes +
    Connect service empty-diff, updateRefund-first order restored,
    accepted-limitation comment present.
-2. Refund pagination (has_more) — NEXT (P19 staged).
+2. Refund pagination — DONE (P19 178b52f, director-verified: 4-file
+   scope, routes empty-diff, StripeService +listRefundsForCharge only,
+   replace-not-merge dedupe, typecheck 0, suite 42/344 green).
 3. Stripe idempotency keys (refund deterministic key; PI/Session
    creates in checkout.service) — red-first.
 4. Unpaid-order notification suppression (notification moves to
@@ -48,7 +51,7 @@ merge), then chunk 5 (reprice), then closeout.
 
 ## Verified facts
 
-- Baseline at HEAD 2878642: typecheck 0; unit 42 files / 341 tests
+- Baseline at HEAD 178b52f: typecheck 0; unit 42 files / 344 tests
   green (director-executed 2026-07-19).
 - P18d lesson (director error, recorded): never pin write ordering
   without checking collaborator read-dependencies — enqueueRefundProcessed
@@ -67,9 +70,8 @@ merge), then chunk 5 (reprice), then closeout.
 
 ## Next intents
 
-1. Refresh P19 baseline numbers, fire P19 (gpt-5.6-sol medium,
-   danger-full-access), verify per its gates.
-2. Slices 3-4, then chunk-4 gate (PR-CI freeze law from PR-open).
+1. On P20 exit: triage; re-run gates; then slice 4.
+2. Slice 4, then chunk-4 gate (PR-CI freeze law from PR-open).
 3. Standing: .env.test.local.template still BLOCKED on Tommy op:// refs
    (CI remains the only E2E gate).
 
