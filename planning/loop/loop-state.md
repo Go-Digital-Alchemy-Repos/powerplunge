@@ -11,11 +11,8 @@ DEFERRED.
 
 ## In-flight
 
-- P20 Stripe idempotency keys (chunk-4 slice 3) FIRING at gpt-5.6-sol
-  medium, danger-full-access
-  (planning/handoffs/2026-07-19-p20-stripe-idempotency-keys.md).
-  Binding keys: refund_${orderId}_${amount}_${count};
-  pi_create_${order.id}; checkout_session_${order.id}.
+- None. Next: author P21 (slice 4, unpaid-order notification
+  suppression).
 
 ## Chunk-4 progress (HANDOFF is truth)
 
@@ -27,8 +24,10 @@ DEFERRED.
 2. Refund pagination — DONE (P19 178b52f, director-verified: 4-file
    scope, routes empty-diff, StripeService +listRefundsForCharge only,
    replace-not-merge dedupe, typecheck 0, suite 42/344 green).
-3. Stripe idempotency keys (refund deterministic key; PI/Session
-   creates in checkout.service) — red-first.
+3. Idempotency keys — DONE (P20 honest block -> P20b ab6d4bd,
+   director-verified: 8-file scope incl. route adapters, frozen
+   empty-diff, deterministic keys refund/count pi_create
+   checkout_session, typecheck 0, suite 42/348 green).
 4. Unpaid-order notification suppression (notification moves to
    finalization) — red-first.
 Then chunk-4 gate (fixed floor + adversarial review HIGH + PR + Tommy
@@ -51,7 +50,7 @@ merge), then chunk 5 (reprice), then closeout.
 
 ## Verified facts
 
-- Baseline at HEAD 178b52f: typecheck 0; unit 42 files / 344 tests
+- Baseline at HEAD ab6d4bd: typecheck 0; unit 42 files / 348 tests
   green (director-executed 2026-07-19).
 - P18d lesson (director error, recorded): never pin write ordering
   without checking collaborator read-dependencies — enqueueRefundProcessed
@@ -70,7 +69,7 @@ merge), then chunk 5 (reprice), then closeout.
 
 ## Next intents
 
-1. On P20 exit: triage; re-run gates; then slice 4.
+1. Author + fire P21 (slice 4); on exit triage, re-run gates.
 2. Slice 4, then chunk-4 gate (PR-CI freeze law from PR-open).
 3. Standing: .env.test.local.template still BLOCKED on Tommy op:// refs
    (CI remains the only E2E gate).
