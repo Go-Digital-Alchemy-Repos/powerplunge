@@ -7,73 +7,76 @@ PR #26 1e6a120, PR #27 7b9e1ea; all Tommy-approved 2026-07-13, CI
 green). Program EXTENDED per Tommy ("all your recommendations",
 2026-07-13): chunk 4 = webhook hardening (D2 spec + D3 items 1-2, 4),
 chunk 5 = reprice extraction; posture E (repository layer) explicitly
-DEFERRED. Branch rebased onto 7b9e1ea and pushed.
+DEFERRED.
 
 ## In-flight
 
-- P18 webhook retry semantics (chunk-4 slice 1, RISKIEST — mini-review
-  after) (planning/handoffs/2026-07-13-p18-webhook-retry-semantics.md)
-  FIRED at gpt-5.6-sol medium, danger-full-access. BEHAVIOR-CHANGING,
-  red-first. Contract: atomic claim via metadata.status
-  processing->processed on processed_webhook_events (NO schema change);
-  handler failure -> delete claim + 500 (Stripe retries); refund
-  service outer swallowing removed (Meta catches stay); 4 cases
-  unpinned BY NAME (2 route candidate-bug + 2 refund-service swallow
-  cases); e2e spec read-and-reconcile gate. RUN_DIR: see task b6shc701e
-  output.
+- None. P19 (refund pagination, chunk-4 slice 2) staged at
+  planning/handoffs/2026-07-13-p19-refund-pagination.md, linted;
+  fire next after baseline refresh (packet says 42/339 — actual
+  post-P18e baseline is 42/341; update Context before firing).
 
-## Chunk-4 plan (HANDOFF is truth)
+## Chunk-4 progress (HANDOFF is truth)
 
-1. Retry semantics (P18, in flight) — mini-review at HIGH after.
-2. Refund pagination (has_more) + per-refund idempotency — red-first.
-3. Stripe idempotency keys (refund create deterministic key; PI/Session
+1. Retry semantics — DONE (P18/P18b/P18c 063f4df, mini-review MEDIUM,
+   P18d 9209cd9, P18e adjudication 2878642). Director-verified at
+   2878642: typecheck 0, suite 42/341 green, 3-file scope, routes +
+   Connect service empty-diff, updateRefund-first order restored,
+   accepted-limitation comment present.
+2. Refund pagination (has_more) — NEXT (P19 staged).
+3. Stripe idempotency keys (refund deterministic key; PI/Session
    creates in checkout.service) — red-first.
-4. Unpaid-order notification suppression (manual-fallback PENDING
-   orders; notification moves to finalization) — red-first.
+4. Unpaid-order notification suppression (notification moves to
+   finalization) — red-first.
 Then chunk-4 gate (fixed floor + adversarial review HIGH + PR + Tommy
-merge), then chunk 5 (reprice extraction, characterize-then-move),
-then program closeout.
+merge), then chunk 5 (reprice), then closeout.
 
-## Verified facts (chunk-3 gate, 2026-07-13)
+## Chunk-4 gate adjudication queue (accepted/known limitations)
 
-- Chunk-3 final: 5 slices + P17 remediation; route 391 -> 238 lines;
-  three webhook services; suite 305 -> 335 (42 files); chunk review
-  verdict remediated (payment_failed extraction + hasOwnProperty
-  dispatch guards :116/:218); PR #27 CI green 3m18s; merged 7b9e1ea.
-- Baseline at chunk-4 start: typecheck 0; unit 42/335 green.
-- processed_webhook_events schema (shared/schema.ts:1084): eventId
-  unique, metadata jsonb, NO status column — claim state lives in
-  metadata (decided, no schema change).
-- Candidate-bug pins live at stripe.routes.test.ts :533/:542 and
-  :730/:740; refund-service swallow cases in its test file. All named
-  in P18.
-- Trap 100 reproduced director-side once (P14 cycle); one-retry rule.
+- Crash-stale processing claims: process death after claim insert
+  leaves a permanent processing row; later retries blindly 200.
+- Cleanup-delete failure after handler failure: stale claim suppresses
+  retries (log-only).
+- Claim protocol duplicated across the two endpoints (helper-extraction
+  candidate).
+- refund.updated partial-progress window ACCEPTED (P18e decision):
+  failure between updateRefund and later writes 500s, retry takes the
+  status-equal fast path without completing order-status/audit; needs
+  transactional storage = deferred posture E. Pinned by
+  characterization with the accepted-limitation comment.
+- No real-DB unique-index contention integration test.
+
+## Verified facts
+
+- Baseline at HEAD 2878642: typecheck 0; unit 42 files / 341 tests
+  green (director-executed 2026-07-19).
+- P18d lesson (director error, recorded): never pin write ordering
+  without checking collaborator read-dependencies — enqueueRefundProcessed
+  and updateOrderPaymentStatus RELOAD persisted refund state, so they
+  must run AFTER updateRefund. Connect audit-first fix from 9209cd9
+  STAYS (no read-deps).
+- processed_webhook_events (shared/schema.ts:1084): eventId unique,
+  metadata jsonb, NO status column.
+- Trap 100 reproduced director-side once; one-retry rule; two
+  failures = STOP.
 
 ## Decisions
 
-- D1/D2/D3 all RESOLVED (see decisions-pending.md tombstones + git
-  history). No open decisions. Next Tommy gates: chunk-4 PR merge,
-  chunk-5 PR merge, program closeout sign-off.
+- D1/D2/D3 all RESOLVED. No open decisions. Next Tommy gates: chunk-4
+  PR merge, chunk-5 PR merge, program closeout sign-off.
 
 ## Next intents
 
-1. On P18 exit: triage; re-run gates (red-first evidence check,
-   unpinned-case accounting vs the 4 named, typecheck, full suite w/
-   trap-100, commit-scope, e2e reconciliation note); then MID-CHUNK
-   MINI-REVIEW at HIGH on P18's diff (riskiest slice rule) before
-   slice 2.
-2. Slices 2-4 per chunk plan; chunk-4 gate mirrors prior chunks
-   (PR-CI freeze law in effect from PR-open).
+1. Refresh P19 baseline numbers, fire P19 (gpt-5.6-sol medium,
+   danger-full-access), verify per its gates.
+2. Slices 3-4, then chunk-4 gate (PR-CI freeze law from PR-open).
 3. Standing: .env.test.local.template still BLOCKED on Tommy op:// refs
    (CI remains the only E2E gate).
 
 ## Standing facts
 
 - Fire command + model policy: CLAUDE.md (repo root).
-- Chunk 5 scope: /reprice-payment-intent (payments.routes.ts:457-783
-  pre-chunk-3 numbering) into checkout.service; characterize first.
-- CI (pr-checks.yml) runs only on PRs to main: typecheck, build,
-  db:push, seeds, verifySchema, unit tests, critical E2E.
-- Deferred debt recorded in HANDOFF: storage.ts repository carve
-  (posture E); refund-list pagination beyond embedded data handled in
-  slice 2.
+- Chunk 5 scope: /reprice-payment-intent into checkout.service;
+  characterize first.
+- CI (pr-checks.yml) runs only on PRs to main.
+- Deferred debt in HANDOFF: storage.ts repository carve (posture E).
