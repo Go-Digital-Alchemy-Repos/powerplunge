@@ -471,19 +471,22 @@ describe("public payment routes", () => {
     const createOrderCallOrder = mocks.storage.createOrder.mock.invocationCallOrder[0];
     const createSessionCallOrder = mocks.stripeClient.checkout.sessions.create.mock.invocationCallOrder[0];
     expect(createOrderCallOrder).toBeLessThan(createSessionCallOrder);
-    expect(mocks.stripeClient.checkout.sessions.create).toHaveBeenCalledWith(expect.objectContaining({
-      client_reference_id: "order-1",
-      metadata: expect.objectContaining({
-        orderId: "order-1",
-        customerId: "customer-1",
-      }),
-      payment_intent_data: expect.objectContaining({
+    expect(mocks.stripeClient.checkout.sessions.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        client_reference_id: "order-1",
         metadata: expect.objectContaining({
           orderId: "order-1",
           customerId: "customer-1",
         }),
+        payment_intent_data: expect.objectContaining({
+          metadata: expect.objectContaining({
+            orderId: "order-1",
+            customerId: "customer-1",
+          }),
+        }),
       }),
-    }));
+      { idempotencyKey: "checkout_session_order-1" },
+    );
     expect(mocks.storage.updateOrder).toHaveBeenCalledWith("order-1", {
       stripeSessionId: "cs_test_123",
     });

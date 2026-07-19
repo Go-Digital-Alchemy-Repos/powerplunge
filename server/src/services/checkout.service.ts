@@ -96,6 +96,7 @@ export interface CreatePaymentIntentInput {
   currency: "usd";
   automaticPaymentMethods: { enabled: true };
   metadata: Record<string, string>;
+  idempotencyKey: string;
 }
 
 export interface CreatePaymentIntentResult {
@@ -138,6 +139,7 @@ export interface CheckoutSessionCreateInput {
   allowedShippingCountries: ["US"];
   metadata: Record<string, string>;
   paymentIntentMetadata: Record<string, string>;
+  idempotencyKey: string;
 }
 
 export interface CheckoutSessionCreateResult {
@@ -493,6 +495,7 @@ export class CheckoutService {
       amount: quote.totalAmount,
       currency: "usd",
       automaticPaymentMethods: { enabled: true },
+      idempotencyKey: `pi_create_${order.id}`,
       metadata: {
         orderId: order.id,
         customerId: input.customerId,
@@ -616,6 +619,7 @@ export class CheckoutService {
       allowedShippingCountries: ["US"],
       metadata,
       paymentIntentMetadata: metadata,
+      idempotencyKey: `checkout_session_${order.id}`,
     });
     await this.deps.storage.updateOrder(order.id, { stripeSessionId: session.id });
     return {
@@ -680,7 +684,7 @@ export function createCheckoutService(
         currency: input.currency,
         automatic_payment_methods: input.automaticPaymentMethods,
         metadata: input.metadata,
-      });
+      }, { idempotencyKey: input.idempotencyKey });
       return { id: result.id, clientSecret: result.client_secret };
     }),
     getCheckoutSessionCreator: overrides.getCheckoutSessionCreator ?? (async () => {
@@ -707,7 +711,7 @@ export function createCheckoutService(
           shipping_address_collection: { allowed_countries: input.allowedShippingCountries },
           metadata: input.metadata,
           payment_intent_data: { metadata: input.paymentIntentMetadata },
-        });
+        }, { idempotencyKey: input.idempotencyKey });
         return { id: session.id, url: session.url };
       };
     }),

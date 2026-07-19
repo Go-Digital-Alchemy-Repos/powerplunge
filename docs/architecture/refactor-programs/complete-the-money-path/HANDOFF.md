@@ -55,68 +55,54 @@ program's known remaining debt, not scheduled.
 
 ## State
 
-Chunk 4 slices 1-2 are done on the program branch. The P18/P18d/P18e delivery
+Chunk 4 slices 1-3 are done on the program branch. The P18/P18d/P18e delivery
 claim and retry contracts remain in force: handler failures propagate, claims are
 deleted before 500 responses, and refund Meta enqueue stays best-effort. The
 accepted `refund.updated` partial-progress limitation and persisted-Refund-first
-ordering are unchanged.
+ordering are unchanged. The P19 `charge.refunded` pagination path still replaces
+incomplete embedded Refund collections with the complete Stripe collection and
+leaves complete embedded collections on the no-list path.
 
-For `charge.refunded`, an incomplete embedded Refund collection
-(`refunds.has_more=true`) now uses `StripeService.listRefundsForCharge`. That
-method uses Stripe SDK 20.3.1 `autoPagingEach`, so the SDK follows every cursor
-without an artificial result cap and rejects naturally if any page fetch fails.
-The complete collection replaces the embedded page during processing, preventing
-Refunds present in both sources from being processed twice. A false or absent
-`has_more` retains the embedded-only path and makes no list call.
+Stripe create operations now carry deterministic idempotency keys at every
+production adapter. Refund creation uses
+`refund_${orderId}_${amount}_${existingRefunds.length}`; PaymentIntent creation
+uses `pi_create_${order.id}`; Checkout Session creation uses
+`checkout_session_${order.id}`. The checkout service defaults and both production
+paths owned by `payments.routes.ts` forward the key as Stripe's options argument,
+while request parameter objects remain unchanged.
 
-Red-first coverage failed on the missing eleventh Refund before implementation.
-The completed service suite proves the eleventh Refund is created, the first ten
-are not duplicated, complete embedded collections do not list, and list failures
-propagate. Verified checks: `npm run typecheck` exit 0; focused service suite 19
-tests passed; full unit suite 42 files / 344 tests passed. No route, storage,
-schema, `refund.updated`, claim, acknowledgement, or write ordering changed. The
-standard fresh-context review approved the slice with no material findings.
+Red-first coverage proved the missing Refund, PaymentIntent, and Checkout Session
+keys before implementation, including the public route adapter seam. Completed
+service and route tests assert key values, stable equivalent-operation behavior,
+distinct persisted-refund ordinals, and forwarding to Stripe. Verified checks:
+`npm run typecheck` exit 0; full unit suite 42 files / 348 tests passed. No webhook
+routes/services, `StripeService.ts`, storage, schema, affiliate-payout key,
+`/reprice-payment-intent`, or dependencies changed. The standard fresh-context
+review approved the slice with no material findings.
 
 ## Next Slice
 
-Implement chunk 4 slice 3: Stripe idempotency keys. Replace the `Date.now()`
-component of Stripe Refund creation keys with a deterministic operation identity,
-and pass deterministic idempotency keys to PaymentIntent and Checkout Session
-creation in checkout.service. Pin each operation at its public service interface:
-equivalent retries must send the same key, while distinct business operations
-must not collide.
+Implement chunk 4 slice 4: unpaid-order notification suppression. When Stripe is
+unavailable and checkout creates the manual-fallback PENDING order, do not call
+fulfillment `sendOrderNotification`; that notification must fire only after
+payment finalization, consistent with ADR-0001 payment authority.
 
-- Files: `server/src/services/refund.service.ts`,
-  `server/src/services/__tests__/refund.service.test.ts`,
-  `server/src/routes/admin/operations.routes.ts` and a focused route test;
-  `server/src/services/checkout.service.ts`,
-  `server/src/services/__tests__/checkout.service.test.ts`,
-  `server/src/routes/public/payments.routes.ts`,
-  `server/src/routes/public/__tests__/create-payment-intent.routes.test.ts`, and
-  `server/src/routes/public/__tests__/payments.routes.test.ts`. The public
-  PaymentIntent route injects a direct Stripe adapter, so service-only edits would
-  leave that production path without the key.
+- Primary files: `server/src/services/checkout.service.ts` and
+  `server/src/services/__tests__/checkout.service.test.ts`; add route coverage
+  only if the slice packet identifies a public-boundary gap.
 - Classification: behavior-changing.
-- Test: red-first assertions for stable Refund, PaymentIntent, and Checkout
-  Session keys across equivalent retries, plus non-collision coverage for distinct
-  operations. Do not assert private helper details.
-- Checks: focused refund and checkout service suites,
+- Test: red-first through the checkout service public interface, proving the
+  manual-fallback PENDING order and its items/referral are still created while
+  `sendOrderNotification` is not called. Preserve existing finalization coverage
+  proving paid orders notify there.
+- Checks: focused checkout and order-finalization service suites,
   `npm run typecheck`, `npm run with:local-auth-env -- npm run test:unit`, and
   `git diff --check`.
 
-The slice packet must pin the Refund operation identity before editing. Current
-inputs have only order, amount, and reason; those fields can collide for two
-legitimate same-amount Refunds, while refundable balance is not stable across a
-post-Stripe/pre-local-write retry. Recommended direction: require a caller-owned
-attempt token (the admin HTTP `Idempotency-Key` header) and pass it through
-`CreateRefundParams`; equivalent retries reuse it and distinct attempts use a new
-one. Do not substitute an order/amount key or another time-derived value.
-
-Do not change webhook routes, schema, refund pagination, notification behavior,
-webhook claim/acknowledgement semantics, or the accepted partial-progress
-contracts. Keep public/admin route edits limited to forwarding the new keys or
-Refund attempt identity. Do not add crash-stale processing-claim reconciliation;
-it remains deferred to the chunk-4 gate.
+Do not change payment creation, Stripe idempotency keys, webhook routes/services,
+schema, refund pagination, claim/acknowledgement semantics, or order-finalization
+notification behavior. Keep the change limited to suppressing the premature
+manual-fallback notification and its behavior tests.
 
 ## Risks / Constraints
 

@@ -198,11 +198,14 @@ describe("POST /create-payment-intent", () => {
       quantity: 1,
       unitPrice: 10_000,
     }));
-    expect(mocks.stripeClient.paymentIntents.create).toHaveBeenCalledWith(expect.objectContaining({
-      amount: 10_800,
-      currency: "usd",
-      metadata: expect.objectContaining({ orderId: "order-1", customerId: "customer-1" }),
-    }));
+    expect(mocks.stripeClient.paymentIntents.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        amount: 10_800,
+        currency: "usd",
+        metadata: expect.objectContaining({ orderId: "order-1", customerId: "customer-1" }),
+      }),
+      { idempotencyKey: "pi_create_order-1" },
+    );
     expect(mocks.storage.updateOrder).toHaveBeenCalledWith("order-1", {
       stripePaymentIntentId: "pi_1",
     });
@@ -286,12 +289,15 @@ describe("POST /create-payment-intent", () => {
       affiliateDiscountAmount: 1_000,
       totalAmount: 9_800,
     }));
-    expect(mocks.stripeClient.paymentIntents.create).toHaveBeenCalledWith(expect.objectContaining({
-      metadata: expect.objectContaining({
-        affiliateSessionId: "affiliate-session-1",
-        attributionType: "cookie",
+    expect(mocks.stripeClient.paymentIntents.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        metadata: expect.objectContaining({
+          affiliateSessionId: "affiliate-session-1",
+          attributionType: "cookie",
+        }),
       }),
-    }));
+      { idempotencyKey: "pi_create_order-1" },
+    );
   });
 
   it("applies an explicit affiliate code to pricing and persistence", async () => {
@@ -377,9 +383,12 @@ describe("POST /create-payment-intent", () => {
     expect(mocks.stripeClient.tax.calculations.create).toHaveBeenCalledWith(expect.objectContaining({
       line_items: [expect.objectContaining({ amount: 8_499, reference: "product-1" })],
     }));
-    expect(mocks.stripeClient.paymentIntents.create).toHaveBeenCalledWith(expect.objectContaining({
-      metadata: expect.objectContaining({ couponDiscountAmount: "1500" }),
-    }));
+    expect(mocks.stripeClient.paymentIntents.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        metadata: expect.objectContaining({ couponDiscountAmount: "1500" }),
+      }),
+      { idempotencyKey: "pi_create_order-1" },
+    );
   });
 
   it("caps a fixed coupon at the subtotal", async () => {
@@ -431,7 +440,10 @@ describe("POST /create-payment-intent", () => {
       currency: "usd",
       line_items: [expect.objectContaining({ amount: 10_000, reference: "product-1" })],
     }));
-    expect(mocks.stripeClient.paymentIntents.create).toHaveBeenCalledWith(expect.objectContaining({ amount: 10_725 }));
+    expect(mocks.stripeClient.paymentIntents.create).toHaveBeenCalledWith(
+      expect.objectContaining({ amount: 10_725 }),
+      { idempotencyKey: "pi_create_order-1" },
+    );
   });
 
   it("returns the exact 422 contract when Stripe Tax fails", async () => {
@@ -517,8 +529,11 @@ describe("POST /create-payment-intent", () => {
     expect(mocks.storage.createOrder).toHaveBeenCalledWith(expect.objectContaining({
       customerId: "session-customer-1",
     }));
-    expect(mocks.stripeClient.paymentIntents.create).toHaveBeenCalledWith(expect.objectContaining({
-      metadata: expect.objectContaining({ customerId: "session-customer-1" }),
-    }));
+    expect(mocks.stripeClient.paymentIntents.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        metadata: expect.objectContaining({ customerId: "session-customer-1" }),
+      }),
+      { idempotencyKey: "pi_create_order-1" },
+    );
   });
 });

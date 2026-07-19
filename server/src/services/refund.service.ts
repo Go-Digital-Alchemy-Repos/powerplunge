@@ -81,7 +81,7 @@ export async function createStripeRefund(params: CreateRefundParams): Promise<Re
     throw new RefundError("Stripe is not configured", "STRIPE_NOT_CONFIGURED", 500);
   }
 
-  const idempotencyKey = `refund_${orderId}_${amount}_${Date.now()}`;
+  const idempotencyKey = `refund_${orderId}_${amount}_${existingRefunds.length}`;
 
   let stripeRefund;
   try {

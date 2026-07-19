@@ -367,7 +367,7 @@ router.post("/create-payment-intent", paymentLimiter, async (req: any, res) => {
             currency: input.currency,
             automatic_payment_methods: input.automaticPaymentMethods,
             metadata: input.metadata,
-          });
+          }, { idempotencyKey: input.idempotencyKey });
           return { id: paymentIntent.id, clientSecret: paymentIntent.client_secret };
         },
       });

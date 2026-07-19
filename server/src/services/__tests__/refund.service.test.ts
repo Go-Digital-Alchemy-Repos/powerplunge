@@ -1,4 +1,22 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+
+const mocks = vi.hoisted(() => ({
+  storage: {
+    getOrder: vi.fn(),
+    getRefundsByOrderId: vi.fn(),
+    createRefund: vi.fn(),
+    createAuditLog: vi.fn(),
+    updateOrder: vi.fn(),
+  },
+  createStripeRefund: vi.fn(),
+  getStripeClient: vi.fn(),
+}));
+
+vi.mock("../../../storage", () => ({ storage: mocks.storage }));
+vi.mock("../../integrations/stripe/StripeService", () => ({
+  stripeService: { getClient: mocks.getStripeClient },
+}));
+
 import {
   normalizeStripeRefundStatus,
   computeRefundableAmount,
@@ -6,6 +24,7 @@ import {
   computeRefundSummary,
   isValidReasonCode,
 } from "../refund-calculations";
+import { createStripeRefund } from "../refund.service";
 import type { Order, Refund } from "@shared/schema";
 
 function makeOrder(overrides: Partial<Order> = {}): Order {
@@ -67,6 +86,44 @@ function makeRefund(overrides: Partial<Refund> = {}): Refund {
     ...overrides,
   };
 }
+
+describe("createStripeRefund", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.storage.getOrder.mockResolvedValue(makeOrder());
+    mocks.storage.createRefund.mockResolvedValue(makeRefund({ status: "pending", processedAt: null }));
+    mocks.storage.createAuditLog.mockResolvedValue(undefined);
+    mocks.storage.updateOrder.mockResolvedValue(makeOrder());
+    mocks.createStripeRefund.mockResolvedValue({ id: "re_test_123", status: "pending" });
+    mocks.getStripeClient.mockResolvedValue({ refunds: { create: mocks.createStripeRefund } });
+  });
+
+  it("uses the deterministic first-refund idempotency key", async () => {
+    mocks.storage.getRefundsByOrderId.mockResolvedValue([]);
+
+    await createStripeRefund({ orderId: "order-1", amount: 3000 });
+
+    // Count-based identity replays crash-window retries, advances after persistence,
+    // and collapses concurrent same-amount submissions to one Stripe refund.
+    expect(mocks.createStripeRefund).toHaveBeenCalledWith(
+      expect.any(Object),
+      { idempotencyKey: "refund_order-1_3000_0" },
+    );
+  });
+
+  it("increments the deterministic key after a refund is persisted", async () => {
+    mocks.storage.getRefundsByOrderId.mockResolvedValue([
+      makeRefund({ id: "ref-existing", amount: 2000 }),
+    ]);
+
+    await createStripeRefund({ orderId: "order-1", amount: 3000 });
+
+    expect(mocks.createStripeRefund).toHaveBeenCalledWith(
+      expect.any(Object),
+      { idempotencyKey: "refund_order-1_3000_1" },
+    );
+  });
+});
 
 describe("normalizeStripeRefundStatus", () => {
   it("maps succeeded to processed", () => {

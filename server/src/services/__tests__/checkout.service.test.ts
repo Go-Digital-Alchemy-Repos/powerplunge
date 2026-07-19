@@ -231,6 +231,16 @@ describe("CheckoutService quote", () => {
 });
 
 describe("CheckoutService createPaymentIntentCheckout", () => {
+  it("derives the PaymentIntent idempotency key from the persisted order", async () => {
+    const deps = makeDependencies();
+
+    await createCheckoutService(deps).createPaymentIntentCheckout(paymentIntentCheckoutInput());
+
+    expect(deps.createPaymentIntent).toHaveBeenCalledWith(expect.objectContaining({
+      idempotencyKey: "pi_create_order-1",
+    }));
+  });
+
   it("creates and links a pending order from the quoted checkout", async () => {
     const deps = makeDependencies();
 
@@ -369,6 +379,17 @@ describe("CheckoutService createPaymentIntentCheckout", () => {
 });
 
 describe("CheckoutService createCheckoutSession", () => {
+  it("derives the Checkout Session idempotency key from the persisted order", async () => {
+    const deps = makeDependencies();
+
+    await createCheckoutService(deps).createCheckoutSession(checkoutSessionInput());
+
+    const createSession = await vi.mocked(deps.getCheckoutSessionCreator).mock.results[0].value;
+    expect(createSession).toHaveBeenCalledWith(expect.objectContaining({
+      idempotencyKey: "checkout_session_order-1",
+    }));
+  });
+
   it("allocates discount cents per unit and leaves ineligible products undiscounted", async () => {
     const deps = makeDependencies();
     const eligible = { ...product, id: "eligible", name: "Eligible", price: 99 };
